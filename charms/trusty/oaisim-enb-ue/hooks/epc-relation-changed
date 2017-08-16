@@ -1,0 +1,97 @@
+#!/bin/bash
+################################################################################
+#
+# Copyright (c) 2016, EURECOM (www.eurecom.fr)
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# The views and conclusions contained in the software and documentation are those
+# of the authors and should not be interpreted as representing official policies,
+# either expressed or implied, of the FreeBSD Project.
+#
+################################################################################
+# file epc-relation-changed 
+# brief called when the oaisim-enb-ue and epc relation is changed 
+# author  navid.nikaein@eurecom.fr and A. B. Molini 
+
+set -ex
+source $CHARM_DIR/utils/common
+set_env_paths
+
+#tracking_area_code=`relation-get TAC`
+mobile_country_code=`relation-get MCC`
+mobile_network_code=`relation-get MNC`
+mmeipv4=`relation-get mme_ip`
+epc_running=`relation-get epc_running`
+trigger_restart=`relation-get trigger_restart`
+
+if [ -z "$mobile_country_code" ]; then
+   juju-log "Data not available yet, exit silently"
+   exit 0
+fi
+
+
+   #sed -r -i "/mme_ip_address/ s-\"[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\"-\"$mmeipv4\"-" $conf_path/$file_config
+  if [ -z "$(grep "$mmeipv4" $CHARM_DIR/mme_ips)"  ]; then
+    add_mme_ip $mmeipv4
+  fi
+
+
+
+   sed -r -i  "s/(mobile_country_code[ ]*=[ ]*)\"[0-9]+\"/\1\"$mobile_country_code\"/" $conf_path/$file_config
+   sed -r -i  "s/(mobile_network_code[ ]*=[ ]*)\"[0-9]+\"/\1\"$mobile_network_code\"/" $conf_path/$file_config
+
+#if [ ! -f $CHARM_DIR/.trigger_restart ]; then
+#    echo "0" > $CHARM_DIR/.trigger_restart
+#fi  
+
+
+#for epc_id in $(relation-ids epc); do
+#    juju-log ""$epc_id""
+#    for unit in $(relation-list -r $epc_id); do
+#       epc_running=`relation-get -r $epc_id epc_running $unit`
+#       if [ "$epc_running" == "yes" ]; then
+#          break;
+           #at least one epc is running among the ones connected to oaisim
+           #so let's run oaisim...beacuse we have changed some configuration
+#       fi
+#    done
+#done
+
+if [ "$epc_running" == "yes" ]; then
+
+
+          $CHARM_DIR/hooks/start
+
+   status-set active "OAI ENB SIMULATION(OAISIM) is running and registered to MME"
+else
+   check_oaisim_process
+    if [ $status -eq 0 ]; then
+       service oaisim stop
+       juju-log "The database relation is broken or hss relation is broken or both"
+       status-set blocked "Both the hss relation and database relation are needed"
+    else
+       juju-log "Can't start the OAISIM software until the database relation and the hss relation are established"
+       status-set blocked "Both the hss relation and database relation are needed"
+    fi
+fi 
+

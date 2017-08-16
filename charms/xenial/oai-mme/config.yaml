@@ -1,0 +1,73 @@
+options:
+   branch:
+     default: "develop"
+     description: |
+       branch indicates which installation you want to do. If you want a stable installation, change this option to "master". 
+     type: string
+   revision: 
+     default: "head"   
+     description: get a specific revison from the openair-cn git repository. 
+     type: string
+   kernel: 
+     default: "generic"
+     description: set the default kerenl, generic or lowlatency. 
+     type: string
+   realm:
+     default: "openair4G.eur"
+     description: |
+       Diameter realm of the MME. HSS and EPC have to have the same. NO empty value.
+     type: string
+   eth:
+     default: "eth0"
+     description: |
+       This is the S1-C interface name.
+     type: string
+   maxenb:
+     default: "10"
+     description: Maximum number of eNB that can connect to MME. Max Value is 10.
+     type: string
+   maxue:
+     default: "10"
+     description: |
+       For debug purpose, used to restrict the number of served UEs the MME can handle. Max Value is 50.
+     type: string
+   relative_capacity:
+     default: "10"
+     description: |
+       Even though this parameter is not used by the MME for controlling the MME load balancing within a pool (at least for now), the parameter has to be forwarded to the eNB during association procedure. Values going from 0 to 255.
+     type: string
+   mme_statistic_timer:
+     default: "10"
+     description: |
+       Displayed statistic (stdout) period. You can access the stdout: cat /srv/mme.out on the machine where this charm is deployed.
+     type: string 
+   emergency_attach_supported:
+     default: "no"
+     description: This will attach the unauthenticated UEs (not supported).
+     type: string
+   authenticated_imsi_supported:
+     default: "no"
+     description: TO DO
+     type: string   
+   verbosity:
+     default: "none"
+     description: sets the asn1 log level verbosity. Valid values are "none", "info", or "annoying"
+     type: string
+   gummei_tai_mcc:
+     default: "208"
+     description: TAI=MCC.MNC:TAC. MCC is the Mobile Country Code. Must be three digits.
+     type: string 
+   gummei_tai_mnc:
+     default: "95"
+     description: TAI=MCC.MNC:TAC. MNC is the Mobile Network Code. Must be two or three digits.
+     type: string
+#   gummei_tai_tac:
+#     default: "1"
+#     description: TAI=MCC.MNC:TAC. TAC is the Tracking Area Code.
+#     type: string
+
+
+
+
+
+

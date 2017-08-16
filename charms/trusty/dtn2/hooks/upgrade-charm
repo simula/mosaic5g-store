@@ -1,0 +1,7 @@
+#!/bin/bash
+
+
+service dtn stop || true # Stop the service
+$CHARM_DIR/hooks/install  
+
+

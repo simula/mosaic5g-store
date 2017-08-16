@@ -1,0 +1,210 @@
+#!/bin/bash
+################################################################################
+#
+# Copyright (c) 2016, EURECOM (www.eurecom.fr)
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# The views and conclusions contained in the software and documentation are those
+# of the authors and should not be interpreted as representing official policies,
+# either expressed or implied, of the FreeBSD Project.
+#
+################################################################################
+# file common
+# brief common functions and variables
+# author  navid.nikaein@eurecom.fr and A. B. Molini
+
+set_env_paths(){
+
+#paths in openair-cn on Git
+
+  openair_path=/srv/openair-cn
+  build_path=$openair_path/BUILD
+  hss_path=$build_path/HSS
+  epc_path=$build_path/EPC
+  build_run_scripts=$openair_path/SCRIPTS
+  tools_path=$build_path/TOOLS
+  hss_conf=/usr/local/etc/oai
+  hss_exec_name=oai_hss
+  freediameter_conf_path=$hss_conf/freeDiameter
+
+}
+
+db_data_in_config_file(){
+
+set_env_paths
+
+sed -r -i "s/(MYSQL_server[^\"]*)\".*\"/\1\"$1\"/" $hss_conf/hss.conf
+sed -r -i "s/(MYSQL_user[^\"]*)\".*\"/\1\"$2\"/" $hss_conf/hss.conf
+sed -r -i "s/(MYSQL_pass[^\"]*)\".*\"/\1\"$3\"/" $hss_conf/hss.conf
+sed -r -i "s/(MYSQL_db[^\"]*)\".*\"/\1\"$4\"/" $hss_conf/hss.conf
+
+}
+
+check_hss_process(){
+
+IS_RUNNING=`service oai_hss status`
+
+if [[ $IS_RUNNING =~ .*running.* ]]; then
+   juju-log "OAI HSS is running"
+   status=0
+else
+   juju-log "OAI HSS is not running"
+   status=1
+fi
+}
+
+check_hss_connection_to_db(){
+set_env_paths
+juju-log "Establishing connection to db"
+COUNTER=0
+
+db_id=`relation-ids db`
+db_unit=`relation-list -r $db_id`
+db_host=`relation-get -r "$db_id" user $db_unit`
+
+while [ $COUNTER -lt 30 ]; do
+   sleep 1
+   if [ "$(grep -c ".*db.*DONE" /srv/.out)" -gt 0 ]; then
+      juju-log "Connection to db...Established"
+      break
+   fi
+   COUNTER=$((COUNTER+1))
+done
+
+if [ "$COUNTER" -eq 30 ]; then
+   if [ "$(netstat -tpn | grep -c "$db_host:3306.*ESTABLISHED.*$hss_exec_name")" ]; then
+      juju-log "OAI_HSS/db/db_connector.c can actually to connect to db...but HSS output is not consistent with the check..report the bug"
+      status-set active "HSS is connected...a problem has been detected...the HSS output is not consistent with the check..report the bug"
+   else
+      status-set blocked "HSS cannot connect to db...try to upgrade the charm"
+      exit 1
+   fi
+fi
+
+}
+
+check_hss_s6a_layer(){
+
+COUNTER=0
+juju-log "Checking s6a layer initialization"
+while [ $COUNTER -lt 30 ]; do
+   sleep 1
+   if [ "$(grep -c "Core state: 1 -> 2" /srv/.out)" -gt 0 ]; then
+      juju-log "s6a layer initialized......HSS ready"
+      status-set active "OAI HSS is running"
+      break
+   fi
+   COUNTER=$((COUNTER+1))
+done
+
+if [ "$COUNTER" -eq 30 ]; then
+   juju-log "HSS cannot initialize s6a layer...make sure the db relation is established...or trouble with freediameter...try to upgrade the charm"
+   status-set blocked "HSS cannot initialize s6a layer...maybe a problem with freediameter...try to upgrade the charm"
+   exit 1
+fi
+
+}
+
+install_required_kernel(){
+version=3.19
+wget -r -e robots=off --accept-regex "(.*generic.*amd64)|(all).deb" http://kernel.ubuntu.com/~kernel-ppa/mainline/v${version}-vivid/
+dpkg -i kernel.ubuntu.com/*/*/*/*deb
+}
+
+check_current_kernel(){
+
+#required_kern_release=$(cat $tools_path/build_helper | egrep -o "check_kernel_release_and_install_xtables_addons_oai .+" | cut -d ' ' -f2)
+required_kern_release=3.19
+required_kern_version=`echo $required_kern_release | cut -d '.' -f1`
+required_kern_major_revision=`echo $required_kern_release | cut -d '.' -f2`
+current_kern_release=`uname -r`
+current_kern_version=`echo $current_kern_release | cut -d '.' -f1`
+current_kern_major_revision=`echo $current_kern_release | cut -d '.' -f2`
+if [ "$current_kern_version" -gt "$required_kern_version" ]; then
+     REQUIRED_KERNEL_IS_INSTALLED="true"
+elif [ "$current_kern_version" -eq "$required_kern_version" ] && [ "$current_kern_major_revision" -ge "$required_kern_major_revision" ]; then
+     REQUIRED_KERNEL_IS_INSTALLED="true"
+else
+     REQUIRED_KERNEL_IS_INSTALLED="false"
+fi
+
+}
+
+# get from http://www.linuxjournal.com/content/validating-ip-address-bash-script
+validate_ip() {
+
+local  ip=$1
+local  stat=1
+
+if [[ $ip =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+    OIFS=$IFS
+    IFS='.'
+    ip=($ip)
+    IFS=$OIFS
+    [[ ${ip[0]} -le 255 && ${ip[1]} -le 255 \
+        && ${ip[2]} -le 255 && ${ip[3]} -le 255 ]]
+    stat=$?
+fi
+return $stat
+}
+
+get_ip_address(){
+
+local  ip=$1
+local  status=1
+local  status_after=1
+
+if ! validate_ip $ip; then
+    ip=`host $ip | awk '{ print $4 }'`
+fi
+
+validate_ip $ip
+status=$?
+if [ "$status" == "1" ] ; then 
+    echo "doing nslookup for the mme host name $ip"
+    juju-log "perfroming nslookup for the mme host name ($ip)"
+    validated_hss_public_ip=$(nslookup $ip | awk ' FNR == 5 {print $2 }')
+    status_after=$(validate_ip $ip)
+    if [ "$status_after" == "1" ] ; then 
+	echo "nslookup failed for the mme host name $ip"
+	juju-log "nslookup failed for the mme host name ($ip)"
+	return $status_after
+    else 
+	echo "MME ip address is $validated_hss_public_ip"
+	return 0
+    fi
+else 
+    validated_hss_public_ip=$ip
+    echo "MME ip address is $validated_hss_public_ip"
+    return 0
+fi 
+
+}
+
+get_eth_ip(){
+  echo `ip addr show $1 | grep -o 'inet [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+' | grep -o [0-9].*`
+}
+
+get_eth_ip_net(){
+  echo `ip addr show $1 | grep -o 'inet [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+/[0-9]\+' | grep -o [0-9].*`
+}

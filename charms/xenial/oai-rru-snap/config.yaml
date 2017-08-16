@@ -1,0 +1,49 @@
+options:
+   node_function: 
+     default: "NGFI_RRU_IF4p5"
+     description: | 
+       set the function of this node. Available Options: NGFI_RRU_IF5 (NGFI remote radio-unit,IF5), NGFI_RRU_IF4p5 (NGFI remote radio-unit,IF4p5).
+     type: string
+   target_hardware:
+     default: "usrp_b200"
+     description: |
+       defines the target RF hardware. Available Options: usrp_b200, usrp_x310, lmsdr, blader. Setting this option will require different configuration file and will trigger different building process. 
+     type: string
+   config_file:
+     default: "default"
+     description: |
+       takes the default configuration file based on the target hardware. It defines the specific enb configuration file, see openairinterface5g/targets/PROJECTS/GENERIC-LTE-EPC/CONF.
+     type: string
+   eutra_band:
+     default: 13
+     description: |
+       Setting the LTE  EUTRA frequency band.
+     type: int
+   N_RB_DL:
+     default: 25
+     description: |
+       Setting the bandwidth in terms of number of available PRBS, 5MHz (25), 10MHz(50), and 20MHz(100).
+     type: int
+   rru_port: 
+     default: 50000  
+     description: |
+        defines the network interface port to connect to the RRU.
+     type: int
+   rru_ip:
+     default: "172.27.61.4"
+     description: |
+        defines the ip address of the RRU machine. This is the same address as the one used for fronthaul.
+     type: string
+   fh_transport_mode:
+     default: "udp_if4p5"
+     description: |
+        defines the RRU I/Q sample transport mode. Available mode are raw, udp, raw_if4p5, and udp_if4p5.
+     type: string
+   user_name:
+     default: "mosaic5g"
+     description: defines the user name to access the RRU machine.
+     type: string
+   passwd:
+     default: "linux"
+     description: defines the password to access the RRU machine.
+     type: string

@@ -1,0 +1,5 @@
+#!/bin/bash
+
+service oaisim stop || true
+$CHARM_DIR/hooks/start
+status-set active "oaisim software is running"

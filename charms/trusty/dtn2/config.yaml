@@ -1,0 +1,16 @@
+options:
+  branch:
+    default: "master"
+    description: |
+       branch indicates which installation you want to do. 
+    type: string
+  revision: 
+    default: "HEAD"
+    description: get a specific revison from the openairinterface5G git repository. 
+    type: string
+  eth:
+    default: "eth0"
+    description: |
+      defines the interface to the EPC. Set this option to the interface the machine onto you deploy this charm has. 
+    type: string
+

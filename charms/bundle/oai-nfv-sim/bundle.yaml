@@ -1,0 +1,47 @@
+series: trusty
+services: 
+  "oaisim-enb-ue": 
+    charm: "cs:~navid-nikaein/trusty/oaisim-enb-ue-5"
+    num_units: 1
+    options: 
+      N_RB_DL: 50
+    annotations: 
+      "gui-x": "1167.388427734375"
+      "gui-y": "405.73126483891895"
+    to: 
+      - "0"
+  "oai-epc": 
+    charm: "cs:~navid-nikaein/trusty/oai-epc-22"
+    num_units: 1
+    annotations: 
+      "gui-x": "996"
+      "gui-y": "650.9106471631377"
+    to: 
+      - "kvm:oaisim-enb-ue/0"
+  "oai-hss": 
+    charm: "cs:~navid-nikaein/trusty/oai-hss-10"
+    num_units: 1
+    annotations: 
+      "gui-x": "592.7639770507812"
+      "gui-y": "652.7269923779814"
+    to: 
+      - "kvm:oaisim-enb-ue/0"
+  "mysql": 
+    charm: "cs:trusty/mysql-36"
+    num_units: 1
+    annotations: 
+      "gui-x": "604.2505493164062"
+      "gui-y": "405.73126483891895"
+    to: 
+      - "kvm:oaisim-enb-ue/0"
+relations: 
+  - - "oai-epc:epc"
+    - "oaisim-enb-ue:epc"
+  - - "mysql:db"
+    - "oai-hss:db"
+  - - "oai-hss:hss"
+    - "oai-epc:hss"
+machines: 
+  "0": 
+    series: trusty
+    constraints: "arch=amd64 cpu-cores=4 mem=15951"

@@ -1,0 +1,5 @@
+#!/bin/bash
+
+set -eux
+service oai_hss stop || true
+status-set blocked "HSS software is not running"

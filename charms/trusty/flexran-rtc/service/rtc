@@ -1,0 +1,17 @@
+# flexran RTC upstart
+# TO DO: if we reboot the machine we want to restart the service 
+# only if it was running before the shut down 
+# This script will start/stop rtc
+
+description "Flexran RTC Module"
+author "navid nikaein"
+
+expect fork
+
+stop on shutdown
+
+script
+
+     exec /srv/mosaic-5g/controller/build/rt-controller > /srv/.out 2> /srv/.err
+
+end script

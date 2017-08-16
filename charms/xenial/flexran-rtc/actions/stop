@@ -1,0 +1,3 @@
+#!/bin/bash
+systemctl stop rtc || true
+status-set blocked "RTC is not running"

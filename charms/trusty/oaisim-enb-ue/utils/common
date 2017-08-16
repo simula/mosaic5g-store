@@ -1,0 +1,133 @@
+#!/bin/bash
+################################################################################
+#
+# Copyright (c) 2016, EURECOM (www.eurecom.fr)
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# The views and conclusions contained in the software and documentation are those
+# of the authors and should not be interpreted as representing official policies,
+# either expressed or implied, of the FreeBSD Project.
+#
+################################################################################
+# file common
+# brief common functions and variables
+# author  navid.nikaein@eurecom.fr and A. B. Molini
+
+set_env_paths(){
+
+#paths in openairinterface-5G on Git
+
+
+openair_path=/srv/openair5G
+build_path=$openair_path/cmake_targets
+tools_path=$build_path/tools
+conf_path=$openair_path/targets/PROJECTS/GENERIC-LTE-EPC/CONF
+oaisim_exec_name=oaisim
+file_config=enb.band7.generic.conf
+
+}
+
+check_oaisim_process(){
+
+IS_RUNNING=`service oaisim status`
+
+if [[ $IS_RUNNING =~ .*running.* ]]; then
+   status=0
+else
+   status=1
+fi
+
+}
+
+add_mme_ip(){
+
+set_env_paths
+
+sed -r -n "1,/MME parameters/ p" $conf_path/$file_config > $CHARM_DIR/beginning
+
+if [ ! -f $CHARM_DIR/mme_ips ]; then
+
+cat <<EOF > $CHARM_DIR/mme_ips
+    mme_ip_address      = (  
+                              { ipv4       = "$1";
+                                ipv6       = "192:168:30::17";
+                                active     = "yes";
+                                preference = "ipv4"; }
+                          );
+EOF
+else
+
+cat <<EOF > /tmp/temp
+                             ,{ ipv4       = "$1";
+                                ipv6       = "192:168:30::17";
+                                active     = "yes";
+                                preference = "ipv4"; }
+EOF
+
+sed -r -i "/preference/r /tmp/temp" $CHARM_DIR/mme_ips
+
+fi
+
+cat $CHARM_DIR/beginning > $CHARM_DIR/enb.conf
+cat $CHARM_DIR/mme_ips >> $CHARM_DIR/enb.conf
+sed -r -n "/NETWORK_INTERFACES/,$ p" $conf_path/$file_config >> $CHARM_DIR/enb.conf
+
+mv -f $CHARM_DIR/enb.conf $conf_path/$file_config
+rm -f $CHARM_DIR/beginning
+
+}
+
+remove_mme_ip(){
+sed -r -i "/$1/,/preference/ d" $conf_path/$file_config
+sed -r -i "0,/ipv4[ \t]*=[ \t]*\"[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\";/ s/,(\{[ \t]*ipv4[ \t]*=[ \t]*\"[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\")/ \1/" $conf_path/$file_config
+
+#if there are no other  relations we can rmeove the file with
+#the list of all the ip mme addresses
+
+   sed -r -i "/$1/,/preference/ d" $CHARM_DIR/mme_ips
+   sed -r -i "0,/ipv4[ \t]*=[ \t]*\"[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\";/ s/,(\{[ \t]*ipv4[ \t]*=[ \t]*\"[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\")/ \1/" $CHARM_DIR/mme_ips
+
+  if [ -z "$(grep "ipv4" $CHARM_DIR/mme_ips)" ]; then
+     rm $CHARM_DIR/mme_ips
+  fi
+
+}
+
+# get from http://www.linuxjournal.com/content/validating-ip-address-bash-script
+validate_ip() {
+
+local  ip=$1
+local  stat=1
+
+if [[ $ip =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+    OIFS=$IFS
+    IFS='.'
+    ip=($ip)
+    IFS=$OIFS
+    [[ ${ip[0]} -le 255 && ${ip[1]} -le 255 \
+        && ${ip[2]} -le 255 && ${ip[3]} -le 255 ]]
+    stat=$?
+fi
+
+return $stat
+}

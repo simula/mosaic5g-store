@@ -1,0 +1,5 @@
+#!/bin/bash
+
+service dtn stop || true
+$CHARM_DIR/hooks/start
+status-set active "dtn is running"
