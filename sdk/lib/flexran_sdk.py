@@ -540,12 +540,13 @@ class rrm_policy (object):
 
     
 class stats_manager(object):
-        """!@brief Statistic manager class 
-        
-        This class provides high-level APIS to read and process realtime Radio information received from the underlying RAN
-        """
+    """!@brief Statistic manager class 
+    
+    This class provides high-level APIS to read and process realtime Radio information received from the underlying RAN
+    """
 
     def __init__(self, log, url='http://localhost', port='9999', op_mode='test'):
+
         super(stats_manager, self).__init__()
         """!@brief URL of the controller """
         self.url = url+':'+port
@@ -871,4 +872,152 @@ class stats_manager(object):
             return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['dlCqiReport']['sfnSn']
    	else:
             return 0 
+   
+class ss_policy (object):
+    """!@brief Spectrum sharing class
+        
+        This class provides emulated spectrum sharing polices (general, operator, and LSA), rules, and sensing data. 
+    @note: This class can implements interfaces to remote database and retrive and make available all the required information to the network control apps.
+    """
+    general_policy = []
+    operator_policy = []
+    lsa_policy = []
+    rules = []
+    sensing_data = []
+    
+    general_policy_file='inputs/general_policy.yaml'
+    operator_policy_file='inputs/operator_policy.yaml'
+    lsa_policy_file='inputs/lsa_policy.yaml'
+    rules_file='inputs/rules.yaml'
+    sensing_data_file='inputs/sensing_data.yaml'
+    
+    def __init__(self, log, url='http://localhost', port='9999', op_mode='test'):
+        super(ss_policy, self).__init__()
+        
+        self.url = url+':'+port
+        self.status = 0
+        self.op_mode = op_mode
+        self.log = log
+        # NB APIs endpoints
+        self.rrm_api=flexran_rest_api.rrm
+        self.rrm_policy_api=flexran_rest_api.rrm_policy
+        # stats manager data requeted by the endpoint
+        # could be extended to have data per API endpoint
+        self.policy_data = ''
+
+
+
+    def load_policy(self):
+        """!@brief load general and operator-specific policies"""
+        file = open(self.general_policy_file,'r')
+        self.general_policy = yaml.load(file)
+        self.log.debug('Loaded: general policy file [yaml] :')
+        self.log.debug(yaml.dump(self.general_policy))
+
+        file = open(self.operator_policy_file,'r')
+        self.operator_policy = yaml.load(file)
+        self.log.debug('Loaded: operator policy file [yaml] :')
+        self.log.debug(yaml.dump(self.operator_policy))
+
+        file = open(self.lsa_policy_file,'r')
+        self.lsa_policy = yaml.load(file)
+        self.log.debug('Loaded: lsa policy file [yaml] :')
+        self.log.debug(yaml.dump(self.lsa_policy))
+
+    def load_rules(self):
+        """!@brief load spectrun selection rules"""
+        file = open(self.rules_file,'r')
+        self.rules = yaml.load(file)
+        self.log.debug('Loaded: rules file [yaml] :')
+        self.log.debug(yaml.dump(self.rules))
+
+    def load_sensing_data(self):
+        """!@brief load sensing data"""
+        file = open(self.sensing_data_file,'r')
+        self.sensing_data = yaml.load(file)
+        self.log.debug('Loaded: sensing data file [yaml] :')
+        self.log.debug(yaml.dump(self.sensing_data))
+
+    def load_config_files(self):
+        """!@brief load all the information (knowledge base) """
+        self.load_rules()
+        self.load_sensing_data()
+        self.load_policy()
+
+    def get_sensing_data(self):
+        """!@brief return the sensing data """
+        return self.sensing_data
+    def get_rules(self):
+        """!@brief return the rule for spectrun selection """
+        return self.rules
+    def get_lsa_policy(self):
+        """!@brief return the available LSA policy """
+        return self.lsa_policy
+    def get_operator_policy(self):
+        """!@brief return the operator-specific policy """
+        return self.operator_policy
+    def get_general_policy(self):
+        """!@brief return the general spectrum sharing policy """
+        return self.general_policy
+
+    # apply policy with policy data 
+    # TBD: apply policy from a file
+    def apply_policy(self, policy_data='',as_payload=True):
+        """!@brief Apply the default or user-defined policy 
+        
+        @param policy_data: content of the policy file
+        @param as_payload: embed the applied policy as a payload
+        @note: this method is the same as in RRM class.
+        """
+        self.status=''
+
+        if policy_data != '' :
+            pdata=policy_data
+        elif self.policy_data != '' :
+            pdata=self.policy_data 
+        else:
+            self.log.error('cannot find the policy data '  + pdata)
+            return
+	
+        if as_payload == True :
+            url = self.url+self.rrm_policy_api
+        else: 
+            url = self.url+self.rrm_api+'/'+flexran_rest_api.pf_name
+        
+        if self.op_mode == 'test' :
+            self.log.info('POST ' + str(url))
+            self.log.debug(self.dump_policy(policy_data=pdata))
+            self.status='connected'
+            
+        elif self.op_mode == 'sdk' :
+            print self.dump_policy(pdata)
+            try :
+		# post data as binary
+            	req = requests.post(url, data=self.dump_policy(pdata),headers={'Content-Type': 'application/octet-stream'})
+            	if req.status_code == 200:
+            	    self.log.info('successfully applied the policy')
+            	    self.status='connected'
+            	else :
+            	    self.status='disconnected'
+            	    self.log.error('Request error code : ' + req.status_code)
+            except :
+                self.log.error('Failed to apply the policy ' )
+            
+        else :
+            self.log.warn('Unknown operation mode ' + op_mode )
+	    self.status='unknown'
+        return self.status 
+
+    def dump_policy(self, policy_data=''):
+        """!@brief return the content of the policy in ymal format
+        
+        @param policy_data: content of the policy file
+        """
+        if policy_data != '' :
+            return yaml.dump(policy_data, default_flow_style=False, default_style='"')
+        elif self.policy_data != '' :
+            return yaml.dump(self.policy_data, default_flow_style=False, default_style='"')
+        else:
+            self.log.error('cannot find the policy data ' + policy_data)
+            return
    
