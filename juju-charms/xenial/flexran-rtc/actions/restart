@@ -1,0 +1,4 @@
+#!/bin/bash
+systemctl stop rtc || true
+$CHARM_DIR/hooks/start
+status-set active "RTC is running"

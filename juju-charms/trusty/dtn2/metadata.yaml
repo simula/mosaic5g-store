@@ -1,0 +1,11 @@
+name: dtn2
+summary: a DTN data service module for P2P communication
+maintainer: eryk.schiller@unibe.ch
+description: |
+   this module store and broadcast data across the network
+tags:
+  - DTN
+  - Delay Tolerant Networks
+  - Point-to-Point
+  
+subordinate: false

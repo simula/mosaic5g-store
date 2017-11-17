@@ -1,0 +1,14 @@
+#!/bin/bash
+
+status-set maintenance "Running spgw-relation-changed hook"
+
+juju-log "Retrieving SPGW relation info"
+spgw_running=`relation-get SPGW_RUNNING`
+spgw_s11_ipv4=`relation-get spgw_s11_ipv4`
+spgw_fqdn=`relation-get spgw_hostname`
+
+
+echo "$spgw_running" > $CHARM_DIR/.spgw_running
+#echo "$spgw_s11_ipv4/24" > $CHARM_DIR/.spgw_s11_ipv4
+echo "$spgw_s11_ipv4" > $CHARM_DIR/.spgw_s11_ipv4
+./hooks/config-changed

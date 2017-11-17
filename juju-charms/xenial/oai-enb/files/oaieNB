@@ -1,0 +1,17 @@
+# OaieNB upstart
+# TO DO: if we reboot the machine we want to restart the service 
+# only if it was running before the shut down 
+# This script will start/stop oaieNB 
+
+description "Openair5G Eurecom OAIENB"
+author "Andrea Bordone Molini and Navid Nikaein"
+
+
+stop on shutdown
+
+script
+
+     exec /srv/openair5G/cmake_targets/tools/$(cat /srv/openair5G/.execute) -c /srv/openair5G/targets/PROJECTS/GENERIC-LTE-EPC/CONF/$(cat /srv/openair5G/.config_file) -f $(cat /srv/openair5G/.config_file_rf) -S -e 10000 $(cat /srv/openair5G/.exe_args)> /srv/.out 2> /srv/.err
+
+
+end script

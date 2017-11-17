@@ -1,0 +1,238 @@
+#!/bin/bash
+################################################################################
+#
+# Copyright (c) 2016, EURECOM (www.eurecom.fr)
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# The views and conclusions contained in the software and documentation are those
+# of the authors and should not be interpreted as representing official policies,
+# either expressed or implied, of the FreeBSD Project.
+#
+################################################################################
+# file install hook
+# brief install the oai-rrh for different RF target
+# author navid.nikaein@eurecom.fr
+
+install_packages(){
+    gitAlreadyInstalled=$(dpkg --get-selections git 2>/dev/null | grep -c 'install') || true
+    if [ ! $gitAlreadyInstalled -eq 1 ]; then 
+	# If git is NOT installed
+	apt-get install -y --force-yes git 
+	# Ensure necessary git dependency exist.
+    fi
+    atAlreadyInstalled=$(dpkg --get-selections at 2>/dev/null | grep -c 'install') || true
+    if [ ! $atAlreadyInstalled -eq 1 ]; then 
+	# If at command is NOT installed
+	apt-get install -y --force-yes at
+	# Ensure at command exists to let juju reschedule this hook after rebooting the machine.
+    fi
+    virtwhatAlreadyInstalled=$(dpkg --get-selections virt-what 2>/dev/null | grep -c 'install') || true
+    if [ ! $virtwhatAlreadyInstalled -eq 1 ]; then 
+	apt-get install -y --force-yes virt-what
+    fi
+    
+}
+
+clone_repro(){
+    juju-log "Fetching and installing openairinterface RRH GW for $hw"
+    status-set maintenance "Fetching and installing openairinterface RRH GW"
+    
+    
+    echo -n | openssl s_client -showcerts -connect gitlab.eurecom.fr:443 2>/dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' >> /etc/ssl/certs/ca-certificates.crt
+    
+    #everytime refresh the installation 
+    if [ -d "$openair_path"  ]; then
+	#juju-log "Removing the installation directory"
+	#rm -rf $openair_path
+	juju-log "Updating the installation directory"
+	cd $openair_path 
+	git reset --hard HEAD
+	git checkout $branch 
+	git pull 
+	shopt -s nocasematch
+	if [[ "$revision" != "head" ]]; then  
+	    git checkout $revision
+	fi
+	cd -
+    else
+	git clone https://gitlab.eurecom.fr/oai/openairinterface5g.git $openair_path
+	cd $openair_path
+	git checkout $branch
+	shopt -s nocasematch
+	if [[ "$revision" != "head" ]]; then  
+	    git checkout $revision
+	fi
+	cd -
+    fi
+    
+}
+juju_install_kernel(){
+
+    if [ "$machine_type"  == "lxc" -o "$machine_type" == "docker" ]; then
+	juju-log "Can't install the required kernel in $machine_type env. Proceed with the current kernel."
+    else 
+	if  [ "$machine_type"  == "" ] ; then 
+	    juju-log "Please install kerenel version 3.19 on the host".
+	else 
+	    check_current_kernel
+	    if [[ $REQUIRED_KERNEL_IS_INSTALLED == false ]]; then
+		if [ "$(cat $CHARM_DIR/.reboot)" != "reboot" ]; then  
+		    juju-log "installing the required kernel and reboot"
+		    status-set maintenance "installing the required kernel and rebooting"
+		    install_required_kernel
+  		    echo "reboot" > $CHARM_DIR/.reboot 
+		    juju-reboot --now
+		else 
+		    juju-log "Can't install the required kernel. Proceed with the current kernel."
+		fi 
+		#if we reboot now, the install is blocked here and reschedule after the reboot
+	    fi
+	fi
+    fi 
+}
+
+set_args(){
+    
+    if [ "$kernel" == "lowlatency" ]; then 
+	build_args="$build_args --disable-cpu-affinity --enable-deadline "
+	echo "$build_args"  > $CHARM_DIR/.build_args
+	cp $CHARM_DIR/.build_args $openair_path
+    fi
+
+    cp $CHARM_DIR/.execute $openair_path
+    cp $CHARM_DIR/.config_file_rrh $openair_path
+    cp $CHARM_DIR/.fh_if $openair_path
+    cp $CHARM_DIR/.fh_port $openair_path
+    cp $CHARM_DIR/.tr_mode $openair_path
+    cp $CHARM_DIR/.loopback $openair_path
+    
+}
+
+build_rrh(){
+    status-set maintenance "RF check, package installation, and build process for RRH GW"
+
+    if [ "$hw" == "usrp" -o "$hw" == "USRP" ]; then
+	
+	echo "$config_file_usrp" > $CHARM_DIR/.config_file_rrh
+	cp $CHARM_DIR/.config_file_rrh $openair_path
+	
+	$build_path/build_oai -I -w USRP
+	echo "$build_path/build_oai -C -c --RRH -t ETHERNET -w USRP `echo $build_args`"
+	$build_path/build_oai -C -c --RRH -t ETHERNET -w USRP `echo $build_args`
+	
+    elif [ "$hw" == "bladerf" -o "$hw" == "BLADERF" ]; then
+	
+	echo "$config_file_bladerf" > $CHARM_DIR/.config_file_rrh
+	cp $CHARM_DIR/.config_file_rrh $openair_path
+	
+	$build_path/build_oai -I -w BLADERF
+	echo "$build_path/build_oai -C -c --RRH -t ETHERNET -w BLADERF `echo $build_args`"
+	$build_path/build_oai -C -c --RRH -t ETHERNET -w BLADERF `echo $build_args`
+	
+    elif [ "$hw" == "sodera" -o "$hw" == "lmssdr" ]; then
+	
+	if [ "$config_file" == "default" ]; then 
+	    echo "$config_file_sodera_path/$config_file_default" > $CHARM_DIR/.config_file_rrh
+	else 
+	    echo "$config_file_sodera_path/$config_file" > $CHARM_DIR/.config_file_rrh
+	fi 
+	cp $CHARM_DIR/.config_file_rrh $openair_path
+	
+	$build_path/build_oai -I -w LMSSDR
+	echo "$build_path/build_oai -C -c --RRH -t ETHERNET -w LMSSDR `echo $build_args`"
+	$build_path/build_oai -C -c --RRH -t ETHERNET -w LMSSDR `echo $build_args`
+	
+    elif [ "$hw" == "exmimo" -o "$hw" == "EXMIMO" ]; then
+	
+	echo "$config_file_exmimo" > $CHARM_DIR/.config_file_rrh
+	cp $CHARM_DIR/.config_file_rrh $openair_path
+	
+	$build_path/build_oai -I 
+	echo "$build_path/build_oai -C -c --RRH -t ETHERNET  -w EXMIMO `echo $build_args`"
+	$build_path/build_oai -C -c --RRH -t ETHERNET  -w EXMIMO `echo $build_args`
+    else 
+	juju-log -l WARNING "Hardware option not valid, switching to EXMIMO"
+	hw="exmimo"
+	echo "$hw" > $CHARM_DIR/.hw
+	
+	echo "$config_file_exmimo" > $CHARM_DIR/.config_file_rrh
+	cp $CHARM_DIR/.config_file_rrh $openair_path
+	
+	$build_path/build_oai -I 
+	echo "$build_path/build_oai -C -c --RRH -t ETHERNET  -w EXMIMO `echo $build_args`"
+	$build_path/build_oai -C -c --RRH -t ETHERNET  -w EXMIMO `echo $build_args`
+    fi
+    
+}
+
+set -eux
+
+export DEBIAN_FRONTEND=noninteractive
+source $CHARM_DIR/utils/common
+set_env_paths
+
+status-set maintenance "Fetching and installing OAI RRH GW"
+
+branch=`config-get branch`
+hw=`config-get target_hardware`
+config_file=`config-get config_file`
+fh_if=`config-get fronthaul_if`
+fh_port=`config-get fronthaul_port`
+verbosity=`config-get verbosity`
+loopback=`config-get loopback`
+revision=`config-get revision`
+kernel=`config-get kernel`
+
+
+#store the executable name
+echo "$rrh_gw_exec_name" > $CHARM_DIR/.execute
+echo "$branch" > $CHARM_DIR/.branch
+echo "$hw" > $CHARM_DIR/.hw
+echo "$config_file" > $CHARM_DIR/.config_file_rrh
+echo "$fh_if" > $CHARM_DIR/.fh_if
+echo "$fh_port" > $CHARM_DIR/.fh_port
+echo "" > $CHARM_DIR/.tr_mode
+echo "$verbosity" > $CHARM_DIR/.verbosity
+echo "$loopback"  > $CHARM_DIR/.loopback
+echo "$branch" > $CHARM_DIR/.branch
+echo "$revision" > $CHARM_DIR/.revision
+echo "$kernel"      >  $CHARM_DIR/.kernel
+
+
+install_packages
+machine_type=`virt-what`
+
+clone_repro
+
+juju_install_kernel
+
+set_args
+
+build_rrh
+
+#add the rrh-gw init
+juju-log "Add rrh-gw init script"
+cp $CHARM_DIR/files/rrh_gw /etc/init/rrh_gw.conf
+
+
+status-set blocked "Waiting to establish a connection with the eNB ...add the rrh relation"

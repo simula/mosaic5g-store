@@ -1,0 +1,4 @@
+#!/bin/bash
+
+service rtc stop || true
+status-set blocked "RTC is not running"

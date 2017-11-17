@@ -1,0 +1,66 @@
+#!/bin/bash
+################################################################################
+#
+# Copyright (c) 2016, EURECOM (www.eurecom.fr)
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# The views and conclusions contained in the software and documentation are those
+# of the authors and should not be interpreted as representing official policies,
+# either expressed or implied, of the FreeBSD Project.
+#
+################################################################################
+# file hss-relation-departed
+# brief called when the hss-mme relation is removed 
+# author  navid.nikaein@eurecom.fr and A. B. Molini 
+
+set -eux
+source $CHARM_DIR/utils/common
+set_env_paths
+
+rm -f $CHARM_DIR/.trigger
+
+juju-log "Stopping OAI MME"
+
+#if hss stops running, MME shouldn't be running because functionalities and procedures
+#rely on the HSS.(auth,....)
+stop_mme 
+
+juju-log "Deleting the MME stdout and stderr files"
+rm -f /srv/mme.out /srv/mme.err
+
+juju-log "Delete any relation data trace"
+
+hss_fqdn=`relation-get hss_hostname`
+sed -r -i "/$hss_fqdn/ d" /etc/hosts
+echo "hss" > $CHARM_DIR/.hss_fqdn
+./hooks/config-changed
+
+status-set blocked "waiting for HSS relation"
+
+#stop every enodeB attached to this mme service unit
+if [ -n "$(relation-ids mme)" ]; then
+    for mme_id in $(relation-ids mme); do
+        juju-log ""$mme_id""
+        relation-set -r "$mme_id" mme_running=no
+    done
+fi

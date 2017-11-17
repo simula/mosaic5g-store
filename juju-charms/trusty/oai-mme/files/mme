@@ -1,0 +1,18 @@
+# Mme_gw upstart
+# TO DO: if we reboot the machine we want to restart the service 
+# only if it was running before the shut down 
+# This script will start/stop Mme_gw 
+
+description "Openair4G Eurecom EPC"
+author "Andrea Bordone Molini"
+
+
+stop on shutdown
+
+
+script
+
+
+    exec /srv/openair-cn/SCRIPTS/run_mme > /srv/mme.out 2> /srv/mme.err
+
+end script

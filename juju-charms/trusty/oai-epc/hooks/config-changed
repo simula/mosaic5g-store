@@ -1,0 +1,159 @@
+#!/bin/bash
+################################################################################
+#
+# Copyright (c) 2016, EURECOM (www.eurecom.fr)
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# The views and conclusions contained in the software and documentation are those
+# of the authors and should not be interpreted as representing official policies,
+# either expressed or implied, of the FreeBSD Project.
+#
+################################################################################
+# file config-change
+# brief manage the config changes of oai-enb service, and occurs everytime a new configuration value is updated (juju set)
+# author navid.nikaein@eurecom.fr and A. B. Molini  
+
+set -ux
+source $CHARM_DIR/utils/common
+set_env_paths
+
+if [ "$(config-get branch)" != "$(cat $CHARM_DIR/.branch)" ]; then
+    $CHARM_DIR/hooks/upgrade-charm
+fi
+
+if [ "$(config-get revision)" != "$(cat $CHARM_DIR/.revision)" ]; then
+    $CHARM_DIR/hooks/upgrade-charm
+fi
+
+
+realm=`config-get realm`
+iface=`config-get eth`
+max_enb=`config-get maxenb`
+max_ue=`config-get maxue`
+relative_capacity=`config-get relative_capacity`
+mme_statistic_timer=`config-get mme_statistic_timer`
+emergency_attach_supported=`config-get emergency_attach_supported`
+authenticated_imsi_supported=`config-get authenticated_imsi_supported`
+verbosity=`config-get verbosity`
+gummei_tai_mcc=`config-get gummei_tai_mcc`
+gummei_tai_mnc=`config-get gummei_tai_mnc`
+#gummei_tai_tac=`config-get gummei_tai_tac` 
+ipv4_list_start=`config-get ipv4_list_start`
+ipv4_list_end=`config-get ipv4_list_end`
+ipv6_list=`config-get ipv6_list`
+DEFAULT_DNS_IPV4_ADDRESS=`config-get DEFAULT_DNS_IPV4_ADDRESS`
+DEFAULT_DNS_SEC_IPV4_ADDRESS=`config-get DEFAULT_DNS_SEC_IPV4_ADDRESS`
+
+##############################################################################################
+
+service mme_gw stop || true
+
+juju-log "relation-ids-hss = $(relation-ids hss), relation-list=`relation-list -r $hss_id`"
+
+if [ -z "$(relation-ids hss)" ]; then
+    
+    if [ "$(config-get realm)" != "$(cat $CHARM_DIR/.realm)"  ]; then
+    #delete the current certificate otherwise the regeneration of
+    #the conf files doesn't regenerate a fresh certificate
+        if [ -d /usr/lib/freeDiameter ]; then
+            FREEDIAMETER_PREFIX=/usr
+        elif [ -d /usr/local/lib/freeDiameter ]; then
+            FREEDIAMETER_PREFIX=/usr/local
+        fi
+
+        rm -f $FREEDIAMETER_PREFIX/etc/freeDiameter/mme*    2>&1
+        #change the fqdn
+        sed -i "s/`hostname --fqdn`/`hostname`.$realm/" /etc/hosts
+        #keep track of the last realm
+        echo "$realm" > $CHARM_DIR/.realm 
+
+        rm -f $epc_path/BUILD/CMakeCache.txt
+        $build_run_scripts/build_epc -C -H "unknown.$realm" >& $CHARM_DIR/build_epc.log
+
+        cp $epc_path/BUILD/mme_fd.conf $FREEDIAMETER_PREFIX/etc/freeDiameter/
+        cp $epc_path/BUILD/epc.conf /usr/local/etc/oai/
+
+    fi
+
+  
+    user_conf 
+
+    juju-log "EPC is built, but is waiting for active connection to gather the last info"
+    juju-log "no HSS is found, so EPC is not going to be run"
+
+else
+    if [ "$(config-get realm)" != "$(cat $CHARM_DIR/.realm)"  ]; then
+    #delete the current certificate otherwise the regeneration of
+    #the conf files doesn't regenerate a fresh certificate
+        if [ -d /usr/lib/freeDiameter ]; then
+            FREEDIAMETER_PREFIX=/usr
+        elif [ -d /usr/local/lib/freeDiameter ]; then
+            FREEDIAMETER_PREFIX=/usr/local
+        fi
+
+        rm -f $FREEDIAMETER_PREFIX/etc/freeDiameter/mme*    2>&1
+        #change the fqdn
+        sed -i "s/`hostname --fqdn`/`hostname`.$realm/" /etc/hosts
+        #keep track of the last realm
+        echo "$realm" > $CHARM_DIR/.realm 
+
+        rm -f $epc_path/BUILD/CMakeCache.txt
+        hss_id=`relation-ids hss`
+        hss_unit=`relation-list -r $hss_id`
+        hss_fqdn=`relation-get -r "$hss_id" hss_hostname $hss_unit`
+        $build_run_scripts/build_epc -C -H $hss_fqdn >& $CHARM_DIR./build_epc.log
+
+        cp $epc_path/BUILD/mme_fd.conf $FREEDIAMETER_PREFIX/etc/freeDiameter/
+        cp $epc_path/BUILD/epc.conf /usr/local/etc/oai/
+
+    fi
+   
+    user_conf
+    hss_id=`relation-ids hss`
+    hss_unit=`relation-list -r $hss_id`
+    if [ "$(relation-get -r $hss_id hss_running $hss_unit)" == "yes" ]; then
+        juju-log "Relation with HSS exists and it is running so run EPC software"
+        $CHARM_DIR/hooks/start
+        status-set active "EPC is running and connected to HSS"
+        #se ce la relazione con oaisim allora faccio il set di epc_running=yes
+           #if hss relation exists
+        for epc_id in $(relation-ids epc); do
+           restart=`relation-get -r $epc_id trigger_restart $JUJU_UNIT_NAME`
+           relation-set -r $epc_id trigger_restart=$(($((restart + 1)) % 10))
+           relation-set -r $epc_id epc_running=yes
+        done
+    else
+        juju-log "Hss relation exists, but it is not running because there no database"
+        status-set blocked "Add db relation to hss to get epc run.."
+    fi
+fi
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,72 @@
+#!/bin/bash
+set -eux
+
+source $CHARM_DIR/utils/common
+
+status-set maintenance "Running db-relation-changed hook"
+
+database=`relation-get database`
+user=`relation-get user`
+password=`relation-get password`
+host=`relation-get private-address`
+
+if [ -z "$database" ] ; then
+   juju-log "Data not sent yet"
+   exit 0 # exit silently to safely interrupt the execution of the hook without error
+fi
+
+set_env_paths
+
+#sed in /usr/local/etc/oai/hss.conf that is the actual input config file passed to
+#the final executable oai_hss
+db_data_in_config_file $host $user $password $database
+
+
+# test if tables have been created
+if $(/usr/bin/mysql -u $user --password=$password -h $host $database -e "show tables;" | grep -q users); then
+    echo "Database already there"
+else
+    /usr/bin/mysql -u $user --password=$password -h $host $database < $openair_path/src/oai_hss/db/oai_db.sql
+fi
+
+#this can be start even if the EPC relation is not established 
+$CHARM_DIR/hooks/start
+
+
+for hss_id in $(relation-ids hss); do
+     juju-log ""$hss_id""
+    for unit in $(relation-list -r $hss_id); do
+        mme_fqdn=`relation-get -r "$hss_id" mme_hostname $unit`
+        IP_mme=`relation-get -r "$hss_id" ip_address_mme $unit`
+        #Now we insert the mme info in mysql database
+
+realm_mme=${mme_fqdn#*.}
+
+#check if there is already the mme for idempotency
+
+if [ -z "$(/usr/bin/mysql -u $user --password=$password -h $host $database -e "select mmehost from mmeidentity where mmehost='$mme_fqdn'";)" ]; then
+
+#count how many in order to compute the right primary key
+
+primary_key=`/usr/bin/mysql -u $user --password=$password -h $host $database -e "select max(idmmeidentity) from mmeidentity;" | egrep [0-9]+`
+
+primary_key=$((primary_key + 1))
+
+juju-log "Inserting the MME info in the mmeidentity table of oai_db database"
+#Inserting the mme in the database to let epc connect to hss
+/usr/bin/mysql -u $user --password=$password -h $host $database << EOF 
+INSERT INTO mmeidentity (\`idmmeidentity\`, \`mmehost\`, \`mmerealm\`, \`UE-Reachability\`) VALUES ('$primary_key', '$mme_fqdn', '$realm_mme', 0);
+EOF
+
+fi
+done
+
+done
+
+if [ -n "$(relation-ids hss)" ]; then
+   for hss_id in $(relation-ids hss); do
+       juju-log ""$hss_id""        
+       relation-set -r "$hss_id" mme_in_db=yes
+       relation-set -r "$hss_id" hss_running=yes
+   done
+fi

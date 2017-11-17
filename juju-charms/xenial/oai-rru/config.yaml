@@ -1,0 +1,114 @@
+options:
+   branch:
+     default: "various-l2-fixes-187"
+     description: |
+       branch indicates which installation you want to do. 
+     type: string
+   revision: 
+     default: "head"
+     description: get a specific revison from the openairinterface5G git repository. 
+     type: string
+   kernel: 
+     default: "lowlatency"
+     description: set the default kerenl, generic or lowlatency. 
+     type: string
+   node_function: 
+     default: "NGFI_RRU_IF4p5"
+     description: | 
+       set the function of this node. Available Options: NGFI_RRU_IF5 (NGFI remote radio-unit,IF5), NGFI_RRU_IF4p5 (NGFI remote radio-unit,IF4p5),.
+     type: string
+   target_hardware:
+     default: "usrp_b200"
+     description: |
+       defines the target RF hardware. Available Options: usrp_b200, usrp_x310, lmsdr, blader. Setting this option will require different configuration file and will trigger different building process. 
+     type: string
+   config_file:
+     default: "default"
+     description: |
+       takes the default configuration file based on the target hardware. It defines the specific enb configuration file, see openairinterface5g/targets/PROJECTS/GENERIC-LTE-EPC/CONF.
+     type: string
+   frame_type:
+     default: "FDD"
+     description: |
+       Setting the frame type, FDD or TDD.
+     type: string
+   tdd_config:
+     default: 3
+     description: |
+       Setting the TDD frame configuration. Valid values, 0,1,2,3,4,5,6.
+     type: int
+   tdd_config_s:
+     default: 0
+     description: |
+       Setting the TDD special subframe configuration. Valid values, 0-9.
+     type: int
+   eutra_band:
+     default: 13
+     description: |
+       Setting the LTE  EUTRA frequency band.
+     type: int
+   downlink_frequency:
+     default: "751000000L"
+     description: |
+       Setting the downlink frequency band.
+     type: string
+   uplink_frequency_offset:
+     default: "31000000"
+     description: |
+      Setting the uplink frequency offset.
+     type: string
+   N_RB_DL:
+     default: 25
+     description: |
+       Setting the bandwidth in terms of number of available PRBS, 25 (5MHz), 50 (10MHz), and 100 (20MHz).
+     type: int
+   nb_antennas_tx:
+     default: 1
+     description: |
+       Setting the number of tx antennas.
+     type: int
+   nb_antennas_rx:
+     default: 1
+     description: |
+       Setting the number of rx antennas.
+     type: int
+   tx_gain:
+     default: 90
+     description: |
+       Setting the tx antenna gain.
+     type: int
+   rx_gain:
+     default: 125
+     description: |
+       Setting the rx antenna gain.
+     type: int
+   fh_if_name:
+     default: "eth0"
+     description: |
+        defines the network interface name to connect to the RRU. This required a dedicated fronthaul link between eNB and RRU and must not use the same interface as for the EPC.  
+     type: string
+   fh_local_port: 
+     default: 50000  
+     description: |
+        defines the network interface port to connect to the RRU.
+     type: int
+   fh_transport_mode:
+     default: "udp_if4p5"
+     description: |
+        defines the I/Q sample transport mode. Available mode are raw, udp, raw_if4p5, and udp_if4p5.
+     type: string
+   rru_tx_shift: 
+     default: 4  
+     description: |
+        defines the shift in is samples in tx
+     type: int
+   rru_tx_sampleadvance:
+     default: 80
+     description: |
+        defines the tx i/q sample advace
+     type: int
+   rru_tx_schedadvance:
+     default: 9
+     description: |
+        defines the tx i/q scheduling advance
+     type: int
