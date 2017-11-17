@@ -1,0 +1,4 @@
+#!/bin/bash
+
+systemctl stop  rru || true 
+status-set blocked "oaisim software not running"

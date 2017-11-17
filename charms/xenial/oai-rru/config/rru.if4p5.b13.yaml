@@ -1,0 +1,7 @@
+oai-rru-if4p5:
+   fh_if_name: "br-eth0"
+   node_function: "NGFI_RRU_IF4p5"
+   eutra_band: 13
+   downlink_frequency: "751000000L"
+   uplink_frequency_offset: "31000000"
+   N_RB_DL: 25

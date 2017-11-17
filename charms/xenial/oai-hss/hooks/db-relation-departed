@@ -1,0 +1,23 @@
+#!/bin/bash
+set -eux
+source $CHARM_DIR/utils/common
+set_env_paths
+
+
+juju-log "Stopping HSS, database is departing and maybe doesn't exist anymore"
+systemctl stop oai_hss || true
+
+juju-log "Delete the trace of the relation data "
+db_data_in_config_file "" "" "" ""
+#it is not stricly necessary because when I will add another relation
+#this same file will be overwritten by new database relation data.
+
+status-set blocked "Waiting for database relation"
+
+if [ -n "$(relation-ids hss)" ]; then
+    for hss_id in $(relation-ids hss); do
+        juju-log ""$hss_id""
+        relation-set -r "$hss_id" hss_running=no
+        relation-set -r "$hss_id" mme_in_db=no
+    done
+fi

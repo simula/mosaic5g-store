@@ -320,7 +320,7 @@ class sma_app(object):
             return int(-1)
 
     def generate_output(self):
-        file = open('output_policy.yaml','w')
+        file = open('outputs/output_policy.yaml','w')
         self.output = {'enb': []};
 
 

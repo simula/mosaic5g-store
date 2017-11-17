@@ -1,0 +1,5 @@
+#!/bin/bash
+
+service oaieNB stop || true
+$CHARM_DIR/hooks/start
+status-set active "oaienb software is running"

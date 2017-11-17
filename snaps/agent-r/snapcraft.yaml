@@ -1,0 +1,62 @@
+name: agent-r
+version: '1.0' # just for humans, typically '1.2+git' or '1.3.2'
+summary: OpenAirInterface RAN Agent  
+description: |
+   OpenAirInterface5g with Flex RAN agent and different flavors: 3GPP ENB, CRAN RRH, CRAN BBU, NGFI RRU, NGFI RCC. Connect commercial UEs with the band of your choice.
+grade: devel
+confinement: classic
+
+apps:
+  cran-usrp:
+    command: cran/bin/snap_environment.sh ./cran/bin/cran
+  enb-usrp:
+    command: enb/bin/snap_environment.sh ./enb/bin/enb
+    
+parts:
+  cran-usrp:
+    plugin: nil
+    source: https://gitlab.eurecom.fr/oai/openairinterface5g.git
+    source-branch: develop
+    build: |
+      cd cmake_targets
+      ./build_oai -I -w USRP  \
+          --uhd-images-dir ../common/uhd_images
+      ./build_oai --eNB -w USRP -t ETHERNET -c -C
+    install: |
+      mkdir -p $SNAPCRAFT_PART_INSTALL/cran
+      cp -r targets/bin $SNAPCRAFT_PART_INSTALL/cran/
+      cp -r common/uhd_images $SNAPCRAFT_PART_INSTALL/
+      cp cmake_targets/snap_environment.sh $SNAPCRAFT_PART_INSTALL/cran/bin/
+    stage:
+      - cran/bin/*
+      - usr/lib/*
+      - lib/*
+      - uhd_images/*
+    organize:
+      cran/bin/liboai_eth_transpro.so.Rel14: usr/lib/liboai_transpro.so
+      cran/bin/liboai_usrpdevif.so.Rel14: usr/lib/liboai_device.so
+      cran/bin/lte-softmodem.Rel14: cran/bin/cran
+  enb-usrp:
+    plugin: nil
+    source: https://gitlab.eurecom.fr/oai/openairinterface5g.git
+    source-branch: develop
+    build: |
+      cd cmake_targets
+      ./build_oai -I -w USRP  \
+          --uhd-images-dir ../common/uhd_images
+      ./build_oai --eNB -w USRP -c -C
+    install: |
+      mkdir -p $SNAPCRAFT_PART_INSTALL/enb
+      cp -r targets/bin $SNAPCRAFT_PART_INSTALL/enb/
+      cp -r common/uhd_images $SNAPCRAFT_PART_INSTALL/
+      cp cmake_targets/snap_environment.sh $SNAPCRAFT_PART_INSTALL/enb/bin/
+    stage:
+      - enb/bin/*
+      - usr/lib/*
+      - lib/*
+      - uhd_images/*
+    organize:
+      enb/bin/liboai_eth_transpro.so.Rel14: usr/lib/liboai_transpro.so
+      enb/bin/liboai_usrpdevif.so.Rel14: usr/lib/liboai_device.so
+      enb/bin/lte-softmodem.Rel14: enb/bin/enb
+

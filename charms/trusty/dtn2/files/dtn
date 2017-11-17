@@ -1,0 +1,18 @@
+# OaieNB upstart
+# TO DO: if we reboot the machine we want to restart the service 
+# only if it was running before the shut down 
+# This script will start/stop oaieNB 
+
+description "DTN module"
+author "Eryk"
+
+expect fork
+
+stop on shutdown
+
+script
+
+     exec /srv/dtn/DTN2/daemon/dtnd -c /etc/dtn.conf -d -o /tmp/dtn.log >/dev/null 2>/dev/null
+
+
+end script

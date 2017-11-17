@@ -1,0 +1,109 @@
+#!/bin/bash
+################################################################################
+#
+# Copyright (c) 2016, EURECOM (www.eurecom.fr)
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# The views and conclusions contained in the software and documentation are those
+# of the authors and should not be interpreted as representing official policies,
+# either expressed or implied, of the FreeBSD Project.
+#
+################################################################################
+# file rrh-relation-changed
+# brief called when a relation between an eNB and RRH is changed 
+# author  navid.nikaein@eurecom.fr 
+
+set -ex
+source $CHARM_DIR/utils/common
+set_env_paths
+
+rrh_tr_mode=`config-get rrh_transport_mode`
+
+#this var is used for both ip address in case of UDP tr_mode and MAC address in case RAW
+rrh_gw_addr=`relation-get RRH_GW_PUBLIC_IP`
+rrh_gw_port=`relation-get RRH_GW_PORT`
+rrh_gw_running=`relation-get RRH_GW_RUNNING`
+
+# we may not be able to get this here 
+#epc_running=`relation-get epc_running`
+if [ -f $CHARM_DIR/.epc_running ] ;then
+  epc_running=`cat $CHARM_DIR/.epc_running`
+else 
+  epc_running="no"
+fi
+
+# keep the status of rrh_running for epc-relation-changed
+echo "$rrh_gw_running" >  $CHARM_DIR/.rrh_gw_running
+
+if [ -z "$rrh_gw_addr" ]; then
+   juju-log "rrh_gw_ip_addr: Data not available yet, exit silently"
+   exit 0
+fi
+if [ -z "$rrh_gw_port" ]; then
+   juju-log "rrh_gw_port: Data not available yet, exit silently"
+   exit 0
+fi
+if [ -z "$rrh_gw_running" ]; then
+   juju-log "rrh_gw_running: Data not available yet, exit silently"
+   exit 0
+fi
+
+
+file_config=`cat $CHARM_DIR/.config_file`
+
+###############################################################################
+juju-log "Setting up configuration in the "$file_config" file"
+###############################################################################
+
+# eNB relation could be 1:n, so for each rrh, we need to add blocks similar to mme_ip address 
+
+#sed -r -i  "s/(remote_address[ ]*=[ ]*)\"[0-9a-zA-Z]+\"/\1\"\"/"
+
+sed -r -i "/remote_address/ s/\".+\"/\"$rrh_gw_addr\"/"  $conf_path/$file_config
+sed -r -i  "s/(local_port[ ]*=[ ]*)[0-9]+/\1$rrh_gw_port/"  $conf_path/$file_config 
+sed -r -i  "s/(remote_port[ ]*=[ ]*)[0-9]+/\1$rrh_gw_port/" $conf_path/$file_config 
+# local address assumed to be set in install or config-change hook
+#sed -r -i "/local_address/ s/\".+\"/\"$mac_addr\"/" $conf_path/$config_file_rrh
+
+if [ "$rrh_gw_running" == "yes" ]; then
+    
+    if [ "$epc_running" == "yes" ]; then
+	$CHARM_DIR/hooks/start
+	status-set active "OAI ENB is running"
+    else 
+	status-set active "Wait for EPC connection"
+    fi 
+    
+else
+   check_oaieNB_process
+    if [ $status -eq 0 ]; then
+       service oaieNB stop
+       juju-log "Both EPC and RRH relations are broken"
+       status-set blocked "Both EPC and RRH relations are broken"
+    else
+       juju-log "Can't start the OAI ENB until the EPC and RRH relations are established"
+       status-set blocked "Both the EPC and RRH relations are needed"
+    fi
+fi 
+
+

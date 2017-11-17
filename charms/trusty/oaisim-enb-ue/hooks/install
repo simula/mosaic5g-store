@@ -1,0 +1,136 @@
+#!/bin/bash
+################################################################################
+#
+# Copyright (c) 2016, EURECOM (www.eurecom.fr)
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# The views and conclusions contained in the software and documentation are those
+# of the authors and should not be interpreted as representing official policies,
+# either expressed or implied, of the FreeBSD Project.
+#
+################################################################################
+# file install hook
+# brief install the oaisim-enb-ue with S1 interface and no RF.
+# author  navid.nikaein@eurecom.fr
+
+set -eux
+
+export DEBIAN_FRONTEND=noninteractive
+source $CHARM_DIR/utils/common
+set_env_paths
+
+open-port 2152/udp
+
+branch=`config-get branch`
+revision=`config-get revision`
+echo "$branch" > $CHARM_DIR/.branch
+echo "$revision" > $CHARM_DIR/.revision
+
+
+gitAlreadyInstalled=$(dpkg --get-selections git 2>/dev/null | grep -c 'install') || true
+if [ ! $gitAlreadyInstalled -eq 1 ]; then # If git is NOT installed
+   apt-get install -y git # Ensure necessary git dependency exist.
+fi
+atAlreadyInstalled=$(dpkg --get-selections at 2>/dev/null | grep -c 'install') || true
+if [ ! $atAlreadyInstalled -eq 1 ]; then 
+   apt-get install -y at
+fi
+
+juju-log  "Fetching and installing Openair5G"
+status-set maintenance "Fetching and installing Openair5G"
+
+echo -n | openssl s_client -showcerts -connect gitlab.eurecom.fr:443 2>/dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' >> /etc/ssl/certs/ca-certificates.crt
+
+if [ -f $conf_path/$file_config ]; then
+   juju-log "Save the config file somewhere"
+   cp $conf_path/$file_config /tmp/
+fi
+#everytime I want a fresh and new installation
+if [ -d "$openair_path" ]; then
+ #  juju-log "Removing the installation directory"
+ #  rm -rf $openair_path
+    juju-log "Updating the installation directory"
+    cd $openair_path 
+    git reset --hard HEAD
+    git checkout $branch 
+    git pull 
+    shopt -s nocasematch
+    if [[ "$revision" != "HEAD" ]]; then   
+	git checkout $revision
+    fi 
+    cd -
+else
+    git clone https://gitlab.eurecom.fr/oai/openairinterface5g.git $openair_path
+    cd $openair_path
+    git checkout $branch
+    shopt -s nocasematch
+    if [[ "$revision" != "HEAD" ]]; then  
+	git checkout $revision
+    fi 
+    cd -
+fi
+
+
+if [ -f /tmp/$file_config ]; then
+    juju-log "Retrieve the saved config file"
+    mv /tmp/$file_config $conf_path/
+
+fi
+
+#Some software installations have to be done prior to build the EURECOM eNB/UE.
+status-set maintenance "Installing some dependencies"
+juju-log "Long process of installation of basic packages"
+
+source $openair_path/oaienv
+#It sets the correct environment variables
+
+#We don't need phpmyadmin because the database will be somewhere else
+sed -i "s/phpmyadmin/#phpmyadmin/" /srv/openair5G/cmake_targets/tools/build_helper
+
+$build_path/build_oai -I --install-optional-packages
+
+#--install-system-files option removed....does nothing at all 
+
+#Erase all files made by previous compilations, installations...and build oasim
+juju-log "Building OAISIM with S1 interface"
+status-set maintenance "Erase all files made by previous compilations, installations...and build oasim"
+
+#add the oaisim init
+juju-log "Add oaisim init script"
+cp $CHARM_DIR/files/oaisim /etc/init/oaisim.conf
+
+$build_path/build_oai --oaisim --cflags_processor "-mssse3 -msse4.1"
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,28 @@
+#!/bin/bash
+
+set -eux
+
+source $CHARM_DIR/utils/common
+set_env_paths
+
+
+if [ "$(config-get branch)" != "$(cat $CHARM_DIR/.branch)" ]; then
+    juju-log "branch name changed"
+    $CHARM_DIR/hooks/upgrade-charm
+fi
+
+if [ "$(config-get revision)" != "$(cat $CHARM_DIR/.revision)" ]; then
+    $CHARM_DIR/hooks/upgrade-charm
+    juju-log "revision changed"
+fi
+
+##I should change the s1-u and s1-mme
+iface=`config-get eth`
+
+if [ -n "$iface" ]; then
+   ipv4=`ifconfig $iface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
+   
+   juju-log "eth interface is $iface"
+
+fi
+

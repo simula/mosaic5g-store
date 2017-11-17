@@ -1,0 +1,5 @@
+#!/bin/bash
+
+systemctl stop enb.service || true
+$CHARM_DIR/hooks/start
+status-set active "OAI eNB is running"

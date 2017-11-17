@@ -1,0 +1,6 @@
+#!/bin/bash
+
+set -eux
+systemctl stop oai_hss || true
+$CHARM_DIR/hooks/start
+status-set active "HSS is running"

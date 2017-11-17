@@ -1,0 +1,17 @@
+name: oai-rrh
+summary: Remote Radio Head Gateway (RRG GW) based on OpenAirInterface
+maintainer: navid nikaein <navid.nikaein@eurecom.fr>
+description: |
+   This charms allows you to design, deploy, provision, and dispose your OpenAirInterface remote radio gateway (RRH) gateway to build a packet-based Ethernet fronthaul network out of the box on any cloud infrastructure. It supports multiple radio frontends, namely SODERA, BLADERF, and USRP. 
+tags:
+  - Telecom
+  - 4G, 5G
+  - Remote Radio Head Gateway, RRH, GW
+  - Ethernet Fronthaul
+  - OpenAirInterface, OAI, oai
+  - Eurecom
+subordinate: false
+provides:
+  rrh:
+    interface: FH-ETH
+

@@ -76,16 +76,16 @@ class flexran_rest_api(object):
 
     """
  
-    """!@brief Output data sets for all the status used for test"""
-    pf_all='outputs/all_2.json'
-    """!@brief Output data sets for MAC  status used for test"""
-    pf_mac='outputs/mac_stats_2.json'
-    """!@brief Output data sets for eNB config status used for test"""
-    pf_enb='outputs/enb_config_2.json'
+    """!@brief Input data sets for all the status used for test"""
+    pf_all='inputs/all_2.json'
+    """!@brief Input data sets for MAC  status used for test"""
+    pf_mac='inputs/mac_stats_2.json'
+    """!@brief Input data sets for eNB config status used for test"""
+    pf_enb='inputs/enb_config_2.json'
 
     # relateive to flexran apps
     pf_name='enb_scheduling_policy.yaml'
-    pf_yaml='../tests/delegation_control/'+pf_name
+    pf_yaml='inputs/'+pf_name
     pf_json='{"mac": [{"dl_scheduler": {"parameters": {"n_active_slices": 1,"slice_percentage": [1,0.4,0,0],"slice_maxmcs": [28,28,28,28 ]}}}]}'
 
     """!@brief RRC API endpoit """ 
@@ -117,6 +117,7 @@ class rrc_trigger_meas(object):
     """
     def __init__(self, log, url='http://localhost', port='9999', op_mode='test'):
         """!@brief Class constructor """
+
         super(rrc_trigger_meas, self).__init__()
         
         self.url = url+':'+port
@@ -137,6 +138,7 @@ class rrc_trigger_meas(object):
         
         @param type: ONE_SHOT, PERIODIC, and EVENT_DRIVEN
         """
+
         if type == self.rrc_meas[rrc_triggers.ONE_SHOT] :
             url = self.url+self.rrc_trigger_api+'/'+type.lower()
         elif type == self.rrc_meas[rrc_triggers.PERIODIC] :
@@ -194,7 +196,6 @@ class control_delegate(object):
         @param func: name of the function
         @param action: action to be performed by the controller
         """
-    
         if func == 'dl_sched' : 
             url = self.url+self.cd_dl_api
         elif func == 'ul_sched' :
@@ -352,7 +353,7 @@ class rrm_policy (object):
 
         print self.dump_policy()
 
-    def save_policy(self, basedir='./', basefn='policy', time=0, format='yaml'):
+    def save_policy(self, basedir='./outputs', basefn='policy', time=0, format='yaml'):
         """!@brief Save the applied policy in a user-defined path and format
         
         @param basedir: base directory
@@ -360,7 +361,6 @@ class rrm_policy (object):
         @param time: timestamp when the policy is applied
         @param format: the file extension
         """
-
         fn = os.path.join(basedir,basefn + '_'+str(time) + "." + format)
         #stream = file('policy.yaml', 'w')
         stream = file(fn, 'w')
@@ -393,9 +393,12 @@ class rrm_policy (object):
         else :
             self.log.error('Unknown direction ' + dir)
             return
-        
+
+        if n < 0 or n > 4 :
+            self.log.error('Number of slices: Out of range')
+            return
             
-        self.log.debug('Setting the number of ' + dir + ' slices from ' + str(self.policy_data['mac'][index][key_sched]['parameters'][key_slice]) + ' to ' + str(n) )
+        self.log.debug('Setting the number of ' + dir + ' slices from '+ str(self.policy_data['mac'][index][key_sched]['parameters'][key_slice]) + ' to ' + str(n) )
         self.policy_data['mac'][index][key_sched]['parameters'][key_slice]=n
 
     def get_num_slices(self, dir='dl'):
@@ -418,8 +421,7 @@ class rrm_policy (object):
         
 
         return  self.policy_data['mac'][index][key_sched]['parameters'][key_slice]
-    
-                
+       
 
     def set_slice_rb(self, sid, rb, dir='dl'):
         """!@brief Set the resource block share for a slice in a direction. 
@@ -449,14 +451,10 @@ class rrm_policy (object):
             index = 1
             key_sched = 'ul_scheduler'
             key_slice = 'slice_percentage_uplink'
-        else :
-            self.log.error('Unknown direction ' + dir)
-            return
-            
+
         self.log.debug('Setting ' + dir + ' slice ' + str(sid) + ' RB from ' + str(self.policy_data['mac'][index][key_sched]['parameters'][key_slice][sid]) + ' to ' + str(rb) )
         self.policy_data['mac'][index][key_sched]['parameters'][key_slice][sid]=rb
         #print self.policy_data['mac'][index][key_sched]['parameters'][key_slice][sid]
-
 
         
     def get_slice_rb(self, sid, dir='dl'):
@@ -507,8 +505,7 @@ class rrm_policy (object):
         else :
             self.log.error('Unknown direction ' + dir)
             return
-            
- 
+
         self.log.debug('Setting ' + dir + ' slice ' + str(sid) + ' MCS from ' + str(self.policy_data['mac'][index][key_sched]['parameters'][key_mcs][sid]) + ' to ' + str(mcs))
         self.policy_data['mac'][index][key_sched]['parameters'][key_mcs][sid]=mcs
         #print self.policy_data['mac'][index][key_sched]['parameters'][key_mcs][sid]
@@ -535,7 +532,8 @@ class rrm_policy (object):
         if sid < 0 or sid > 4 :
             self.log.error('Out of Range slice id')
             return
- 
+
+        self.log.debug('Getting MCS for ' + dir + ' slice ' + str(sid) + ': ' + str(self.policy_data['mac'][index][key_sched]['parameters'][key_mcs][sid]))
         return self.policy_data['mac'][index][key_sched]['parameters'][key_mcs][sid]
 
     
@@ -556,6 +554,7 @@ class stats_manager(object):
         self.op_mode = op_mode
         self.log = log
         """!@brief Local API endpoints"""
+
         self.sm_all_api=flexran_rest_api.sm_all
         self.sm_enb_api=flexran_rest_api.sm_enb
         self.sm_mac_api=flexran_rest_api.sm_mac
@@ -575,10 +574,9 @@ class stats_manager(object):
 
     def stats_manager(self, api):
         """!@brief Request the statistics from the controller and store it locally.
-
+        
         @param api: defines the what type of stats shall be requested, available values: all, mac, eNB 
         """
-
         self.log.debug('set stats_manager API to :' + str(api))
         file = ''
         #url = '' 
@@ -597,7 +595,7 @@ class stats_manager(object):
                     self.status='connected'
             except :
                 self.status='disconnected'
-                self.log.error('cannot find the output file'  + file )       
+                self.log.error('cannot find the input data file'  + file )       
 
         elif self.op_mode == 'sdk' :
 
@@ -639,7 +637,6 @@ class stats_manager(object):
         """!@brief Get the number of connected eNB to this controller 
         
         """
-
         return len(self.stats_data['eNB_config'])
 
     def get_ue_config(self,enb=0,ue=0):
@@ -832,7 +829,7 @@ class stats_manager(object):
         @param ue: index of UE
         @param cc: index of component carrier
         """
-
+        
         return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['dlCqiReport']['csiReport'][cc]['p10csi']['wbCqi']
 
     # lcgdi 0 for SRBs, lcgid 1 for default drb

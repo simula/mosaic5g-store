@@ -1,0 +1,32 @@
+options:
+   branch:
+     default: "master"
+     description: |
+       branch indicates which installation you want to do. 
+     type: string
+     revision: 
+       default: "HEAD"
+       description: get a specific revison from the openairinterface5G git repository. 
+       type: string
+     user_name: 
+       default: "user"
+       description: get a valid user name to clone the repository. 
+       type: string
+     passwd: 
+       default: "pwd"
+       description: get a valid passwd to clone the repository. 
+       type: string
+     kernel: 
+       default: "generic"
+       description: set the default kerenl, generic or lowlatency. 
+       type: string
+     bind_if:
+       default: "all"
+       description: |
+         defines the interface to which the flexran RTC is binded. By default, the RTC is listening across all the interfaces. 
+       type: string
+     bind_port: 
+       default: 9999  
+       description: |
+         defines the network interface port to connect to the eNB agent.
+       type: int

@@ -1,0 +1,11 @@
+
+# /etc/dhcp/dhclient-enter-hooks.d/net-eth1
+
+if [ "$interface" = eth1 -a -n "$new_routers" ]; then
+        echo Discarding eth1 routers: $new_routers
+        unset new_routers
+fi
+if [ "$interface" = eth1 -a -n "$new_domain_name_servers" ]; then
+        echo Discarding eth1 dns servers: $new_domain_name_servers
+        unset new_domain_name_servers
+fi

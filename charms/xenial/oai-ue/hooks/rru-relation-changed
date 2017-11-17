@@ -1,0 +1,231 @@
+#!/bin/bash
+################################################################################
+#
+# Copyright (c) 2016, EURECOM (www.eurecom.fr)
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# The views and conclusions contained in the software and documentation are those
+# of the authors and should not be interpreted as representing official policies,
+# either expressed or implied, of the FreeBSD Project.
+#
+################################################################################
+# file rrh-relation-changed
+# brief called when a relation between an eNB and RRH is changed 
+# author  navid.nikaein@eurecom.fr 
+
+set -ex
+source $CHARM_DIR/utils/common
+set_env_paths
+
+node_func=`config-get node_function`
+
+if [ "$node_func" == "eNodeB_3GPP_BBU" ] || [ "$node_func" == "NGFI_RCC_IF4p5" ]; then
+
+    juju-log "RRU relation changed for $node_func"
+    
+    # set the variables first
+    
+    fh_tr_mode=`config-get fh_transport_mode`
+    
+    #this var is used for both ip address in case of UDP tr_mode and MAC address in case RAW
+    rru_gw_addr=`relation-get RRU_GW_PUBLIC_IP`
+    rru_gw_port=`relation-get RRU_GW_PORT`
+    rru_gw_running=`relation-get RRU_GW_RUNNING`
+
+    # keep the status of rru_gw_running for epc-relation-changed
+    echo "$rru_gw_running" >  $CHARM_DIR/.rru_gw_running
+    
+    # we may not be able to get this here 
+    #epc_running=`relation-get epc_running`
+    if [ -f $CHARM_DIR/.epc_running ] ;then
+	epc_running=`cat $CHARM_DIR/.epc_running`
+    else 
+	epc_running="no"
+    fi
+
+    rtc_running=`relation-get RTC_RUNNING`
+    if [ -f $CHARM_DIR/.agent_active ]; then
+	agent_active=`cat $CHARM_DIR/.agent_active`
+    else
+	agent_active="no"
+    fi
+
+
+    if [ -z "$rru_gw_addr" ]; then
+	juju-log "rru_gw_ip_addr: Data not available yet, exit silently"
+	exit 0
+    fi
+    
+    if [ -z "$rru_gw_port" ]; then
+	juju-log "rru_gw_port: Data not available yet, exit silently"
+	exit 0
+    fi
+    
+    if [ -z "$rru_gw_running" ]; then
+	juju-log "rru_gw_running: Data not available yet, exit silently"
+	exit 0
+    fi
+
+
+    file_config=`cat $CHARM_DIR/.config_file`
+
+###############################################################################
+    juju-log "Setting up configuration in the "$file_config" file"
+###############################################################################
+
+    # eNB relation could be 1:n, so for each rrh, we need to add blocks similar to mme_ip address 
+    
+    #sed -r -i  "s/(remote_address[ ]*=[ ]*)\"[0-9a-zA-Z]+\"/\1\"\"/"
+    
+    sed -r -i "/remote_address/ s/\".+\"/\"$rru_gw_addr\"/"  $conf_path/$file_config
+    sed -r -i  "s/(local_port[ ]*=[ ]*)[0-9]+/\1$rru_gw_port/"  $conf_path/$file_config 
+    sed -r -i  "s/(remote_port[ ]*=[ ]*)[0-9]+/\1$rru_gw_port/" $conf_path/$file_config 
+    # local address assumed to be set in install or config-change hook
+    #sed -r -i "/local_address/ s/\".+\"/\"$mac_addr\"/" $conf_path/$config_file_rrh
+    
+    if [ "$rru_gw_running" == "yes" ]; then
+	
+	if [ "$epc_running" == "yes" ]; then
+
+	    if [ "$agent_active" == "yes" ]; then 
+		if [ "$rtc_running" == "yes" ]; then
+
+		    $CHARM_DIR/hooks/start
+		    status-set active "OAI $node_func is running"
+		else 
+		    status-set blocked "Wait for RTC relation"
+		fi
+	    else
+		$CHARM_DIR/hooks/start
+		status-set active "OAI $node_func is running"
+	    fi
+	else
+	    status-set blocked "Wait for EPC relation"
+	fi
+	
+    else
+	check_oaieNB_process
+	if [ $status -eq 0 ]; then
+	    service oaieNB stop
+	    juju-log "RRU relations might be broken"
+	    status-set blocked "RRU relations might be broken"
+	else
+	    juju-log "RRU relation is needed"
+	    status-set blocked "RRU relation is needed"
+	fi
+    fi
+
+elif [ "$node_func" == "NGFI_RRU_IF5" ] || [ "$node_func" == "NGFI_RRU_IF4p5" ]; then 
+    juju-log "RRU relation changed for $node_func"
+
+    rel_ids=`relation-ids rru`
+    if [ -z "$rel_ids" ];then
+	juju-log "Data not available yet, exit silently"
+	exit 0
+    fi
+
+    rru_active=`relation-get -r $rel_ids RRU_ACTIVE`
+    hw=`relation-get -r $rel_ids TARGET_HARDWARE`
+    fh_tr_mode=`relation-get -r $rel_ids TRANSPORT_MODE`
+   
+
+    if [ -z "$rru_active" ]; then
+	juju-log "Data not available yet, exit silently"
+	exit 0
+    fi
+
+    if [ -z "$hw" ]; then
+	juju-log "Data not available yet, exit silently"
+	exit 0
+    fi
+
+    if [ -z "$fh_tr_mode" ]; then
+	juju-log "Data not available yet, exit silently"
+	exit 0
+    fi
+
+    if [ "$rru_active" == "yes" ]; then  
+
+	relation-set RRU_GW_PORT=`config-get fh_local_port`
+	fh_if=`config-get fh_if_name`
+
+	echo "$fh_if"  >  $CHARM_DIR/.fh_if
+	cp  $CHARM_DIR/.fh_if      $openair_path
+	echo "$rru_active"  >  $CHARM_DIR/.rru_active
+
+	if [ "$fh_tr_mode" == "udp" ]  || [ "$fh_tr_mode" == "udp_if4p5" ] ; then 
+
+	    rrh_public_ip=`unit-get public-address`
+	    get_ip_address $rrh_public_ip
+	    status=$?
+	    if [ "$status" == "1" ] ; then
+		status-set blocked "nslookup failed for the rrh host name ($rrh_public_ip)"
+		relation-set RRH_GW_PUBLIC_IP=$rrh_public_ip
+	    else
+		relation-set RRH_GW_PUBLIC_IP=$validated_public_ip
+		status-set maintenance "Joined the RRH relation"
+	    fi
+	    
+	elif [ "$fh_tr_mode" == "raw" ]  || [ "$fh_tr_mode" == "raw_if4p5" ] ; then 
+	    fh_mac_addr=`ip link show $fh_if | awk '/ether/ {print $2}' `
+	    # originally there was a new var named RH_GW_MAC_ADDRESS
+	    relation-set RRH_GW_PUBLIC_IP=$fh_mac_addr
+	else
+	    juju-log "unknown fronthaul transport mode ($fh_tr_mode)"
+	fi 
+
+	 #locally selected hardware target
+	hw_config=`cat $CHARM_DIR/.hw`
+   
+	# this happens when the enb changes the target hardware
+	if [ "$hw_config" != "$hw" ]; then
+	    juju-log "Configured RF ($hw) does not corresponds ($hw_config), change the config file"
+	    status-set blocked "Configured RF ($hw) does not corresponds ($hw_config), change the config file"
+	fi 
+    
+	cp  $CHARM_DIR/.hw      $openair_path
+	cp  $CHARM_DIR/.fh_tr_mode $openair_path
+    
+	$CHARM_DIR/hooks/start
+	#check the result
+	status=$?
+	if [ $status -eq 0 ]; then
+	    relation-set RRH_GW_RUNNING=yes
+	    echo "yes" > $CHARM_DIR/.rru_running
+	    status-set active "OAI RRH GW is running"
+	else 
+	    #relation-set RRH_GW_RUNNING=no
+	    status-set blocked "OAI RRH GW is not running"
+	fi  
+    else 
+	juju-log "Peer node func does not match, and thus the relation can't be established"
+	status-set blocked "Peer node func does not match"
+	
+    fi
+    
+else
+    juju-log "Nothing to be done for $node_func"
+fi
+
+
+
