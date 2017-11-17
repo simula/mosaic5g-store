@@ -88,6 +88,11 @@ class flexran_rest_api(object):
     pf_yaml='inputs/'+pf_name
     pf_json='{"mac": [{"dl_scheduler": {"parameters": {"n_active_slices": 1,"slice_percentage": [1,0.4,0,0],"slice_maxmcs": [28,28,28,28 ]}}}]}'
 
+    # slices templates
+    tf_name='template.yaml'
+    tf_yaml='inputs/'+tf_name
+
+    
     """!@brief RRC API endpoit """ 
     rrc_trigger='/rrc_trigger'
     """!@brief control delegation API endpoint for DL """ 
@@ -254,12 +259,18 @@ class rrm_policy (object):
         # To do: create env vars 
         self.pf_yaml=flexran_rest_api.pf_yaml
         self.pf_json=flexran_rest_api.pf_json
-
+        self.tf_yaml=flexran_rest_api.tf_yaml
+        
     # read the policy file     
     def read_policy(self, pf=''):
         """!@brief Read the policy either from a user-defined policy file or the default one
-        
-        @param pf: the absolut path to the policy file
+     
+        Read the policy file specified as parameter. If this file does not
+        exist or is left blank, it will default to the file specified in 
+        flexran_rest_api.pf_yaml
+     
+        @param pf: the absolut path to the policy file, of type str
+        @return:  A dictionnary filled with data extracted from the policy file of rtype: dict
         """
 
         if os.path.isfile(pf) :
@@ -283,13 +294,43 @@ class rrm_policy (object):
    
         return self.policy_data
 
+    def read_template(self, tf=''):
+        """!@brief Read the template file and returns the data contained in the file as a dictionary
+     
+        Read the template file specified as parameter. If this file does not
+        exist or is left blank, it will default to the file specified in 
+        flexran_rest_api.tf_yaml
+     
+        @param tf: The name of the template file of type str
+        @return: A dictionnary filled with data extracted from the template file of rtype  dict
+        """
+        if os.path.isfile(tf) :
+            tfile=tf
+        elif os.path.isfile(self.tf_yaml) :
+            tfile=self.tf_yaml
+        else :
+            self.log.error('cannot find the policy file '  + self.tf_yaml + ' or ' + tf)
+            return
+
+
+        try:
+            with open(tfile) as data_file:
+                self.template_data = yaml.load(data_file)
+                self.log.debug(yaml.dump(self.template_data, default_flow_style=False))
+        except yaml.YAMLError, exc:
+            self.log.error('error in policy file'  + pfile + str(exc) )
+            return
+
+        return self.template_data
+
     # apply policy with policy data 
     # TBD: apply policy from a file
     def apply_policy(self, policy_data='',as_payload=True):
-        """!@brief Apply the default or user-defined policy 
+        """!@brief Apply and send the default or user-defined policy as parameter to FlexRAN-RTC. 
         
-        @param policy_data: content of the policy file
+        @param policy_data: content of the policy file of type str
         @param as_payload: embed the applied policy as a payload
+        @return: The status of the request as str
         """
 
         self.status=''
@@ -336,6 +377,7 @@ class rrm_policy (object):
         """!@brief return the content of the policy in ymal format
         
         @param policy_data: content of the policy file
+        @return: The policy data in YAML format
         """
         
         if policy_data != '' :
@@ -360,6 +402,7 @@ class rrm_policy (object):
         @param basefn: base file name
         @param time: timestamp when the policy is applied
         @param format: the file extension
+        @return: The policy data that has been saved in the file as string
         """
         fn = os.path.join(basedir,basefn + '_'+str(time) + "." + format)
         #stream = file('policy.yaml', 'w')
@@ -536,6 +579,226 @@ class rrm_policy (object):
         self.log.debug('Getting MCS for ' + dir + ' slice ' + str(sid) + ': ' + str(self.policy_data['mac'][index][key_sched]['parameters'][key_mcs][sid]))
         return self.policy_data['mac'][index][key_sched]['parameters'][key_mcs][sid]
 
+    def get_input_slice_type(self, enb, sid):
+        """!@brief Get the slice type from the input template 
+        
+        @param enb: enb index 
+        @param sid: slice id
+        """
+ 
+        if enb < 0 or enb >= len(self.template_data['enb_slices']) :
+            return None
+        elif sid < 0 or sid >= len(self.template_data['enb_slices'][enb]):
+            return None
+        else :
+            return self.template_data['enb_slices'][enb][sid]
+
+    def get_input_slice_nums(self, enb):
+        """!@brief Get the number of slices from a given eNB from the input template 
+        
+        @param enb: enb index 
+        """
+        if enb < 0 or enb >= len(self.template_data['enb_slices']) :
+            return None
+        else :
+            return len(self.template_data['enb_slices'][enb])
+
+    def get_input_slice_reliability(self, enb, sid, direction):
+        """!@brief Get the required slice reliability for a given eNB and direction
+        
+        @param enb: enb index 
+        @param sid: slice id 
+        @param dir: defines uplink or downlink directions 
+        """
+        slice_type = self.get_input_slice_type(enb, sid)
+        if slice_type is None:
+            return "normal"
+        else:
+            try :
+                robustness = self.template_data['policy'][slice_type][direction]['robustness']
+            except LookupError:
+                robustness = "normal"
+                pass
+
+            return robustness
+
+
+    def get_input_slice_priority(self, enb, sid, direction):
+        """!@brief Get the required slice priority for a given eNB and direction
+        
+        @param enb: enb index 
+        @param sid: slice id 
+        @param dir: defines uplink or downlink directions 
+        """
+        slice_type = self.get_input_slice_type(enb, sid)
+        if slice_type is None:
+            return 0
+        else:
+            try :
+                priority = self.template_data['policy'][slice_type][direction]['priority']
+            except LookupError:
+                priority = 0
+                pass
+
+            return priority
+
+
+    def get_input_slice_rate(self, enb, sid, dir='dl'):
+        """!@brief Get the required slice reserved rate for a given eNB and direction
+        
+        @param enb: enb index 
+        @param sid: slice id 
+        @param dir: defines uplink or downlink directions 
+        """
+        reserved_rate = 0
+        slice_type = self.get_input_slice_type(enb, sid)
+        if slice_type is None:
+            return reserved_rate
+
+        if dir == 'dl' or dir == "DL":
+            direction = 'DL'
+        elif dir == 'ul' or dir == "UL":
+            direction = 'UL'
+        else :
+            self.log.error('Unknown direction ' + dir)
+            return reserved_rate
+
+        if sid < 0 or sid > 4 :
+            self.log.error('Out of Range slice id')
+            return reserved_rate
+
+        try :
+            reserved_rate = self.template_data['policy'][slice_type][direction]['rate']
+        except LookupError:
+            pass
+
+        return reserved_rate
+
+    def get_input_slice_latency(self, enb, sid, dir='dl'):
+        """!@brief Get the required slice latency for a given eNB and direction
+        
+        @param enb: enb index 
+        @param sid: slice id 
+        @param dir: defines uplink or downlink directions 
+        """
+        reserved_latency = 10
+        slice_type = self.get_input_slice_type(enb, sid)
+        if slice_type is None:
+            return reserved_latency
+
+        if dir == 'dl' or dir == "DL":
+            direction = 'DL'
+        elif dir == 'ul' or dir == "UL":
+            direction = 'UL'
+        else :
+            self.log.error('Unknown direction ' + dir)
+            return reserved_latency
+
+        if sid < 0 or sid > 4 :
+            self.log.error('Out of Range slice id')
+            return reserved_latency
+
+        try :
+            reserved_latency = self.template_data['policy'][slice_type][direction]['latency']
+        except LookupError:
+            pass
+
+        return reserved_latency
+
+    def get_input_slice_priority(self, enb, sid, dir='dl'):
+        """!@brief Get the required slice priority for a given eNB and direction
+        
+        @param enb: enb index 
+        @param sid: slice id 
+        @param dir: defines uplink or downlink directions 
+        """
+        reserved_priority = 10
+        slice_type = self.get_input_slice_type(enb, sid)
+        if slice_type is None:
+            return reserved_priority
+
+        if dir == 'dl' or dir == "DL":
+            direction = 'DL'
+        elif dir == 'ul' or dir == "UL":
+            direction = 'UL'
+        else :
+            self.log.error('Unknown direction ' + dir)
+            return reserved_priority
+
+        if sid < 0 or sid > 4 :
+            self.log.error('Out of Range slice id')
+            return reserved_priority
+
+        try :
+            reserved_priority = self.template_data['policy'][slice_type][direction]['priority']
+        except LookupError:
+            pass
+
+        return reserved_priority
+
+    def get_input_slice_isolation(self, enb, sid, dir='dl'):
+        """!@brief Get the required slice isolation for a given eNB and direction
+        
+        @param enb: enb index 
+        @param sid: slice id 
+        @param dir: defines uplink or downlink directions 
+        """
+
+        reserved_isolation = 0
+        slice_type = self.get_input_slice_type(enb, sid)
+        if slice_type is None:
+            return reserved_isolation
+
+        if dir == 'dl' or dir == "DL":
+            direction = 'DL'
+        elif dir == 'ul' or dir == "UL":
+            direction = 'UL'
+        else :
+            self.log.error('Unknown direction ' + dir)
+            return reserved_isolation
+
+        if sid < 0 or sid > 4 :
+            self.log.error('Out of Range slice id')
+            return reserved_isolation
+
+        try :
+            reserved_isolation = self.template_data['policy'][slice_type][direction]['isolation']
+        except LookupError:
+            pass
+
+        return reserved_isolation
+
+    def get_input_slice_vrbg(self, enb, sid, dir='dl'):
+        """!@brief Get the required slice required vritual RBG for a given eNB and direction
+        
+        @param enb: enb index 
+        @param sid: slice id 
+        @param dir: defines uplink or downlink directions 
+        """
+ 
+        reserved_vrbg = 1
+        slice_type = self.get_input_slice_type(enb, sid)
+        if slice_type is None:
+            return reserved_vrbg
+
+        if dir == 'dl' or dir == "DL":
+            direction = 'DL'
+        elif dir == 'ul' or dir == "UL":
+            direction = 'UL'
+        else :
+            self.log.error('Unknown direction ' + dir)
+            return reserved_vrbg
+
+        if sid < 0 or sid > 4 :
+            self.log.error('Out of Range slice id')
+            return reserved_vrbg
+
+        try :
+            reserved_vrbg = self.template_data['policy'][slice_type][direction]['vrbg']
+        except LookupError:
+            pass
+
+        return reserved_vrbg
     
 class stats_manager(object):
     """!@brief Statistic manager class 
@@ -689,6 +952,25 @@ class stats_manager(object):
         elif rb == 100 :
             return 20
 
+    def get_rbg_size(self,enb=0,cc=0, dir='dl'):
+        """!@brief Get the cell resource block group size 
+        
+        @param enb: index of eNB
+        @param cc: index of component carrier
+        @param dir: defines downlink and uplink direction
+        """
+        rb=self.get_cell_rb(enb,cc,dir)
+        if rb == 6 :
+            return 1
+        elif rb == 25 :
+            return 2
+        elif rb == 50 :
+            return 3
+        elif rb == 75 :
+            return 4
+        elif rb == 100 :
+            return 4
+        
     def get_cell_freq(self,enb=0,cc=0, dir='dl'):
         """!@brief Get the cell current operating frequency
         
