@@ -171,21 +171,21 @@ class rrm_app(object):
 
     for enb in range(0, sm.get_num_enb()) :
       rrm_app.maxmcs_dl[enb] = {}
-      for sid in range(0, rrm.get_nb_slices(enb) ):
+      for sid in range(0, rrm.get_input_slice_nums(enb) ):  # get_input_slice_nums and get_num_slices
         rrm_app.maxmcs_dl[enb][sid] = rrm.get_slice_maxmcs(sid=sid, dir='DL')
 
     for enb in range(0, sm.get_num_enb()) :
       rrm_app.maxmcs_ul[enb] = {}
-      for sid in range(0, rrm.get_nb_slices(enb) ):
+      for sid in range(0, rrm.get_input_slice_nums(enb) ):
         rrm_app.maxmcs_ul[enb][sid] = rrm.get_slice_maxmcs(sid=sid, dir='UL')
 
 
   def get_policy_mcs(self, rrm, enb, ue, dir):
 
-        sid = ue % rrm.get_nb_slices(enb)
+        sid = ue % rrm.get_input_slice_nums(enb)
 
         if dir == 'dl' or dir == "DL":
-          robustness = rrm.get_slice_robustness(enb, sid, "DL")
+          robustness = rrm.get_input_slice_reliability(enb, sid, "DL")
 
           if robustness == 'high':
               return rrm_app_vars.cqi_to_mcs_robust[rrm_app.ue_dlwcqi[enb,ue] ]
@@ -210,7 +210,7 @@ class rrm_app(object):
       rrm_app.reserved_latency_dl[enb] = {}
       rrm_app.reserved_priority_dl[enb] = {}
       rrm_app.reserved_isolation_dl[enb] = {}
-      for sid in range(0, rrm.get_nb_slices(enb) ):
+      for sid in range(0, rrm.get_input_slice_nums(enb) ):
         rrm_app.reserved_vrbg_dl[enb][sid] = rrm.get_input_slice_vrbg(enb, sid=sid, dir='DL')
         rrm_app.reserved_rate_dl[enb][sid] = rrm.get_input_slice_rate(enb, sid=sid, dir='DL')
         rrm_app.reserved_latency_dl[enb][sid] = rrm.get_input_slice_latency(enb, sid=sid, dir='DL')
@@ -223,7 +223,7 @@ class rrm_app(object):
       rrm_app.reserved_latency_ul[enb] = {}
       rrm_app.reserved_priority_ul[enb] = {}
       rrm_app.reserved_isolation_ul[enb] = {}
-      for sid in range(0, rrm.get_nb_slices(enb) ):
+      for sid in range(0, rrm.get_input_slice_nums(enb) ):
         rrm_app.reserved_vrbg_ul[enb][sid] = rrm.get_input_slice_vrbg(enb, sid=sid, dir='UL')
         rrm_app.reserved_rate_ul[enb][sid] = rrm.get_input_slice_rate(enb, sid=sid, dir='UL')
         rrm_app.reserved_latency_ul[enb][sid] = rrm.get_input_slice_latency(enb, sid=sid, dir='UL')
@@ -324,9 +324,9 @@ class rrm_app(object):
       rrm_app.slices_priority_ul = []
       rrm_app.slices_priority_dl = []
 
-      for sid in range(0, rrm.get_nb_slices(enb)):
-        rrm_app.slices_priority_ul.append( (sid, rrm.get_slice_priority(enb, sid, "UL")) )
-        rrm_app.slices_priority_dl.append( (sid, rrm.get_slice_priority(enb, sid, "DL")) )
+      for sid in range(0, rrm.get_input_slice_nums(enb)):
+        rrm_app.slices_priority_ul.append( (sid, rrm.get_input_slice_priority(enb, sid, "UL")) )
+        rrm_app.slices_priority_dl.append( (sid, rrm.get_input_slice_priority(enb, sid, "DL")) )
 
       # Sort slices according to priority
       rrm_app.slices_priority_ul = sorted(rrm_app.slices_priority_ul, key=lambda slice: -slice[1])
@@ -339,13 +339,13 @@ class rrm_app(object):
     for enb in range(0, sm.get_num_enb()) :
 
       # Loop on slices to allocate reserved rate, according to priority, for UL
-      for slice in range(0, rrm.get_nb_slices(enb)):
+      for slice in range(0, rrm.get_input_slice_nums(enb)):
 
         sid = rrm_app.slices_priority_ul[slice][0]
         slice_ul_tbs = 0
 
         # Loop on UEs connected to the current eNodeB and in the current slice
-        ue_in_slice = (ue for ue in range(0, sm.get_num_ue(enb=enb)) if ue % rrm.get_nb_slices(enb) == sid)
+        ue_in_slice = (ue for ue in range(0, sm.get_num_ue(enb=enb)) if ue % rrm.get_input_slice_nums(enb) == sid)
         for ue in ue_in_slice :
 
           # skip the control channels, SRB1 and SRB2, start at index 2
@@ -379,13 +379,13 @@ class rrm_app(object):
 
 
       # Loop on slices to allocate reserved rate, according to priority, for DL
-      for slice in range(0, rrm.get_nb_slices(enb)):
+      for slice in range(0, rrm.get_input_slice_nums(enb)):
 
         sid = rrm_app.slices_priority_dl[slice][0]
         slice_dl_tbs = 0
 
         # Loop on UEs connected to the current eNodeB and in the current slice
-        ue_in_slice = (ue for ue in range(0, sm.get_num_ue(enb=enb)) if ue % rrm.get_nb_slices(enb) == sid)
+        ue_in_slice = (ue for ue in range(0, sm.get_num_ue(enb=enb)) if ue % rrm.get_input_slice_nums(enb) == sid)
         for ue in ue_in_slice :
 
           # skip the control channels, SRB1 and SRB2, start at index 2
@@ -427,12 +427,12 @@ class rrm_app(object):
     for enb in range(0, sm.get_num_enb()) :
 
       # Loop on slices to allocate reserved rate, according to priority, for UL
-      for slice in range(0, rrm.get_nb_slices(enb)):
+      for slice in range(0, rrm.get_input_slice_nums(enb)):
 
         sid = rrm_app.slices_priority_ul[slice][0]
 
         # Loop on UEs connected to the current eNodeB and in the current slice
-        ue_in_slice = (ue for ue in range(0, sm.get_num_ue(enb=enb)) if ue % rrm.get_nb_slices(enb) == sid)
+        ue_in_slice = (ue for ue in range(0, sm.get_num_ue(enb=enb)) if ue % rrm.get_input_slice_nums(enb) == sid)
         for ue in ue_in_slice :
 
           # skip the control channels, SRB1 and SRB2, start at index 2
@@ -460,13 +460,13 @@ class rrm_app(object):
 
 
       # Loop on slices to allocate reserved rate, according to priority, for DL
-      for slice in range(0, rrm.get_nb_slices(enb)):
+      for slice in range(0, rrm.get_input_slice_nums(enb)):
 
         sid = rrm_app.slices_priority_dl[slice][0]
         slice_dl_tbs = 0
 
         # Loop on UEs connected to the current eNodeB and in the current slice
-        ue_in_slice = (ue for ue in range(0, sm.get_num_ue(enb=enb)) if ue % rrm.get_nb_slices(enb) == sid)
+        ue_in_slice = (ue for ue in range(0, sm.get_num_ue(enb=enb)) if ue % rrm.get_input_slice_nums(enb) == sid)
         for ue in ue_in_slice :
 
           # skip the control channels, SRB1 and SRB2, start at index 2
@@ -579,7 +579,7 @@ class rrm_app(object):
       rrm_app.enb_dlrb_share[enb]=0.0
 
       # Loop on slices
-      for sid in range(0, rrm.get_nb_slices(enb)):
+      for sid in range(0, rrm.get_input_slice_nums(enb)):
         rrm_app.slice_ulrb[enb,sid]=0.0
         rrm_app.slice_dlrb[enb,sid]=0.0
         rrm_app.slice_ulrb_share_r1[enb,sid]=0.0
@@ -590,7 +590,7 @@ class rrm_app(object):
         # Loop on UEs
         for ue in range(0, sm.get_num_ue(enb=enb)) :
           # simple ue to slice mapping
-          if ue % rrm.get_nb_slices(enb) == sid :
+          if ue % rrm.get_input_slice_nums(enb) == sid :
             rrm_app.slice_ulrb[enb,sid] += rrm_app.ue_ulrb[enb,ue]
             rrm_app.slice_dlrb[enb,sid] += rrm_app.ue_dlrb[enb,ue]
 
@@ -627,15 +627,15 @@ class rrm_app(object):
       rrm_app.enb_dlrb_share_r1[enb]=rrm_app.enb_dlrb_share[enb]
 
       nb_slice_to_share=0
-      for sid in range(0, rrm.get_nb_slices(enb)):  
+      for sid in range(0, rrm.get_input_slice_nums(enb)):  
         if rrm_app.reserved_isolation_ul[enb][sid] == 0 :
           nb_slice_to_share+=1 # multiplex
       
       # Disribute the remaining RB at the second stage : divide the remaining RBs by the number of slices
       # TODO: allocate based on SLA
-      extra_ul=((1.0 - rrm_app.enb_ulrb_share[enb])/rrm.get_nb_slices(enb))
-      extra_dl=((1.0 - rrm_app.enb_dlrb_share[enb])/rrm.get_nb_slices(enb))
-      for sid in range(0, rrm.get_nb_slices(enb)):
+      extra_ul=((1.0 - rrm_app.enb_ulrb_share[enb])/rrm.get_input_slice_nums(enb))
+      extra_dl=((1.0 - rrm_app.enb_dlrb_share[enb])/rrm.get_input_slice_nums(enb))
+      for sid in range(0, rrm.get_input_slice_nums(enb)):
 
         if  extra_ul > 0 and rrm_app.reserved_isolation_ul[enb][sid] == 0:
           rrm_app.slice_ulrb_share[enb,sid]+=extra_ul
@@ -658,7 +658,7 @@ class rrm_app(object):
   def enforce_policy(self,sm,rrm):
 
     for enb in range(0, sm.get_num_enb()) :
-      for sid in range(0, rrm.get_nb_slices(enb)):
+      for sid in range(0, rrm.get_input_slice_nums(enb)):
 
         # set the policy files
         rrm.set_slice_rb(sid=sid,rb=rrm_app.slice_ulrb_share[enb,sid], dir='UL')
@@ -686,8 +686,8 @@ class rrm_app(object):
     rrm_app.get_policy_maxmcs(rrm,sm)
     rrm_app.get_policy_reserved_rate(rrm,sm)
     
-    rrm.set_num_slices(n=int(rrm.get_nb_slices(0)), dir='DL')
-    rrm.set_num_slices(n=int(rrm.get_nb_slices(0)), dir='UL')
+    rrm.set_num_slices(n=int(rrm.get_input_slice_nums(0)), dir='DL')
+    rrm.set_num_slices(n=int(rrm.get_input_slice_nums(0)), dir='UL')
 
     log.info('4. Calculate the expected performance')
     rrm_app.calculate_exp_kpi_perf(sm, rrm)
