@@ -131,6 +131,11 @@ if __name__ == '__main__':
         print json.dumps(sm.get_cell_freq(dir='dl'), indent=2)        
         print json.dumps(sm.get_cell_freq(dir='ul'), indent=2)        
 
+        print 'PDCP stats '
+        print json.dumps(sm.get_ue_pdcp_tx(dir='dl'), indent=2)        
+        print json.dumps(sm.get_ue_pdcp_tx(dir='ul'), indent=2)        
+        
+        
         rrm = flexran_sdk.rrm_policy(log=log,
                                      url=args.url,
                                      port=args.port,

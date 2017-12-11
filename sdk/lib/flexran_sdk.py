@@ -54,7 +54,7 @@ class rrc_triggers(Enum):
     """
 
     ONE_SHOT = 0
-    PERIODIC = 1
+    PERIODICAL = 1
     EVENT_DRIVEN= 2
 
 class cd_actions(Enum):
@@ -77,7 +77,7 @@ class flexran_rest_api(object):
     """
  
     """!@brief Input data sets for all the status used for test"""
-    pf_all='inputs/all_2.json'
+    pf_all='inputs/all_1.json'
     """!@brief Input data sets for MAC  status used for test"""
     pf_mac='inputs/mac_stats_2.json'
     """!@brief Input data sets for eNB config status used for test"""
@@ -118,7 +118,8 @@ class rrc_trigger_meas(object):
 
     This class is used to trigger measurement events in the UE for the reception of RSRP and RSRQ values of the neighboring cells.
     The REST API end point is /rrc_trigger
-    @todo make the measurment trigger event reconfigurable
+    @todo make the measurment trigger event reconfigurable and per UE basis 
+    @return RSRP/RSRQ : from the status manger
     """
     def __init__(self, log, url='http://localhost', port='9999', op_mode='test'):
         """!@brief Class constructor """
@@ -134,19 +135,20 @@ class rrc_trigger_meas(object):
 
         self.rrc_meas = {}
         self.rrc_meas[rrc_triggers.ONE_SHOT]      = 'ONE_SHOT'
-        self.rrc_meas[rrc_triggers.PERIODIC]       = 'PERIODIC'
+        self.rrc_meas[rrc_triggers.PERIODICAL]       = 'PERIODICAL'
         self.rrc_meas[rrc_triggers.EVENT_DRIVEN]  = 'EVENT_DRIVEN'
         
 
-    def trigger_meas(self, type='PERIODIC'):
+    def trigger_meas(self, type='PERIODICAL'):
         """!@brief Set the type of RRC trigger measurments
         
-        @param type: ONE_SHOT, PERIODIC, and EVENT_DRIVEN
+        @param type: ONE_SHOT, PERIODICAL, and EVENT_DRIVEN
+        @note: this call enables RRC measurement for active/connected UEs
         """
 
         if type == self.rrc_meas[rrc_triggers.ONE_SHOT] :
             url = self.url+self.rrc_trigger_api+'/'+type.lower()
-        elif type == self.rrc_meas[rrc_triggers.PERIODIC] :
+        elif type == self.rrc_meas[rrc_triggers.PERIODICAL] :
             url = self.url+self.rrc_trigger_api+'/'+type.lower()
         elif type == self.rrc_meas[rrc_triggers.EVENT_DRIVEN] :
             url = self.url+self.rrc_trigger_api+'/'+type.lower()
@@ -161,13 +163,13 @@ class rrc_trigger_meas(object):
             try :
                 req = requests.post(url)
                 if req.status_code == 200 :
-                    self.log.error('successfully delegated the dl scheduling to the agent' )
+                    self.log.error('successfully send the RRC trigger measurment to the agent' )
                     self.status='connected'
                 else :
                     self.status='disconnected'
                 self.log.error('Request error code : ' + req.status_code)
             except :
-                self.log.error('Failed to delegate the DL schedling to the agent' )
+                self.log.error('Failed to send the RRC trigger measurement to the agent' )
 
         else :
             self.log.warn('Unknown operation mode ' + op_mode )       
@@ -1150,7 +1152,88 @@ class stats_manager(object):
 	if self.get_num_ue(enb) > 0 :
             return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['dlCqiReport']['sfnSn']
    	else:
-            return 0 
+            return 0
+
+    def get_ue_pdcp_pkt(self,enb=0,ue=0, dir='DL'):
+        """!@brief Get the number of PDCP packets in a given direction
+        
+        @param enb: index of eNB
+        @param ue: index of UE
+        @param dir : direction of the packet
+        """
+        
+        if dir == 'dl' or dir == 'DL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktTx']
+        elif dir == 'ul' or dir == 'UL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktRx']
+        else :
+            self.log.warning('unknown direction ' + dir + 'set to DL')
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktTx']
+
+    def get_ue_pdcp_pkt_bytes(self,enb=0,ue=0, dir='DL'):
+        """!@brief Get the total bytes of PDCP packets in a given direction
+        
+        @param enb: index of eNB
+        @param ue: index of UE
+        @param dir : direction of the packet
+        """
+        
+        if dir == 'dl' or dir == 'DL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktTxBytes']
+        elif dir == 'ul' or dir == 'UL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktRxBytes']
+        else :
+            self.log.warning('unknown direction ' + dir + 'set to DL')
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktTxBytes']
+
+    def get_ue_pdcp_pkt_sn(self,enb=0,ue=0, dir='DL'):
+        """!@brief Get the PDCP packet sequence number in a given direction
+        
+        @param enb: index of eNB
+        @param ue: index of UE
+        @param dir : direction of the packet
+        """
+        
+        if dir == 'dl' or dir == 'DL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktTxSn']
+        elif dir == 'ul' or dir == 'UL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktRxSn']
+        else :
+            self.log.warning('unknown direction ' + dir + 'set to DL')
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktTxSn']
+
+    def get_ue_pdcp_pkt_aiat(self,enb=0,ue=0, dir='DL'):
+        """!@brief Get the  PDCP aggregated inter-arrivale time in a given direction
+        
+        @param enb: index of eNB
+        @param ue: index of UE
+        @param dir : direction of the packet
+        """
+        
+        if dir == 'dl' or dir == 'DL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktTxAiat']
+        elif dir == 'ul' or dir == 'UL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktRxAiat']
+        else :
+            self.log.warning('unknown direction ' + dir + 'set to DL')
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktTxAiat']
+
+    def get_ue_rsrq(self, enb=0, ue=0):
+        """!@brief Get the RRC RSRQ values 
+        
+        @param enb: index of eNB
+        @param ue: index of UE
+        """
+        return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['rrcMeasurements']['pcellRsrq']
+
+    def get_ue_rsrp(self, enb=0, ue=0):
+        """!@brief Get the RRC RSRP value
+        
+        @param enb: index of eNB
+        @param ue: index of UE
+        """
+        return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['rrcMeasurements']['pcellRsrp']
+    
    
 class ss_policy (object):
     """!@brief Spectrum sharing class
