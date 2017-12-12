@@ -1291,6 +1291,17 @@ class stats_manager(object):
             return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktRxOo']       
 
 
+    def get_ue_measid(self, enb=0, ue=0):
+        """!@brief Get the RRC measurement id 
+        
+        @param enb: index of eNB
+        @param ue: index of UE
+        """
+        if  'rrcMeasurements' in self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats'] :
+            if 'pcellRsrp' in self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['rrcMeasurements'] :
+                return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['rrcMeasurements']['measid']
+        return -1
+
     def get_ue_rsrq(self, enb=0, ue=0):
         """!@brief Get the RRC RSRQ values 
         

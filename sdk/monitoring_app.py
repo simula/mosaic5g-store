@@ -229,7 +229,7 @@ class monitoring_app(object):
                 log.info('UE ' + str(ue) + ' RSRQ '+str(monitoring_app.enb_ue_rsrq[enb,ue]))
 
 
-                if monitoring_app.enb_ue_rsrp[enb,ue] == 0 : # and monitoring_app.enb_ue_trigger_meas[enb] == 1 :
+                if sm.get_ue_measid(enb,ue) == -1 : # and monitoring_app.enb_ue_trigger_meas[enb] == 1 :
                     monitoring_app.enb_ue_trigger_meas[enb] = 0
                     
                 
