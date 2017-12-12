@@ -70,6 +70,7 @@ class monitoring_app(object):
     # stats vars
     enb_sfn={}
     # pdcp
+    enb_pdcp_sfn={}
     enb_ue_pdcp_tx={}
     enb_ue_pdcp_tx_bytes={}
     enb_ue_pdcp_tx_sn={}
@@ -162,11 +163,15 @@ class monitoring_app(object):
             monitoring_app.enb_ulmaxmcs[enb] = sm.get_cell_maxmcs(enb,dir='UL')
             monitoring_app.enb_dlmaxmcs[enb] = sm.get_cell_maxmcs(enb,dir='DL')
 
+            # PDCP SFN 
+            monitoring_app.enb_pdcp_sfn[enb]=sm.get_enb_pdcp_sfn(enb)
+
             log.info('Num UE ' + str(sm.get_num_ue(enb=enb)))
+            log.info('PDCP SFN : ' + str(monitoring_app.enb_pdcp_sfn[enb]))
             
             for ue in range(0, sm.get_num_ue(enb=enb)) :
-          	monitoring_app.enb_sfn[enb,ue]  = sm.get_enb_sfn(enb,ue)
-		monitoring_app.ue_dlwcqi[enb,ue]=sm.get_ue_dlwbcqi(enb,ue)
+                monitoring_app.enb_sfn[enb,ue]  = sm.get_enb_sfn(enb,ue)
+                monitoring_app.ue_dlwcqi[enb,ue]=sm.get_ue_dlwbcqi(enb,ue)
                 monitoring_app.ue_phr[enb,ue] =sm.get_ue_phr(enb,ue)
                                                 
                 # per eNB UE stats 
@@ -190,9 +195,13 @@ class monitoring_app(object):
 
                 log.info('UE ' + str(ue) + ' PDCP Tx pkts: '+str(monitoring_app.enb_ue_pdcp_tx[enb,ue]))
                 log.info('UE ' + str(ue) + ' PDCP Tx pkt/s: '+str(monitoring_app.enb_ue_pdcp_tx_rate_s[enb,ue]))
+                log.info('UE ' + str(ue) + ' PDCP Tx throughput_s: '+str(monitoring_app.enb_ue_pdcp_tx_throughput_s[enb,ue]))
+                log.info('UE ' + str(ue) + ' PDCP Tx aiat_s: '+str(monitoring_app.enb_ue_pdcp_tx_aiat_s[enb,ue]))
 
                 log.info('UE ' + str(ue) + ' PDCP Rx pkts: '+str(monitoring_app.enb_ue_pdcp_rx[enb,ue]))
                 log.info('UE ' + str(ue) + ' PDCP Rx pkts/s: '+str(monitoring_app.enb_ue_pdcp_rx_rate_s[enb,ue]))
+                log.info('UE ' + str(ue) + ' PDCP Rx goodput_s: '+str(monitoring_app.enb_ue_pdcp_rx_goodput_s[enb,ue]))
+                log.info('UE ' + str(ue) + ' PDCP Rx aiat_s: '+str(monitoring_app.enb_ue_pdcp_rx_aiat_s[enb,ue]))
 
                 # per eNB aggregated stas 
                 monitoring_app.enb_pdcp_tx[enb]+=monitoring_app.enb_ue_pdcp_tx[enb,ue]
@@ -244,7 +253,7 @@ class monitoring_app(object):
                 monitoring_app.enb_ue_trigger_meas[enb] = 1
        
         
-        t = Timer(5, self.run,kwargs=dict(sm=sm,rrc=rrc))
+        t = Timer(1, self.run,kwargs=dict(sm=sm,rrc=rrc))
         t.start()
         
         
@@ -300,7 +309,7 @@ if __name__ == '__main__':
     
     py3_flag = version_info[0] > 2 
     
-    t = Timer(3, monitoring_app.run,kwargs=dict(sm=sm,rrc=rrc))
+    t = Timer(1, monitoring_app.run,kwargs=dict(sm=sm,rrc=rrc))
     t.start() 
 
             

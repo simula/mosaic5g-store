@@ -1114,9 +1114,9 @@ class stats_manager(object):
         @param ue: index of UE
         @param cc: index of component carrier
         """
-        
-        return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['dlCqiReport']['csiReport'][cc]['p10csi']['wbCqi']
-
+        if  'wbCqi' in self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['dlCqiReport']['csiReport'][cc]['p10csi'] :      
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['dlCqiReport']['csiReport'][cc]['p10csi']['wbCqi']
+        return 0
     # lcgdi 0 for SRBs, lcgid 1 for default drb
     def get_ue_bsr(self,enb=0,ue=0, lc=0):
         """!@brief Get the UE buffer status report for a particular logical channel 
@@ -1154,6 +1154,14 @@ class stats_manager(object):
             return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['dlCqiReport']['sfnSn']
    	else:
             return 0
+
+    def get_enb_pdcp_sfn(self,enb=0,ue=0):
+        """!@brief Get the PDCP super frame counter 
+        
+        @param enb: index of eNB
+        """
+        return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['sfn']
+
 
     def get_ue_pdcp_pkt(self,enb=0,ue=0, dir='DL'):
         """!@brief Get the number of PDCP packets in a given direction
