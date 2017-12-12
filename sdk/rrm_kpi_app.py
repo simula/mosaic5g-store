@@ -23,7 +23,7 @@
 """
 
 """
-  File name: rrm_app.py
+  File name: rrm_kpi_app.py
   Author: navid nikaein
   Description: This app dynamically updates the RRM policy based on the statistics received through FLEXRAN SDK
   version: 1.0
@@ -64,7 +64,7 @@ def sigint_handler(signum,frame):
 
 signal.signal(signal.SIGINT, sigint_handler)
 
-class rrm_app(object):
+class rrm_kpi_app(object):
   """RRM network app to enforce poliy to the underlying RAN
   """
   #
@@ -131,10 +131,10 @@ class rrm_app(object):
 
 
 
-  def __init__(self, log, template=rrm_app_vars.template_1, url='http://localhost',port='9999',log_level='info', op_mode='test'):
-    super(rrm_app, self).__init__()
+  def __init__(self, log, log_level='info', url='http://localhost',port='9999', template=rrm_app_vars.template_1, op_mode='test'):
+    super(rrm_kpi_app, self).__init__()
 
-    self.templates  = template
+    self.template   = template
     self.url        = url+port
     self.log_level  = log_level
     self.status     = 0
@@ -144,55 +144,55 @@ class rrm_app(object):
     self.policy_data = {}
 
     # TBD: init for max enb and ue
-    rrm_app.enb_sfn[0,0]={0}
+    rrm_kpi_app.enb_sfn[0,0]={0}
 
   def get_statistics(self, sm):
 
     for enb in range(0, sm.get_num_enb()) :
-      rrm_app.enb_dlrb[enb] = sm.get_cell_rb(enb,dir='DL')
-      rrm_app.enb_ulrb[enb] = sm.get_cell_rb(enb,dir='UL')
-      rrm_app.enb_ulmaxmcs[enb] = sm.get_cell_maxmcs(enb,dir='UL')
-      rrm_app.enb_dlmaxmcs[enb] = sm.get_cell_maxmcs(enb,dir='DL')
+      rrm_kpi_app.enb_dlrb[enb] = sm.get_cell_rb(enb,dir='DL')
+      rrm_kpi_app.enb_ulrb[enb] = sm.get_cell_rb(enb,dir='UL')
+      rrm_kpi_app.enb_ulmaxmcs[enb] = sm.get_cell_maxmcs(enb,dir='UL')
+      rrm_kpi_app.enb_dlmaxmcs[enb] = sm.get_cell_maxmcs(enb,dir='DL')
 
       for ue in range(0, sm.get_num_ue(enb=enb)) :
-        rrm_app.enb_sfn[enb,ue]     = sm.get_enb_sfn(enb,ue)
-        rrm_app.ue_dlwcqi[enb,ue]   = sm.get_ue_dlwbcqi(enb,ue)
-        rrm_app.ue_phr[enb,ue]      = sm.get_ue_phr(enb,ue)
+        rrm_kpi_app.enb_sfn[enb,ue]     = sm.get_enb_sfn(enb,ue)
+        rrm_kpi_app.ue_dlwcqi[enb,ue]   = sm.get_ue_dlwbcqi(enb,ue)
+        rrm_kpi_app.ue_phr[enb,ue]      = sm.get_ue_phr(enb,ue)
 
         # skip the control channels, SRB1 and SRB2
         for lc in range(2, sm.get_num_ue_lc(enb=enb,ue=ue)) :
           # for each lcgid rater than lc
-          rrm_app.lc_ue_bsr[enb,ue,lc] = sm.get_ue_bsr(enb,ue,lc=lc)
-          rrm_app.lc_ue_report[enb, ue, lc] = sm.get_ue_lc_report(enb=enb, ue=ue, lc=lc)
+          rrm_kpi_app.lc_ue_bsr[enb,ue,lc] = sm.get_ue_bsr(enb,ue,lc=lc)
+          rrm_kpi_app.lc_ue_report[enb, ue, lc] = sm.get_ue_lc_report(enb=enb, ue=ue, lc=lc)
 
 
   # 
   def get_policy_maxmcs(self,rrm,sm) :
 
     for enb in range(0, sm.get_num_enb()) :
-      rrm_app.maxmcs_dl[enb] = {}
-      for sid in range(0, rrm.get_nb_slices(enb) ):
-        rrm_app.maxmcs_dl[enb][sid] = rrm.get_slice_maxmcs(sid=sid, dir='DL')
+      rrm_kpi_app.maxmcs_dl[enb] = {}
+      for sid in range(0, rrm.get_input_slice_nums(enb) ):  # get_input_slice_nums and get_num_slices
+        rrm_kpi_app.maxmcs_dl[enb][sid] = rrm.get_slice_maxmcs(sid=sid, dir='DL')
 
     for enb in range(0, sm.get_num_enb()) :
-      rrm_app.maxmcs_ul[enb] = {}
-      for sid in range(0, rrm.get_nb_slices(enb) ):
-        rrm_app.maxmcs_ul[enb][sid] = rrm.get_slice_maxmcs(sid=sid, dir='UL')
+      rrm_kpi_app.maxmcs_ul[enb] = {}
+      for sid in range(0, rrm.get_input_slice_nums(enb) ):
+        rrm_kpi_app.maxmcs_ul[enb][sid] = rrm.get_slice_maxmcs(sid=sid, dir='UL')
 
 
   def get_policy_mcs(self, rrm, enb, ue, dir):
 
-        sid = ue % rrm.get_nb_slices(enb)
+        sid = ue % rrm.get_input_slice_nums(enb)
 
         if dir == 'dl' or dir == "DL":
-          robustness = rrm.get_slice_robustness(enb, sid, "DL")
+          robustness = rrm.get_input_slice_reliability(enb, sid, "DL")
 
           if robustness == 'high':
-              return rrm_app_vars.cqi_to_mcs_robust[rrm_app.ue_dlwcqi[enb,ue] ]
+              return rrm_app_vars.cqi_to_mcs_robust[rrm_kpi_app.ue_dlwcqi[enb,ue] ]
           elif robustness == 'low':
-              return rrm_app_vars.cqi_to_mcs_high_rate[rrm_app.ue_dlwcqi[enb,ue] ]
+              return rrm_app_vars.cqi_to_mcs_high_rate[rrm_kpi_app.ue_dlwcqi[enb,ue] ]
           else :
-              return rrm_app_vars.cqi_to_mcs[rrm_app.ue_dlwcqi[enb,ue] ]
+              return rrm_app_vars.cqi_to_mcs[rrm_kpi_app.ue_dlwcqi[enb,ue] ]
 
         elif dir == 'ul' or dir == "UL":
             return 8 # f(ue_phr[enb,ue])
@@ -205,44 +205,44 @@ class rrm_app(object):
 
     #for sid in range(0, rrm.get_num_slices()):
     for enb in range(0, sm.get_num_enb()) :
-      rrm_app.reserved_vrbg_dl[enb] = {}
-      rrm_app.reserved_rate_dl[enb] = {}
-      rrm_app.reserved_latency_dl[enb] = {}
-      rrm_app.reserved_priority_dl[enb] = {}
-      rrm_app.reserved_isolation_dl[enb] = {}
-      for sid in range(0, rrm.get_nb_slices(enb) ):
-        rrm_app.reserved_vrbg_dl[enb][sid] = rrm.get_input_slice_vrbg(enb, sid=sid, dir='DL')
-        rrm_app.reserved_rate_dl[enb][sid] = rrm.get_input_slice_rate(enb, sid=sid, dir='DL')
-        rrm_app.reserved_latency_dl[enb][sid] = rrm.get_input_slice_latency(enb, sid=sid, dir='DL')
-        rrm_app.reserved_priority_dl[enb][sid] = rrm.get_input_slice_priority(enb, sid=sid, dir='DL')
-        rrm_app.reserved_isolation_dl[enb][sid] = rrm.get_input_slice_isolation(enb, sid=sid, dir='DL')
+      rrm_kpi_app.reserved_vrbg_dl[enb] = {}
+      rrm_kpi_app.reserved_rate_dl[enb] = {}
+      rrm_kpi_app.reserved_latency_dl[enb] = {}
+      rrm_kpi_app.reserved_priority_dl[enb] = {}
+      rrm_kpi_app.reserved_isolation_dl[enb] = {}
+      for sid in range(0, rrm.get_input_slice_nums(enb) ):
+        rrm_kpi_app.reserved_vrbg_dl[enb][sid] = rrm.get_input_slice_vrbg(enb, sid=sid, dir='DL')
+        rrm_kpi_app.reserved_rate_dl[enb][sid] = rrm.get_input_slice_rate(enb, sid=sid, dir='DL')
+        rrm_kpi_app.reserved_latency_dl[enb][sid] = rrm.get_input_slice_latency(enb, sid=sid, dir='DL')
+        rrm_kpi_app.reserved_priority_dl[enb][sid] = rrm.get_input_slice_priority(enb, sid=sid, dir='DL')
+        rrm_kpi_app.reserved_isolation_dl[enb][sid] = rrm.get_input_slice_isolation(enb, sid=sid, dir='DL')
 
       #for sid in range(0, rrm.get_num_slices(dir='UL')):
-      rrm_app.reserved_vrbg_ul[enb] = {}
-      rrm_app.reserved_rate_ul[enb] = {}
-      rrm_app.reserved_latency_ul[enb] = {}
-      rrm_app.reserved_priority_ul[enb] = {}
-      rrm_app.reserved_isolation_ul[enb] = {}
-      for sid in range(0, rrm.get_nb_slices(enb) ):
-        rrm_app.reserved_vrbg_ul[enb][sid] = rrm.get_input_slice_vrbg(enb, sid=sid, dir='UL')
-        rrm_app.reserved_rate_ul[enb][sid] = rrm.get_input_slice_rate(enb, sid=sid, dir='UL')
-        rrm_app.reserved_latency_ul[enb][sid] = rrm.get_input_slice_latency(enb, sid=sid, dir='UL')
-        rrm_app.reserved_priority_ul[enb][sid] = rrm.get_input_slice_priority(enb, sid=sid, dir='UL')
-        rrm_app.reserved_isolation_ul[enb][sid] = rrm.get_input_slice_isolation(enb, sid=sid, dir='UL')
+      rrm_kpi_app.reserved_vrbg_ul[enb] = {}
+      rrm_kpi_app.reserved_rate_ul[enb] = {}
+      rrm_kpi_app.reserved_latency_ul[enb] = {}
+      rrm_kpi_app.reserved_priority_ul[enb] = {}
+      rrm_kpi_app.reserved_isolation_ul[enb] = {}
+      for sid in range(0, rrm.get_input_slice_nums(enb) ):
+        rrm_kpi_app.reserved_vrbg_ul[enb][sid] = rrm.get_input_slice_vrbg(enb, sid=sid, dir='UL')
+        rrm_kpi_app.reserved_rate_ul[enb][sid] = rrm.get_input_slice_rate(enb, sid=sid, dir='UL')
+        rrm_kpi_app.reserved_latency_ul[enb][sid] = rrm.get_input_slice_latency(enb, sid=sid, dir='UL')
+        rrm_kpi_app.reserved_priority_ul[enb][sid] = rrm.get_input_slice_priority(enb, sid=sid, dir='UL')
+        rrm_kpi_app.reserved_isolation_ul[enb][sid] = rrm.get_input_slice_isolation(enb, sid=sid, dir='UL')
 
 
   def calculate_exp_perf (self, sm) :
 
     # Loop on eNodeBs
     for enb in range(0, sm.get_num_enb()) :
-      rrm_app.enb_available_ulrb[enb]= rrm_app.enb_ulrb[enb]
-      rrm_app.enb_available_dlrb[enb]= rrm_app.enb_dlrb[enb]
+      rrm_kpi_app.enb_available_ulrb[enb]= rrm_kpi_app.enb_ulrb[enb]
+      rrm_kpi_app.enb_available_dlrb[enb]= rrm_kpi_app.enb_dlrb[enb]
 
       # Loop on UEs connected to the current eNodeB
       for ue in range(0, sm.get_num_ue(enb=enb)) :
         # calculate the MCS : Dl = conversion DL wideband CQI -> MCS, UL : fixed value
-        rrm_app.ue_dlmcs[enb,ue] = rrm_app_vars.cqi_to_mcs[rrm_app.ue_dlwcqi[enb,ue]]
-        rrm_app.ue_ulmcs[enb,ue] = 8 # f(ue_phr[enb,ue])
+        rrm_kpi_app.ue_dlmcs[enb,ue] = rrm_app_vars.cqi_to_mcs[rrm_kpi_app.ue_dlwcqi[enb,ue]]
+        rrm_kpi_app.ue_ulmcs[enb,ue] = 8 # f(ue_phr[enb,ue])
 
         # calculate the spectral efficieny
 
@@ -250,87 +250,87 @@ class rrm_app(object):
         for lc in range(2, sm.get_num_ue_lc(enb=enb,ue=ue)) :
 
           #calculate the required RB for UL
-          rrm_app.ue_ulrb[enb,ue] = 0 # Error : if this var is 0-initialized here, the increment of this value a few lines after is equivalent to an assignement. This 0-initialisation should probably be put outside of this loop
-          rrm_app.lc_ue_ulrb[enb,ue,lc] = 2 # f(bandwidth)
-          ul_itbs = rrm_app_vars.mcs_to_itbs[rrm_app.ue_ulmcs[enb,ue]]
-          rrm_app.lc_ue_ultbs[enb,ue,lc] = rrm_app_vars.tbs_table[ul_itbs][rrm_app.lc_ue_ulrb[enb,ue,lc]]
-          while rrm_app_vars.bsr_table[rrm_app.lc_ue_bsr[enb,ue,lc]] > rrm_app.lc_ue_ultbs[enb,ue,lc] :
-            if rrm_app.lc_ue_ulrb[enb,ue,lc] > rrm_app.enb_available_ulrb[enb] :
+          rrm_kpi_app.ue_ulrb[enb,ue] = 0 # Error : if this var is 0-initialized here, the increment of this value a few lines after is equivalent to an assignement. This 0-initialisation should probably be put outside of this loop
+          rrm_kpi_app.lc_ue_ulrb[enb,ue,lc] = 2 # f(bandwidth)
+          ul_itbs = rrm_app_vars.mcs_to_itbs[rrm_kpi_app.ue_ulmcs[enb,ue]]
+          rrm_kpi_app.lc_ue_ultbs[enb,ue,lc] = rrm_app_vars.tbs_table[ul_itbs][rrm_kpi_app.lc_ue_ulrb[enb,ue,lc]]
+          while rrm_app_vars.bsr_table[rrm_kpi_app.lc_ue_bsr[enb,ue,lc]] > rrm_kpi_app.lc_ue_ultbs[enb,ue,lc] :
+            if rrm_kpi_app.lc_ue_ulrb[enb,ue,lc] > rrm_kpi_app.enb_available_ulrb[enb] :
               log.info('no available ulrb')
               break
-            rrm_app.lc_ue_ulrb[enb,ue,lc]+=2 # f(bandwidth)
-            rrm_app.lc_ue_ultbs[enb,ue,lc]=rrm_app_vars.tbs_table[ul_itbs][rrm_app.lc_ue_ulrb[enb,ue,lc]]
+            rrm_kpi_app.lc_ue_ulrb[enb,ue,lc]+=2 # f(bandwidth)
+            rrm_kpi_app.lc_ue_ultbs[enb,ue,lc]=rrm_app_vars.tbs_table[ul_itbs][rrm_kpi_app.lc_ue_ulrb[enb,ue,lc]]
 
-          rrm_app.ue_ulrb[enb,ue] += rrm_app.lc_ue_ulrb[enb,ue,lc]
-          rrm_app.enb_available_ulrb[enb] -= rrm_app.ue_ulrb[enb,ue]
+          rrm_kpi_app.ue_ulrb[enb,ue] += rrm_kpi_app.lc_ue_ulrb[enb,ue,lc]
+          rrm_kpi_app.enb_available_ulrb[enb] -= rrm_kpi_app.ue_ulrb[enb,ue]
 
           #calculate the required RB for DL
-          rrm_app.ue_dlrb[enb,ue] = 0 # Error : if this var is 0-initialized here, the increment of this value a few lines after is equivalent to an assignement. This 0-initialisation should probably be put outside of this loop
-          rrm_app.lc_ue_dlrb[enb,ue,lc] = 2 # f(bandwidth)
-          dl_itbs = rrm_app_vars.mcs_to_itbs[rrm_app.ue_dlmcs[enb,ue]]
-          rrm_app.lc_ue_dltbs[enb,ue,lc] = rrm_app_vars.tbs_table[dl_itbs][rrm_app.lc_ue_dlrb[enb,ue,lc]]
-          while rrm_app.lc_ue_report[enb, ue, lc]['txQueueSize'] > rrm_app.lc_ue_dltbs[enb,ue,lc] :
-            if rrm_app.lc_ue_dlrb[enb,ue,lc] > rrm_app.enb_available_dlrb[enb] :
+          rrm_kpi_app.ue_dlrb[enb,ue] = 0 # Error : if this var is 0-initialized here, the increment of this value a few lines after is equivalent to an assignement. This 0-initialisation should probably be put outside of this loop
+          rrm_kpi_app.lc_ue_dlrb[enb,ue,lc] = 2 # f(bandwidth)
+          dl_itbs = rrm_app_vars.mcs_to_itbs[rrm_kpi_app.ue_dlmcs[enb,ue]]
+          rrm_kpi_app.lc_ue_dltbs[enb,ue,lc] = rrm_app_vars.tbs_table[dl_itbs][rrm_kpi_app.lc_ue_dlrb[enb,ue,lc]]
+          while rrm_kpi_app.lc_ue_report[enb, ue, lc]['txQueueSize'] > rrm_kpi_app.lc_ue_dltbs[enb,ue,lc] :
+            if rrm_kpi_app.lc_ue_dlrb[enb,ue,lc] > rrm_kpi_app.enb_available_dlrb[enb] :
               log.info('no available dlrb')
               break
-            rrm_app.lc_ue_dlrb[enb,ue,lc] += 2 # f(bandwidth)
-            rrm_app.lc_ue_dltbs[enb,ue,lc] = rrm_app_vars.tbs_table[dl_itbs][rrm_app.lc_ue_dlrb[enb,ue,lc]]
+            rrm_kpi_app.lc_ue_dlrb[enb,ue,lc] += 2 # f(bandwidth)
+            rrm_kpi_app.lc_ue_dltbs[enb,ue,lc] = rrm_app_vars.tbs_table[dl_itbs][rrm_kpi_app.lc_ue_dlrb[enb,ue,lc]]
 
-          rrm_app.ue_dlrb[enb,ue] += rrm_app.lc_ue_dlrb[enb,ue,lc]
-          rrm_app.enb_available_dlrb[enb] -= rrm_app.ue_dlrb[enb,ue]
+          rrm_kpi_app.ue_dlrb[enb,ue] += rrm_kpi_app.lc_ue_dlrb[enb,ue,lc]
+          rrm_kpi_app.enb_available_dlrb[enb] -= rrm_kpi_app.ue_dlrb[enb,ue]
 
           # calculate the total RB for DL and UL
 
-        rrm_app.ue_ultbs[enb,ue] = rrm_app_vars.tbs_table[ul_itbs][rrm_app.ue_ulrb[enb,ue]]
-        rrm_app.ue_dltbs[enb,ue] = rrm_app_vars.tbs_table[dl_itbs][rrm_app.ue_dlrb[enb,ue]]
+        rrm_kpi_app.ue_ultbs[enb,ue] = rrm_app_vars.tbs_table[ul_itbs][rrm_kpi_app.ue_ulrb[enb,ue]]
+        rrm_kpi_app.ue_dltbs[enb,ue] = rrm_app_vars.tbs_table[dl_itbs][rrm_kpi_app.ue_dlrb[enb,ue]]
 
-        log.info( 'eNB ' + str(enb) + ' UE ' + str(ue) + ' SFN ' + str(rrm_app.enb_sfn[enb,ue]) +
-              ' DL TBS ' + str(rrm_app.ue_dltbs[enb,ue]) +
-              ' ue_dlrb ' + str(rrm_app.ue_dlrb[enb,ue]) +
-              ' ue_dlmcs ' + str(rrm_app.ue_dlmcs[enb,ue]) +
-              ' --> expected DL throughput ' +  str(float(rrm_app.ue_dltbs[enb,ue]/1000.0)) + ' Mbps')
+        log.info( 'eNB ' + str(enb) + ' UE ' + str(ue) + ' SFN ' + str(rrm_kpi_app.enb_sfn[enb,ue]) +
+              ' DL TBS ' + str(rrm_kpi_app.ue_dltbs[enb,ue]) +
+              ' ue_dlrb ' + str(rrm_kpi_app.ue_dlrb[enb,ue]) +
+              ' ue_dlmcs ' + str(rrm_kpi_app.ue_dlmcs[enb,ue]) +
+              ' --> expected DL throughput ' +  str(float(rrm_kpi_app.ue_dltbs[enb,ue]/1000.0)) + ' Mbps')
 
-        log.info( 'eNB ' + str(enb) + ' UE ' + str(ue) + ' SFN ' + str(rrm_app.enb_sfn[enb,ue]) +
-              ' UL TBS ' + str(rrm_app.ue_ultbs[enb,ue])   +
-              ' ue_ulrb ' + str(rrm_app.ue_ulrb[enb,ue])   +
-              ' ue_ulmcs ' + str(rrm_app.ue_ulmcs[enb,ue]) +
-              ' --> expected UL throughput ' +  str(float(rrm_app.ue_ultbs[enb,ue]/1000.0)) + ' Mbps')
+        log.info( 'eNB ' + str(enb) + ' UE ' + str(ue) + ' SFN ' + str(rrm_kpi_app.enb_sfn[enb,ue]) +
+              ' UL TBS ' + str(rrm_kpi_app.ue_ultbs[enb,ue])   +
+              ' ue_ulrb ' + str(rrm_kpi_app.ue_ulrb[enb,ue])   +
+              ' ue_ulmcs ' + str(rrm_kpi_app.ue_ulmcs[enb,ue]) +
+              ' --> expected UL throughput ' +  str(float(rrm_kpi_app.ue_ultbs[enb,ue]/1000.0)) + ' Mbps')
 
 
   def initialize_allocation(self, sm, rrm):
     # Loop on eNodeBs
     for enb in range(0, sm.get_num_enb()) :
-      rrm_app.enb_available_ulrb[enb]= rrm_app.enb_ulrb[enb]
-      rrm_app.enb_available_dlrb[enb]= rrm_app.enb_dlrb[enb]
+      rrm_kpi_app.enb_available_ulrb[enb]= rrm_kpi_app.enb_ulrb[enb]
+      rrm_kpi_app.enb_available_dlrb[enb]= rrm_kpi_app.enb_dlrb[enb]
 
-      log.info('Available RB : UL ' + str(rrm_app.enb_available_ulrb[enb]) + ', DL ' + str(rrm_app.enb_available_dlrb[enb]) )
+      log.info('Available RB : UL ' + str(rrm_kpi_app.enb_available_ulrb[enb]) + ', DL ' + str(rrm_kpi_app.enb_available_dlrb[enb]) )
 
       for ue in range(0, sm.get_num_ue(enb=enb)) :
 
         # Initialization of MCS (Dl = conversion DL wideband CQI -> MCS, UL : fixed value) and number of RBs
-        rrm_app.ue_dlmcs[enb,ue] = self.get_policy_mcs(rrm, enb, ue, "DL")
-        rrm_app.ue_ulmcs[enb,ue] = self.get_policy_mcs(rrm, enb, ue, "UL")
-        rrm_app.ue_ulrb[enb,ue]  = 0
-        rrm_app.ue_dlrb[enb,ue]  = 0
+        rrm_kpi_app.ue_dlmcs[enb,ue] = self.get_policy_mcs(rrm, enb, ue, "DL")
+        rrm_kpi_app.ue_ulmcs[enb,ue] = self.get_policy_mcs(rrm, enb, ue, "UL")
+        rrm_kpi_app.ue_ulrb[enb,ue]  = 0
+        rrm_kpi_app.ue_dlrb[enb,ue]  = 0
 
         # skip the control channels, SRB1 and SRB2, start at index 2
         for lc in range(2, sm.get_num_ue_lc(enb=enb,ue=ue)) :
 
           # Initialization of number of RBs for LC
-          rrm_app.lc_ue_ulrb[enb,ue,lc] = 0
-          rrm_app.lc_ue_dlrb[enb,ue,lc] = 0
+          rrm_kpi_app.lc_ue_ulrb[enb,ue,lc] = 0
+          rrm_kpi_app.lc_ue_dlrb[enb,ue,lc] = 0
 
       # Initialize slices priority
-      rrm_app.slices_priority_ul = []
-      rrm_app.slices_priority_dl = []
+      rrm_kpi_app.slices_priority_ul = []
+      rrm_kpi_app.slices_priority_dl = []
 
-      for sid in range(0, rrm.get_nb_slices(enb)):
-        rrm_app.slices_priority_ul.append( (sid, rrm.get_slice_priority(enb, sid, "UL")) )
-        rrm_app.slices_priority_dl.append( (sid, rrm.get_slice_priority(enb, sid, "DL")) )
+      for sid in range(0, rrm.get_input_slice_nums(enb)):
+        rrm_kpi_app.slices_priority_ul.append( (sid, rrm.get_input_slice_priority(enb, sid, "UL")) )
+        rrm_kpi_app.slices_priority_dl.append( (sid, rrm.get_input_slice_priority(enb, sid, "DL")) )
 
       # Sort slices according to priority
-      rrm_app.slices_priority_ul = sorted(rrm_app.slices_priority_ul, key=lambda slice: -slice[1])
-      rrm_app.slices_priority_dl = sorted(rrm_app.slices_priority_dl, key=lambda slice: -slice[1])
+      rrm_kpi_app.slices_priority_ul = sorted(rrm_kpi_app.slices_priority_ul, key=lambda slice: -slice[1])
+      rrm_kpi_app.slices_priority_dl = sorted(rrm_kpi_app.slices_priority_dl, key=lambda slice: -slice[1])
 
 
   def allocate_rb_reserved_rate (self, sm):
@@ -339,83 +339,83 @@ class rrm_app(object):
     for enb in range(0, sm.get_num_enb()) :
 
       # Loop on slices to allocate reserved rate, according to priority, for UL
-      for slice in range(0, rrm.get_nb_slices(enb)):
+      for slice in range(0, rrm.get_input_slice_nums(enb)):
 
-        sid = rrm_app.slices_priority_ul[slice][0]
+        sid = rrm_kpi_app.slices_priority_ul[slice][0]
         slice_ul_tbs = 0
 
         # Loop on UEs connected to the current eNodeB and in the current slice
-        ue_in_slice = (ue for ue in range(0, sm.get_num_ue(enb=enb)) if ue % rrm.get_nb_slices(enb) == sid)
+        ue_in_slice = (ue for ue in range(0, sm.get_num_ue(enb=enb)) if ue % rrm.get_input_slice_nums(enb) == sid)
         for ue in ue_in_slice :
 
           # skip the control channels, SRB1 and SRB2, start at index 2
           for lc in range(2, sm.get_num_ue_lc(enb=enb,ue=ue)) :
 
             # Make sure that slices with reserved rate get what they need, UL
-            if rrm_app.reserved_rate_ul[enb][sid] > slice_ul_tbs / 1000 :
+            if rrm_kpi_app.reserved_rate_ul[enb][sid] > slice_ul_tbs / 1000 :
 
               # Initialization of number of RBs for LC, and of TBS for LC and slice
-              ul_itbs                         = rrm_app_vars.mcs_to_itbs[rrm_app.ue_ulmcs[enb,ue]]
+              ul_itbs                         = rrm_app_vars.mcs_to_itbs[rrm_kpi_app.ue_ulmcs[enb,ue]]
               ul_addtionnal_rb                = 0
-              rrm_app.lc_ue_ultbs[enb,ue,lc]  = rrm_app_vars.tbs_table[ul_itbs][rrm_app.lc_ue_ulrb[enb,ue,lc]]
-              slice_ul_tbs                    += rrm_app.lc_ue_ultbs[enb,ue,lc]
+              rrm_kpi_app.lc_ue_ultbs[enb,ue,lc]  = rrm_app_vars.tbs_table[ul_itbs][rrm_kpi_app.lc_ue_ulrb[enb,ue,lc]]
+              slice_ul_tbs                    += rrm_kpi_app.lc_ue_ultbs[enb,ue,lc]
 
               # Add RBs for LC as long as : enough data is present AND slice reserved rate is not reached
-              while rrm_app_vars.bsr_table[rrm_app.lc_ue_bsr[enb,ue,lc]] > rrm_app.lc_ue_ultbs[enb,ue,lc] and slice_ul_tbs / 1000 < rrm_app.reserved_rate_ul[enb][sid] :
+              while rrm_app_vars.bsr_table[rrm_kpi_app.lc_ue_bsr[enb,ue,lc]] > rrm_kpi_app.lc_ue_ultbs[enb,ue,lc] and slice_ul_tbs / 1000 < rrm_kpi_app.reserved_rate_ul[enb][sid] :
 
-                if ul_addtionnal_rb + 2 > rrm_app.enb_available_ulrb[enb] or rrm_app.enb_available_ulrb[enb] == 0 :
+                if ul_addtionnal_rb + 2 > rrm_kpi_app.enb_available_ulrb[enb] or rrm_kpi_app.enb_available_ulrb[enb] == 0 :
                   log.info('no available ulrb')
                   break
 
                 # Update slice TBS (first remove old value for this LC), increment nb of RBs, update TBS (LC and slice)
-                slice_ul_tbs                    -= rrm_app_vars.tbs_table[ul_itbs][rrm_app.lc_ue_ulrb[enb,ue,lc] + ul_addtionnal_rb]
+                slice_ul_tbs                    -= rrm_app_vars.tbs_table[ul_itbs][rrm_kpi_app.lc_ue_ulrb[enb,ue,lc] + ul_addtionnal_rb]
                 ul_addtionnal_rb                += 2 # f(bandwidth)
-                rrm_app.lc_ue_ultbs[enb,ue,lc]  = rrm_app_vars.tbs_table[ul_itbs][rrm_app.lc_ue_ulrb[enb,ue,lc] + ul_addtionnal_rb]
-                slice_ul_tbs                    += rrm_app_vars.tbs_table[ul_itbs][rrm_app.lc_ue_ulrb[enb,ue,lc] + ul_addtionnal_rb]
+                rrm_kpi_app.lc_ue_ultbs[enb,ue,lc]  = rrm_app_vars.tbs_table[ul_itbs][rrm_kpi_app.lc_ue_ulrb[enb,ue,lc] + ul_addtionnal_rb]
+                slice_ul_tbs                    += rrm_app_vars.tbs_table[ul_itbs][rrm_kpi_app.lc_ue_ulrb[enb,ue,lc] + ul_addtionnal_rb]
 
-              rrm_app.lc_ue_ulrb[enb,ue,lc]   += ul_addtionnal_rb
-              rrm_app.ue_ulrb[enb,ue]         += ul_addtionnal_rb
-              rrm_app.enb_available_ulrb[enb] -= ul_addtionnal_rb
+              rrm_kpi_app.lc_ue_ulrb[enb,ue,lc]   += ul_addtionnal_rb
+              rrm_kpi_app.ue_ulrb[enb,ue]         += ul_addtionnal_rb
+              rrm_kpi_app.enb_available_ulrb[enb] -= ul_addtionnal_rb
 
 
       # Loop on slices to allocate reserved rate, according to priority, for DL
-      for slice in range(0, rrm.get_nb_slices(enb)):
+      for slice in range(0, rrm.get_input_slice_nums(enb)):
 
-        sid = rrm_app.slices_priority_dl[slice][0]
+        sid = rrm_kpi_app.slices_priority_dl[slice][0]
         slice_dl_tbs = 0
 
         # Loop on UEs connected to the current eNodeB and in the current slice
-        ue_in_slice = (ue for ue in range(0, sm.get_num_ue(enb=enb)) if ue % rrm.get_nb_slices(enb) == sid)
+        ue_in_slice = (ue for ue in range(0, sm.get_num_ue(enb=enb)) if ue % rrm.get_input_slice_nums(enb) == sid)
         for ue in ue_in_slice :
 
           # skip the control channels, SRB1 and SRB2, start at index 2
           for lc in range(2, sm.get_num_ue_lc(enb=enb,ue=ue)) :
 
             # Make sure that slices with reserved rate get what they need, DL
-            if rrm_app.reserved_rate_dl[enb][sid] > slice_dl_tbs / 1000 :
+            if rrm_kpi_app.reserved_rate_dl[enb][sid] > slice_dl_tbs / 1000 :
 
               # Initialization of number of RBs for LC, and of TBS for LC and slice
-              dl_itbs                         = rrm_app_vars.mcs_to_itbs[rrm_app.ue_dlmcs[enb,ue]]
+              dl_itbs                         = rrm_app_vars.mcs_to_itbs[rrm_kpi_app.ue_dlmcs[enb,ue]]
               dl_additionnal_rb               = 0
-              rrm_app.lc_ue_dltbs[enb,ue,lc]  = rrm_app_vars.tbs_table[dl_itbs][rrm_app.lc_ue_dlrb[enb,ue,lc]]
-              slice_dl_tbs                    += rrm_app.lc_ue_dltbs[enb,ue,lc]
+              rrm_kpi_app.lc_ue_dltbs[enb,ue,lc]  = rrm_app_vars.tbs_table[dl_itbs][rrm_kpi_app.lc_ue_dlrb[enb,ue,lc]]
+              slice_dl_tbs                    += rrm_kpi_app.lc_ue_dltbs[enb,ue,lc]
 
               # Add RBs for LC as long as : enough data is present AND slice reserved rate is not reached
-              while rrm_app.lc_ue_report[enb, ue, lc]['txQueueSize'] > rrm_app.lc_ue_dltbs[enb,ue,lc] and slice_dl_tbs / 1000 < rrm_app.reserved_rate_dl[enb][sid] :
+              while rrm_kpi_app.lc_ue_report[enb, ue, lc]['txQueueSize'] > rrm_kpi_app.lc_ue_dltbs[enb,ue,lc] and slice_dl_tbs / 1000 < rrm_kpi_app.reserved_rate_dl[enb][sid] :
 
-                if dl_additionnal_rb + 2 > rrm_app.enb_available_dlrb[enb] or rrm_app.enb_available_dlrb[enb] == 0 :
+                if dl_additionnal_rb + 2 > rrm_kpi_app.enb_available_dlrb[enb] or rrm_kpi_app.enb_available_dlrb[enb] == 0 :
                   log.info('no available dlrb')
                   break
 
                 # Update slice TBS (first remove old value for this LC), increment nb of RBs, update TBS (LC and slice)
-                slice_dl_tbs -= rrm_app_vars.tbs_table[dl_itbs][rrm_app.lc_ue_dlrb[enb,ue,lc] + dl_additionnal_rb]
+                slice_dl_tbs -= rrm_app_vars.tbs_table[dl_itbs][rrm_kpi_app.lc_ue_dlrb[enb,ue,lc] + dl_additionnal_rb]
                 dl_additionnal_rb += 1 # f(bandwidth)
-                rrm_app.lc_ue_dltbs[enb,ue,lc] = rrm_app_vars.tbs_table[dl_itbs][rrm_app.lc_ue_dlrb[enb,ue,lc] + dl_additionnal_rb]
-                slice_dl_tbs += rrm_app_vars.tbs_table[dl_itbs][rrm_app.lc_ue_dlrb[enb,ue,lc] + dl_additionnal_rb]
+                rrm_kpi_app.lc_ue_dltbs[enb,ue,lc] = rrm_app_vars.tbs_table[dl_itbs][rrm_kpi_app.lc_ue_dlrb[enb,ue,lc] + dl_additionnal_rb]
+                slice_dl_tbs += rrm_app_vars.tbs_table[dl_itbs][rrm_kpi_app.lc_ue_dlrb[enb,ue,lc] + dl_additionnal_rb]
 
-              rrm_app.lc_ue_dlrb[enb,ue,lc]   += dl_additionnal_rb
-              rrm_app.enb_available_dlrb[enb] -= dl_additionnal_rb
-              rrm_app.ue_dlrb[enb,ue]         += dl_additionnal_rb
+              rrm_kpi_app.lc_ue_dlrb[enb,ue,lc]   += dl_additionnal_rb
+              rrm_kpi_app.enb_available_dlrb[enb] -= dl_additionnal_rb
+              rrm_kpi_app.ue_dlrb[enb,ue]         += dl_additionnal_rb
 
 
         log.info( 'slice ' + str(sid) + ' --> expected DL/UL throughput ' +  str(float(slice_dl_tbs/1000.0)) + 'Mbps/' + str(float(slice_ul_tbs/1000.0)) + 'Mbps')
@@ -427,70 +427,70 @@ class rrm_app(object):
     for enb in range(0, sm.get_num_enb()) :
 
       # Loop on slices to allocate reserved rate, according to priority, for UL
-      for slice in range(0, rrm.get_nb_slices(enb)):
+      for slice in range(0, rrm.get_input_slice_nums(enb)):
 
-        sid = rrm_app.slices_priority_ul[slice][0]
+        sid = rrm_kpi_app.slices_priority_ul[slice][0]
 
         # Loop on UEs connected to the current eNodeB and in the current slice
-        ue_in_slice = (ue for ue in range(0, sm.get_num_ue(enb=enb)) if ue % rrm.get_nb_slices(enb) == sid)
+        ue_in_slice = (ue for ue in range(0, sm.get_num_ue(enb=enb)) if ue % rrm.get_input_slice_nums(enb) == sid)
         for ue in ue_in_slice :
 
           # skip the control channels, SRB1 and SRB2, start at index 2
           for lc in range(2, sm.get_num_ue_lc(enb=enb,ue=ue)) :
 
             # Initialization of number of RBs for LC, and of TBS for LC
-            ul_itbs                         = rrm_app_vars.mcs_to_itbs[rrm_app.ue_ulmcs[enb,ue]]
+            ul_itbs                         = rrm_app_vars.mcs_to_itbs[rrm_kpi_app.ue_ulmcs[enb,ue]]
             ul_addtionnal_rb                = 0
-            rrm_app.lc_ue_ultbs[enb,ue,lc]  = rrm_app_vars.tbs_table[ul_itbs][rrm_app.lc_ue_ulrb[enb,ue,lc]]
+            rrm_kpi_app.lc_ue_ultbs[enb,ue,lc]  = rrm_app_vars.tbs_table[ul_itbs][rrm_kpi_app.lc_ue_ulrb[enb,ue,lc]]
 
             # Add RBs for LC as long as : enough data is present
-            while rrm_app_vars.bsr_table[rrm_app.lc_ue_bsr[enb,ue,lc]] > rrm_app.lc_ue_ultbs[enb,ue,lc] :
+            while rrm_app_vars.bsr_table[rrm_kpi_app.lc_ue_bsr[enb,ue,lc]] > rrm_kpi_app.lc_ue_ultbs[enb,ue,lc] :
 
-              if ul_addtionnal_rb + 2 > rrm_app.enb_available_ulrb[enb] or rrm_app.enb_available_ulrb[enb] == 0 :
+              if ul_addtionnal_rb + 2 > rrm_kpi_app.enb_available_ulrb[enb] or rrm_kpi_app.enb_available_ulrb[enb] == 0 :
                 log.info('no available ulrb')
                 break
 
               # Increment nb of RBs, update TBS for LC
               ul_addtionnal_rb                += 2 # f(bandwidth)
-              rrm_app.lc_ue_ultbs[enb,ue,lc]  = rrm_app_vars.tbs_table[ul_itbs][rrm_app.lc_ue_ulrb[enb,ue,lc] + ul_addtionnal_rb]
+              rrm_kpi_app.lc_ue_ultbs[enb,ue,lc]  = rrm_app_vars.tbs_table[ul_itbs][rrm_kpi_app.lc_ue_ulrb[enb,ue,lc] + ul_addtionnal_rb]
 
-            rrm_app.lc_ue_ulrb[enb,ue,lc]   += ul_addtionnal_rb
-            rrm_app.ue_ulrb[enb,ue]         += ul_addtionnal_rb
-            rrm_app.enb_available_ulrb[enb] -= ul_addtionnal_rb
+            rrm_kpi_app.lc_ue_ulrb[enb,ue,lc]   += ul_addtionnal_rb
+            rrm_kpi_app.ue_ulrb[enb,ue]         += ul_addtionnal_rb
+            rrm_kpi_app.enb_available_ulrb[enb] -= ul_addtionnal_rb
 
 
       # Loop on slices to allocate reserved rate, according to priority, for DL
-      for slice in range(0, rrm.get_nb_slices(enb)):
+      for slice in range(0, rrm.get_input_slice_nums(enb)):
 
-        sid = rrm_app.slices_priority_dl[slice][0]
+        sid = rrm_kpi_app.slices_priority_dl[slice][0]
         slice_dl_tbs = 0
 
         # Loop on UEs connected to the current eNodeB and in the current slice
-        ue_in_slice = (ue for ue in range(0, sm.get_num_ue(enb=enb)) if ue % rrm.get_nb_slices(enb) == sid)
+        ue_in_slice = (ue for ue in range(0, sm.get_num_ue(enb=enb)) if ue % rrm.get_input_slice_nums(enb) == sid)
         for ue in ue_in_slice :
 
           # skip the control channels, SRB1 and SRB2, start at index 2
           for lc in range(2, sm.get_num_ue_lc(enb=enb,ue=ue)) :
 
             # Initialization of number of RBs for LC, and of TBS for LC
-            dl_itbs                         = rrm_app_vars.mcs_to_itbs[rrm_app.ue_dlmcs[enb,ue]]
+            dl_itbs                         = rrm_app_vars.mcs_to_itbs[rrm_kpi_app.ue_dlmcs[enb,ue]]
             dl_additionnal_rb               = 0
-            rrm_app.lc_ue_dltbs[enb,ue,lc]  = rrm_app_vars.tbs_table[dl_itbs][rrm_app.lc_ue_dlrb[enb,ue,lc]]
+            rrm_kpi_app.lc_ue_dltbs[enb,ue,lc]  = rrm_app_vars.tbs_table[dl_itbs][rrm_kpi_app.lc_ue_dlrb[enb,ue,lc]]
 
             # Add RBs for LC as long as : enough data is present
-            while rrm_app.lc_ue_report[enb, ue, lc]['txQueueSize'] > rrm_app.lc_ue_dltbs[enb,ue,lc] :
+            while rrm_kpi_app.lc_ue_report[enb, ue, lc]['txQueueSize'] > rrm_kpi_app.lc_ue_dltbs[enb,ue,lc] :
 
-              if dl_additionnal_rb + 2 > rrm_app.enb_available_dlrb[enb] or rrm_app.enb_available_dlrb[enb] == 0 :
+              if dl_additionnal_rb + 2 > rrm_kpi_app.enb_available_dlrb[enb] or rrm_kpi_app.enb_available_dlrb[enb] == 0 :
                 log.info('no available dlrb')
                 break
 
               # Increment nb of RBs, update TBS for LC
               dl_additionnal_rb += 2 # f(bandwidth)
-              rrm_app.lc_ue_dltbs[enb,ue,lc] = rrm_app_vars.tbs_table[dl_itbs][rrm_app.lc_ue_dlrb[enb,ue,lc] + dl_additionnal_rb]
+              rrm_kpi_app.lc_ue_dltbs[enb,ue,lc] = rrm_app_vars.tbs_table[dl_itbs][rrm_kpi_app.lc_ue_dlrb[enb,ue,lc] + dl_additionnal_rb]
 
-            rrm_app.lc_ue_dlrb[enb,ue,lc]   += dl_additionnal_rb
-            rrm_app.enb_available_dlrb[enb] -= dl_additionnal_rb
-            rrm_app.ue_dlrb[enb,ue]         += dl_additionnal_rb
+            rrm_kpi_app.lc_ue_dlrb[enb,ue,lc]   += dl_additionnal_rb
+            rrm_kpi_app.enb_available_dlrb[enb] -= dl_additionnal_rb
+            rrm_kpi_app.ue_dlrb[enb,ue]         += dl_additionnal_rb
 
 
   def allocate_rb (self, sm):
@@ -503,62 +503,62 @@ class rrm_app(object):
         for lc in range(2, sm.get_num_ue_lc(enb=enb,ue=ue)) :
 
           # Initialization of number of RBs for LC, and of TBS for LC
-          ul_itbs                         = rrm_app_vars.mcs_to_itbs[rrm_app.ue_ulmcs[enb,ue]]
+          ul_itbs                         = rrm_app_vars.mcs_to_itbs[rrm_kpi_app.ue_ulmcs[enb,ue]]
           ul_addtionnal_rb                = 0
-          rrm_app.lc_ue_ultbs[enb,ue,lc]  = rrm_app_vars.tbs_table[ul_itbs][rrm_app.lc_ue_ulrb[enb,ue,lc]]
+          rrm_kpi_app.lc_ue_ultbs[enb,ue,lc]  = rrm_app_vars.tbs_table[ul_itbs][rrm_kpi_app.lc_ue_ulrb[enb,ue,lc]]
 
           # Add RBs for LC as long as enough data is present
-          while rrm_app_vars.bsr_table[rrm_app.lc_ue_bsr[enb,ue,lc]] > rrm_app.lc_ue_ultbs[enb,ue,lc] :
+          while rrm_app_vars.bsr_table[rrm_kpi_app.lc_ue_bsr[enb,ue,lc]] > rrm_kpi_app.lc_ue_ultbs[enb,ue,lc] :
 
-            if ul_addtionnal_rb + 2 > rrm_app.enb_available_ulrb[enb] or rrm_app.enb_available_ulrb[enb] == 0 :
+            if ul_addtionnal_rb + 2 > rrm_kpi_app.enb_available_ulrb[enb] or rrm_kpi_app.enb_available_ulrb[enb] == 0 :
               log.info('no available ulrb')
               break
 
             # Increment nb of RBs, update TBS
             ul_addtionnal_rb += 2 # f(bandwidth)
-            rrm_app.lc_ue_ultbs[enb,ue,lc]=rrm_app_vars.tbs_table[ul_itbs][rrm_app.lc_ue_ulrb[enb,ue,lc] + ul_addtionnal_rb]
+            rrm_kpi_app.lc_ue_ultbs[enb,ue,lc]=rrm_app_vars.tbs_table[ul_itbs][rrm_kpi_app.lc_ue_ulrb[enb,ue,lc] + ul_addtionnal_rb]
 
-          rrm_app.lc_ue_ulrb[enb,ue,lc]   += ul_addtionnal_rb
-          rrm_app.enb_available_ulrb[enb] -= ul_addtionnal_rb
-          rrm_app.ue_ulrb[enb,ue]         += ul_addtionnal_rb
+          rrm_kpi_app.lc_ue_ulrb[enb,ue,lc]   += ul_addtionnal_rb
+          rrm_kpi_app.enb_available_ulrb[enb] -= ul_addtionnal_rb
+          rrm_kpi_app.ue_ulrb[enb,ue]         += ul_addtionnal_rb
 
 
           # Initialization of number of RBs for LC, and of TBS for LC
-          dl_itbs                         = rrm_app_vars.mcs_to_itbs[rrm_app.ue_dlmcs[enb,ue]]
+          dl_itbs                         = rrm_app_vars.mcs_to_itbs[rrm_kpi_app.ue_dlmcs[enb,ue]]
           dl_additionnal_rb               = 0
-          rrm_app.lc_ue_dltbs[enb,ue,lc]  = rrm_app_vars.tbs_table[dl_itbs][rrm_app.lc_ue_dlrb[enb,ue,lc]]
+          rrm_kpi_app.lc_ue_dltbs[enb,ue,lc]  = rrm_app_vars.tbs_table[dl_itbs][rrm_kpi_app.lc_ue_dlrb[enb,ue,lc]]
 
           # Add RBs for LC as long as : enough data is present AND slice reserved rate is not reached
-          while rrm_app.lc_ue_report[enb, ue, lc]['txQueueSize'] > rrm_app.lc_ue_dltbs[enb,ue,lc] :
+          while rrm_kpi_app.lc_ue_report[enb, ue, lc]['txQueueSize'] > rrm_kpi_app.lc_ue_dltbs[enb,ue,lc] :
 
-            if dl_additionnal_rb + 2 > rrm_app.enb_available_dlrb[enb] or rrm_app.enb_available_dlrb[enb] == 0 :
+            if dl_additionnal_rb + 2 > rrm_kpi_app.enb_available_dlrb[enb] or rrm_kpi_app.enb_available_dlrb[enb] == 0 :
               log.info('no available dlrb')
               break
 
             # Increment nb of RBs, update TBS
             dl_additionnal_rb               += 2 # f(bandwidth)
-            rrm_app.lc_ue_dltbs[enb,ue,lc]  = rrm_app_vars.tbs_table[dl_itbs][rrm_app.lc_ue_dlrb[enb,ue,lc] + dl_additionnal_rb]
+            rrm_kpi_app.lc_ue_dltbs[enb,ue,lc]  = rrm_app_vars.tbs_table[dl_itbs][rrm_kpi_app.lc_ue_dlrb[enb,ue,lc] + dl_additionnal_rb]
 
-          rrm_app.lc_ue_dlrb[enb,ue,lc]   += dl_additionnal_rb
-          rrm_app.enb_available_dlrb[enb] -= dl_additionnal_rb
-          rrm_app.ue_dlrb[enb,ue]         += dl_additionnal_rb
+          rrm_kpi_app.lc_ue_dlrb[enb,ue,lc]   += dl_additionnal_rb
+          rrm_kpi_app.enb_available_dlrb[enb] -= dl_additionnal_rb
+          rrm_kpi_app.ue_dlrb[enb,ue]         += dl_additionnal_rb
 
 
         # calculate the total RB for DL and UL
-        rrm_app.ue_ultbs[enb,ue] = rrm_app_vars.tbs_table[ul_itbs][rrm_app.ue_ulrb[enb,ue]]
-        rrm_app.ue_dltbs[enb,ue] = rrm_app_vars.tbs_table[dl_itbs][rrm_app.ue_dlrb[enb,ue]]
+        rrm_kpi_app.ue_ultbs[enb,ue] = rrm_app_vars.tbs_table[ul_itbs][rrm_kpi_app.ue_ulrb[enb,ue]]
+        rrm_kpi_app.ue_dltbs[enb,ue] = rrm_app_vars.tbs_table[dl_itbs][rrm_kpi_app.ue_dlrb[enb,ue]]
 
-        log.info( 'eNB ' + str(enb) + ' UE ' + str(ue) + ' SFN ' + str(rrm_app.enb_sfn[enb,ue]) +
-              ' DL TBS ' + str(rrm_app.ue_dltbs[enb,ue]) +
-              ' ue_dlrb ' + str(rrm_app.ue_dlrb[enb,ue]) +
-              ' ue_dlmcs ' + str(rrm_app.ue_dlmcs[enb,ue]) +
-              ' --> expected DL throughput ' +  str(float(rrm_app.ue_dltbs[enb,ue]/1000.0)) + ' Mbps')
+        log.info( 'eNB ' + str(enb) + ' UE ' + str(ue) + ' SFN ' + str(rrm_kpi_app.enb_sfn[enb,ue]) +
+              ' DL TBS ' + str(rrm_kpi_app.ue_dltbs[enb,ue]) +
+              ' ue_dlrb ' + str(rrm_kpi_app.ue_dlrb[enb,ue]) +
+              ' ue_dlmcs ' + str(rrm_kpi_app.ue_dlmcs[enb,ue]) +
+              ' --> expected DL throughput ' +  str(float(rrm_kpi_app.ue_dltbs[enb,ue]/1000.0)) + ' Mbps')
 
-        log.info( 'eNB ' + str(enb) + ' UE ' + str(ue) + ' SFN ' + str(rrm_app.enb_sfn[enb,ue]) +
-              ' UL TBS ' + str(rrm_app.ue_ultbs[enb,ue])   +
-              ' ue_ulrb ' + str(rrm_app.ue_ulrb[enb,ue])   +
-              ' ue_ulmcs ' + str(rrm_app.ue_ulmcs[enb,ue]) +
-              ' --> expected UL throughput ' +  str(float(rrm_app.ue_ultbs[enb,ue]/1000.0)) + ' Mbps')
+        log.info( 'eNB ' + str(enb) + ' UE ' + str(ue) + ' SFN ' + str(rrm_kpi_app.enb_sfn[enb,ue]) +
+              ' UL TBS ' + str(rrm_kpi_app.ue_ultbs[enb,ue])   +
+              ' ue_ulrb ' + str(rrm_kpi_app.ue_ulrb[enb,ue])   +
+              ' ue_ulmcs ' + str(rrm_kpi_app.ue_ulmcs[enb,ue]) +
+              ' --> expected UL throughput ' +  str(float(rrm_kpi_app.ue_ultbs[enb,ue]/1000.0)) + ' Mbps')
 
 
   def calculate_exp_kpi_perf (self, sm, rrm) :
@@ -573,103 +573,103 @@ class rrm_app(object):
     # Loop on eNodeBs
     for enb in range(0, sm.get_num_enb()) :
 
-      rrm_app.enb_ulrb_share_r1[enb]=0.0
-      rrm_app.enb_dlrb_share_r1[enb]=0.0
-      rrm_app.enb_ulrb_share[enb]=0.0
-      rrm_app.enb_dlrb_share[enb]=0.0
+      rrm_kpi_app.enb_ulrb_share_r1[enb]=0.0
+      rrm_kpi_app.enb_dlrb_share_r1[enb]=0.0
+      rrm_kpi_app.enb_ulrb_share[enb]=0.0
+      rrm_kpi_app.enb_dlrb_share[enb]=0.0
 
       # Loop on slices
-      for sid in range(0, rrm.get_nb_slices(enb)):
-        rrm_app.slice_ulrb[enb,sid]=0.0
-        rrm_app.slice_dlrb[enb,sid]=0.0
-        rrm_app.slice_ulrb_share_r1[enb,sid]=0.0
-        rrm_app.slice_dlrb_share_r1[enb,sid]=0.0
-        rrm_app.slice_ulrb_share[enb,sid]=0.0
-        rrm_app.slice_dlrb_share[enb,sid]=0.0
+      for sid in range(0, rrm.get_input_slice_nums(enb)):
+        rrm_kpi_app.slice_ulrb[enb,sid]=0.0
+        rrm_kpi_app.slice_dlrb[enb,sid]=0.0
+        rrm_kpi_app.slice_ulrb_share_r1[enb,sid]=0.0
+        rrm_kpi_app.slice_dlrb_share_r1[enb,sid]=0.0
+        rrm_kpi_app.slice_ulrb_share[enb,sid]=0.0
+        rrm_kpi_app.slice_dlrb_share[enb,sid]=0.0
 
         # Loop on UEs
         for ue in range(0, sm.get_num_ue(enb=enb)) :
           # simple ue to slice mapping
-          if ue % rrm.get_nb_slices(enb) == sid :
-            rrm_app.slice_ulrb[enb,sid] += rrm_app.ue_ulrb[enb,ue]
-            rrm_app.slice_dlrb[enb,sid] += rrm_app.ue_dlrb[enb,ue]
+          if ue % rrm.get_input_slice_nums(enb) == sid :
+            rrm_kpi_app.slice_ulrb[enb,sid] += rrm_kpi_app.ue_ulrb[enb,ue]
+            rrm_kpi_app.slice_dlrb[enb,sid] += rrm_kpi_app.ue_dlrb[enb,ue]
 
         # Compute the share for each slice (ressource blocs for slice/number of ressource blocs for the eNB) for UL and DL and set a minimum of 0.1 share
-        rrm_app.slice_ulrb_share[enb,sid] = float(rrm_app.slice_ulrb[enb,sid]/rrm_app.enb_ulrb[enb])
-        rrm_app.slice_dlrb_share[enb,sid] = float(rrm_app.slice_dlrb[enb,sid]/rrm_app.enb_dlrb[enb])
-        if rrm_app.slice_ulrb_share[enb,sid] < 0.1 and rrm_app.slice_ulrb_share[enb,sid] > 0.0:
-          rrm_app.slice_ulrb_share[enb,sid]= 0.1
-        if rrm_app.slice_dlrb_share[enb,sid] < 0.1 and rrm_app.slice_dlrb_share[enb,sid] > 0.0:
-          rrm_app.slice_dlrb_share[enb,sid]= 0.1
+        rrm_kpi_app.slice_ulrb_share[enb,sid] = float(rrm_kpi_app.slice_ulrb[enb,sid]/rrm_kpi_app.enb_ulrb[enb])
+        rrm_kpi_app.slice_dlrb_share[enb,sid] = float(rrm_kpi_app.slice_dlrb[enb,sid]/rrm_kpi_app.enb_dlrb[enb])
+        if rrm_kpi_app.slice_ulrb_share[enb,sid] < 0.1 and rrm_kpi_app.slice_ulrb_share[enb,sid] > 0.0:
+          rrm_kpi_app.slice_ulrb_share[enb,sid]= 0.1
+        if rrm_kpi_app.slice_dlrb_share[enb,sid] < 0.1 and rrm_kpi_app.slice_dlrb_share[enb,sid] > 0.0:
+          rrm_kpi_app.slice_dlrb_share[enb,sid]= 0.1
 	
-	if rrm_app.slice_ulrb_share[enb,sid] > 1.0:
-          rrm_app.slice_ulrb_share[enb,sid]= 1.0
-        if rrm_app.slice_dlrb_share[enb,sid] > 1.0:
-          rrm_app.slice_dlrb_share[enb,sid]= 1.0
+	if rrm_kpi_app.slice_ulrb_share[enb,sid] > 1.0:
+          rrm_kpi_app.slice_ulrb_share[enb,sid]= 1.0
+        if rrm_kpi_app.slice_dlrb_share[enb,sid] > 1.0:
+          rrm_kpi_app.slice_dlrb_share[enb,sid]= 1.0
 
 
-        log.info( 'S1: eNB ' + str(enb) + ' Slice ' + str(sid) + ' SFN ' + str(rrm_app.enb_sfn[enb,0]) +
-              ' slice_ulrb_share: ' + str(rrm_app.slice_ulrb_share[enb,sid]) +
-              ' slice_dlrb_share: ' + str(rrm_app.slice_dlrb_share[enb,sid]) )
+        log.info( 'S1: eNB ' + str(enb) + ' Slice ' + str(sid) + ' SFN ' + str(rrm_kpi_app.enb_sfn[enb,0]) +
+              ' slice_ulrb_share: ' + str(rrm_kpi_app.slice_ulrb_share[enb,sid]) +
+              ' slice_dlrb_share: ' + str(rrm_kpi_app.slice_dlrb_share[enb,sid]) )
 
         # save the allocated rb per slice based on the enforced policy for stage 2 allocation 
-        rrm_app.slice_ulrb_share_r1[enb,sid]= rrm_app.slice_ulrb_share[enb,sid]
-        rrm_app.slice_dlrb_share_r1[enb,sid]= rrm_app.slice_dlrb_share[enb,sid]
+        rrm_kpi_app.slice_ulrb_share_r1[enb,sid]= rrm_kpi_app.slice_ulrb_share[enb,sid]
+        rrm_kpi_app.slice_dlrb_share_r1[enb,sid]= rrm_kpi_app.slice_dlrb_share[enb,sid]
 
 
         # Accumulate the total share occupied by slices at the eNB, for UL and DL
-        rrm_app.enb_ulrb_share[enb]+=rrm_app.slice_ulrb_share[enb,sid]
-        rrm_app.enb_dlrb_share[enb]+=rrm_app.slice_dlrb_share[enb,sid]
+        rrm_kpi_app.enb_ulrb_share[enb]+=rrm_kpi_app.slice_ulrb_share[enb,sid]
+        rrm_kpi_app.enb_dlrb_share[enb]+=rrm_kpi_app.slice_dlrb_share[enb,sid]
 
 
         # save the allocated rb per enb based on the enforced policy for stage 2 allocation 
-      rrm_app.enb_ulrb_share_r1[enb]=rrm_app.enb_ulrb_share[enb]
-      rrm_app.enb_dlrb_share_r1[enb]=rrm_app.enb_dlrb_share[enb]
+      rrm_kpi_app.enb_ulrb_share_r1[enb]=rrm_kpi_app.enb_ulrb_share[enb]
+      rrm_kpi_app.enb_dlrb_share_r1[enb]=rrm_kpi_app.enb_dlrb_share[enb]
 
       nb_slice_to_share=0
-      for sid in range(0, rrm.get_nb_slices(enb)):  
-        if rrm_app.reserved_isolation_ul[enb][sid] == 0 :
+      for sid in range(0, rrm.get_input_slice_nums(enb)):  
+        if rrm_kpi_app.reserved_isolation_ul[enb][sid] == 0 :
           nb_slice_to_share+=1 # multiplex
       
       # Disribute the remaining RB at the second stage : divide the remaining RBs by the number of slices
       # TODO: allocate based on SLA
-      extra_ul=((1.0 - rrm_app.enb_ulrb_share[enb])/rrm.get_nb_slices(enb))
-      extra_dl=((1.0 - rrm_app.enb_dlrb_share[enb])/rrm.get_nb_slices(enb))
-      for sid in range(0, rrm.get_nb_slices(enb)):
+      extra_ul=((1.0 - rrm_kpi_app.enb_ulrb_share[enb])/rrm.get_input_slice_nums(enb))
+      extra_dl=((1.0 - rrm_kpi_app.enb_dlrb_share[enb])/rrm.get_input_slice_nums(enb))
+      for sid in range(0, rrm.get_input_slice_nums(enb)):
 
-        if  extra_ul > 0 and rrm_app.reserved_isolation_ul[enb][sid] == 0:
-          rrm_app.slice_ulrb_share[enb,sid]+=extra_ul
-          rrm_app.enb_ulrb_share[enb]+=extra_ul
+        if  extra_ul > 0 and rrm_kpi_app.reserved_isolation_ul[enb][sid] == 0:
+          rrm_kpi_app.slice_ulrb_share[enb,sid]+=extra_ul
+          rrm_kpi_app.enb_ulrb_share[enb]+=extra_ul
 
-        if  extra_dl > 0 and rrm_app.reserved_isolation_dl[enb][sid] == 0:
-          rrm_app.slice_dlrb_share[enb,sid]+=extra_dl
-          rrm_app.enb_dlrb_share[enb]+=extra_dl
+        if  extra_dl > 0 and rrm_kpi_app.reserved_isolation_dl[enb][sid] == 0:
+          rrm_kpi_app.slice_dlrb_share[enb,sid]+=extra_dl
+          rrm_kpi_app.enb_dlrb_share[enb]+=extra_dl
 
 
-        log.debug( 'S2: eNB ' + str(enb) + ' Slice ' + str(sid) + ' SFN ' + str(rrm_app.enb_sfn[enb,0]) +
-              ' slice_ulrb_share: ' + str(rrm_app.slice_ulrb_share_r1[enb,sid]) + '->' + str(rrm_app.slice_ulrb_share[enb,sid]) +
-              ' slice_dlrb_share: ' + str(rrm_app.slice_dlrb_share_r1[enb,sid]) + '->' +    str(rrm_app.slice_dlrb_share[enb,sid]) )
+        log.debug( 'S2: eNB ' + str(enb) + ' Slice ' + str(sid) + ' SFN ' + str(rrm_kpi_app.enb_sfn[enb,0]) +
+              ' slice_ulrb_share: ' + str(rrm_kpi_app.slice_ulrb_share_r1[enb,sid]) + '->' + str(rrm_kpi_app.slice_ulrb_share[enb,sid]) +
+              ' slice_dlrb_share: ' + str(rrm_kpi_app.slice_dlrb_share_r1[enb,sid]) + '->' +    str(rrm_kpi_app.slice_dlrb_share[enb,sid]) )
 
-        log.info( 'eNB ' + str(enb) + ' Slice ' + str(sid) + ' SFN ' + str(rrm_app.enb_sfn[enb,0]) +
-            ' ulrb_share: ' + str(rrm_app.enb_ulrb_share_r1[enb]) + '->' + str(rrm_app.enb_ulrb_share[enb]) +
-            ' dlrb_share: ' + str(rrm_app.enb_dlrb_share_r1[enb]) + '->' + str(rrm_app.enb_dlrb_share[enb])      )
+        log.info( 'eNB ' + str(enb) + ' Slice ' + str(sid) + ' SFN ' + str(rrm_kpi_app.enb_sfn[enb,0]) +
+            ' ulrb_share: ' + str(rrm_kpi_app.enb_ulrb_share_r1[enb]) + '->' + str(rrm_kpi_app.enb_ulrb_share[enb]) +
+            ' dlrb_share: ' + str(rrm_kpi_app.enb_dlrb_share_r1[enb]) + '->' + str(rrm_kpi_app.enb_dlrb_share[enb])      )
 
 
   def enforce_policy(self,sm,rrm):
 
     for enb in range(0, sm.get_num_enb()) :
-      for sid in range(0, rrm.get_nb_slices(enb)):
+      for sid in range(0, rrm.get_input_slice_nums(enb)):
 
         # set the policy files
-        rrm.set_slice_rb(sid=sid,rb=rrm_app.slice_ulrb_share[enb,sid], dir='UL')
-        rrm.set_slice_rb(sid=sid,rb=rrm_app.slice_dlrb_share[enb,sid], dir='DL')
-        rrm.set_slice_maxmcs(sid=sid,maxmcs=min(rrm_app.maxmcs_ul[enb][sid],rrm_app.enb_ulmaxmcs[enb]), dir='UL')
-        rrm.set_slice_maxmcs(sid=sid,maxmcs=min(rrm_app.maxmcs_dl[enb][sid],rrm_app.enb_dlmaxmcs[enb]), dir='DL')
+        rrm.set_slice_rb(sid=sid,rb=rrm_kpi_app.slice_ulrb_share[enb,sid], dir='UL')
+        rrm.set_slice_rb(sid=sid,rb=rrm_kpi_app.slice_dlrb_share[enb,sid], dir='DL')
+        rrm.set_slice_maxmcs(sid=sid,maxmcs=min(rrm_kpi_app.maxmcs_ul[enb][sid],rrm_kpi_app.enb_ulmaxmcs[enb]), dir='UL')
+        rrm.set_slice_maxmcs(sid=sid,maxmcs=min(rrm_kpi_app.maxmcs_dl[enb][sid],rrm_kpi_app.enb_dlmaxmcs[enb]), dir='DL')
 
         # ToDO: check if we should push sth
       if sm.get_num_ue(enb) > 0 :
         if rrm.apply_policy() == 'connected' :
-          rrm_app.pf=rrm.save_policy(time=rrm_app.enb_sfn[enb,0])
+          rrm_kpi_app.pf=rrm.save_policy(time=rrm_kpi_app.enb_sfn[enb,0])
           log.info('_____________eNB' + str(enb)+' enforced policy______________')
           print rrm.dump_policy()
       else:
@@ -681,22 +681,22 @@ class rrm_app(object):
     sm.stats_manager('all')
 
     log.info('3. Gather statistics')
-    rrm.read_template()
-    rrm_app.get_statistics(sm)
-    rrm_app.get_policy_maxmcs(rrm,sm)
-    rrm_app.get_policy_reserved_rate(rrm,sm)
+    rrm.read_template(self.template)
+    rrm_kpi_app.get_statistics(sm)
+    rrm_kpi_app.get_policy_maxmcs(rrm,sm)
+    rrm_kpi_app.get_policy_reserved_rate(rrm,sm)
     
-    rrm.set_num_slices(n=int(rrm.get_nb_slices(0)), dir='DL')
-    rrm.set_num_slices(n=int(rrm.get_nb_slices(0)), dir='UL')
+    rrm.set_num_slices(n=int(rrm.get_input_slice_nums(0)), dir='DL')
+    rrm.set_num_slices(n=int(rrm.get_input_slice_nums(0)), dir='UL')
 
     log.info('4. Calculate the expected performance')
-    rrm_app.calculate_exp_kpi_perf(sm, rrm)
+    rrm_kpi_app.calculate_exp_kpi_perf(sm, rrm)
 
     log.info('5. Determine RB share per slice')
-    rrm_app.determine_rb_share(sm,rrm)
+    rrm_kpi_app.determine_rb_share(sm,rrm)
 
     log.info('6. Check for new RRM Slice policy')
-    rrm_app.enforce_policy(sm,rrm)
+    rrm_kpi_app.enforce_policy(sm,rrm)
 
     t = Timer(5, self.run,kwargs=dict(sm=sm,rrm=rrm))
     t.start()
@@ -726,26 +726,26 @@ if __name__ == '__main__':
 
   log=flexran_sdk.logger(log_level=args.log).init_logger()
 
-  rrm_app = rrm_app(log=log,
-            template=args.template,
-            url=args.url,
-            port=args.port,
-            log_level=args.log,
-            op_mode=args.op_mode)
+  rrm_kpi_app= rrm_kpi_app(log=log,
+                            log_level=args.log,
+                            url=args.url,
+                            port=args.port,
+                            template=args.template,
+                            op_mode=args.op_mode)
 
   rrm = flexran_sdk.rrm_policy(log=log,
-                 url=args.url,
-                 port=args.port,
-                 op_mode=args.op_mode)
+                               url=args.url,
+                               port=args.port,
+                               op_mode=args.op_mode)
   policy=rrm.read_policy()
 
   sm = flexran_sdk.stats_manager(log=log,
-                   url=args.url,
-                   port=args.port,
-                   op_mode=args.op_mode)
-
+                                 url=args.url,
+                                 port=args.port,
+                                 op_mode=args.op_mode)
+  
   py3_flag = version_info[0] > 2
 
-  t = Timer(3, rrm_app.run,kwargs=dict(sm=sm,rrm=rrm))
+  t = Timer(3, rrm_kpi_app.run,kwargs=dict(sm=sm,rrm=rrm))
   t.start()
 

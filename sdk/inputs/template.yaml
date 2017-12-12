@@ -8,8 +8,8 @@ policy :
             rate: !!float 2.0
             latency: !!int 0
             priority: !!int 0
-	    robustness: !!str "high"
-            isolation:  !!int 0 
+            robustness: !!str "high"
+            isolation:  !!int 0
         DL :
             vrbg: !!int 4
             rate: !!float 15.0
@@ -23,14 +23,14 @@ policy :
             rate: !!float 10.0
             latency: !!int 0
             priority: !!int 3
-	    robustness: !!str "high"
+            robustness: !!str "high"
             isolation:  !!int 0 
         DL :
             vrbg: !!int 10
             rate: !!float 8.0
             latency: !!int 0
             priority: !!int 3
-	    robustness: !!str "high"
+            robustness: !!str "high"
             isolation:  !!int 0
     be :
         UL :
@@ -45,5 +45,5 @@ policy :
             rate: !!float 2.5
             latency: !!int 0
             priority: !!int 10
-	    robustness: !!str "low"
-            isolation:  !!int 1 
+            robustness: !!str "low"
+            isolation:  !!int 1

@@ -115,7 +115,7 @@ class rrm_app(object):
     enb_dlrb_share = {}
 
 
-    def __init__(self, log, template=rrm_app_vars.template_1, url='http://localhost',port='9999',log_level='info', op_mode='test'):
+    def __init__(self, log, log_level='info', url='http://localhost',port='9999', template=rrm_app_vars.template_1, op_mode='test'):
         super(rrm_app, self).__init__()
         
         self.template=template
@@ -151,14 +151,16 @@ class rrm_app(object):
 
     def get_policy_maxmcs(self,rrm) :
         
-        #for sid in range(0, rrm.get_num_slices()):
-        for sid in range(0, rrm_app_vars.max_num_slice):
-            rrm_app.maxmcs_dl[sid] = rrm.get_slice_maxmcs(sid=sid)
-            
-        #for sid in range(0, rrm.get_num_slices(dir='UL')):
-        for sid in range(0, rrm_app_vars.max_num_slice):
-            rrm_app.maxmcs_ul[sid] = rrm.get_slice_maxmcs(sid=sid, dir='UL')
- 
+        for enb in range(0, sm.get_num_enb()) :
+            rrm_app.maxmcs_dl[enb] = {}
+            for sid in range(0, rrm.get_input_slice_nums(enb) ):  # get_input_slice_nums and get_num_slices
+                rrm_app.maxmcs_dl[enb][sid] = rrm.get_slice_maxmcs(sid=sid, dir='DL')
+                
+        for enb in range(0, sm.get_num_enb()) :
+            rrm_app.maxmcs_ul[enb] = {}
+            for sid in range(0, rrm.get_input_slice_nums(enb) ):
+                rrm_app.maxmcs_ul[enb][sid] = rrm.get_slice_maxmcs(sid=sid, dir='UL')
+        
     def calculate_exp_perf (self, sm) :
 
         for enb in range(0, sm.get_num_enb()) :
@@ -229,7 +231,7 @@ class rrm_app(object):
 
             rrm_app.enb_ulrb_share[enb]=0.0
             rrm_app.enb_dlrb_share[enb]=0.0
-            for sid in range(0, rrm.get_num_slices()):
+            for sid in range(0, rrm.get_input_slice_nums(enb)):
                 rrm_app.slice_ulrb[enb,sid]=0.0
                 rrm_app.slice_dlrb[enb,sid]=0.0
                 rrm_app.slice_ulrb_share[enb,sid]=0.0
@@ -259,9 +261,9 @@ class rrm_app(object):
             
             # disribute the remaining rb at the second stage
             # TODO: allocate based on SLA
-            extra_ul=((1.0 - rrm_app.enb_ulrb_share[enb])/rrm.get_num_slices())
-            extra_dl=((1.0 - rrm_app.enb_dlrb_share[enb])/rrm.get_num_slices())
-            for sid in range(0, rrm.get_num_slices()):
+            extra_ul=((1.0 - rrm_app.enb_ulrb_share[enb])/rrm.get_input_slice_nums(enb))
+            extra_dl=((1.0 - rrm_app.enb_dlrb_share[enb])/rrm.get_input_slice_nums(enb))
+            for sid in range(0, rrm.get_input_slice_nums(enb)):
 
                 if  extra_ul > 0 :
                     rrm_app.slice_ulrb_share[enb,sid]+=extra_ul
@@ -285,13 +287,13 @@ class rrm_app(object):
     def enforce_policy(self,sm,rrm):
 
         for enb in range(0, sm.get_num_enb()) :
-            for sid in range(0, rrm.get_num_slices()):
+            for sid in range(0, rrm.get_input_slice_nums(enb)):
                 
                 # set the policy files
                 rrm.set_slice_rb(sid=sid,rb=rrm_app.slice_ulrb_share[enb,sid], dir='UL')
                 rrm.set_slice_rb(sid=sid,rb=rrm_app.slice_ulrb_share[enb,sid], dir='DL')
-                rrm.set_slice_maxmcs(sid=sid,maxmcs=min(rrm_app.maxmcs_ul[sid],rrm_app.enb_ulmaxmcs[enb]), dir='UL')
-                rrm.set_slice_maxmcs(sid=sid,maxmcs=min(rrm_app.maxmcs_dl[sid],rrm_app.enb_dlmaxmcs[enb]), dir='DL')
+                rrm.set_slice_maxmcs(sid=sid,maxmcs=min(rrm_app.maxmcs_ul[enb][sid],rrm_app.enb_ulmaxmcs[enb]), dir='UL')
+                rrm.set_slice_maxmcs(sid=sid,maxmcs=min(rrm_app.maxmcs_dl[enb][sid],rrm_app.enb_dlmaxmcs[enb]), dir='DL')
 
                 # ToDO: check if we should push sth
             if sm.get_num_ue(enb) > 0 : 
@@ -309,6 +311,7 @@ class rrm_app(object):
         sm.stats_manager('all')
 
         log.info('3. Gather statistics')
+        rrm.read_template(self.template)
         rrm_app.get_policy_maxmcs(rrm)
         rrm_app.get_statistics(sm)
         
@@ -324,7 +327,8 @@ class rrm_app(object):
         
         t = Timer(5, self.run,kwargs=dict(sm=sm,rrm=rrm))
         t.start()
-        
+
+       
         
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process some integers.')
@@ -351,10 +355,10 @@ if __name__ == '__main__':
     log=flexran_sdk.logger(log_level=args.log).init_logger()
     
     rrm_app = rrm_app(log=log,
-                      template=args.template,
+                      log_level=args.log,
                       url=args.url,
                       port=args.port,
-                      log_level=args.log,
+                      template=args.template,
                       op_mode=args.op_mode)
 
     rrm = flexran_sdk.rrm_policy(log=log,
@@ -372,36 +376,3 @@ if __name__ == '__main__':
     
     t = Timer(3, rrm_app.run,kwargs=dict(sm=sm,rrm=rrm))
     t.start() 
-
-    
-    while True:
-
-        try:
-       # assume the number of slices or slice types (eMBB, uRLLC, mMTC) to be an input
-       # prompt the user?
-       # predefined slice templates can also be used 
-         
-            if py3_flag:
-                rrm_app.nb_slice = int(input("Update the number of slices: "))
-            else:
-                rrm_app.nb_slice = int(raw_input("Update the number of slices: "))
-                
-        except ValueError:
-            log.warning('Please entre an integer between 1-4')
-            
-        if rrm_app.nb_slice < 0 or rrm_app.nb_slice > 4 :
-            log.warning('wrong number of slices + ' + str(rrm_app.nb_slice) + '!')
-            log.warning('Please entre an integer between 1-4')
-        else:   
-            rrm.set_num_slices(n=int(rrm_app.nb_slice), dir='DL')
-            rrm.set_num_slices(n=int(rrm_app.nb_slice), dir='UL')
-
-        if rrm_app.nb_slice != rrm_app.nb_slice_current :
-            log.info('Number of slices is set to ' + str(rrm_app.nb_slice))
-            rrm_app.nb_slice_current = rrm_app.nb_slice
-            
-        sleep(5)
-#except KeyboardInterrupt:
-#            print "Exiting : Wait for the timer to expires... Bye"
-#            sys.exit(0)
-        

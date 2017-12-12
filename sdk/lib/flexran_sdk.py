@@ -256,7 +256,7 @@ class rrm_policy (object):
         # stats manager data requeted by the endpoint
         # could be extended to have data per API endpoint
         self.policy_data = ''
-
+	self.template_data = '' 
         # test files
         # location must be reletaive to app and not SDK
         # To do: create env vars 
@@ -321,7 +321,7 @@ class rrm_policy (object):
                 self.template_data = yaml.load(data_file)
                 self.log.debug(yaml.dump(self.template_data, default_flow_style=False))
         except yaml.YAMLError, exc:
-            self.log.error('error in policy file'  + pfile + str(exc) )
+            self.log.error('error in policy file'  + tfile + str(exc) )
             return
 
         return self.template_data
