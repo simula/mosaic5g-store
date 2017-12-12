@@ -162,8 +162,9 @@ class rrc_trigger_meas(object):
         elif self.op_mode == 'sdk' : 
             try :
                 req = requests.post(url)
+                self.log.info('POST ' + str(url))
                 if req.status_code == 200 :
-                    self.log.error('successfully send the RRC trigger measurment to the agent' )
+                    self.log.info('successfully send the RRC trigger measurment to the agent' )
                     self.status='connected'
                 else :
                     self.status='disconnected'
@@ -1202,6 +1203,22 @@ class stats_manager(object):
             self.log.warning('unknown direction ' + dir + 'set to DL')
             return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktTxSn']
 
+    def get_ue_pdcp_pkt_rate_per_s(self,enb=0,ue=0, dir='DL'):
+        """!@brief Get the  PDCP rate per second in a given direction
+        
+        @param enb: index of eNB
+        @param ue: index of UE
+        @param dir : direction of the packet
+        """
+        
+        if dir == 'dl' or dir == 'DL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktTxRateS']
+        elif dir == 'ul' or dir == 'UL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktRxRateS']
+        else :
+            self.log.warning('unknown direction ' + dir + 'set to DL')
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktTxRateS']
+
     def get_ue_pdcp_pkt_aiat(self,enb=0,ue=0, dir='DL'):
         """!@brief Get the  PDCP aggregated inter-arrivale time in a given direction
         
@@ -1218,13 +1235,64 @@ class stats_manager(object):
             self.log.warning('unknown direction ' + dir + 'set to DL')
             return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktTxAiat']
 
+    def get_ue_pdcp_pkt_throughput(self,enb=0,ue=0, dir='DL'):
+        """!@brief Get the  PDCP aggregated inter-arrivale time in a given direction
+        
+        @param enb: index of eNB
+        @param ue: index of UE
+        @param dir : direction of the packet
+        """
+        
+        if dir == 'dl' or dir == 'DL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktTxThroughputS']
+        elif dir == 'ul' or dir == 'UL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktRxGoodputS']
+        else :
+            self.log.warning('unknown direction ' + dir + 'set to DL')
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktTxThroughputS']
+
+    def get_ue_pdcp_pkt_aiat_s(self,enb=0,ue=0, dir='DL'):
+        """!@brief Get the  PDCP aggregated inter-arrivale time in a given direction
+        
+        @param enb: index of eNB
+        @param ue: index of UE
+        @param dir : direction of the packet
+        """
+        
+        if dir == 'dl' or dir == 'DL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktTxAiatS']
+        elif dir == 'ul' or dir == 'UL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktRxAiatS']
+        else :
+            self.log.warning('unknown direction ' + dir + 'set to DL')
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktTxAiatS']
+
+    def get_ue_pdcp_pkt_oo(self,enb=0,ue=0, dir='UL'):
+        """!@brief Get the  PDCP aggregated inter-arrivale time in a given direction
+        
+        @param enb: index of eNB
+        @param ue: index of UE
+        @param dir : direction of the packet
+        """
+        
+        
+        if dir == 'ul' or dir == 'UL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktRxOo']
+        else :
+            self.log.warning('unknown direction ' + dir + 'set to DL')
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktRxOo']       
+
+
     def get_ue_rsrq(self, enb=0, ue=0):
         """!@brief Get the RRC RSRQ values 
         
         @param enb: index of eNB
         @param ue: index of UE
         """
-        return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['rrcMeasurements']['pcellRsrq']
+        if  'rrcMeasurements' in self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats'] :
+            if 'pcellRsrq' in self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['rrcMeasurements'] :
+                return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['rrcMeasurements']['pcellRsrq']
+        return 0
 
     def get_ue_rsrp(self, enb=0, ue=0):
         """!@brief Get the RRC RSRP value
@@ -1232,8 +1300,10 @@ class stats_manager(object):
         @param enb: index of eNB
         @param ue: index of UE
         """
-        return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['rrcMeasurements']['pcellRsrp']
-    
+        if  'rrcMeasurements' in self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats'] :
+            if 'pcellRsrp' in self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['rrcMeasurements'] :
+                return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['rrcMeasurements']['pcellRsrp']
+        return 0
    
 class ss_policy (object):
     """!@brief Spectrum sharing class
