@@ -73,17 +73,8 @@ class sma_app(object):
         self.log_level = log_level
         self.status = 0
         self.op_mode = op_mode
-        self.app_handler=None
-    
-
-    def register(self, client, message):
-        # add to the list and check if already exsit
-        self.app_handler = client
-        print message
-    def unregister(self, client, message):
-        # remove to the list and check if already exsit
-        self.app_handler = None
-        print message 
+        self.app_handlers= []
+	self.open_data_all_options = []
 
     def load_rrm_data(self):
         log.info('Current number of eNB attached to rtc: ' + str(sm.get_num_enb()))
@@ -272,8 +263,10 @@ class sma_app(object):
                 # choose the best one
                 self.options = sorted(self.options, key=lambda k: k['weight'],reverse = True)
 
+		self.open_data_all_options = self.options
+
                 log.debug('\n' + yaml.dump(self.options))
-       
+       		
                 # save option to next_decision vector
                 if len(self.options) > 0:
                     self.options[0]['eNB_index'] = bs
@@ -400,11 +393,26 @@ class sma_app(object):
         t = Timer(sma_app.period,self.run,kwargs=dict(sm=sm,sma_app=sma_app))
         t.start()
 
-    def handle_open_data(self, client, message):
+    # functions to handle open data 
 
-        self.app_handler.send(message)
-        client.send({'ssss':'sssssssss'})
-        print(message)
+    def handle_open_data(self, client, message):
+	# here is place to choose to who we want send 
+	# !!! place for list of registered handlers is in app_sdk!!! (every app should have it)
+	for i in self.app_handlers:
+            i.send(str(self.open_data_all_options))
+        log.info('SMA APP received' + str(message))
+
+    def register(self, client, message):
+        # add to the list and check if already exsit
+	if not client in self.app_handlers:
+            self.app_handlers.append(client)
+	log.info('SMA APP registered')
+     
+    def unregister(self, client, message):
+        # remove to the list and check if already exsits
+	if client in self.app_handlers:
+	    self.app_handlers.remove(client)
+        log.info('SMA APP unregistered')
         
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process some integers.')
@@ -425,7 +433,7 @@ if __name__ == '__main__':
                         required=False, default='info', 
                         help='set the log level: debug, info (default), warning, error, critical')
     parser.add_argument('--period',  metavar='[option]', action='store', type=int,
-                        required=False, default=1, 
+                        required=False, default=20, 
                         help='set the period of the app: 1s (default)')
 
     parser.add_argument('--version', action='version', version='%(prog)s 1.0')
@@ -459,12 +467,13 @@ if __name__ == '__main__':
     t.start()
 
     # open data additions 
-    app_open_data=app_sdk.app_builder(app=sma_app.name,
+    app_open_data=app_sdk.app_builder(log=log,
+				      app=sma_app.name,
                                       address=args.url,
                                       port=args.app_port)
 
-    app_open_data.add_options("time", "current time:" + str(datetime.datetime.now()),lambda x,y:None,lambda x,y:None)
-    app_open_data.add_options("list", sma_app.handle_open_data,sma_app.register,sma_app.unregister)
+    app_open_data.add_options("time", reply=lambda x,y: "current time:" + str(datetime.datetime.now()))
+    app_open_data.add_options("list", callback=sma_app.handle_open_data,register=sma_app.register,unregister=sma_app.unregister)
     app_open_data.run_app()
     
     try:
