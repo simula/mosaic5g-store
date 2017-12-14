@@ -487,15 +487,9 @@ if __name__ == '__main__':
     app_open_data.run_app()
     #app_open_data.add_runtime_options("list2", handler=sma_open_data)
 
-# get list of enb that controlling (cell id)
-
     log.info('Waiting ' + str(sma_app.period) + ' seconds...')
     t = Timer(sma_app.period, sma_app.run,kwargs=dict(sm=sm,sma_app=sma_app,sma_open_data=sma_open_data))
     t.start()
     
-    try:
-        tornado.ioloop.IOLoop.current().start()
-    except:
-        pass
-    
+    app_sdk.run_all_apps()
    

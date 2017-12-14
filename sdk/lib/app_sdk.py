@@ -114,3 +114,9 @@ class app_builder:
 	self.app = tornado.web.Application(self.handler_list, **self.settings)
 	self.app.listen(self.port, self.address)
         
+def run_all_apps(): 
+    # make sure that function is runned once per PC  
+    try:
+        tornado.ioloop.IOLoop.current().start()
+    except:
+	pass
