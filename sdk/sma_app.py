@@ -263,7 +263,7 @@ class sma_app(object):
                 # choose the best one
                 self.options = sorted(self.options, key=lambda k: k['weight'],reverse = True)
 
-		self.open_data_all_options.append({'cell_id':bs, 'options': json.dumps(self.options)})
+		self.open_data_all_options.append({'cell_id':bs, 'options': self.options})
 
                 log.debug('\n' + yaml.dump(self.options))
        		
