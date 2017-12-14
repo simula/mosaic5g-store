@@ -453,7 +453,7 @@ if __name__ == '__main__':
                         required=False, default='info', 
                         help='set the log level: debug, info (default), warning, error, critical')
     parser.add_argument('--period',  metavar='[option]', action='store', type=int,
-                        required=False, default=2, 
+                        required=False, default=10, 
                         help='set the period of the app: 1s (default)')
 
     parser.add_argument('--version', action='version', version='%(prog)s 1.0')
@@ -487,7 +487,7 @@ if __name__ == '__main__':
     # open data additions 
     app_open_data=app_sdk.app_builder(log=log,
 				      app=sma_app.name,
-                                      address=args.url,
+                                      address='localhost',
                                       port=args.app_port)
 
     sma_open_data = app_sdk.app_handler(log=log, callback=sma_app.handle_open_data)
