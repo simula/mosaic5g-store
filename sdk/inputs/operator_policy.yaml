@@ -1,14 +1,14 @@
 - operator: orange  
-  freq_min: [456, 2677.5] 
-  freq_max: [470, 2682.5]
+  freq_min: [456, 2660] 
+  freq_max: [470, 2680]
   busy:  
-    sub_freq_min: [466, 2468] #sub
-    sub_freq_max: [470, 2475]
+    sub_freq_min: [466, 2665] #sub
+    sub_freq_max: [470, 2675]
     power_mask: [[-60,-40,-30,-50], [-50,-40,-40,-50]]
-    min_lease_time: [120, 156] 
+    min_lease_time: [120, 100] 
     max_lease_count: [200, 50]
     max_time_to_leave: [100, 75]
-    price: [200, 211]
+    price: [200, 100]
     sensing_sensitivity: [-100, -90]
   idle:
     power_mask: [[-55,-22,-33,-51], [-52,-42,-40,-52]]
@@ -18,11 +18,11 @@
     price: [50, 28]
     sensing_sensitivity: [-100, -100]
 - operator: play  
-  freq_min: [440, 2475, 3500] 
-  freq_max: [456, 2490, 3505]
+  freq_min: [440, 420, 475] 
+  freq_max: [456, 480, 495]
   busy:  
-    sub_freq_min: [440, 2475, 3540]
-    sub_freq_max: [456, 2490, 3550]
+    sub_freq_min: [440, 420, 425]
+    sub_freq_max: [456, 450, 435]
     power_mask: [[-60,-40,-30,-50], [-50,-40,-40,-50], [-80,-55,-50,-70]]
     min_lease_time: [162, 112, 500] 
     max_time_to_leave: [123, 21, 25]
