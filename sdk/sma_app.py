@@ -73,7 +73,6 @@ class sma_app(object):
         self.log_level = log_level
         self.status = 0
         self.op_mode = op_mode
-        self.app_handlers= []
 	self.open_data_all_options = []
 
     def load_rrm_data(self):
@@ -358,7 +357,7 @@ class sma_app(object):
         self.general_policy = ss.get_general_policy()
         self.sensing_data = ss.get_sensing_data()
 
-    def run(self, sm,sma_app):
+    def run(self, sm,sma_app, sma_open_data):
 
         
         log.info('Reading the status of the underlying eNBs')
@@ -382,7 +381,10 @@ class sma_app(object):
 
         if self.check_if_decisions_changed():
             ss.apply_policy(self.output)
+	    # we can send here (only on change)
 
+	sma_open_data.send(json.dumps(self.open_data_all_options))
+	
         # short time scale
         # self.make_decision () # virtual BS within the same physical BS
         # if the decision is different
@@ -390,29 +392,14 @@ class sma_app(object):
             # alternatively, do it manualy through sdk
 
         log.info('Waiting ' + str(sma_app.period) + ' seconds...')
-        t = Timer(sma_app.period,self.run,kwargs=dict(sm=sm,sma_app=sma_app))
+        t = Timer(sma_app.period,self.run,kwargs=dict(sm=sm,sma_app=sma_app,sma_open_data=sma_open_data))
         t.start()
 
-    # functions to handle open data 
-
     def handle_open_data(self, client, message):
-	# here is place to choose to who we want send 
-	# !!! place for list of registered handlers is in app_sdk!!! (every app should have it)
-	for i in self.app_handlers:
-            i.send(str(self.open_data_all_options))
-        log.info('SMA APP received' + str(message))
+        client.send('SMA APP received' + str(message))
+	client.send(json.dumps(self.open_data_all_options))
 
-    def register(self, client, message):
-        # add to the list and check if already exsit
-	if not client in self.app_handlers:
-            self.app_handlers.append(client)
-	log.info('SMA APP registered')
-     
-    def unregister(self, client, message):
-        # remove to the list and check if already exsits
-	if client in self.app_handlers:
-	    self.app_handlers.remove(client)
-        log.info('SMA APP unregistered')
+
         
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process some integers.')
@@ -433,7 +420,7 @@ if __name__ == '__main__':
                         required=False, default='info', 
                         help='set the log level: debug, info (default), warning, error, critical')
     parser.add_argument('--period',  metavar='[option]', action='store', type=int,
-                        required=False, default=20, 
+                        required=False, default=10, 
                         help='set the period of the app: 1s (default)')
 
     parser.add_argument('--version', action='version', version='%(prog)s 1.0')
@@ -462,9 +449,7 @@ if __name__ == '__main__':
                                port=args.port,
                                op_mode=args.op_mode)
 
-    log.info('Waiting ' + str(sma_app.period) + ' seconds...')
-    t = Timer(sma_app.period, sma_app.run,kwargs=dict(sm=sm,sma_app=sma_app))
-    t.start()
+
 
     # open data additions 
     app_open_data=app_sdk.app_builder(log=log,
@@ -472,9 +457,14 @@ if __name__ == '__main__':
                                       address=args.url,
                                       port=args.app_port)
 
-    app_open_data.add_options("time", reply=lambda x,y: "current time:" + str(datetime.datetime.now()))
-    app_open_data.add_options("list", callback=sma_app.handle_open_data,register=sma_app.register,unregister=sma_app.unregister)
+    sma_open_data = app_sdk.app_handler(log=log, callback=sma_app.handle_open_data)
+    app_open_data.add_options("list", handler=sma_open_data)
     app_open_data.run_app()
+    app_open_data.add_runtime_options("list2", handler=sma_open_data)
+
+    log.info('Waiting ' + str(sma_app.period) + ' seconds...')
+    t = Timer(sma_app.period, sma_app.run,kwargs=dict(sm=sm,sma_app=sma_app,sma_open_data=sma_open_data))
+    t.start()
     
     try:
         tornado.ioloop.IOLoop.current().start()
