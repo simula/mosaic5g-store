@@ -77,9 +77,19 @@ class sma_app(object):
 	self.open_data_all_options = []
 
     def load_rrm_data(self):
-        log.info('Current number of eNB attached to rtc: ' + str(sm.get_num_enb()))
+	count = 0
+	try:
+	    count = sm.get_num_enb()
+	except:
+	    count = -1
+
+	if count == -1:
+	    log.info('Could not connect to flexran rtc')
+	    count = 0
+	else:
+            log.info('Current number of eNB attached to rtc: ' + str(count))
         self.base_stations = [];
-        for enb in range(sm.get_num_enb()):          
+        for enb in range(count):          
             dlFreq = sm.get_cell_freq(enb,dir='dl')
             dlBand = sm.get_cell_bw(enb,dir='dl')
             ulFreq = sm.get_cell_freq(enb,dir='ul')
