@@ -17,7 +17,7 @@
   criteria: # 0 - means 'dont care' 
    price: [0, less] 
    bandwidth: [0, more] #(>=)
-   freq_max:  [0, less] #(<=)
+   freq_max:  [2500, more] #(<=)
    min_lease_time: [0, more] 
    duration_lease: [0, more] 
   freq_preference: # (1 + multiplier*xx%) of band, determin how close is the offer to the demand (normalized), could have no preference. Could this be a band and the desired BW for generality? 
@@ -43,7 +43,33 @@
   criteria: # 0 - means 'dont care' 
    price: [0, less] 
    bandwidth: [0, more] #(>=)
-   freq_max:  [0, less] #(<=)
+   freq_max:  [2500, more] #(<=)
+   min_lease_time: [0, more] 
+   duration_lease: [0, more] 
+  freq_preference: # (1 + multiplier*xx%) of band, determin how close is the offer to the demand (normalized), could have no preference. Could this be a band and the desired BW for generality? 
+  - freq_min: 456
+    freq_max: 475
+    multiplier: 0
+- MVNO_group: 'groupC'
+  pattern: '2 * price + 9 * bandwidth ^ ( 1 / 2 )' # freq_min, freq_max, price, bandwidth, min_lease_time, lease_time, duration_lease
+  use_pattern: no
+  cost: # set all 0 to random
+   price:  0
+   bandwidth: 8
+   freq_higher: 0
+   freq_lower: 0
+   min_lease_time: 0
+   duration_lease: 0
+  operator_preference: # set all 1 to dont care # mutual agreement, how to access spectrum and what are the available spectrum sharing modes 
+   orange: 1 # preference for the spectrum owner 
+   play: 1
+   plus: 1
+   t-mobile: 1
+   lsa: 0
+  criteria: # 0 - means 'dont care' 
+   price: [0, less] 
+   bandwidth: [0, more] #(>=)
+   freq_max:  [2500, more] #(<=)
    min_lease_time: [0, more] 
    duration_lease: [0, more] 
   freq_preference: # (1 + multiplier*xx%) of band, determin how close is the offer to the demand (normalized), could have no preference. Could this be a band and the desired BW for generality? 

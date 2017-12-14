@@ -9,7 +9,7 @@
    sensing_sensitivity: [-100, -100]
  - operator: 'play'
    freq_min: [2630, 2640]
-   freq_max: [2635, 2660]
+   freq_max: [2634, 2660]
    power_mask: [[-60,-40,-30,-50], [-60,-40,-30,-50]]
    min_lease_time: [100, 100]
    max_time_to_leave: [100, 90]
