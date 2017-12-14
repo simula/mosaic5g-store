@@ -381,7 +381,7 @@ class sma_app(object):
 
         if self.check_if_decisions_changed():
             ss.apply_policy(self.output)
-	    sma_open_data.send(json.dumps(self.output))
+	    #sma_open_data.send(json.dumps(self.output))
 
         # short time scale
         # self.make_decision () # virtual BS within the same physical BS
@@ -396,12 +396,11 @@ class sma_app(object):
     def handle_open_data(self, client, message):
 	if message == 'get_list':
 	#client.send(json.dumps(self.open_data_all_options))
-	    client.send({'get_list_response':json.dumps(self.open_data_all_options)})
+	    client.send({'get_list': json.dumps(self.open_data_all_options)})
 	elif message == 'get_current':
-	    client.send({'get_current_response':json.dumps(self.next_decisions)})
+	    client.send({'get_current':json.dumps(self.next_decisions)})
 	else:
-	    client.send({"default_response": ['get_list', 'get_current']})
-
+	    client.send({"action_list": ['get_list', 'get_current']})
 
 	
         
