@@ -401,7 +401,7 @@ class sma_app(object):
 	elif message == 'get_current':
 	    client.send(json.dumps(self.next_decisions))
 	else:
-	    client.send("You can request: 'get_list', 'get_current'")
+	    client.send({"Possible requests": ['get_list', 'get_current']})
 
 
 	
