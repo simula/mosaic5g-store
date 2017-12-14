@@ -55,7 +55,7 @@ import rrm_app_vars
 
 from lib import flexran_sdk 
 from lib import logger
-
+from lib import app_sdk
 import signal
 
 def sigint_handler(signum,frame):
@@ -67,6 +67,7 @@ signal.signal(signal.SIGINT, sigint_handler)
 class monitoring_app(object):
     """trigger external events happend in the underlying RAN
     """
+    name='monitoring_app'
     # stats vars
     enb_sfn={}
     # pdcp
@@ -256,6 +257,8 @@ class monitoring_app(object):
         t = Timer(1, self.run,kwargs=dict(sm=sm,rrc=rrc))
         t.start()
         
+    def handle_open_data(self, client, message):
+	client.send(json.dumps({'monitoring_app':'please fill this function'}))
         
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process some integers.')
@@ -271,7 +274,15 @@ if __name__ == '__main__':
                         help='set the application server URL: loalhost (default)')
     parser.add_argument('--port-app', metavar='[option]', action='store', type=str,
                         required=False, default='9090', 
-                        help='set the application server port: 9999 (default)')
+                        help='set the application server port: 9090 (default)')
+# need to may be rename parameters - do not know
+    parser.add_argument('--app-url', metavar='[option]', action='store', type=str,
+                        required=False, default='http://localhost', 
+                        help='set the App address to open data: loalhost (default)')
+    parser.add_argument('--app-port', metavar='[option]', action='store', type=int,
+                        required=False, default=8080, 
+                        help='set the App port to open data: 8080 (default)')
+
     parser.add_argument('--op-mode', metavar='[option]', action='store', type=str,
                         required=False, default='test', 
                         help='Set the app operation mode either with FlexRAN or with the test json files: test(default), sdk')
@@ -295,6 +306,18 @@ if __name__ == '__main__':
                                     log_level=args.log,
                                     op_mode=args.op_mode)
     
+    # open data additions 
+    app_open_data=app_sdk.app_builder(log=log,
+				      app=monitoring_app.name,
+                                      address=args.app_url,
+                                      port=args.app_port)
+
+    monitoring_open_data = app_sdk.app_handler(log=log, callback=monitoring_app.handle_open_data)
+
+
+    app_open_data.add_options("monitoring", handler=monitoring_open_data)
+    app_open_data.run_app()
+
     sm = flexran_sdk.stats_manager(log=log,
                                    url=args.url,
                                    port=args.port,
@@ -311,5 +334,5 @@ if __name__ == '__main__':
     
     t = Timer(1, monitoring_app.run,kwargs=dict(sm=sm,rrc=rrc))
     t.start() 
-
+    app_sdk.run_all_apps()
             

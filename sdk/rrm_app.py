@@ -55,7 +55,7 @@ import rrm_app_vars
 
 from lib import flexran_sdk 
 from lib import logger
-
+from lib import app_sdk
 import signal
 
 def sigint_handler(signum,frame):
@@ -67,6 +67,7 @@ signal.signal(signal.SIGINT, sigint_handler)
 class rrm_app(object):
     """RRM network app to enforce poliy to the underlying RAN
     """
+    name="rrm_app"
     #
     nb_slice=1
     nb_slice_current=0
@@ -328,6 +329,8 @@ class rrm_app(object):
         t = Timer(5, self.run,kwargs=dict(sm=sm,rrm=rrm))
         t.start()
 
+    def handle_open_data(self, client, message):
+	client.send(json.dumps({'rrm_app':'please fill this function'}))
        
         
 if __name__ == '__main__':
@@ -336,9 +339,15 @@ if __name__ == '__main__':
     parser.add_argument('--url', metavar='[option]', action='store', type=str,
                         required=False, default='http://localhost', 
                         help='set the FlexRAN RTC URL: loalhost (default)')
+    parser.add_argument('--app-url', metavar='[option]', action='store', type=str,
+                        required=False, default='http://localhost', 
+                        help='set the App address to open data: loalhost (default)')
     parser.add_argument('--port', metavar='[option]', action='store', type=str,
                         required=False, default='9999', 
                         help='set the FlexRAN RTC port: 9999 (default)')
+    parser.add_argument('--app-port', metavar='[option]', action='store', type=int,
+                        required=False, default=8080, 
+                        help='set the App port to open data: 8080 (default)')
     parser.add_argument('--template', metavar='[option]', action='store', type=str,
                         required=False, default='template_1', 
                         help='set the slice template to indicate the type of each slice: template_1(default), .... template_4')
@@ -365,6 +374,18 @@ if __name__ == '__main__':
                                  url=args.url,
                                  port=args.port,
                                  op_mode=args.op_mode)
+
+    # open data additions 
+    app_open_data=app_sdk.app_builder(log=log,
+				      app=rrm_app.name,
+                                      address=args.app_url,
+                                      port=args.app_port)
+
+    rrm_open_data = app_sdk.app_handler(log=log, callback=rrm_app.handle_open_data)
+    app_open_data.add_options("rrm", handler=rrm_open_data)
+    app_open_data.run_app()
+
+
     policy=rrm.read_policy()
     
     sm = flexran_sdk.stats_manager(log=log,
@@ -376,3 +397,4 @@ if __name__ == '__main__':
     
     t = Timer(3, rrm_app.run,kwargs=dict(sm=sm,rrm=rrm))
     t.start() 
+    app_sdk.run_all_apps()

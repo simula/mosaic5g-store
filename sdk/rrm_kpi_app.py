@@ -55,7 +55,7 @@ import rrm_app_vars
 
 from lib import flexran_sdk
 from lib import logger
-
+from lib import app_sdk
 import signal
 
 def sigint_handler(signum,frame):
@@ -67,6 +67,7 @@ signal.signal(signal.SIGINT, sigint_handler)
 class rrm_kpi_app(object):
   """RRM network app to enforce poliy to the underlying RAN
   """
+  name="rrm_kpi_app"
   #
   pf=''
   pf_current=''
@@ -675,6 +676,8 @@ class rrm_kpi_app(object):
       else:
         log.info('No UE is attached yet')
 
+  def handle_open_data(self, client, message):
+    client.send({'rrm_kpi_app':'please fill this function'})
 
   def run(self, sm, rrm):
     log.info('2. Reading the status of the underlying eNBs')
@@ -708,9 +711,15 @@ if __name__ == '__main__':
   parser.add_argument('--url', metavar='[option]', action='store', type=str,
             required=False, default='http://localhost',
             help='set the FlexRAN RTC URL: loalhost (default)')
+  parser.add_argument('--app-url', metavar='[option]', action='store', type=str,
+            required=False, default='http://localhost', 
+            help='set the App address to open data: loalhost (default)')
   parser.add_argument('--port', metavar='[option]', action='store', type=str,
             required=False, default='9999',
             help='set the FlexRAN RTC port: 9999 (default)')
+  parser.add_argument('--app-port', metavar='[option]', action='store', type=int,
+            required=False, default=8080, 
+            help='set the App port to open data: 8080 (default)')
   parser.add_argument('--template', metavar='[option]', action='store', type=str,
             required=False, default='template_1',
             help='set the slice template to indicate the type of each slice: template_1(default), .... template_4')
@@ -733,6 +742,17 @@ if __name__ == '__main__':
                             template=args.template,
                             op_mode=args.op_mode)
 
+  # open data additions 
+  app_open_data=app_sdk.app_builder(log=log,
+				    app=rrm_kpi_app.name,
+                                    address=args.app_url,
+                                    port=args.app_port)
+
+  rrm_kpi_open_data = app_sdk.app_handler(log=log, callback=rrm_kpi_app.handle_open_data)
+  app_open_data.add_options("kpi", handler=rrm_kpi_open_data)
+  app_open_data.run_app()
+
+
   rrm = flexran_sdk.rrm_policy(log=log,
                                url=args.url,
                                port=args.port,
@@ -748,4 +768,5 @@ if __name__ == '__main__':
 
   t = Timer(3, rrm_kpi_app.run,kwargs=dict(sm=sm,rrm=rrm))
   t.start()
+  app_sdk.run_all_apps()
 

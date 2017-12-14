@@ -106,7 +106,7 @@ class app_builder:
 	client.send({'Available apps' : str(list_apps)})
 
     def send_time(self, client, message):
-	client.send(datetime.datetime.now())
+	client.send({'current_time': str(datetime.datetime.now())})
 
     def run_app(self):    
 	self.add_options("", app_handler(log=self.log, callback=self.send_apps_list))
