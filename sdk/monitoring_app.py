@@ -75,9 +75,9 @@ class monitoring_app(object):
     enb_ue_pdcp_tx_bytes={}
     enb_ue_pdcp_tx_sn={}
     enb_ue_pdcp_tx_aiat={}
-    enb_ue_pdcp_tx_rate_s={}
-    enb_ue_pdcp_tx_throughput_s={}
-    enb_ue_pdcp_tx_aiat_s={}
+    enb_ue_pdcp_tx_w={}
+    enb_ue_pdcp_tx_bytes_w={}
+    enb_ue_pdcp_tx_aiat_w={}
 
 
 
@@ -85,26 +85,26 @@ class monitoring_app(object):
     enb_pdcp_tx_bytes={}
     enb_pdcp_tx_sn={}
     enb_pdcp_tx_aiat={}
-    enb_pdcp_tx_rate_s={}
-    enb_pdcp_tx_throughput_s={}
-    enb_pdcp_tx_aiat_s={}
+    enb_pdcp_tx_w={}
+    enb_pdcp_tx_bytes_w={}
+    enb_pdcp_tx_aiat_w={}
 
     enb_ue_pdcp_rx={}
     enb_ue_pdcp_rx_bytes={}
     enb_ue_pdcp_rx_sn={}
     enb_ue_pdcp_rx_aiat={}
-    enb_ue_pdcp_rx_rate_s={}
-    enb_ue_pdcp_rx_goodput_s={}
-    enb_ue_pdcp_rx_aiat_s={}
+    enb_ue_pdcp_rx_w={}
+    enb_ue_pdcp_rx_bytes_w={}
+    enb_ue_pdcp_rx_aiat_w={}
     enb_ue_pdcp_rx_oo={}
 
     enb_pdcp_rx={}
     enb_pdcp_rx_bytes={}
     enb_pdcp_rx_sn={}
     enb_pdcp_rx_aiat={}
-    enb_pdcp_rx_rate_s={}
-    enb_pdcp_rx_goodput_s={}
-    enb_pdcp_rx_aiat_s={}
+    enb_pdcp_rx_w={}
+    enb_pdcp_rx_bytes_w={}
+    enb_pdcp_rx_aiat_w={}
     enb_pdcp_rx_oo={}
     #RRC
     enb_ue_rsrp={}
@@ -144,17 +144,17 @@ class monitoring_app(object):
             monitoring_app.enb_pdcp_tx_bytes[enb]=0
             monitoring_app.enb_pdcp_tx_sn[enb]=0
             monitoring_app.enb_pdcp_tx_aiat[enb]=0
-            monitoring_app.enb_pdcp_tx_rate_s[enb]=0
-            monitoring_app.enb_pdcp_tx_throughput_s[enb]=0
-            monitoring_app.enb_pdcp_tx_aiat_s[enb]=0
+            monitoring_app.enb_pdcp_tx_w[enb]=0
+            monitoring_app.enb_pdcp_tx_bytes_w[enb]=0
+            monitoring_app.enb_pdcp_tx_aiat_w[enb]=0
 
             monitoring_app.enb_pdcp_rx[enb]=0
             monitoring_app.enb_pdcp_rx_bytes[enb]=0
             monitoring_app.enb_pdcp_rx_sn[enb]=0
             monitoring_app.enb_pdcp_rx_aiat[enb]=0
-            monitoring_app.enb_pdcp_rx_rate_s[enb]=0
-            monitoring_app.enb_pdcp_rx_goodput_s[enb]=0
-            monitoring_app.enb_pdcp_rx_aiat_s[enb] = 0
+            monitoring_app.enb_pdcp_rx_w[enb]=0
+            monitoring_app.enb_pdcp_rx_bytes_w[enb]=0
+            monitoring_app.enb_pdcp_rx_aiat_w[enb] = 0
             monitoring_app.enb_pdcp_rx_oo[enb] = 0
 
 
@@ -179,46 +179,46 @@ class monitoring_app(object):
                 monitoring_app.enb_ue_pdcp_tx_bytes[enb,ue]=sm.get_ue_pdcp_pkt_bytes(enb,ue,'dl')
                 monitoring_app.enb_ue_pdcp_tx_sn[enb,ue]=sm.get_ue_pdcp_pkt_sn(enb,ue,'dl')
                 monitoring_app.enb_ue_pdcp_tx_aiat[enb,ue]=sm.get_ue_pdcp_pkt_aiat(enb,ue,'dl')
-                monitoring_app.enb_ue_pdcp_tx_rate_s[enb,ue]=sm.get_ue_pdcp_pkt_rate_per_s(enb,ue,'dl')
-                monitoring_app.enb_ue_pdcp_tx_throughput_s[enb,ue] = sm.get_ue_pdcp_pkt_throughput(enb,ue,'dl')
-                monitoring_app.enb_ue_pdcp_tx_aiat_s[enb,ue]= sm.get_ue_pdcp_pkt_aiat_s(enb,ue, 'dl')
+                monitoring_app.enb_ue_pdcp_tx_w[enb,ue]=sm.get_ue_pdcp_pkt_w(enb,ue,'dl')
+                monitoring_app.enb_ue_pdcp_tx_bytes_w[enb,ue] = sm.get_ue_pdcp_pkt_bytes_w(enb,ue,'dl')
+                monitoring_app.enb_ue_pdcp_tx_aiat_w[enb,ue]= sm.get_ue_pdcp_pkt_aiat_w(enb,ue, 'dl')
 
                 monitoring_app.enb_ue_pdcp_rx[enb,ue]=sm.get_ue_pdcp_pkt(enb,ue,'ul')
                 monitoring_app.enb_ue_pdcp_rx_bytes[enb,ue]=sm.get_ue_pdcp_pkt_bytes(enb,ue,'ul')
                 monitoring_app.enb_ue_pdcp_rx_sn[enb,ue]=sm.get_ue_pdcp_pkt_sn(enb,ue,'ul')
                 monitoring_app.enb_ue_pdcp_rx_aiat[enb,ue]=sm.get_ue_pdcp_pkt_aiat(enb,ue,'ul')
-                monitoring_app.enb_ue_pdcp_rx_rate_s[enb,ue]=sm.get_ue_pdcp_pkt_rate_per_s(enb,ue,'ul')
-                monitoring_app.enb_ue_pdcp_rx_goodput_s[enb,ue] = sm.get_ue_pdcp_pkt_throughput(enb,ue,'ul')
-                monitoring_app.enb_ue_pdcp_rx_aiat_s[enb,ue]= sm.get_ue_pdcp_pkt_aiat_s(enb,ue, 'ul')
+                monitoring_app.enb_ue_pdcp_rx_w[enb,ue]=sm.get_ue_pdcp_pkt_w(enb,ue,'ul')
+                monitoring_app.enb_ue_pdcp_rx_bytes_w[enb,ue] = sm.get_ue_pdcp_pkt_bytes_w(enb,ue,'ul')
+                monitoring_app.enb_ue_pdcp_rx_aiat_w[enb,ue]= sm.get_ue_pdcp_pkt_aiat_w(enb,ue, 'ul')
                 monitoring_app.enb_ue_pdcp_rx_oo[enb,ue] = sm.get_ue_pdcp_pkt_oo(enb,ue, 'ul')
 
 
                 log.info('UE ' + str(ue) + ' PDCP Tx pkts: '+str(monitoring_app.enb_ue_pdcp_tx[enb,ue]))
-                log.info('UE ' + str(ue) + ' PDCP Tx pkt/s: '+str(monitoring_app.enb_ue_pdcp_tx_rate_s[enb,ue]))
-                log.info('UE ' + str(ue) + ' PDCP Tx throughput_s: '+str(monitoring_app.enb_ue_pdcp_tx_throughput_s[enb,ue]))
-                log.info('UE ' + str(ue) + ' PDCP Tx aiat_s: '+str(monitoring_app.enb_ue_pdcp_tx_aiat_s[enb,ue]))
+                log.info('UE ' + str(ue) + ' PDCP Tx pkt/w: '+str(monitoring_app.enb_ue_pdcp_tx_w[enb,ue]))
+                log.info('UE ' + str(ue) + ' PDCP Tx bytes/w: '+str(monitoring_app.enb_ue_pdcp_tx_bytes_w[enb,ue]))
+                log.info('UE ' + str(ue) + ' PDCP Tx aiat/w: '+str(monitoring_app.enb_ue_pdcp_tx_aiat_w[enb,ue]))
 
                 log.info('UE ' + str(ue) + ' PDCP Rx pkts: '+str(monitoring_app.enb_ue_pdcp_rx[enb,ue]))
-                log.info('UE ' + str(ue) + ' PDCP Rx pkts/s: '+str(monitoring_app.enb_ue_pdcp_rx_rate_s[enb,ue]))
-                log.info('UE ' + str(ue) + ' PDCP Rx goodput_s: '+str(monitoring_app.enb_ue_pdcp_rx_goodput_s[enb,ue]))
-                log.info('UE ' + str(ue) + ' PDCP Rx aiat_s: '+str(monitoring_app.enb_ue_pdcp_rx_aiat_s[enb,ue]))
+                log.info('UE ' + str(ue) + ' PDCP Rx pkts/w: '+str(monitoring_app.enb_ue_pdcp_rx_w[enb,ue]))
+                log.info('UE ' + str(ue) + ' PDCP Rx bytes/w: '+str(monitoring_app.enb_ue_pdcp_rx_bytes_w[enb,ue]))
+                log.info('UE ' + str(ue) + ' PDCP Rx aiat/w: '+str(monitoring_app.enb_ue_pdcp_rx_aiat_w[enb,ue]))
 
                 # per eNB aggregated stas 
                 monitoring_app.enb_pdcp_tx[enb]+=monitoring_app.enb_ue_pdcp_tx[enb,ue]
                 monitoring_app.enb_pdcp_tx_bytes[enb]+=sm.get_ue_pdcp_pkt_bytes(enb,ue,'dl')
                 monitoring_app.enb_pdcp_tx_sn[enb]+=sm.get_ue_pdcp_pkt_sn(enb,ue,'dl')
                 monitoring_app.enb_pdcp_tx_aiat[enb]+=sm.get_ue_pdcp_pkt_aiat(enb,ue,'dl')
-                monitoring_app.enb_pdcp_tx_rate_s[enb]+=sm.get_ue_pdcp_pkt_rate_per_s(enb,ue,'dl')
-                monitoring_app.enb_pdcp_tx_throughput_s[enb]+= sm.get_ue_pdcp_pkt_throughput(enb,ue,'dl')
-                monitoring_app.enb_pdcp_tx_aiat_s[enb]+= sm.get_ue_pdcp_pkt_aiat_s(enb,ue, 'dl')
+                monitoring_app.enb_pdcp_tx_w[enb]+=sm.get_ue_pdcp_pkt_w(enb,ue,'dl')
+                monitoring_app.enb_pdcp_tx_bytes_w[enb]+= sm.get_ue_pdcp_pkt_throughput(enb,ue,'dl')
+                monitoring_app.enb_pdcp_tx_aiat_w[enb]+= sm.get_ue_pdcp_pkt_aiat_w(enb,ue, 'dl')
                
                 monitoring_app.enb_pdcp_rx[enb]+=sm.get_ue_pdcp_pkt(enb,ue,'ul')
                 monitoring_app.enb_pdcp_rx_bytes[enb]+=sm.get_ue_pdcp_pkt_bytes(enb,ue,'ul')
                 monitoring_app.enb_pdcp_rx_sn[enb]+=sm.get_ue_pdcp_pkt_sn(enb,ue,'ul')
                 monitoring_app.enb_pdcp_rx_aiat[enb]+=sm.get_ue_pdcp_pkt_aiat(enb,ue,'ul')
-                monitoring_app.enb_pdcp_rx_rate_s[enb]+=sm.get_ue_pdcp_pkt_rate_per_s(enb,ue,'ul')
-                monitoring_app.enb_pdcp_rx_goodput_s[enb]+= sm.get_ue_pdcp_pkt_throughput(enb,ue,'ul')
-                monitoring_app.enb_pdcp_rx_aiat_s[enb]+= sm.get_ue_pdcp_pkt_aiat_s(enb,ue, 'ul')
+                monitoring_app.enb_pdcp_rx_w[enb]+=sm.get_ue_pdcp_pkt_w(enb,ue,'ul')
+                monitoring_app.enb_pdcp_rx_bytes_w[enb]+= sm.get_ue_pdcp_pkt_bytes_w(enb,ue,'ul')
+                monitoring_app.enb_pdcp_rx_aiat_w[enb]+= sm.get_ue_pdcp_pkt_aiat_w(enb,ue, 'ul')
                 monitoring_app.enb_ue_pdcp_rx_oo[enb] = sm.get_ue_pdcp_pkt_oo(enb,ue, 'ul')
                 
                 # RRC 

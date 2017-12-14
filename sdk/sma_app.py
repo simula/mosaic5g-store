@@ -42,7 +42,12 @@ from time import sleep
 import argparse
 import json
 import yaml
+import tornado 
+import datetime
+
 from lib import polish_calc as calc
+
+from lib import app_sdk
 
 class sma_app(object):
 
@@ -58,7 +63,9 @@ class sma_app(object):
     changes = []
     output = []
 
-
+    period=1
+    name="sma_app"
+    
     def __init__(self, log, url='http://localhost',port='9999',log_level='info', op_mode='test'):
         super(sma_app, self).__init__()
         
@@ -66,8 +73,18 @@ class sma_app(object):
         self.log_level = log_level
         self.status = 0
         self.op_mode = op_mode
-        
-   
+        self.app_handler=None
+    
+
+    def register(self, client, message):
+        # add to the list and check if already exsit
+        self.app_handler = client
+        print message
+    def unregister(self, client, message):
+        # remove to the list and check if already exsit
+        self.app_handler = None
+        print message 
+
     def load_rrm_data(self):
         log.info('Current number of eNB attached to rtc: ' + str(sm.get_num_enb()))
         self.base_stations = [];
@@ -379,11 +396,15 @@ class sma_app(object):
             # set istrubctions to rrm_app # ran shring
             # alternatively, do it manualy through sdk
 
-        time_var = 5
-        log.info('Waiting ' + str(time_var) + ' seconds...')
-        t = Timer(time_var,self.run,kwargs=dict(sm=sm,sma_app=sma_app))
+        log.info('Waiting ' + str(sma_app.period) + ' seconds...')
+        t = Timer(sma_app.period,self.run,kwargs=dict(sm=sm,sma_app=sma_app))
         t.start()
-        
+
+    def handle_open_data(self, client, message):
+
+        self.app_handler.send(message)
+        client.send({'ssss':'sssssssss'})
+        print(message)
         
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process some integers.')
@@ -394,17 +415,24 @@ if __name__ == '__main__':
     parser.add_argument('--port', metavar='[option]', action='store', type=str,
                         required=False, default='9999', 
                         help='set the FlexRAN RTC port: 9999 (default)')
+    parser.add_argument('--app-port', metavar='[option]', action='store', type=int,
+                        required=False, default=8080, 
+                        help='set the App port to open data: 8080 (default)')
     parser.add_argument('--op-mode', metavar='[option]', action='store', type=str,
                         required=False, default='test', 
                         help='Set the app operation mode either with FlexRAN or with the test json files: test, sdk(default)')
     parser.add_argument('--log',  metavar='[level]', action='store', type=str,
                         required=False, default='info', 
                         help='set the log level: debug, info (default), warning, error, critical')
+    parser.add_argument('--period',  metavar='[option]', action='store', type=int,
+                        required=False, default=1, 
+                        help='set the period of the app: 1s (default)')
+
     parser.add_argument('--version', action='version', version='%(prog)s 1.0')
 
-    args = parser.parse_args();
-
+    args = parser.parse_args()
     
+    sma_app.period=args.period
 
     log=flexran_sdk.logger(log_level=args.log).init_logger()
 
@@ -426,7 +454,22 @@ if __name__ == '__main__':
                                port=args.port,
                                op_mode=args.op_mode)
 
+    log.info('Waiting ' + str(sma_app.period) + ' seconds...')
+    t = Timer(sma_app.period, sma_app.run,kwargs=dict(sm=sm,sma_app=sma_app))
+    t.start()
 
+    # open data additions 
+    app_open_data=app_sdk.app_builder(app=sma_app.name,
+                                      address=args.url,
+                                      port=args.app_port)
+
+    app_open_data.add_options("time", "current time:" + str(datetime.datetime.now()),lambda x,y:None,lambda x,y:None)
+    app_open_data.add_options("list", sma_app.handle_open_data,sma_app.register,sma_app.unregister)
+    app_open_data.run_app()
     
-    t = Timer(0.1, sma_app.run,kwargs=dict(sm=sm,sma_app=sma_app))
-    t.start() 
+    try:
+        tornado.ioloop.IOLoop.current().start()
+    except:
+        pass
+    
+   
