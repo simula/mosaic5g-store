@@ -381,10 +381,8 @@ class sma_app(object):
 
         if self.check_if_decisions_changed():
             ss.apply_policy(self.output)
-	    # we can send here (only on change)
+	    sma_open_data.send(json.dumps(self.output))
 
-	sma_open_data.send(json.dumps(self.open_data_all_options))
-	
         # short time scale
         # self.make_decision () # virtual BS within the same physical BS
         # if the decision is different
@@ -397,9 +395,16 @@ class sma_app(object):
 
     def handle_open_data(self, client, message):
         client.send('SMA APP received' + str(message))
-	client.send(json.dumps(self.open_data_all_options))
+	if message == 'get_list':
+	#client.send(json.dumps(self.open_data_all_options))
+	    client.send(json.dumps(self.open_data_all_options))
+	elif message == 'get_current':
+	    client.send(json.dumps(self.next_decisions))
+	else:
+	    client.send("You can request: 'get_list', 'get_current'")
 
 
+	
         
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process some integers.')
@@ -458,9 +463,13 @@ if __name__ == '__main__':
                                       port=args.app_port)
 
     sma_open_data = app_sdk.app_handler(log=log, callback=sma_app.handle_open_data)
+
+
     app_open_data.add_options("list", handler=sma_open_data)
     app_open_data.run_app()
-    app_open_data.add_runtime_options("list2", handler=sma_open_data)
+    #app_open_data.add_runtime_options("list2", handler=sma_open_data)
+
+# get list of enb that controlling (cell id)
 
     log.info('Waiting ' + str(sma_app.period) + ' seconds...')
     t = Timer(sma_app.period, sma_app.run,kwargs=dict(sm=sm,sma_app=sma_app,sma_open_data=sma_open_data))
