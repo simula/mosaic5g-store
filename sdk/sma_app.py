@@ -394,7 +394,6 @@ class sma_app(object):
         t.start()
 
     def handle_open_data(self, client, message):
-        client.send('SMA APP received' + str(message))
 	if message == 'get_list':
 	#client.send(json.dumps(self.open_data_all_options))
 	    client.send(json.dumps(self.open_data_all_options))
