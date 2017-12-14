@@ -440,6 +440,9 @@ if __name__ == '__main__':
     parser.add_argument('--url', metavar='[option]', action='store', type=str,
                         required=False, default='http://localhost', 
                         help='set the FlexRAN RTC URL: loalhost (default)')
+    parser.add_argument('--app-url', metavar='[option]', action='store', type=str,
+                        required=False, default='http://localhost', 
+                        help='set the App address to open data: loalhost (default)')
     parser.add_argument('--port', metavar='[option]', action='store', type=str,
                         required=False, default='9999', 
                         help='set the FlexRAN RTC port: 9999 (default)')
@@ -448,7 +451,7 @@ if __name__ == '__main__':
                         help='set the App port to open data: 8080 (default)')
     parser.add_argument('--op-mode', metavar='[option]', action='store', type=str,
                         required=False, default='test', 
-                        help='Set the app operation mode either with FlexRAN or with the test json files: test, sdk(default)')
+                        help='Set the app operation mode either with FlexRAN or with the test json files: sdk, test(default)')
     parser.add_argument('--log',  metavar='[level]', action='store', type=str,
                         required=False, default='info', 
                         help='set the log level: debug, info (default), warning, error, critical')
@@ -474,7 +477,6 @@ if __name__ == '__main__':
     sm = flexran_sdk.stats_manager(log=log,
                                    url=args.url,
                                    port=args.port,
-                                 #  op_mode='test')
                                    op_mode=args.op_mode)
 
     ss = flexran_sdk.ss_policy(log=log,
@@ -487,7 +489,7 @@ if __name__ == '__main__':
     # open data additions 
     app_open_data=app_sdk.app_builder(log=log,
 				      app=sma_app.name,
-                                      address='localhost',
+                                      address=args.app_url,
                                       port=args.app_port)
 
     sma_open_data = app_sdk.app_handler(log=log, callback=sma_app.handle_open_data)
