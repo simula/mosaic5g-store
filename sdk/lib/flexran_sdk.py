@@ -1335,11 +1335,13 @@ class ss_policy (object):
     lsa_policy = []
     rules = []
     sensing_data = []
+    enb_assign = []
     
     general_policy_file='inputs/general_policy.yaml'
     operator_policy_file='inputs/operator_policy.yaml'
     lsa_policy_file='inputs/lsa_policy.yaml'
     rules_file='inputs/rules.yaml'
+    enb_assign_file='inputs/enb_assign.yaml'
     sensing_data_file='inputs/sensing_data.yaml'
     
     def __init__(self, log, url='http://localhost', port='9999', op_mode='test'):
@@ -1382,6 +1384,11 @@ class ss_policy (object):
         self.log.debug('Loaded: rules file [yaml] :')
         self.log.debug(yaml.dump(self.rules))
 
+	file = open(self.enb_assign_file,'r')
+        self.enb_assign = yaml.load(file)
+        self.log.debug('Loaded: enb assign file [yaml] :')
+        self.log.debug(yaml.dump(self.enb_assign))
+
     def load_sensing_data(self):
         """!@brief load sensing data"""
         file = open(self.sensing_data_file,'r')
@@ -1410,6 +1417,10 @@ class ss_policy (object):
     def get_general_policy(self):
         """!@brief return the general spectrum sharing policy """
         return self.general_policy
+
+    def get_enb_assign(self):
+        """!@brief return the enb assigment settings """
+        return self.enb_assign
 
     # apply policy with policy data 
     # TBD: apply policy from a file

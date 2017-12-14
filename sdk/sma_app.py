@@ -57,6 +57,7 @@ class sma_app(object):
     rules = []
     sensing_data = []
     options = []
+    enb_assign = []
     base_stations = []
     decisions = []
     next_decisions = []
@@ -133,7 +134,8 @@ class sma_app(object):
               price = self.lsa_policy[i]['price'][f_index]
               time = self.lsa_policy[i]['min_lease_time'][f_index]
               count = self.lsa_policy[i]['max_lease_count'][f_index]
-              self.options.append({'lsa':True,'freq_min': f_min, 'freq_max': f_max, 'duration_lease': time * count, \
+	      operator = self.lsa_policy[i]['operator']
+              self.options.append({'lsa':True,'freq_min': f_min,'operator':operator, 'freq_max': f_max, 'duration_lease': time * count, \
                                  'bandwidth': bandwidth,'min_lease_time': time, 'price': 1.0*price/time})
        log.debug('All available options: ')
        log.debug(yaml.dump(self.options))
@@ -250,32 +252,45 @@ class sma_app(object):
         self.next_decisions = []
 	self.open_data_all_options = []
         for bs in range(sm.get_num_enb()):
-           for rule_index in range(len(self.rules)):
-                self.options = []
-                self.add_operator_options()
-                self.add_lsa_options()
-                self.filter_with_general_rules()
+	   cell_id = sm.get_cell_config(enb=bs)['cellId']
+	   mvno_group = None
+	   for i in self.enb_assign:
+	       if i['cell_id'] == cell_id:
+	           mvno_group = i['MVNO_group']
+		   break
+	   found_rule = False
+           if mvno_group is not None:
+	       for rule_index in range(len(self.rules)):
+	           if self.rules[rule_index]['MVNO_group'] == mvno_group:
+			found_rule = True
+			self.options = []
+			self.add_operator_options()
+			self.add_lsa_options()
+			self.filter_with_general_rules()
 
-                # filter and calculate options
-                self.filter_options(rule_index)
-                self.calculate_weights(rule_index)           
-                   
-                # choose the best one
-                self.options = sorted(self.options, key=lambda k: k['weight'],reverse = True)
+			# filter and calculate options
+			self.filter_options(rule_index)
+			self.calculate_weights(rule_index)           
+			   
+			# choose the best one
+			self.options = sorted(self.options, key=lambda k: k['weight'],reverse = True)
 
-		self.open_data_all_options.append({'cell_id':bs, 'options': self.options})
+			self.open_data_all_options.append({'cell_id':bs, 'options': self.options})
 
-                log.debug('\n' + yaml.dump(self.options))
-       		
-                # save option to next_decision vector
-                if len(self.options) > 0:
-                    self.options[0]['eNB_index'] = bs
-                    self.options[0]['MVNO_name'] = self.rules[rule_index]['MVNO_name']
-                    self.next_decisions.append(self.options[0]) 
-                else:
-                    self.next_decisions.append({'error':'No options available'})
-
-		
+			log.debug('\n' + yaml.dump(self.options))
+	
+			# save option to next_decision vector
+			if len(self.options) > 0:
+			    self.options[0]['eNB_index'] = cell_id
+			    self.options[0]['MVNO_group'] = self.rules[rule_index]['MVNO_group']
+			    self.next_decisions.append(self.options[0]) 
+			else:
+			    self.next_decisions.append({'error':'No options available'})
+			break
+	       if not found_rule:
+	           log.info('not found mvno group named ' +str(mvno_group)+ ' for cell id ' +str(cell_id))
+           else:
+	       log.info('cell id ' + str(cell_id) + ' do not have any mvno group assigned')	
 
         log.debug('Next decisions: ')
         log.debug(yaml.dump(self.next_decisions))
@@ -292,13 +307,17 @@ class sma_app(object):
         a = []
         for i in range(len(self.decisions)):
             a.append({})  
+
+	    if( len(self.next_decisions) == 0 and len(self.decisions) > 0) :
+	        log.info("WE DO NOT IMPLEMENTED TURNING OFF ENB") 	
+
             if(self.decisions[i] == self.next_decisions[i]): # if the current decision is the same as previous, skip 
                 log.info('Skip changes to eNB: ' + str(self.decisions[i]['eNB_index']) + \
-                         ' MVNO_name: ' + str(self.decisions[i]['MVNO_name']))
+                         ' MVNO_group: ' + str(self.decisions[i]['MVNO_group']))
                 self.decisions[i] = self.next_decisions[i]
             else:
                 log.info('Change policy to eNB: ' + str(self.next_decisions[i]['eNB_index']) + \
-                        ' MVNO_name: ' + str(self.next_decisions[i]['MVNO_name'])) 
+                        ' MVNO_group: ' + str(self.next_decisions[i]['MVNO_group'])) 
                 for j in self.decisions[i].keys():
                     if (self.decisions[i][j] != self.next_decisions[i][j]):
                         a[i][j] = self.next_decisions[i][j]
@@ -359,6 +378,7 @@ class sma_app(object):
         self.operator_policy = ss.get_operator_policy()
         self.general_policy = ss.get_general_policy()
         self.sensing_data = ss.get_sensing_data()
+	self.enb_assign = ss.get_enb_assign()
 
     def run(self, sm,sma_app, sma_open_data):
 
@@ -423,7 +443,7 @@ if __name__ == '__main__':
                         required=False, default='info', 
                         help='set the log level: debug, info (default), warning, error, critical')
     parser.add_argument('--period',  metavar='[option]', action='store', type=int,
-                        required=False, default=10, 
+                        required=False, default=2, 
                         help='set the period of the app: 1s (default)')
 
     parser.add_argument('--version', action='version', version='%(prog)s 1.0')
