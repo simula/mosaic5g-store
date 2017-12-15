@@ -330,7 +330,7 @@ class rrm_app(object):
         t.start()
 
     def handle_open_data(self, client, message):
-	client.send(json.dumps({'rrm_app':'please fill this function'}))
+	client.send({'rrm_app':rrm.read_policy()})
        
         
 if __name__ == '__main__':

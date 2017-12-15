@@ -677,7 +677,8 @@ class rrm_kpi_app(object):
         log.info('No UE is attached yet')
 
   def handle_open_data(self, client, message):
-    client.send({'rrm_kpi_app':'please fill this function'})
+    #print type(json.dumps(rrm.read_policy()))
+    client.send({'rrm_kpi_app':rrm.read_policy()})
 
   def run(self, sm, rrm):
     log.info('2. Reading the status of the underlying eNBs')
