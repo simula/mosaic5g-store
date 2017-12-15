@@ -148,8 +148,8 @@ class rrm_kpi_app(object):
 
   def get_statistics(self, sm):
 
-    for enb in range(0, sm.get_num_enb()) :
-      rrm_kpi_app.enb_dlrb[enb] = sm.get_cell_rb(enb,dir='DL')
+    for enb in range(0, sm.get_num_enb()) : # number of eNB is set by the number of enb_config found in sm.stats_data
+      rrm_kpi_app.enb_dlrb[enb] = sm.get_cell_rb(enb,dir='DL')  # get num RB total
       rrm_kpi_app.enb_ulrb[enb] = sm.get_cell_rb(enb,dir='UL')
       rrm_kpi_app.enb_ulmaxmcs[enb] = sm.get_cell_maxmcs(enb,dir='UL')
       rrm_kpi_app.enb_dlmaxmcs[enb] = sm.get_cell_maxmcs(enb,dir='DL')
@@ -169,9 +169,9 @@ class rrm_kpi_app(object):
   # 
   def get_policy_maxmcs(self,rrm,sm) :
 
-    for enb in range(0, sm.get_num_enb()) :
+    for enb in range(0, sm.get_num_enb()) : # on the number of eNB
       rrm_kpi_app.maxmcs_dl[enb] = {}
-      for sid in range(0, rrm.get_input_slice_nums(enb) ):  # get_input_slice_nums and get_num_slices
+      for sid in range(0, rrm.get_input_slice_nums(enb) ):  # get_input_slice_nums and get_num_slices from template_data (charged from yaml file)
         rrm_kpi_app.maxmcs_dl[enb][sid] = rrm.get_slice_maxmcs(sid=sid, dir='DL')
 
     for enb in range(0, sm.get_num_enb()) :
@@ -305,7 +305,7 @@ class rrm_kpi_app(object):
 
       log.info('Available RB : UL ' + str(rrm_kpi_app.enb_available_ulrb[enb]) + ', DL ' + str(rrm_kpi_app.enb_available_dlrb[enb]) )
 
-      for ue in range(0, sm.get_num_ue(enb=enb)) :
+      for ue in range(0, sm.get_num_ue(enb=enb)) :  # num of UEs is the number of different entries of the uemacstats list inside the sm.stats_data coming from json file
 
         # Initialization of MCS (Dl = conversion DL wideband CQI -> MCS, UL : fixed value) and number of RBs
         rrm_kpi_app.ue_dlmcs[enb,ue] = self.get_policy_mcs(rrm, enb, ue, "DL")
@@ -341,7 +341,7 @@ class rrm_kpi_app(object):
       # Loop on slices to allocate reserved rate, according to priority, for UL
       for slice in range(0, rrm.get_input_slice_nums(enb)):
 
-        sid = rrm_kpi_app.slices_priority_ul[slice][0]
+        sid = rrm_kpi_app.slices_priority_ul[slice][0] # ATTENTION check if reordering with priority does not introduce a change on sid
         slice_ul_tbs = 0
 
         # Loop on UEs connected to the current eNodeB and in the current slice
@@ -658,6 +658,18 @@ class rrm_kpi_app(object):
   def enforce_policy(self,sm,rrm):
 
     for enb in range(0, sm.get_num_enb()) :
+      
+      # set the number of active slices, which is the same for UL and DL
+      # BEWARE: CURRENTLY THERE IS ONLY ONE eNB supported, we charge the last eNB
+      rrm.policy_data['mac'][0]['dl_scheduler']['parameters']['n_active_slices'] = rrm.get_input_slice_nums(enb)
+      rrm.policy_data['mac'][1]['ul_scheduler']['parameters']['n_active_slices_uplink'] = rrm.get_input_slice_nums(enb)
+      
+      # code for resetting to zero the percentage of slice resources, for the case in which we pass from more slices to less slices
+      for sid in range(rrm.get_input_slice_nums(enb), len(rrm.policy_data['mac'][0]['dl_scheduler']['parameters']['slice_percentage'])) : # the total number of slice is calculated on the DL, because we assume that there is the same number of slices in DL and UL. It is the case in the current yaml file
+        
+        rrm.set_slice_rb(sid=sid,rb=0, dir='DL')
+        rrm.set_slice_rb(sid=sid,rb=0, dir='UL')
+        
       for sid in range(0, rrm.get_input_slice_nums(enb)):
 
         # set the policy files
@@ -671,23 +683,25 @@ class rrm_kpi_app(object):
         if rrm.apply_policy() == 'connected' :
           rrm_kpi_app.pf=rrm.save_policy(time=rrm_kpi_app.enb_sfn[enb,0])
           log.info('_____________eNB' + str(enb)+' enforced policy______________')
-          print rrm.dump_policy()
+          print rrm.dump_policy()   # print information
       else:
         log.info('No UE is attached yet')
 
 
   def run(self, sm, rrm):
     log.info('2. Reading the status of the underlying eNBs')
+    
+    # in test mode charge data from all_1.json file in .stats_data
     sm.stats_manager('all')
 
     log.info('3. Gather statistics')
-    rrm.read_template(self.template)
-    rrm_kpi_app.get_statistics(sm)
-    rrm_kpi_app.get_policy_maxmcs(rrm,sm)
-    rrm_kpi_app.get_policy_reserved_rate(rrm,sm)
+    rrm.read_template(self.template) # read yaml template, unless a new valid template file is passed as an argument, and fill template_data
+    rrm_kpi_app.get_statistics(sm) # get information on number of eNB and max num RBs from stats_data coming from jsom file
+    rrm_kpi_app.get_policy_maxmcs(rrm,sm) # get number of slices of each eNB, where the number of eNB is the one coming from sm, i.e. from json file
+    rrm_kpi_app.get_policy_reserved_rate(rrm,sm) # get yaml file parameters template_data, for eNB in sm.stats_data
     
-    rrm.set_num_slices(n=int(rrm.get_input_slice_nums(0)), dir='DL')
-    rrm.set_num_slices(n=int(rrm.get_input_slice_nums(0)), dir='UL')
+    #rrm.set_num_slices(n=int(rrm.get_input_slice_nums(0)), dir='DL') # first get number of DL slices of enb 0 ONLY, then set it to the active number of slices of the policy data
+    #rrm.set_num_slices(n=int(rrm.get_input_slice_nums(0)), dir='UL')
 
     log.info('4. Calculate the expected performance')
     rrm_kpi_app.calculate_exp_kpi_perf(sm, rrm)
@@ -696,14 +710,14 @@ class rrm_kpi_app(object):
     rrm_kpi_app.determine_rb_share(sm,rrm)
 
     log.info('6. Check for new RRM Slice policy')
-    rrm_kpi_app.enforce_policy(sm,rrm)
+    rrm_kpi_app.enforce_policy(sm,rrm) # update rrm.policy_data
 
     t = Timer(5, self.run,kwargs=dict(sm=sm,rrm=rrm))
     t.start()
 
 
 if __name__ == '__main__':
-  parser = argparse.ArgumentParser(description='Process some integers.')
+  parser = argparse.ArgumentParser(description='RRM KPI app.')
 
   parser.add_argument('--url', metavar='[option]', action='store', type=str,
             required=False, default='http://localhost',
@@ -737,8 +751,11 @@ if __name__ == '__main__':
                                url=args.url,
                                port=args.port,
                                op_mode=args.op_mode)
+  
+  # read policyfile 'inputs/enb_scheduling_policy.yaml' in test mode and put it in rrm.policy_data
   policy=rrm.read_policy()
 
+  # in test mode charge data from all_1.json file in .stats_data
   sm = flexran_sdk.stats_manager(log=log,
                                  url=args.url,
                                  port=args.port,
@@ -746,6 +763,7 @@ if __name__ == '__main__':
   
   py3_flag = version_info[0] > 2
 
-  t = Timer(3, rrm_kpi_app.run,kwargs=dict(sm=sm,rrm=rrm))
-  t.start()
+  rrm_kpi_app.run(sm=sm,rrm=rrm)
+  #t = Timer(3, rrm_kpi_app.run,kwargs=dict(sm=sm,rrm=rrm))
+  #t.start()
 
