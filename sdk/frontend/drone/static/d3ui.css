@@ -1,0 +1,448 @@
+input, select, textarea, button {
+    font-size: inherit;
+}
+
+.disabled {
+    opacity: 0.5;
+}
+.popup-wrapper, .popup-menu, .popup-header, .cancel, /* .buttons label*/ {
+    border: 1px solid #aaaaaa;
+    border-radius: 4px;
+    position: relative;
+}
+
+input:checked ~ label {
+    background: yellow;
+    border-style: inset;
+}
+
+.popup, .popup-menu {
+    display: none;
+    background: rgb(217,241,255);
+    box-shadow: 2px 2px 2px 2px #888888;
+    text-align: left;
+    padding: 0;
+    color: #333333;
+    z-index: 3;
+}
+
+.handle {
+    position: absolute;
+    /*background: green;*/
+}
+.top {
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 10px;
+    cursor: n-resize;
+}
+.bottom {
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 10px;
+    cursor: s-resize;
+}
+.right {
+    top: 0;
+    bottom: 0;
+    right: 0;
+    width: 10px;
+    cursor: e-resize;
+}
+.left {
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 10px;
+    cursor: w-resize;
+}
+.top-left {
+    top: 0;
+    left: 0;
+    width: 10px;
+    height: 10px;
+    cursor: nw-resize;
+}
+.top-right {
+    top: 0;
+    right: 0;
+    width: 10px;
+    height: 10px;
+    cursor: ne-resize;
+}
+.bottom-left {
+    bottom: 0;
+    left: 0;
+    width: 10px;
+    height: 10px;
+    cursor: sw-resize;
+}
+.bottom-right {
+    bottom: 0;
+    right: 0;
+    width: 10px;
+    height: 10px;
+    cursor: se-resize;
+}
+
+.popup-wrapper {
+    position: absolute;
+    /* display: flex; */
+    /* flex-direction: column; */
+    /* box-sizing: border-box; */
+    border: 0;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    margin: 3px;
+    /*box-shadow: 3px 3px 3px 3px #888888;*/
+    border-top-left-radius: 0.5em;
+    border-top-right-radius: 0.5em;
+    text-align: left;
+    /*background: #cfe7f5;*/
+    /*float:left;*/
+    overflow: hidden;
+ }
+.popup {
+    cursor: default;
+    /* min-width: 150px; */
+    /* min-height: 100px; */
+    /* width: auto; */
+    /* height: auto; */
+    /*font-size: 80%;*/
+    border-top-left-radius: 0.5em;
+    border-top-right-radius: 0.5em;
+    /* background: rgb(217,241,255); */
+    /*background: #F2F1F0;*/
+    position: fixed;
+    z-index: 100000;
+    overflow: hidden;
+}
+
+
+.popup-menu {
+    z-index: 100010;
+    position: absolute;
+}
+
+.popup .popup-menu {
+    /* When popup-menu is inside a popup, use fixed position. This
+     * allows the menu to extend outside the popup window, even if
+     * overflow hidden is otherwise active. Popup menus on main
+     * window use absolute positioning -- fixed would be difficult
+     * combined with scrolling.
+     */
+    position: fixed;
+}
+
+.popup-menu-open:hover {
+    background-color: rgba(85,85,85,0.5);
+}
+
+.popup-menu-open:hover > .popup-menu {
+    display: block;
+    /*cursor: default;*/
+    /*transform: translate(0.8em,-0.5em);*/
+}
+.popup-menu-open > .popup-menu {
+    /* margin-top: 5px; */
+    margin-top: 0;
+    margin-left: 1em;
+}
+
+.popup ul, .popup-menu {
+    list-style: none;
+    padding: 0;
+    /* margin: 0; */
+}
+
+.popup-menu > li {
+    border: 1px solid #F2F1F0;;
+    line-height: 1em;
+    padding-top: 0.3em;
+    padding-bottom: 0.3em;
+    padding-left: 1em;
+    padding-right: 1em;
+}
+
+/* .popup-action { */
+/* } */
+
+.popup-menu-open {
+    min-height: 1em;
+    cursor: default;
+}
+
+
+.popup-menu > li:not(.disabled):hover {
+    background: #E95420;
+    color: #FFF;
+    border: 1px solid #E95420;
+    border-style: outset;
+}
+
+.popup-menu-open:before {
+    /* top: -0.3em; */
+    content: "\2003\2630\00a0";
+}
+
+/* .popup-action:before { */
+/*     content: "\00a0\25B8\00a0"; */
+/*     text-align: right; */
+/*     float: right; */
+/* } */
+
+.popup-header {
+    display: block;
+    font-weight: bold;
+    padding: 0.4em 1em;
+    background: #3E3D39;
+    color: #F2F1F0;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+    /*float: left;*/
+}
+.popup-header:active {
+    cursor: grabbing;
+}
+
+.popup-content {
+    display: block;
+    border: 0;
+    padding: .5em 1em;
+    background: none;
+    /*box-sizing: border-box;*/
+    clear: left;
+    float: left;
+}
+
+.popup.fixed .popup-wrapper {
+    display: flex;
+    flex-direction: column;
+}
+
+.popup.fixed .popup-content {
+    position: relative;
+    flex-grow: 1;
+}
+
+
+.cancel:before {
+    content: "\00D7";
+}
+
+.wrapper {
+    position: relative;
+}
+
+.cancel {
+    position: absolute;
+    right: .3em;
+    margin: 0 0 0 0;
+    padding: 1px;
+    cursor: default;
+    background-color: rgba(230,230,230,0.75);
+    text-align: center;
+    vertical-align: middle;
+    width: 0.9em;
+    height: 0.9em;
+    font-weight: bold;
+    line-height: 0.9em;
+}
+
+.sorter {
+    /* background-color: rgba(230,230,230,0.75); */
+    cursor: default;
+    margin-left: 0.5em;
+}
+.sorter.up:after {
+    content: "\00a0\25B4\00a0";
+}
+.sorter.down:after {
+    content: "\00a0\25BE\00a0";
+}
+.sorter.checked {
+    color: yellow;
+}
+
+.cancel:hover, .sorter:hover {
+    color: red;
+}
+
+.header > * {
+    display: inline-block;
+}
+
+th span {
+    vertical-align: top;
+}
+
+.resize {
+    position: absolute;
+    background-color: #f00;
+}
+
+.resize.right {
+    cursor: e-resize;
+    height: 100%;
+    width: 7px;
+    right: -5px;
+    top: 0;
+}
+
+.resize.bottom {
+    cursor: s-resize;
+    width: 100%;
+    height: 7px;
+    bottom: -5px;
+    left: 0;
+}
+
+
+ul.menubar {
+    padding: 0.1em;
+    margin: 0;
+    list-style-type: none;
+    font-size: 110%;
+    /* background: #3E3D39; */
+    /* color: #FFF; */
+}
+ul.menubar > li {
+    display: inline-block;
+    padding-left: 0.5em;
+    padding-right: 0.5em;
+}
+ul.menubar > li:hover > .popup-menu {
+    display: block;
+}
+
+
+.tabs {
+    position: relative;
+}
+.tabs:not(.vertical) .tab {
+    position: relative;   
+    /* display: none; */
+    border: 1px solid #ccc;
+    padding: 6px;
+    margin: 0;
+    width: 100%;
+    background: rgb(141,221,255);
+    box-sizing: border-box;
+}
+.tabs.vertical .tab {
+    position: relative;   
+    /* display: none; */
+    border: 1px solid #ccc;
+    padding: 6px;
+    margin: 0;
+    background: rgb(141,221,255);
+    box-sizing: border-box;
+    flex-grow: 1;
+    overflow: scroll;
+}
+.tabs .tab:not(.open) {
+    display: none;
+}
+ul.tabsbar {
+    list-style-type: none;
+    padding: 0;
+    margin-bottom: -1px;
+}
+ul.tabsbar > li {
+    display: inline-block;
+    padding: 6px;
+    border: 1px solid #ccc;
+    margin-right: 2px;
+    position: relative;
+    left: 1px;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom: 0px;
+    width: auto;
+    white-space: nowrap;
+}
+.tabs.vertical {
+    display: flex;
+    flex-direction: row;
+}
+.tabs.vertical ul.tabsbar {
+    /* width: 100px; */
+}
+.tabs.vertical ul.tabsbar > li {
+    display: block;
+}
+ul.tabsbar > li.selected {
+    padding-top: 6px;
+    background: rgb(141,221,255);
+    z-index: 1;
+}
+
+.open {
+    display: block;
+}
+
+.horizontal {
+    display: flex;
+}
+.horizontal > * {
+    /* display: inline-block; */
+    position: relative;
+    vertical-align: top;
+}
+
+
+
+.tooltip {   
+    visibility: hidden;
+    position: absolute;
+    top: 0px;
+    left: 105%;
+    text-align: left;
+    width: 120px;
+    /* max-width: 20em; */
+    padding: 2px;
+    font: 12px sans-serif;
+    font-size: 90%;
+    border: 0px;
+    border-radius: 0.5em;
+    pointer-events: none;
+    background: #aaccff;
+    color: black;
+    white-space: normal;
+    overflow: visible;
+    z-index: 3;
+}
+
+.tooltip::after {
+    content: " ";
+    position: absolute;
+    left: -10px;
+    top: 10px;
+    /*margin-top: -10px;*/
+    border-width: 5px;
+    border-style: solid;
+    border-color: transparent #aaccff transparent transparent;
+}
+.toolhint {
+    position: relative;
+}
+.tooltipbox {
+    position: relative;
+}
+.toolhint:after {
+    color: blue;
+    content: "\00a0\1f6c8\00a0";
+}
+
+:hover > .tooltip {
+    visibility: visible;
+    overflow: visible;
+}
+
+.selected {
+    background: #E95420;
+}

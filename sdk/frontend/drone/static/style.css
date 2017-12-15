@@ -1,0 +1,124 @@
+body {
+    background: rgb(217,241,255);
+}
+.log {
+    white-space: nowrap;
+    box-sizing: border-box;
+    font-family: monospace;
+    line-height: 1.2em;
+    overflow: scroll;
+    height: 40em;
+    width: 100%;
+    padding: 4px;
+    border: 4px inset rgb(141,221,255);
+    background: rgb(217,241,255);
+}
+
+.log p {
+    margin: 0;
+    min-height: 1.2em;
+}
+
+table {
+    /* border-collapse: collapse; */
+    background: rgb(217,241,255);
+    line-height: 1.2em;
+    font-size: 80%;
+}
+td {
+    white-space: nowrap;
+}
+
+#topology {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    flex-grow: 2;
+    box-sizing: border-box;
+    border: 2px solid rgb(141,221,255);
+    background: rgb(217,241,255);
+}
+#parameters {
+    flex-grow: 1;
+}
+
+#mainMenu {
+    background: #333333;
+    color: #FFF;
+    font-weight: bold;
+    margin-bottom: 1em;
+}
+/* Show links within menubar with menubar colors */
+ul.menubar a {
+    /* background: #333333; */
+    color: black;
+    text-decoration: none;
+}
+
+ul.tabsbar > li {
+    width: 10em;
+}
+ul.tabsbar > li .control {
+    display: inline-block;
+    position: absolute;
+    font-size: 80%;
+    text-align: right;
+    top: 0.2em;
+    right: 0.2em;
+}
+
+ul.tabsbar > li .bullet {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    margin-right: 0.5em;
+    margin-bottom: -0.2em;
+    border-radius: 50%;
+}
+ul.tabsbar > li.done .bullet {
+    background: rgb(0,0,0);
+}
+ul.tabsbar > li.running .bullet {
+    background: rgb(0,255,0);
+}
+ul.tabsbar > li.starting .bullet {
+    background: rgb(255,255,0);
+}
+ul.tabsbar > li.error .bullet {
+    background: rgb(255,0,0);
+}
+
+span.control input {
+    padding: 0;
+}
+
+.error_x {
+    font-size: 400%;
+    fill: red;
+}
+
+#edit-task tbody input[type=text],#edit-task tbody textarea {
+    width: 100%;
+}
+
+.link.control line {
+    stroke: red;
+    stroke-dasharray: 5;
+}
+
+.link.connection line {
+    stroke: green;
+}
+
+.node.sma circle {
+    fill: rgba(255,0,0,0.2);
+    stroke: red;
+    stroke-width: 5;
+}
+.node text.stats {
+    text-anchor: start;
+}
+
+#parameters:not(.open) {
+    display: none;
+}
