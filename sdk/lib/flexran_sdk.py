@@ -1221,8 +1221,8 @@ class stats_manager(object):
             self.log.warning('unknown direction ' + dir + 'set to DL')
             return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktTxSn']
 
-    def get_ue_pdcp_pkt_rate_per_s(self,enb=0,ue=0, dir='DL'):
-        """!@brief Get the  PDCP rate per second in a given direction
+    def get_ue_pdcp_pkt_w(self,enb=0,ue=0, dir='DL'):
+        """!@brief Get the  PDCP number of pkts per observation window in a given direction
         
         @param enb: index of eNB
         @param ue: index of UE
@@ -1230,12 +1230,12 @@ class stats_manager(object):
         """
         
         if dir == 'dl' or dir == 'DL' :
-            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktTxRateS']
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktTxW']
         elif dir == 'ul' or dir == 'UL' :
-            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktRxRateS']
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktRxW']
         else :
             self.log.warning('unknown direction ' + dir + 'set to DL')
-            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktTxRateS']
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktTxW']
 
     def get_ue_pdcp_pkt_aiat(self,enb=0,ue=0, dir='DL'):
         """!@brief Get the  PDCP aggregated inter-arrivale time in a given direction
@@ -1253,7 +1253,7 @@ class stats_manager(object):
             self.log.warning('unknown direction ' + dir + 'set to DL')
             return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktTxAiat']
 
-    def get_ue_pdcp_pkt_throughput(self,enb=0,ue=0, dir='DL'):
+    def get_ue_pdcp_pkt_bytes_w(self,enb=0,ue=0, dir='DL'):
         """!@brief Get the  PDCP aggregated inter-arrivale time in a given direction
         
         @param enb: index of eNB
@@ -1262,14 +1262,14 @@ class stats_manager(object):
         """
         
         if dir == 'dl' or dir == 'DL' :
-            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktTxThroughputS']
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktTxBytesW']
         elif dir == 'ul' or dir == 'UL' :
-            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktRxGoodputS']
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktRxBytesW']
         else :
             self.log.warning('unknown direction ' + dir + 'set to DL')
-            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktTxThroughputS']
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktTxBytesW']
 
-    def get_ue_pdcp_pkt_aiat_s(self,enb=0,ue=0, dir='DL'):
+    def get_ue_pdcp_pkt_aiat_w(self,enb=0,ue=0, dir='DL'):
         """!@brief Get the  PDCP aggregated inter-arrivale time in a given direction
         
         @param enb: index of eNB
@@ -1278,12 +1278,12 @@ class stats_manager(object):
         """
         
         if dir == 'dl' or dir == 'DL' :
-            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktTxAiatS']
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktTxAiatW']
         elif dir == 'ul' or dir == 'UL' :
-            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktRxAiatS']
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktRxAiatW']
         else :
             self.log.warning('unknown direction ' + dir + 'set to DL')
-            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktTxAiatS']
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktTxAiatW']
 
     def get_ue_pdcp_pkt_oo(self,enb=0,ue=0, dir='UL'):
         """!@brief Get the  PDCP aggregated inter-arrivale time in a given direction

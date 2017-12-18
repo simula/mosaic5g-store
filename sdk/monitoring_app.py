@@ -179,7 +179,7 @@ class monitoring_app(object):
             monitoring_app.enb_pdcp_sfn[enb]=sm.get_enb_pdcp_sfn(enb)
 
             log.info('Num UE ' + str(sm.get_num_ue(enb=enb)))
-            log.info('PDCP SFN : ' + str(monitoring_app.enb_pdcp_sfn[enb]))
+            log.info('PDCP SFN : ' + str(monitoring_app.enb_pdcp_sfn[enb]) + 'ms')
             
             for ue in range(0, sm.get_num_ue(enb=enb)) :
                                                               
