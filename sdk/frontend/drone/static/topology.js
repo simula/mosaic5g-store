@@ -95,6 +95,8 @@ function topology(sources) {
 	for (var s = 0; s < LIST.length; ++s) {
 	    var src = LIST[s];
 	    GRAPH.show(src.node);
+	    if (src.node.error)
+		continue; // Don't refresh links from a node in error state
 	    if (src.node.info === INFO_APP) {
 		// Assume SMA Application (if more apps are involved,
 		// we need some APP identifier).
@@ -303,7 +305,7 @@ function topology(sources) {
 		.selectAll("tspan")
 	// The following fields from cellConfig[0] will be show on
 	// right of the eNB icon. Generated below...
-		.data(['cellId', 'dlFreq', 'ulFreq', 'eutraBand', 'dlPdschPower', 'ulPuschPower', ]);
+		.data(['cellId', 'dlFreq', 'ulFreq', 'eutraBand', 'dlPdschPower', 'ulPuschPower', 'dlBandwidth', 'ulBandwidth']);
 	stats.enter()
 	    .append("tspan")
 	    .attr("x", GRAPH.NODE.R)
