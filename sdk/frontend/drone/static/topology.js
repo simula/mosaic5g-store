@@ -96,14 +96,25 @@ function topology(sources) {
 	    var src = LIST[s];
 	    GRAPH.show(src.node);
 	    if (src.node.info === INFO_APP) {
-		// Assume SMA Application
+		// Assume SMA Application (if more apps are involved,
+		// we need some APP identifier).
 		var list = src.node.config;
 		for (var i = 0; i < list.length; ++i) {
+		    // Pick to values from first option of the last
+		    // message of the SMA_APP
 		    var cell_id = list[i].cell_id;
 		    var freq_min = list[i].options[0].freq_min;
 		    var freq_max = list[i].options[0].freq_max;
 		    var bandwidth = list[i].options[0].bandwidth;
+		    // This needs to change: now we just assume the
+		    // index of SMA_APP is the same as the enb index
+		    // from flexran. Must be replaced by proper id of
+		    // the enb being controlled.
 		    var cell = GRAPH.node('0_eNB_' + i);
+		    // The 'end' parameter defines what is shown at
+		    // the end of the dashed line from SMA_APP to
+		    // eNB. The styling of the line is defined by
+		    // ".link.control" in style.css.
 		    GRAPH.relation(src.node, cell, 'control', {'end': ['['+freq_min+'..'+freq_max+'] ' + bandwidth]},
 				   undefined, GRAPH.MARKER.END);
 		}
@@ -138,7 +149,11 @@ function topology(sources) {
 				var stats = data.mac_stats[i].ue_mac_stats[m];
 				if (!stats || stats.rnti != ueConfig.rnti) continue;
 				ue.config = stats;
-				//l.push(stats.mac_stats.ulCqiReport.pucchDbm[0].p0PucchDbm);
+				// The list below defines the
+				// information set drawn at the end of
+				// the link from eNB to UE. Each
+				// pushed string will show up on their
+				// own line.
 				l.push('CQI='+stats.mac_stats.dlCqiReport.csiReport[0].p10csi.wbCqi);
 				l.push('RSRP='+stats.mac_stats.rrcMeasurements.pcellRsrp);
 				l.push('RSRQ='+stats.mac_stats.rrcMeasurements.pcellRsrq);
@@ -146,6 +161,13 @@ function topology(sources) {
 				    show_config(ue.config);
 			    }
 			}
+			// The "arrow" labels depend on the link
+			// direction, thus we need to call relation
+			// for each direction. Only one two-headed
+			// link is drawn, with arrow labels above and
+			// below the link center. The labels at UE end
+			// (array l) are only specified for the
+			// enb->ue link.
 			GRAPH.relation(enb, ue, 'connection', {end: l, arrow: [''+stats.mac_stats.pdcpStats.pktTxBytesW]},undefined, GRAPH.MARKER.END);
 			GRAPH.relation(ue, enb, 'connection', {arrow: [''+stats.mac_stats.pdcpStats.pktRxBytesW]},undefined, GRAPH.MARKER.END);
 		    }
@@ -279,6 +301,8 @@ function topology(sources) {
 	var stats = nodes.filter(function (d) { return d.info === INFO_ENB;})
 		.select("text.stats")
 		.selectAll("tspan")
+	// The following fields from cellConfig[0] will be show on
+	// right of the eNB icon. Generated below...
 		.data(['cellId', 'dlFreq', 'ulFreq', 'eutraBand', 'dlPdschPower', 'ulPuschPower', ]);
 	stats.enter()
 	    .append("tspan")
@@ -288,6 +312,8 @@ function topology(sources) {
 	stats.merge(stats)
 	    .text(function (d) {
 		var config = this.parentNode.__data__.config;
+		// ...add/update the above defined cellConfig[0].xxx
+		// fields in graph.
 		return d + '=' + config.cellConfig[0][d];
 	    });
     }
