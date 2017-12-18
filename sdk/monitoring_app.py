@@ -209,7 +209,7 @@ class monitoring_app(object):
                 monitoring_app.enb_pdcp_tx_sn[enb]+=sm.get_ue_pdcp_pkt_sn(enb,ue,'dl')
                 monitoring_app.enb_pdcp_tx_aiat[enb]+=sm.get_ue_pdcp_pkt_aiat(enb,ue,'dl')
                 monitoring_app.enb_pdcp_tx_w[enb]+=sm.get_ue_pdcp_pkt_w(enb,ue,'dl')
-                monitoring_app.enb_pdcp_tx_bytes_w[enb]+= sm.get_ue_pdcp_pkt_throughput(enb,ue,'dl')
+                monitoring_app.enb_pdcp_tx_bytes_w[enb]+= sm.get_ue_pdcp_pkt_bytes_w(enb,ue,'dl')
                 monitoring_app.enb_pdcp_tx_aiat_w[enb]+= sm.get_ue_pdcp_pkt_aiat_w(enb,ue, 'dl')
                
                 monitoring_app.enb_pdcp_rx[enb]+=sm.get_ue_pdcp_pkt(enb,ue,'ul')
