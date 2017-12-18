@@ -1098,6 +1098,16 @@ class stats_manager(object):
 
         return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['rlcReport'][lc]
 
+    def get_ue_lc_bo(self,enb=0,ue=0,lc=0):
+        """!@brief Get the UE RLC buffer occupancy for a particular logical channel
+        
+        @param enb: index of eNB
+        @param ue: index of UE
+        @param lc: logical channel id
+        """
+
+        return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['rlcReport'][lc]['txQueueSize']
+    
     def get_ue_dlcqi_report(self,enb=0,ue=0):
         """!@brief Get the UE downlink channel quality indicator (CQI) report
         

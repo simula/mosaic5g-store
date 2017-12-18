@@ -76,55 +76,54 @@ class monitoring_app(object):
     enb_ue_pdcp_tx_bytes={}
     enb_ue_pdcp_tx_sn={}
     enb_ue_pdcp_tx_aiat={}
-    enb_ue_pdcp_tx_rate_s={}
-    enb_ue_pdcp_tx_throughput_s={}
-    enb_ue_pdcp_tx_aiat_s={}
-
-
+    enb_ue_pdcp_tx_w={}
+    enb_ue_pdcp_tx_bytes_w={}
+    enb_ue_pdcp_tx_aiat_w={}
 
     enb_pdcp_tx={}
     enb_pdcp_tx_bytes={}
     enb_pdcp_tx_sn={}
     enb_pdcp_tx_aiat={}
-    enb_pdcp_tx_rate_s={}
-    enb_pdcp_tx_throughput_s={}
-    enb_pdcp_tx_aiat_s={}
+    enb_pdcp_tx_w={}
+    enb_pdcp_tx_bytes_w={}
+    enb_pdcp_tx_aiat_w={}
 
     enb_ue_pdcp_rx={}
     enb_ue_pdcp_rx_bytes={}
     enb_ue_pdcp_rx_sn={}
     enb_ue_pdcp_rx_aiat={}
-    enb_ue_pdcp_rx_rate_s={}
-    enb_ue_pdcp_rx_goodput_s={}
-    enb_ue_pdcp_rx_aiat_s={}
+    enb_ue_pdcp_rx_w={}
+    enb_ue_pdcp_rx_bytes_w={}
+    enb_ue_pdcp_rx_aiat_w={}
     enb_ue_pdcp_rx_oo={}
 
     enb_pdcp_rx={}
     enb_pdcp_rx_bytes={}
     enb_pdcp_rx_sn={}
     enb_pdcp_rx_aiat={}
-    enb_pdcp_rx_rate_s={}
-    enb_pdcp_rx_goodput_s={}
-    enb_pdcp_rx_aiat_s={}
+    enb_pdcp_rx_w={}
+    enb_pdcp_rx_bytes_w={}
+    enb_pdcp_rx_aiat_w={}
     enb_pdcp_rx_oo={}
+    
     #RRC
     enb_ue_rsrp={}
     enb_ue_rsrq={}
     enb_ue_trigger_meas={}
+    
     # MAC
     enb_ulrb={}
     enb_dlrb={}
     enb_ulmaxmcs={}
     enb_dlmaxmcs={}
-
-    ue_dlwcqi={}
-        
+    ue_dlwcqi={}       
     ue_phr={}
-
     lc_ue_bsr={}
-    lc_ue_report={}
+    lc_ue_bo={}
 
-    # 
+    # App specific vars
+    period=1.0
+    name="monitoring"
 
     def __init__(self, log, url='http://localhost',port='9999',url_app='http://localhost',port_app='9090', log_level='info', op_mode='test'):
         super(monitoring_app, self).__init__()
@@ -135,34 +134,46 @@ class monitoring_app(object):
         self.status = 'none'
         self.op_mode = op_mode
         
-        
-    def get_statistics(self, sm):
+    def get_rrc_statistics(self, sm):
             
         for enb in range(0, sm.get_num_enb()) :
-            monitoring_app.enb_ue_trigger_meas[enb]=1
+	   
+
+            for ue in range(0, sm.get_num_ue(enb=enb)) :
+		
+                monitoring_app.enb_ue_rsrp[enb,ue]=sm.get_ue_rsrp(enb,ue)
+                monitoring_app.enb_ue_rsrq[enb,ue]=sm.get_ue_rsrq(enb,ue)
+
+                log.info('UE ' + str(ue) + ' RSRP: '+str(monitoring_app.enb_ue_rsrp[enb,ue]))
+                log.info('UE ' + str(ue) + ' RSRQ: '+str(monitoring_app.enb_ue_rsrq[enb,ue]))
+
+
+                if sm.get_ue_measid(enb,ue) == -1 : # and monitoring_app.enb_ue_trigger_meas[enb] == 1 :
+                   log.info('2.1 Enable RRC trigger measurement event for eNB ' + str(enb))
+                   rrc.trigger_meas()
+
+
+    def get_pdcp_statistics(self, sm):
+            
+        for enb in range(0, sm.get_num_enb()) :
+           
             
             monitoring_app.enb_pdcp_tx[enb]=0
             monitoring_app.enb_pdcp_tx_bytes[enb]=0
             monitoring_app.enb_pdcp_tx_sn[enb]=0
             monitoring_app.enb_pdcp_tx_aiat[enb]=0
-            monitoring_app.enb_pdcp_tx_rate_s[enb]=0
-            monitoring_app.enb_pdcp_tx_throughput_s[enb]=0
-            monitoring_app.enb_pdcp_tx_aiat_s[enb]=0
+            monitoring_app.enb_pdcp_tx_w[enb]=0
+            monitoring_app.enb_pdcp_tx_bytes_w[enb]=0
+            monitoring_app.enb_pdcp_tx_aiat_w[enb]=0
 
             monitoring_app.enb_pdcp_rx[enb]=0
             monitoring_app.enb_pdcp_rx_bytes[enb]=0
             monitoring_app.enb_pdcp_rx_sn[enb]=0
             monitoring_app.enb_pdcp_rx_aiat[enb]=0
-            monitoring_app.enb_pdcp_rx_rate_s[enb]=0
-            monitoring_app.enb_pdcp_rx_goodput_s[enb]=0
-            monitoring_app.enb_pdcp_rx_aiat_s[enb] = 0
+            monitoring_app.enb_pdcp_rx_w[enb]=0
+            monitoring_app.enb_pdcp_rx_bytes_w[enb]=0
+            monitoring_app.enb_pdcp_rx_aiat_w[enb] = 0
             monitoring_app.enb_pdcp_rx_oo[enb] = 0
-
-
-            monitoring_app.enb_dlrb[enb] = sm.get_cell_rb(enb,dir='DL')
-            monitoring_app.enb_ulrb[enb] = sm.get_cell_rb(enb,dir='UL')
-            monitoring_app.enb_ulmaxmcs[enb] = sm.get_cell_maxmcs(enb,dir='UL')
-            monitoring_app.enb_dlmaxmcs[enb] = sm.get_cell_maxmcs(enb,dir='DL')
 
             # PDCP SFN 
             monitoring_app.enb_pdcp_sfn[enb]=sm.get_enb_pdcp_sfn(enb)
@@ -171,90 +182,102 @@ class monitoring_app(object):
             log.info('PDCP SFN : ' + str(monitoring_app.enb_pdcp_sfn[enb]))
             
             for ue in range(0, sm.get_num_ue(enb=enb)) :
-                monitoring_app.enb_sfn[enb,ue]  = sm.get_enb_sfn(enb,ue)
-                monitoring_app.ue_dlwcqi[enb,ue]=sm.get_ue_dlwbcqi(enb,ue)
-                monitoring_app.ue_phr[enb,ue] =sm.get_ue_phr(enb,ue)
-                                                
+                                                              
                 # per eNB UE stats 
                 monitoring_app.enb_ue_pdcp_tx[enb,ue]=sm.get_ue_pdcp_pkt(enb,ue,'dl')
                 monitoring_app.enb_ue_pdcp_tx_bytes[enb,ue]=sm.get_ue_pdcp_pkt_bytes(enb,ue,'dl')
                 monitoring_app.enb_ue_pdcp_tx_sn[enb,ue]=sm.get_ue_pdcp_pkt_sn(enb,ue,'dl')
                 monitoring_app.enb_ue_pdcp_tx_aiat[enb,ue]=sm.get_ue_pdcp_pkt_aiat(enb,ue,'dl')
-                monitoring_app.enb_ue_pdcp_tx_rate_s[enb,ue]=sm.get_ue_pdcp_pkt_rate_per_s(enb,ue,'dl')
-                monitoring_app.enb_ue_pdcp_tx_throughput_s[enb,ue] = sm.get_ue_pdcp_pkt_throughput(enb,ue,'dl')
-                monitoring_app.enb_ue_pdcp_tx_aiat_s[enb,ue]= sm.get_ue_pdcp_pkt_aiat_s(enb,ue, 'dl')
+                monitoring_app.enb_ue_pdcp_tx_w[enb,ue]=sm.get_ue_pdcp_pkt_w(enb,ue,'dl')
+                monitoring_app.enb_ue_pdcp_tx_bytes_w[enb,ue] = sm.get_ue_pdcp_pkt_bytes_w(enb,ue,'dl')
+                monitoring_app.enb_ue_pdcp_tx_aiat_w[enb,ue]= sm.get_ue_pdcp_pkt_aiat_w(enb,ue, 'dl')
 
                 monitoring_app.enb_ue_pdcp_rx[enb,ue]=sm.get_ue_pdcp_pkt(enb,ue,'ul')
                 monitoring_app.enb_ue_pdcp_rx_bytes[enb,ue]=sm.get_ue_pdcp_pkt_bytes(enb,ue,'ul')
                 monitoring_app.enb_ue_pdcp_rx_sn[enb,ue]=sm.get_ue_pdcp_pkt_sn(enb,ue,'ul')
                 monitoring_app.enb_ue_pdcp_rx_aiat[enb,ue]=sm.get_ue_pdcp_pkt_aiat(enb,ue,'ul')
-                monitoring_app.enb_ue_pdcp_rx_rate_s[enb,ue]=sm.get_ue_pdcp_pkt_rate_per_s(enb,ue,'ul')
-                monitoring_app.enb_ue_pdcp_rx_goodput_s[enb,ue] = sm.get_ue_pdcp_pkt_throughput(enb,ue,'ul')
-                monitoring_app.enb_ue_pdcp_rx_aiat_s[enb,ue]= sm.get_ue_pdcp_pkt_aiat_s(enb,ue, 'ul')
+                monitoring_app.enb_ue_pdcp_rx_w[enb,ue]=sm.get_ue_pdcp_pkt_w(enb,ue,'ul')
+                monitoring_app.enb_ue_pdcp_rx_bytes_w[enb,ue] = sm.get_ue_pdcp_pkt_bytes_w(enb,ue,'ul')
+                monitoring_app.enb_ue_pdcp_rx_aiat_w[enb,ue]= sm.get_ue_pdcp_pkt_aiat_w(enb,ue, 'ul')
                 monitoring_app.enb_ue_pdcp_rx_oo[enb,ue] = sm.get_ue_pdcp_pkt_oo(enb,ue, 'ul')
 
 
                 log.info('UE ' + str(ue) + ' PDCP Tx pkts: '+str(monitoring_app.enb_ue_pdcp_tx[enb,ue]))
-                log.info('UE ' + str(ue) + ' PDCP Tx pkt/s: '+str(monitoring_app.enb_ue_pdcp_tx_rate_s[enb,ue]))
-                log.info('UE ' + str(ue) + ' PDCP Tx throughput_s: '+str(monitoring_app.enb_ue_pdcp_tx_throughput_s[enb,ue]))
-                log.info('UE ' + str(ue) + ' PDCP Tx aiat_s: '+str(monitoring_app.enb_ue_pdcp_tx_aiat_s[enb,ue]))
+                log.info('UE ' + str(ue) + ' PDCP Tx pkt/w: '+str(monitoring_app.enb_ue_pdcp_tx_w[enb,ue]))
+                log.info('UE ' + str(ue) + ' PDCP Tx bytes/w: '+str(monitoring_app.enb_ue_pdcp_tx_bytes_w[enb,ue]))
+                log.info('UE ' + str(ue) + ' PDCP Tx aiat/w: '+str(monitoring_app.enb_ue_pdcp_tx_aiat_w[enb,ue]))
 
                 log.info('UE ' + str(ue) + ' PDCP Rx pkts: '+str(monitoring_app.enb_ue_pdcp_rx[enb,ue]))
-                log.info('UE ' + str(ue) + ' PDCP Rx pkts/s: '+str(monitoring_app.enb_ue_pdcp_rx_rate_s[enb,ue]))
-                log.info('UE ' + str(ue) + ' PDCP Rx goodput_s: '+str(monitoring_app.enb_ue_pdcp_rx_goodput_s[enb,ue]))
-                log.info('UE ' + str(ue) + ' PDCP Rx aiat_s: '+str(monitoring_app.enb_ue_pdcp_rx_aiat_s[enb,ue]))
+                log.info('UE ' + str(ue) + ' PDCP Rx pkts/w: '+str(monitoring_app.enb_ue_pdcp_rx_w[enb,ue]))
+                log.info('UE ' + str(ue) + ' PDCP Rx bytes/w: '+str(monitoring_app.enb_ue_pdcp_rx_bytes_w[enb,ue]))
+                log.info('UE ' + str(ue) + ' PDCP Rx aiat/w: '+str(monitoring_app.enb_ue_pdcp_rx_aiat_w[enb,ue]))
 
                 # per eNB aggregated stas 
                 monitoring_app.enb_pdcp_tx[enb]+=monitoring_app.enb_ue_pdcp_tx[enb,ue]
                 monitoring_app.enb_pdcp_tx_bytes[enb]+=sm.get_ue_pdcp_pkt_bytes(enb,ue,'dl')
                 monitoring_app.enb_pdcp_tx_sn[enb]+=sm.get_ue_pdcp_pkt_sn(enb,ue,'dl')
                 monitoring_app.enb_pdcp_tx_aiat[enb]+=sm.get_ue_pdcp_pkt_aiat(enb,ue,'dl')
-                monitoring_app.enb_pdcp_tx_rate_s[enb]+=sm.get_ue_pdcp_pkt_rate_per_s(enb,ue,'dl')
-                monitoring_app.enb_pdcp_tx_throughput_s[enb]+= sm.get_ue_pdcp_pkt_throughput(enb,ue,'dl')
-                monitoring_app.enb_pdcp_tx_aiat_s[enb]+= sm.get_ue_pdcp_pkt_aiat_s(enb,ue, 'dl')
+                monitoring_app.enb_pdcp_tx_w[enb]+=sm.get_ue_pdcp_pkt_w(enb,ue,'dl')
+                monitoring_app.enb_pdcp_tx_bytes_w[enb]+= sm.get_ue_pdcp_pkt_bytes_w(enb,ue,'dl')
+                monitoring_app.enb_pdcp_tx_aiat_w[enb]+= sm.get_ue_pdcp_pkt_aiat_w(enb,ue, 'dl')
                
                 monitoring_app.enb_pdcp_rx[enb]+=sm.get_ue_pdcp_pkt(enb,ue,'ul')
                 monitoring_app.enb_pdcp_rx_bytes[enb]+=sm.get_ue_pdcp_pkt_bytes(enb,ue,'ul')
                 monitoring_app.enb_pdcp_rx_sn[enb]+=sm.get_ue_pdcp_pkt_sn(enb,ue,'ul')
                 monitoring_app.enb_pdcp_rx_aiat[enb]+=sm.get_ue_pdcp_pkt_aiat(enb,ue,'ul')
-                monitoring_app.enb_pdcp_rx_rate_s[enb]+=sm.get_ue_pdcp_pkt_rate_per_s(enb,ue,'ul')
-                monitoring_app.enb_pdcp_rx_goodput_s[enb]+= sm.get_ue_pdcp_pkt_throughput(enb,ue,'ul')
-                monitoring_app.enb_pdcp_rx_aiat_s[enb]+= sm.get_ue_pdcp_pkt_aiat_s(enb,ue, 'ul')
+                monitoring_app.enb_pdcp_rx_w[enb]+=sm.get_ue_pdcp_pkt_w(enb,ue,'ul')
+                monitoring_app.enb_pdcp_rx_bytes_w[enb]+= sm.get_ue_pdcp_pkt_bytes_w(enb,ue,'ul')
+                monitoring_app.enb_pdcp_rx_aiat_w[enb]+= sm.get_ue_pdcp_pkt_aiat_w(enb,ue, 'ul')
                 monitoring_app.enb_ue_pdcp_rx_oo[enb] = sm.get_ue_pdcp_pkt_oo(enb,ue, 'ul')
-                
-                # RRC 
-                monitoring_app.enb_ue_rsrp[enb,ue]=sm.get_ue_rsrp(enb,ue)
-                monitoring_app.enb_ue_rsrq[enb,ue]=sm.get_ue_rsrq(enb,ue)
-
-                log.info('UE ' + str(ue) + ' RSRP '+str(monitoring_app.enb_ue_rsrp[enb,ue]))
-                log.info('UE ' + str(ue) + ' RSRQ '+str(monitoring_app.enb_ue_rsrq[enb,ue]))
-
-
-                if sm.get_ue_measid(enb,ue) == -1 : # and monitoring_app.enb_ue_trigger_meas[enb] == 1 :
-                    monitoring_app.enb_ue_trigger_meas[enb] = 0
-                    
+                                  
                 
                 
-            log.info('eNB ' + str(enb) +' PDCP Tx pkts'+str(monitoring_app.enb_pdcp_tx[enb]))
-            log.info('eNB ' + str(enb) +' PDCP Rx pkts'+str(monitoring_app.enb_pdcp_rx[enb]))
+            #log.info('eNB ' + str(enb) +' PDCP Tx pkts: '+str(monitoring_app.enb_pdcp_tx[enb]))
+            #log.info('eNB ' + str(enb) +' PDCP Rx pkts: '+str(monitoring_app.enb_pdcp_rx[enb]))
 
-                
+    def get_mac_statistics(self, sm):
+            
+        for enb in range(0, sm.get_num_enb()) :
+           
+            monitoring_app.enb_dlrb[enb] = sm.get_cell_rb(enb,dir='DL')
+            monitoring_app.enb_ulrb[enb] = sm.get_cell_rb(enb,dir='UL')
+            monitoring_app.enb_ulmaxmcs[enb] = sm.get_cell_maxmcs(enb,dir='UL')
+            monitoring_app.enb_dlmaxmcs[enb] = sm.get_cell_maxmcs(enb,dir='DL')
+
+          
+            for ue in range(0, sm.get_num_ue(enb=enb)) :
+                monitoring_app.enb_sfn[enb,ue]  = sm.get_enb_sfn(enb,ue)
+                monitoring_app.ue_dlwcqi[enb,ue]=sm.get_ue_dlwbcqi(enb,ue)
+                monitoring_app.ue_phr[enb,ue] =sm.get_ue_phr(enb,ue)
+                                                
+                log.info('eNB ' + str(enb) +' DL CQI: '+str(monitoring_app.ue_dlwcqi[enb,ue]))
+                log.info('eNB ' + str(enb) +' UL PHR: '+str(monitoring_app.ue_phr[enb,ue]))
+
+		for lc in range(2, sm.get_num_ue_lc(enb=enb,ue=ue)) :
+                    # for each lcgid rater than lc
+                    monitoring_app.lc_ue_bsr[enb,ue,lc] = sm.get_ue_bsr(enb,ue,lc=lc)
+                    monitoring_app.lc_ue_bo[enb, ue, lc] = sm.get_ue_lc_bo(enb=enb, ue=ue, lc=lc)
+			
+                    log.info('eNB ' + str(enb) +' DL BO: '+str(monitoring_app.lc_ue_bo[enb, ue, lc]))		    
+                    log.info('eNB ' + str(enb) +' UL BSR: '+str(monitoring_app.lc_ue_bsr[enb,ue,lc]))
+
+
       
     def run(self, sm,rrc):
         log.info('1. Reading the status of the underlying eNBs')
         sm.stats_manager('all')
 
-        log.info('2. Gather statistics')
-        monitoring_app.get_statistics(sm)
+	log.info('2.1 Gather MAC statistics')
+        monitoring_app.get_mac_statistics(sm)
 
-        for enb in range(0, sm.get_num_enb()) :
-            if monitoring_app.enb_ue_trigger_meas[enb] == 0 :
-                log.info('2.1 Enable RRC trigger measurement event for eNB ' + str(enb))
-                rrc.trigger_meas()
-                monitoring_app.enb_ue_trigger_meas[enb] = 1
+        log.info('2.2 Gather PDCP statistics')
+        monitoring_app.get_pdcp_statistics(sm)
+
+	log.info('2.3 Gather RRC statistics')
+        monitoring_app.get_rrc_statistics(sm)        
        
         
-        t = Timer(1, self.run,kwargs=dict(sm=sm,rrc=rrc))
+        t = Timer(monitoring_app.period, self.run,kwargs=dict(sm=sm,rrc=rrc))
         t.start()
         
     def handle_open_data(self, client, message):
@@ -292,9 +315,15 @@ if __name__ == '__main__':
     parser.add_argument('--log',  metavar='[level]', action='store', type=str,
                         required=False, default='info', 
                         help='set the log level: debug, info (default), warning, error, critical')
+    parser.add_argument('--period',  metavar='[option]', action='store', type=float,
+                        required=False, default=1, 
+                        help='set the period of the app: 1s (default)')
+
     parser.add_argument('--version', action='version', version='%(prog)s 1.0')
 
-    args = parser.parse_args()
+    args = parser.parse_args() 
+
+   
 
     log=flexran_sdk.logger(log_level=args.log).init_logger()
     
@@ -315,7 +344,7 @@ if __name__ == '__main__':
     monitoring_open_data = app_sdk.app_handler(log=log, callback=monitoring_app.handle_open_data)
 
 
-    app_open_data.add_options("monitoring", handler=monitoring_open_data)
+    app_open_data.add_options(monitoring_app.name, handler=monitoring_open_data)
     app_open_data.run_app()
 
     sm = flexran_sdk.stats_manager(log=log,
@@ -332,7 +361,9 @@ if __name__ == '__main__':
     
     py3_flag = version_info[0] > 2 
     
-    t = Timer(1, monitoring_app.run,kwargs=dict(sm=sm,rrc=rrc))
+    monitoring_app.period=args.period
+    log.info('App period is set to : ' + str(monitoring_app.period))
+    t = Timer(monitoring_app.period, monitoring_app.run,kwargs=dict(sm=sm,rrc=rrc))
     t.start() 
     app_sdk.run_all_apps()
             
