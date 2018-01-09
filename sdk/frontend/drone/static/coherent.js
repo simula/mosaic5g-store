@@ -168,6 +168,17 @@ uitools.callbacks(
 	    return true;
 	}
 
+	function run_stop_task() {
+	    // this.__data__ -> <tab element>
+	    // <tab element>.__data__ -> task object
+	    d3.event.stopPropagation();
+	    var task = this.__data__.__data__;
+	    if (task.state == "running")
+		task.stop();
+	    else
+		task.start();
+	}
+	
 	function _add_source_row(row) {
 	    row.append("td")
 		.append("input")
@@ -353,9 +364,10 @@ uitools.callbacks(
 		.attr("value", "clear")
 		.on("click", function (d) { d.clear();});
 	    state.append("div")
-		.attr("class", "error");
-	    state.append("div")
 		.attr("class", "state");
+	    state.append("div").text(":\u00a0");
+	    state.append("div")
+		.attr("class", "error");
 	    
 	    var drone_console = tasks
 		    .append("div")
@@ -394,14 +406,20 @@ uitools.callbacks(
 		    var ctrl = d3.select(bar)
 			    .append("span")
 			    .attr("class", "control");
-		    ctrl.append("input")
-			.attr("type", "button")
-			//.attr("value", "\u25FC");
-			.attr("value", "\u25B6");
-		    // 5110B stop
-		    ctrl.append("input")
-			.attr("type", "button")
-			.attr("value", "\u270E")
+		    // For tasks, add run/stop button
+		    if (this.classList.contains("task")) {
+			// This is internal in coherent.js -- map
+			// click directly to action (no need to route
+			// via uitools).
+			ctrl.append("button")
+			    .attr("class", "runstop")
+			    .on("click", run_stop_task);
+		    }
+
+		    // Edit task/sources button (this uses uitools
+		    // popup panel functionality -- route via uitools)
+		    ctrl.append("button")
+			.text("\u270E")
 			.call(uitools.add_click_action);
 		}
 	    });

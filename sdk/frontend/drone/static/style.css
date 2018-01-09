@@ -88,8 +88,15 @@ ul.tabsbar > li.error .bullet {
     background: rgb(255,0,0);
 }
 
-span.control input {
+span.control button {
     padding: 0;
+}
+
+ul.tabsbar > li .control .runstop:after {
+    content: "\25B6";
+}
+ul.tabsbar > li.running .control .runstop:after {
+    content: "\25FC";
 }
 
 .error_x {
