@@ -12,6 +12,11 @@ function topology(sources) {
 	class: "phone"
     };
     
+    var INFO_LC_UE = {
+	icon: "PHONE",
+	class: "phone"
+    };
+    
     var INFO_RTC = {
 	icon: "RTC",
 	class: "rtc"
@@ -24,12 +29,12 @@ function topology(sources) {
     
     function expandBottom(elem, params) {
 	// Expand element height to the bottom of page (experimental)
-	var body = d3.select("body").node();
+	//var body = d3.select("body").node();
 	var rect = elem.getBoundingClientRect();
 	var h = window.innerHeight;
-	// Ad hoc: -20 for potential borders and margins -- not a
+	// Ad hoc: -30 for potential borders and margins -- not a
 	// stable solution
-	var vh = Math.max(200, (h - rect.top) - 20);
+	var vh = Math.max(200, (h - rect.top) - 30);
 	d3.select(elem).style("height", vh + "px");
     }
 
@@ -58,10 +63,23 @@ function topology(sources) {
 	return result;
     }
 
+    function get(obj, path, value) {
+	// Safely get deep property from obj.
+	//  - path: array of property names, path to target
+	//  - value: returned, if path does not exist
+	for (var i = 0; i < path.length; ++i) {
+	    if (!(path[i] in obj)) return value;
+	    obj = obj[path[i]];
+	}
+	return obj;
+    }
+    
     function closeConfig() {
 	var params = d3.select("#parameters")
 		.classed("open", false);
 	show_id = undefined;
+	// More room for the graph
+	GRAPH.resize();
     }
 
     function show_config(config) {
@@ -88,6 +106,8 @@ function topology(sources) {
 	    .append("td")
 	    .merge(row)
 	    .text(function (d) { return d; });
+	// Less room for the graph
+	GRAPH.resize();
     }
 
     function update() {
@@ -135,33 +155,61 @@ function topology(sources) {
 		    ueConfig: config.UE.ueConfig,
 		    lcUeConfig: config.LC.lcUeConfig
 		};
+		var ue_list = [];
+		if (config.UE.ueConfig) {
+		    for (var j = 0; j < config.UE.ueConfig.length; ++j) {
+			var ueConfig = config.UE.ueConfig[j];
+			if (ueConfig.rnti) {
+			    ue_list[ueConfig.rnti] = GRAPH.node(src.index + '_UE_'+ ueConfig.rnti, ueConfig.rnti, INFO_UE);
+			}
+		    }
+		}
 		if (config.LC.lcUeConfig) {
-		    for (var j = 0; j < config.LC.lcUeConfig.length; ++j) {
-			var ueConfig = config.LC.lcUeConfig[j];
-			// THIS IS NOT "PRODUCTION LEVEL"
-			// solution. The rnti is random value, and
-			// this keeps adding new nodes into the
-			// graph (even if they are not
-			// visible). If 'rnti' based solution is
-			// kept, old nodes must be deleted.
-			var ue = GRAPH.node(src.index + '_UE_'+ ueConfig.rnti, ueConfig.rnti, INFO_UE);
+		    for (j = 0; j < config.LC.lcUeConfig.length; ++j) {
+			ueConfig = config.LC.lcUeConfig[j];
+			if (ueConfig.rnti) {
+			    ue_list[ueConfig.rnti] = GRAPH.node(src.index + '_UE_'+ ueConfig.rnti, ueConfig.rnti, INFO_LC_UE);
+			}
+		    }
+		}
+		if (enb.ue_list) {
+		    // Remove old non-existent UE nodes
+		    for (var rnti in enb.ue_list) {
+			if (!ue_list[rnti]) {
+			    console.log("removing " + enb.ue_list[rnti].id);
+			    GRAPH.remove(enb.ue_list[rnti].id);
+			}
+		    }
+		}
+		enb.ue_list = ue_list;
+		// Assuming data.mac_stats[i] holds stats for the current eNB
+		if (data.mac_stats[i]) {
+		    for (var m = 0; m < data.mac_stats[i].ue_mac_stats.length; ++m) {
+			var stats = data.mac_stats[i].ue_mac_stats[m];
+			if (!stats) continue;
+			var ue = ue_list[stats.rnti];
+			if (!ue) continue;
+			ue.config = stats;
+			// The array 'l' below defines the information
+			// set drawn at the end of the link from eNB
+			// to UE. Each pushed string will show up on
+			// their own line.
 			var l = [];
-			for (var k = 0; k < data.mac_stats.length; ++k) {
-			    for (var m = 0; m < data.mac_stats[k].ue_mac_stats.length; ++m) {
-				var stats = data.mac_stats[i].ue_mac_stats[m];
-				if (!stats || stats.rnti != ueConfig.rnti) continue;
-				ue.config = stats;
-				// The list below defines the
-				// information set drawn at the end of
-				// the link from eNB to UE. Each
-				// pushed string will show up on their
-				// own line.
-				l.push('CQI='+stats.mac_stats.dlCqiReport.csiReport[0].p10csi.wbCqi);
-				l.push('RSRP='+stats.mac_stats.rrcMeasurements.pcellRsrp);
-				l.push('RSRQ='+stats.mac_stats.rrcMeasurements.pcellRsrq);
-				if (ue.id == show_id)
-				    show_config(ue.config);
-			    }
+			l.push('CQI='+ get(stats, ['mac_stats','dlCqiReport','csiReport', 0, 'p10csi', 'wbCqi']));
+			var rrc = get(stats, ['mac_stats','rrcMeasurements']);
+			if (rrc) {
+			    l.push('RSRP='+rrc.pcellRsrp);
+			    l.push('RSRQ='+rrc.pcellRsrq);
+			}
+			if (ue.id == show_id)
+			    show_config(ue.config);
+
+			var style = undefined;
+			if (ue.info === INFO_UE) {
+			    style = 'ghost';
+			    ue.error = true;
+			} else {
+			    ue.error = false;
 			}
 			// The "arrow" labels depend on the link
 			// direction, thus we need to call relation
@@ -170,8 +218,13 @@ function topology(sources) {
 			// below the link center. The labels at UE end
 			// (array l) are only specified for the
 			// enb->ue link.
-			GRAPH.relation(enb, ue, 'connection', {end: l, arrow: [''+stats.mac_stats.pdcpStats.pktTxBytesW]},undefined, GRAPH.MARKER.END);
-			GRAPH.relation(ue, enb, 'connection', {arrow: [''+stats.mac_stats.pdcpStats.pktRxBytesW]},undefined, GRAPH.MARKER.END);
+			var lbls = {};
+			var pdcp = get(stats, ['mac_stats', 'pdcpStats'], {});
+			lbls.arrow = [''+pdcp.pktRxBytesW];
+			GRAPH.relation(ue, enb, 'connection', lbls, style, GRAPH.MARKER.END);
+			lbls.end = l;
+			lbls.arrow = [''+pdcp.pktTxBytesW];
+			GRAPH.relation(enb, ue, 'connection', lbls, style, GRAPH.MARKER.END);
 		    }
 		}
 		if (enb.id == show_id)
@@ -182,10 +235,11 @@ function topology(sources) {
     }
     
     function refresh(src) {
-	console.log(src);
 	d3.json(src.url, function (error, data) {
 	    src.node.error = !!error;
-	    if (!error) {
+	    if (error) {
+		console.log("Refresh fail: " + src.url);
+	    } else {
 		src.data = data;
 	    }
 	    // Keep alive (if timeout set)
@@ -300,6 +354,10 @@ function topology(sources) {
 		.attr("dy", "0.3em")
 		.attr("class", "error_x")
 		.text("\u2716");
+	// If node created with INFO_UE (and not INFO_LC_UE), then it
+	// represents a ghost UE (not present in LC.lcUeConfig)
+	nodes.classed("ghost", function (d) { return d.info === INFO_UE;});
+
 	var stats = nodes.filter(function (d) { return d.info === INFO_ENB;})
 		.select("text.stats")
 		.selectAll("tspan")
@@ -335,9 +393,10 @@ function topology(sources) {
     GRAPH.NODE.update = node_status_indicator;
     GRAPH.NODE.create = node_presentation;
 
-    resize(d3.select("#topology").node());
-
     setup(sources);
+
+    // initial size is slightly wrong, but following does not fix it...
+    //setTimeout(function () {resize(d3.select("#topology").node());}, 100);
     
     return {
 	getSources: function () { return LIST.map(function (x) { return {name: x.name, url: x.url, timer: x.timer };});},
@@ -345,6 +404,6 @@ function topology(sources) {
 	closeConfig: closeConfig,
 	GRAPH: GRAPH,
 	update: update,
-	resizeGraph: resize
+	resizeGraph: function () { resize(d3.select("#topology").node());}
     };
 }

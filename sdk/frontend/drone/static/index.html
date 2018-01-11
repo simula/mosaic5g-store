@@ -57,19 +57,21 @@
 	<img src="images/vtt-logo.png" width="60">
       </div>
       <div id="drones" data-popup="edit-task" style="clear: both;">
-	<div class="tab topology horizontal" data-label="Topology" data-popup="edit-sources">
-	  <div id="topology" data-resize="resizeGraph">
-	  </div>
-	  <div id="parameters">
-	    <table>
-	      <thead>
-		<tr>
-		  <th colspan="2"></th>
-		</tr>
-	      </thead>
-	      <tbody>
-	      </tbody>
-	    </table>
+	<div class="tab topology" data-label="Topology" data-popup="edit-sources" data-open="resizeGraph">
+	  <div class="horizontal">
+	    <div id="topology" data-resize="resizeGraph">
+	    </div>
+	    <div id="parameters">
+	      <table>
+		<thead>
+		  <tr>
+		    <th colspan="2"></th>
+		  </tr>
+		</thead>
+		<tbody>
+		</tbody>
+	      </table>
+	    </div>
 	  </div>
 	</div>
       </div>
@@ -133,7 +135,7 @@
 	<div class="tooltip">
 	  Delete a configuration with the given name.
 	</div>
-    </form>
+      </form>
     </div>
     <script src="uitools.js"></script>
     <script src="graph.js"></script>

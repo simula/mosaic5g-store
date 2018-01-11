@@ -122,6 +122,9 @@ ul.tabsbar > li.stopping .control .runstop:after {
 .link.connection line {
     stroke: green;
 }
+.link.connection.ghost line {
+    stroke-dasharray: 5;
+}
 
 .node.sma circle {
     fill: rgba(255,0,0,0.2);
@@ -130,6 +133,9 @@ ul.tabsbar > li.stopping .control .runstop:after {
 }
 .node text.stats {
     text-anchor: start;
+}
+.node.ghost {
+    opacity: 0.5;
 }
 
 #parameters:not(.open) {
