@@ -173,7 +173,7 @@ uitools.callbacks(
 	    // <tab element>.__data__ -> task object
 	    d3.event.stopPropagation();
 	    var task = this.__data__.__data__;
-	    if (task.state == "running")
+	    if (task.state == "running" || task.state == "stopping")
 		task.stop();
 	    else
 		task.start();
@@ -353,11 +353,11 @@ uitools.callbacks(
 		    .attr("class", "horizontal");
 	    state.append("input")
 		.attr("type", "button")
-		.attr("value", "start")
+		.attr("value", "\u25B6 start")
 		.on("click", function (d) { d.start();});
 	    state.append("input")
 		.attr("type", "button")
-		.attr("value", "stop")
+		.attr("value", "\u25FC stop")
 		.on("click", function (d) { d.stop();});
 	    state.append("input")
 		.attr("type", "button")

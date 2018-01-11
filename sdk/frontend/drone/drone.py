@@ -31,6 +31,7 @@ class DroneTask(object):
     def __init__(self, id):
         self.id = id
         self.c = None
+        self.kill = False
         self.watchers = set()
         RUNNING[id] = self
 
@@ -71,8 +72,9 @@ class DroneTask(object):
         if p is not None:
             if p.proc.poll() is None:
                 print "Issuing kill for '" + self.id + "'"
-                os.killpg(os.getpgid(p.proc.pid), signal.SIGTERM)
-                #p.proc.kill()
+                # Use SIGTERM on first stop, and SIGKILL on subsequent stop attempts.
+                os.killpg(os.getpgid(p.proc.pid), signal.SIGKILL if self.kill else signal.SIGTERM)
+                self.kill = True
             
     def got(self, data):
         self._send_to(self.watchers, {'status': 'running', 'id': self.id, 'log': unicode(data, errors='replace')})
@@ -131,6 +133,7 @@ class DroneClient(tornado.websocket.WebSocketHandler):
                     self.send({'status': 'running', 'id': str(id)})
             else:
                 task.watch(self)
+                task.kill = False
                 self.send({'status': 'running', 'id': str(id)})
         elif task is None:
             # Note: gives this, even if request is garbage

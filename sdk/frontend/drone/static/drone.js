@@ -57,14 +57,14 @@ var drone = (function () {
 	}
     };
 
-    Drone.prototype.send = function(msg) {
+    Drone.prototype.send = function(msg, task) {
 	if (this.open) {
 	    this.ws.send(JSON.stringify(msg));
 	} else if (this.ws && this.ws.readyState == WebSocket.CONNECTING) {
-	    console.log("Websocket not ready: ", msg);
+	    task.message({error: "Websocket not ready -- still connecting", status: 'error'});
 	} else {
 	    if (this.ws) this.ws.close(); // just in case.
-	    console.log("Websocket not open: ",msg);
+	    task.message({error: "Websocket not open - trying reconnect", status: 'error'});
 	    this.connect();
 	}
     };
@@ -138,7 +138,7 @@ var drone = (function () {
 			 cwd: this.task.cwd,
 			 user: this.task.user,
 			 command: this.task.command
-			});
+			}, this);
     };
 
     
@@ -148,7 +148,7 @@ var drone = (function () {
 
     Task.prototype.stop = function() {
 	d3.select(this.element).select(".error").text("");
-	this.drone.send({request: 'stop', id: this.task.id});
+	this.drone.send({request: 'stop', id: this.task.id}, this);
     };
 	
     Task.prototype.clear = function() {
@@ -177,7 +177,7 @@ var drone = (function () {
     	this.drone.send({request: "input",
     			 id: this.task.id,
     			 input: String.fromCharCode(char)
-    			});
+    			}, this);
     };
 
     Task.prototype.init = function (element, callback) {

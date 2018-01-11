@@ -84,6 +84,9 @@ ul.tabsbar > li.running .bullet {
 ul.tabsbar > li.starting .bullet {
     background: rgb(255,255,0);
 }
+ul.tabsbar > li.stopping .bullet {
+    background: rgb(255,255,0);
+}
 ul.tabsbar > li.error .bullet {
     background: rgb(255,0,0);
 }
@@ -96,6 +99,9 @@ ul.tabsbar > li .control .runstop:after {
     content: "\25B6";
 }
 ul.tabsbar > li.running .control .runstop:after {
+    content: "\25FC";
+}
+ul.tabsbar > li.stopping .control .runstop:after {
     content: "\25FC";
 }
 
