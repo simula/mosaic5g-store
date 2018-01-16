@@ -7,7 +7,7 @@ body {
     font-family: monospace;
     line-height: 1.2em;
     overflow: scroll;
-    height: 40em;
+    /* height: 40em; */
     width: 100%;
     padding: 4px;
     border: 4px inset rgb(141,221,255);
@@ -140,4 +140,8 @@ ul.tabsbar > li.stopping .control .runstop:after {
 
 #parameters:not(.open) {
     display: none;
+}
+
+th {
+    position: relative;
 }

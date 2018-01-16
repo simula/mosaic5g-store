@@ -29,7 +29,6 @@ function topology(sources) {
     
     function expandBottom(elem, params) {
 	// Expand element height to the bottom of page (experimental)
-	//var body = d3.select("body").node();
 	var rect = elem.getBoundingClientRect();
 	var h = window.innerHeight;
 	// Ad hoc: -30 for potential borders and margins -- not a
@@ -47,8 +46,12 @@ function topology(sources) {
 	    if (obj === null || typeof obj != 'object') {
 		result.push([prefix, obj]);
 	    } else if (Array.isArray(obj)) {
-		for (var i in obj) {
-		    flatten(prefix + '[' + i + ']', obj[i]);
+		if (obj.length > 0) {
+		    for (var i in obj) {
+			flatten(prefix + '[' + i + ']', obj[i]);
+		    }
+		} else {
+		    flatten(prefix + '[]', '');
 		}
 	    } else {
 		var keys = Object.keys(obj);
@@ -110,46 +113,62 @@ function topology(sources) {
 	GRAPH.resize();
     }
 
-    function update() {
-	GRAPH.hideAll();
-	for (var s = 0; s < LIST.length; ++s) {
-	    var src = LIST[s];
-	    GRAPH.show(src.node);
-	    if (src.node.error)
-		continue; // Don't refresh links from a node in error state
-	    if (src.node.info === INFO_APP) {
-		// Assume SMA Application (if more apps are involved,
-		// we need some APP identifier).
-		var list = src.node.config;
-		for (var i = 0; i < list.length; ++i) {
-		    // Pick to values from first option of the last
-		    // message of the SMA_APP
-		    var cell_id = list[i].cell_id;
-		    var freq_min = list[i].options[0].freq_min;
-		    var freq_max = list[i].options[0].freq_max;
-		    var bandwidth = list[i].options[0].bandwidth;
-		    // This needs to change: now we just assume the
-		    // index of SMA_APP is the same as the enb index
-		    // from flexran. Must be replaced by proper id of
-		    // the enb being controlled.
-		    var cell = GRAPH.node('0_eNB_' + i);
-		    // The 'end' parameter defines what is shown at
-		    // the end of the dashed line from SMA_APP to
-		    // eNB. The styling of the line is defined by
-		    // ".link.control" in style.css.
-		    GRAPH.relation(src.node, cell, 'control', {'end': ['['+freq_min+'..'+freq_max+'] ' + bandwidth]},
-				   undefined, GRAPH.MARKER.END);
-		}
+    var SOURCE_UPDATE = {
+	"APP": function (node) {
+	    var data = node.config;
+	    if (data && data.msg && data.app) {
+		var app = GRAPH.port(node, data.app);
+		app.config = data.msg;
+		if (SOURCE_UPDATE[data.app])
+		    SOURCE_UPDATE[data.app](app);
 	    }
-	    var data = src.data;
-	    if (!data) continue;
-	    
+	},
+	"SMA": function (node) {
+	    var list = node.config;
+	    for (var i = 0; i < list.length; ++i) {
+		// Pick to values from first option of the last
+		// message of the SMA_APP
+		var cell_id = list[i].cell_id;
+		var freq_min = list[i].options[0].freq_min;
+		var freq_max = list[i].options[0].freq_max;
+		var bandwidth = list[i].options[0].bandwidth;
+		// This needs to change: now we just assume the
+		// index of SMA_APP is the same as the enb index
+		// from flexran. Must be replaced by proper id of
+		// the enb being controlled.
+		var cell = GRAPH.node('RTC_0_eNB_' + i);
+		// The 'end' parameter defines what is shown at
+		// the end of the dashed line from SMA_APP to
+		// eNB. The styling of the line is defined by
+		// ".link.control" in style.css.
+		GRAPH.relation(node, cell, 'control', {'end': ['['+freq_min+'..'+freq_max+'] ' + bandwidth]},
+			       undefined, GRAPH.MARKER.END);
+	    }
+	},
+	"RTC": function (node) {
+	    var data = node.config;
+	    if (!data) return;
+
+	    // Need to hide/remove eNB's and associated UE's that are
+	    // not present in the new eNB_config. BUT, as there is no
+	    // way to identify eNB yet, this cannot be implemented
+	    // properly, unless all of them have gone away...
+	    if (!data.eNB_config.length) {
+		if (node.enb_list)
+		    for (var i = 0; i < node.enb_list.length; ++i) {
+			var enb = node.enb_list[i];
+			for (var rnti in enb.ue_list)
+			    GRAPH.remove(enb.ue_list[rnti].id);
+			GRAPH.remove(enb.id);
+		    }
+	    }
+	    node.enb_list = [];
 	    for (i = 0; i < data.eNB_config.length; ++i) {
 		var config = data.eNB_config[i];
-		var enb = GRAPH.node(src.index + '_eNB_' + i,
-				     i,
-				     INFO_ENB);
-		GRAPH.relation(enb, src.node, 'connection', {});
+		enb = GRAPH.node(node.id + '_eNB_' + i, i, INFO_ENB);
+		node.enb_list.push(enb);
+
+		GRAPH.relation(enb, node, 'connection', {},undefined,GRAPH.MARKER.END);
 		enb.config = {
 		    cellConfig: config.eNB.cellConfig,
 		    ueConfig: config.UE.ueConfig,
@@ -160,7 +179,7 @@ function topology(sources) {
 		    for (var j = 0; j < config.UE.ueConfig.length; ++j) {
 			var ueConfig = config.UE.ueConfig[j];
 			if (ueConfig.rnti) {
-			    ue_list[ueConfig.rnti] = GRAPH.node(src.index + '_UE_'+ ueConfig.rnti, ueConfig.rnti, INFO_UE);
+			    ue_list[ueConfig.rnti] = GRAPH.node(enb.id + '_UE_'+ ueConfig.rnti, ueConfig.rnti, INFO_UE);
 			}
 		    }
 		}
@@ -168,13 +187,13 @@ function topology(sources) {
 		    for (j = 0; j < config.LC.lcUeConfig.length; ++j) {
 			ueConfig = config.LC.lcUeConfig[j];
 			if (ueConfig.rnti) {
-			    ue_list[ueConfig.rnti] = GRAPH.node(src.index + '_UE_'+ ueConfig.rnti, ueConfig.rnti, INFO_LC_UE);
+			    ue_list[ueConfig.rnti] = GRAPH.node(enb.id + '_UE_'+ ueConfig.rnti, ueConfig.rnti, INFO_LC_UE);
 			}
 		    }
 		}
 		if (enb.ue_list) {
 		    // Remove old non-existent UE nodes
-		    for (var rnti in enb.ue_list) {
+		    for (rnti in enb.ue_list) {
 			if (!ue_list[rnti]) {
 			    console.log("removing " + enb.ue_list[rnti].id);
 			    GRAPH.remove(enb.ue_list[rnti].id);
@@ -224,14 +243,33 @@ function topology(sources) {
 			GRAPH.relation(ue, enb, 'connection', lbls, style, GRAPH.MARKER.END);
 			lbls.end = l;
 			lbls.arrow = [''+pdcp.pktTxBytesW];
-			GRAPH.relation(enb, ue, 'connection', lbls, style, GRAPH.MARKER.END);
+			GRAPH.relation(enb, ue, 'connection', lbls, style);
 		    }
 		}
 		if (enb.id == show_id)
 		    show_config(enb.config);
 	    }
 	}
-	GRAPH.update();
+    };
+
+    function update_src(src) {
+	if (!src.node) return;
+
+	GRAPH.show(src.node);
+	if (src.node.id == show_id) {
+	    show_config(src.node.config);
+	}
+	if (src.node.error)
+	    return; // Don't refresh links from a node in error state
+	if (SOURCE_UPDATE[src.type])
+	    SOURCE_UPDATE[src.type](src.node);
+    }
+
+    function update_all() {
+    	GRAPH.hideAll();
+    	for (var s = 0; s < LIST.length; ++s)
+    	    update_src(LIST[s]);
+    	GRAPH.update();
     }
     
     function refresh(src) {
@@ -240,14 +278,15 @@ function topology(sources) {
 	    if (error) {
 		console.log("Refresh fail: " + src.url);
 	    } else {
-		src.data = data;
+		src.node.config = data;
 	    }
 	    // Keep alive (if timeout set)
 	    if (src.timer > 0)
 		src.timeout = setTimeout(src.refresh, src.timer*1000);
 	    else
 		src.timeout = undefined;
-	    update();
+	    update_src(src);
+	    GRAPH.update();
 	});
     }
 
@@ -255,42 +294,47 @@ function topology(sources) {
 	src.timeout = undefined;
 	if (src.ws === undefined) {
 	    src.ws = new WebSocket(src.url);
-	    console.log("Trying SMA");
+	    console.log("Trying WS");
 	    src.ws.onopen = function () {
 		src.node.error = false;
 		if (src.timer > 0) {
-		    console.log("SMA WS Open");
+		    console.log("WS Open");
 		    src.ws.send(JSON.stringify('get-list'));
 		} else {
-		    console.log("SMA WS Cancel open");
+		    console.log("WS Cancel open");
 		    src.ws.close();
 		}
-		update();
+		update_src(src);
+		GRAPH.update();
 	    };
 	    src.ws.onclose = function () {
 		src.ws = undefined;
 		src.node.error = true;
-		console.log("SMA WS Closed");
+		console.log("WS Closed");
 		if (src.timer > 0)
 		    src.timeout = setTimeout(src.refresh, src.timer*1000);
 		else
 		    src.timeout = undefined;
-		update();
+		update_src(src);
+		GRAPH.update();
 	    };
 	    src.ws.onerror = function (evt) {
 		src.node.error = true;
 		console.log(evt);
-		update();
+		update_src(src);
+		GRAPH.update();
 	    };
 	    src.ws.onmessage = function (evt) {
 		src.node.error = false;
 		console.log(evt.data);
 		var msg = JSON.parse(evt.data);
 		src.node.config = msg;
-		update();
+		update_src(src);
+		GRAPH.update();
 	    };
 	}
-	update();
+	update_src(src);
+	GRAPH.update();
     }
     
     function resize(elem, param) {
@@ -306,7 +350,10 @@ function topology(sources) {
 		clearTimeout(LIST[i].timeout);
 	    LIST[i].timeout = undefined;
 	    LIST[i].timer = -1;
-	    if (LIST[i].ws) {
+	    if (LIST[i].node) {
+		GRAPH.remove(LIST[i].node.id);
+		LIST[i].node = null;
+	    if (LIST[i].ws)
 		LIST[i].ws.close();
 	    }
 	}
@@ -315,21 +362,22 @@ function topology(sources) {
 	LIST = sources.map(function (src, index) {
 	    src.index = index;
 	    if (src.url.startsWith("ws")) {
-		src.node = GRAPH.node(src.index + '_APP', src.name + ' ' + src.index, INFO_APP);
+		src.node = GRAPH.node(src.type + '_' + src.index, src.name + ' ' + src.index, INFO_APP);
 		src.node.error = true; // Start in error state until ws connection is up
 		src.refresh = function () { refresh_ws(src); };
 	    } else {
-		src.node = GRAPH.node(src.index + '_RTC', src.name + ' ' + src.index, INFO_RTC);
+		src.node = GRAPH.node(src.type + '_'+ src.index, src.name + ' ' + src.index, INFO_RTC);
 		src.refresh = function () { refresh(src);};
 	    }
 	    // Set the displayed data when node is clicked
-	    src.node.config = { index: src.index, url: src.url} ;
+	    //src.node.config = { index: src.index, url: src.url} ;
 	    src.timer = +src.timer; // Make it a number (if string)
 	    // src.timer unit is [s]
 	    if (src.timer > 0)
 		src.timeout = setTimeout(src.refresh, src.timer*1000);
 	    return src;
 	});
+	GRAPH.update();
     }
 
     function node_presentation(nodes) {
@@ -399,11 +447,18 @@ function topology(sources) {
     //setTimeout(function () {resize(d3.select("#topology").node());}, 100);
     
     return {
-	getSources: function () { return LIST.map(function (x) { return {name: x.name, url: x.url, timer: x.timer };});},
+	getSources: function () { return LIST.map(function (x) {
+	    return {
+		type: x.type,
+		name: x.name,
+		url: x.url,
+		timer: x.timer
+	    };
+	});},
 	setSources: function (sources) { setup(sources); },
 	closeConfig: closeConfig,
 	GRAPH: GRAPH,
-	update: update,
+	update: update_all,
 	resizeGraph: function () { resize(d3.select("#topology").node());}
     };
 }

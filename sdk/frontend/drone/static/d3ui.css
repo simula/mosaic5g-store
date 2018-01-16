@@ -325,7 +325,6 @@ ul.menubar > li:hover > .popup-menu {
 }
 .tabs:not(.vertical) .tab {
     position: relative;   
-    /* display: none; */
     border: 1px solid #ccc;
     padding: 6px;
     margin: 0;
@@ -335,14 +334,14 @@ ul.menubar > li:hover > .popup-menu {
 }
 .tabs.vertical .tab {
     position: relative;   
-    /* display: none; */
     border: 1px solid #ccc;
     padding: 6px;
     margin: 0;
     background: rgb(141,221,255);
     box-sizing: border-box;
     flex-grow: 1;
-    overflow: scroll;
+    /* overflow: scroll; */
+    overflow: auto;
 }
 .tabs .tab:not(.open) {
     display: none;
@@ -370,7 +369,7 @@ ul.tabsbar > li {
     flex-direction: row;
 }
 .tabs.vertical ul.tabsbar {
-    /* width: 100px; */
+    margin: 0;
 }
 .tabs.vertical ul.tabsbar > li {
     display: block;
@@ -399,11 +398,12 @@ ul.tabsbar > li.selected {
 .tooltip {   
     visibility: hidden;
     position: absolute;
-    top: 0px;
-    left: 105%;
+    /* top: 0px; */
+    /* left: 105%; */
+    top: 105%;
+    left: %
     text-align: left;
-    width: 120px;
-    /* max-width: 20em; */
+    width: 30em;
     padding: 2px;
     font: 12px sans-serif;
     font-size: 90%;
@@ -417,16 +417,16 @@ ul.tabsbar > li.selected {
     z-index: 3;
 }
 
-.tooltip::after {
-    content: " ";
-    position: absolute;
-    left: -10px;
-    top: 10px;
-    /*margin-top: -10px;*/
-    border-width: 5px;
-    border-style: solid;
-    border-color: transparent #aaccff transparent transparent;
-}
+/* .tooltip::after { */
+/*     content: " "; */
+/*     position: absolute; */
+/*     left: -10px; */
+/*     top: 10px; */
+/*     /\*margin-top: -10px;*\/ */
+/*     border-width: 5px; */
+/*     border-style: solid; */
+/*     border-color: transparent #aaccff transparent transparent; */
+/* } */
 .toolhint {
     position: relative;
 }

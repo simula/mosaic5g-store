@@ -181,6 +181,16 @@ uitools.callbacks(
 	
 	function _add_source_row(row) {
 	    row.append("td")
+		.attr("class", "popup-menu-open")
+		.attr("data-popup-menu", "source_types")
+		.attr("data-action", "setSourceType")
+		.text(function (d) { return d.type ? d.type : 'Unknown';})
+		.call(uitools.add_menu_action)
+		.append("input")
+		.attr("name", "list[].type")
+		.property("value", function (d) { return d.type;})
+		.style("display", "none");
+	    row.append("td")
 		.append("input")
 		.attr("type", "text")
 		.attr("name", "list[].name")
@@ -196,7 +206,12 @@ uitools.callbacks(
 		.attr("name", "list[].timer")
 		.attr("value", function (d) { return d.timer;});
 	}
-	
+
+	function setSourceType(elem, params) {
+	    uitools.replace_text(elem, params.value ? params.value : 'Undefined');
+	    d3.select(elem).select("input").property("value", params.value);
+	}
+
 	function prepareSources(elem, params) {
 	    var sources = d3.select(elem)
 		    .select("table tbody")
@@ -227,9 +242,19 @@ uitools.callbacks(
 	    return true;
 	}
 	
+	function expandBottom(elem, params) {
+	    // Expand element height to the bottom of page (experimental)
+	    var rect = elem.getBoundingClientRect();
+	    var h = window.innerHeight;
+	    // Ad hoc: -30 for potential borders and margins -- not a
+	    // stable solution
+	    var vh = Math.max(200, (h - rect.top) - 30);
+	    d3.select(elem).style("height", vh + "px");
+	}
 	function openTaskTab(elem, params) {
 	    // Called when a task tab has been opened
 	    var d = params.datum;
+	    expandBottom(d3.select(elem).select('.log').node(), params);
 	    if (d) d.open();
 	}
 
@@ -343,6 +368,7 @@ uitools.callbacks(
 		    .append("div")
 		    .attr("class", "tab task")
 		    .attr("data-label", function (d) { return d.task.id;})
+		    .attr("data-resize", "openTaskTab")
 		    .attr("data-open", "openTaskTab");
 	    
 	    tasks.append("p")
@@ -435,6 +461,22 @@ uitools.callbacks(
 	}
 	function restore_saveset(saveset) {
 	    if (saveset.config) CONFIG = saveset.config;
+
+	    // -- Code to be removed eventually --
+	    // ...support old format of sources not containing the
+	    // type field. 
+	    for (var i = 0; i < saveset.sources.length; ++i) {
+		var src = saveset.sources[i];
+		if (src.type === undefined) {
+		    if (src.url.startsWith("ws")) {
+			src.type = "SMA";
+		    } else {
+			src.type = "RTC";
+		    }
+		}
+	    }
+	    // -- End fallback --
+
 	    if (saveset.sources) TOPOLOGY.setSources(saveset.sources);
 	    if (saveset.graph) TOPOLOGY.GRAPH.restore(saveset.graph);
 	}
@@ -504,11 +546,13 @@ uitools.callbacks(
 	}
 	var TOPOLOGY = topology([
 	    {
+		type: 'RTC',
 		name: 'flexran-rtc',
 		url: "http://localhost:9999/stats_manager/json/all",
 		timer: 1
 	    },
 	    {
+		type: 'SMA',
 		name: 'sma-app',
 		url: "ws://localhost:8080/list",
 		timer: 1
@@ -522,12 +566,11 @@ uitools.callbacks(
 	    loadTasks: loadTasks,
 	    saveTasks: saveTasks,
 	    deleteTasks: deleteTasks,
-	    // prepareRemotes: prepareRemotes,
-	    // prepareTasks: prepareTasks,
 	    modifyTask: modifyTask,
 	    prepareTask: prepareTask,
 	    prepareSources: prepareSources,
 	    modifySources: modifySources,
+	    setSourceType: setSourceType,
 	    addSources: addSources,
 	    openTaskTab: openTaskTab,
 	    resizeGraph: TOPOLOGY.resizeGraph,

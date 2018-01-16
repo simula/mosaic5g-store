@@ -10,6 +10,35 @@
     <script src="drone.js"></script>
   </head>
   <body>
+    <div id="holding">
+      <ul class="popup-menu shared" id="source_types">
+	<li data-value="APP">APP
+	  <div class="tooltip">
+	    Generic application. Either REST or WebSocket API
+	    depending on the <b>url</b>. The GET result or last
+	    received message is attached to the node. If the message
+	    has "app" and "msg" members, and "app" value defines a
+	    known application type, then the msg content is handled as
+	    a message of indicated application type. Otherwise, the
+	    message just attached to the source node without
+	    interpretations.
+	  </div>
+	</li>
+	<li data-value="RTC">RTC
+	  <div class="tooltip">
+	    REST API using the GET to the specified <b>url</b>. The
+	    JSON reply must be compatible with "../stats/manager/json/all"
+	    request for flexran-rtc.
+	  </div>
+	</li>
+	<li data-value="SMA">SMA
+	  <div class="tooltip">
+	    WebSocket API. The received JSON message is assumed to be
+	    an array of configurations for eNB's.
+	  </div>
+	</li>
+      </ul>
+    </div>
     <div id="mainWindow">
       <div id="mainMenu">
 	<ul class="menubar">
@@ -52,9 +81,9 @@
 	  </li>
 	</ul>
       </div>
-      <div style="float: right;white-space: nowrap;">
-	<img src="images/Coherent_logo_v2.png" width="100">
-	<img src="images/vtt-logo.png" width="60">
+      <div style="position: fixed; bottom: 5px; left: 5px;white-space: nowrap;">
+	<img src="images/Coherent_logo_v2.png" width="90">
+	<img src="images/vtt-logo.png" width="50">
       </div>
       <div id="drones" data-popup="edit-task" style="clear: both;">
 	<div class="tab topology" data-label="Topology" data-popup="edit-sources" data-open="resizeGraph">
@@ -75,13 +104,45 @@
 	  </div>
 	</div>
       </div>
-      <form class="popup" id="edit-sources" title="flexran-rtc sources" data-prepare="prepareSources" data-submit="modifySources">
+      <form class="popup" id="edit-sources" title="Sources" data-prepare="prepareSources" data-submit="modifySources">
 	<table>
 	  <thead>
 	    <tr>
-	      <th>Name</th>
-	      <th>Url</th>
-	      <th>Refresh Interval [s]</th>
+	      <th style="position:relative;">Type
+		<div class="tooltip">
+		  Application type defines the message format
+		  used by the application at the end of the url.
+		</div>
+	      </th>
+	      <th>Name
+		<div class="tooltip">
+		  Name label for the source to be shown under the icon.
+		</div>
+	      </th>
+	      <th>
+		Url
+		<div class="tooltip">
+		  The url pointing to the application, either HTTP
+		  REST (http:) or Web socket API (ws:).
+		</div>
+	      </th>
+	      <th><span>
+		  Refresh Interval [s]
+		  <div class="tooltip">
+		    <p>
+		      For REST API this specifies the interval of
+		      issed GET requests, for WebSocket API this is
+		      the interval of retrying the web socket
+		      connection, if it is closed.
+		    </p>
+		    <p>
+		      If value is zero or negative, GET requests are
+		      not issued and web socket reopening is not
+		      attempted, if it is closed.
+		      </p>
+		  </div>
+		</span>
+	      </th>
 	    </tr>
 	  </thead>
 	  <tbody>
