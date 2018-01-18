@@ -47,15 +47,17 @@
 	    <ul class="popup-menu">
 	      <li data-action="saveTasks">
 		Save
-		<span class="tooltip">
-		  Save filter to server using the current name
-		</span>
+		<div class="tooltip">
+		  Save configuration to server host using the current
+		  name.
+		</div>
 	      </li>
 	      <li data-popup="saveAs">
 		Save as or delete...
-		<span class="tooltip">
-		  Save filter to server using a different name, or delete existing filter
-		</span>
+		<div class="tooltip">
+		  Save configuration to server host using a different
+		  name, or delete existing configuration.
+		</div>
 	      </li>
 	      <!-- <li> -->
 	      <!-- 	<a id="exportData" href="#">Export Data</a> -->
@@ -146,6 +148,7 @@
 	    </tr>
 	  </thead>
 	  <tbody>
+	    <!-- filled by conherent.js -->
 	  </tbody>
 	</table>
 	<input type="button" value="Add row" class="click-action" data-action="addSources">
@@ -200,6 +203,7 @@
     </div>
     <script src="uitools.js"></script>
     <script src="graph.js"></script>
+    <script src="timechart.js"></script>
     <script src="topology.js"></script>
     <script src="coherent.js"></script>
   </body>

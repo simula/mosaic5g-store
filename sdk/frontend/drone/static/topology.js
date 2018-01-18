@@ -243,7 +243,25 @@ function topology(sources) {
 			GRAPH.relation(ue, enb, 'connection', lbls, style, GRAPH.MARKER.END);
 			lbls.end = l;
 			lbls.arrow = [''+pdcp.pktTxBytesW];
-			GRAPH.relation(enb, ue, 'connection', lbls, style);
+			GRAPH.relation(enb, ue, 'connection', lbls, style, GRAPH.MARKER.END);
+
+			if (ue.timechart && !ue.error) {
+			    var bytes = [ pdcp.pktTxBytes, pdcp.pktRxBytes ];
+			    var stamp = Date.now() / 1000;
+			    if (ue.timechart.bytes !== undefined) {
+				ue.timechart.chart.append(
+				    stamp, /* seconds! */
+				    ue.timechart.bytes.map(function (d, i) {
+					if (d === undefined || bytes[i] === undefined)
+					    return undefined;
+					else
+					    // Value is bits/second estimate
+					    return ((bytes[i] - d) * 8) / (stamp - ue.timechart.stamp);
+				    }));
+			    }
+			    ue.timechart.bytes = bytes;
+			    ue.timechart.stamp = stamp;
+			}
 		    }
 		}
 		if (enb.id == show_id)
@@ -388,6 +406,19 @@ function topology(sources) {
 	nodes.filter(function (d) { return d.info === INFO_APP;})
 	    .append("circle")
 	    .attr("r", GRAPH.NODE.R * 0.6);
+	nodes.filter(function (d) { return d.info === INFO_LC_UE;})
+	    .append("g")
+	    .attr("transform", "translate("+(GRAPH.NODE.R/2)+','+(-GRAPH.NODE.R)+')')
+	    .attr("class", "timechart")
+	    .each(function (d) {
+		var g = d3.select(this);
+		g.append("rect")
+		    .attr("width", 100)
+		    .attr("height", GRAPH.NODE.R*2);
+		d.timechart = {
+		    chart: timechart(g, 100, GRAPH.NODE.R*2, 100)
+		};
+	    });
     }
     
     function node_status_indicator(nodes) {

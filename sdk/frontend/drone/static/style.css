@@ -145,3 +145,24 @@ ul.tabsbar > li.stopping .control .runstop:after {
 th {
     position: relative;
 }
+
+.linepath {
+    fill: none;
+    stroke-width: 1px;
+}
+
+.tick line,.timechart .domain {
+    /* stroke-dasharray: 2 2; */
+    stroke-width: 0.5px;
+    stroke: #ccc;
+}
+.tick text {
+    font-size: 4px;
+}
+.timechart .linepath {
+    stroke-width: 0.5px;
+}
+.timechart > rect {
+    fill: #fff;
+    opacity: 0.5;
+}
