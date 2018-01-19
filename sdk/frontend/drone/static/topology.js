@@ -314,7 +314,8 @@ function topology(sources) {
 	    src.ws = new WebSocket(src.url);
 	    console.log("Trying WS");
 	    src.ws.onopen = function () {
-		src.node.error = false;
+		if (src.node)
+		    src.node.error = false;
 		if (src.timer > 0) {
 		    console.log("WS Open");
 		    src.ws.send(JSON.stringify('get-list'));
@@ -327,7 +328,8 @@ function topology(sources) {
 	    };
 	    src.ws.onclose = function () {
 		src.ws = undefined;
-		src.node.error = true;
+		if (src.node)
+		    src.node.error = true;
 		console.log("WS Closed");
 		if (src.timer > 0)
 		    src.timeout = setTimeout(src.refresh, src.timer*1000);
@@ -337,16 +339,19 @@ function topology(sources) {
 		GRAPH.update();
 	    };
 	    src.ws.onerror = function (evt) {
-		src.node.error = true;
+		if (src.node)
+		    src.node.error = true;
 		console.log(evt);
 		update_src(src);
 		GRAPH.update();
 	    };
 	    src.ws.onmessage = function (evt) {
-		src.node.error = false;
-		console.log(evt.data);
-		var msg = JSON.parse(evt.data);
-		src.node.config = msg;
+		if (src.node) {
+		    src.node.error = false;
+		    console.log(evt.data);
+		    var msg = JSON.parse(evt.data);
+		    src.node.config = msg;
+		}
 		update_src(src);
 		GRAPH.update();
 	    };

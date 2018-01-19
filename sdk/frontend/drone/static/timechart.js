@@ -31,7 +31,8 @@ function timechart(g, width, height, duration) {
     var paths = g.append("g").attr("class", "linepath");
     
     var line = d3.line()
-	    .curve(d3.curveBasis)
+            // .curve(d3.curveBasis)
+	    .curve(d3.curveMonotoneX)
 	    .x(function(_, i) { return x(x_values[x_values.length-1] - x_values[i]);})
 	    .y(function(d, i) { return y(Math.max(d,1));});
 
