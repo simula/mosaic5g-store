@@ -425,19 +425,17 @@ function topology(sources) {
 		};
 	    });
     }
-    
+
     function node_status_indicator(nodes) {
 	nodes.filter(function (d) { return !d.error;}).selectAll(".error_x").remove();
 	var errors = nodes.filter(function (d) { return d.error;})
 		.selectAll(".error_x")
 		.data([0])
 		.enter() // ..if error_x is already present, nothing new is inserted!
-		.append("text")
-		.attr("text-anchor", "middle")
-		//.attr("alignment-baseline", "center")
-		.attr("dy", "0.3em")
+		.append("path")
 		.attr("class", "error_x")
-		.text("\u2716");
+		.attr("transform", "rotate(45)")
+		.attr("d", d3.symbol().size(GRAPH.NODE.S*10).type(d3.symbolCross));
 	// If node created with INFO_UE (and not INFO_LC_UE), then it
 	// represents a ghost UE (not present in LC.lcUeConfig)
 	nodes.classed("ghost", function (d) { return d.info === INFO_UE;});
