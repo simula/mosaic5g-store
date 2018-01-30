@@ -270,6 +270,20 @@ function topology(sources) {
 	}
     };
 
+    // These are called once when the source is opened. Mainly for
+    // WebSocket APIs that require some initial (once only) messages
+    // after opening the socket.
+    var SOURCE_OPEN = {
+	SMA: function (src) {
+	    if (src.ws)
+		src.ws.send(JSON.stringify('get-list'));
+	}
+    };
+    function open_src(src) {
+	if (SOURCE_OPEN[src.type])
+	    SOURCE_OPEN[src.type](src);
+    }
+    
     function update_src(src) {
 	if (!src.node) return;
 
@@ -318,7 +332,7 @@ function topology(sources) {
 		    src.node.error = false;
 		if (src.timer > 0) {
 		    console.log("WS Open");
-		    src.ws.send(JSON.stringify('get-list'));
+		    open_src(src);
 		} else {
 		    console.log("WS Cancel open");
 		    src.ws.close();
