@@ -36,6 +36,8 @@ function timechart(g, width, height, duration) {
 	    .x(function(_, i) { return x(x_values[x_values.length-1] - x_values[i]);})
 	    .y(function(d, i) { return y(Math.max(d,1));});
 
+    var smooth_transform = 'translate(-' + width + ')';
+
     function append(time, sample) {
 	while (y_values.length < sample.length) {
 	    var data = {
@@ -58,6 +60,13 @@ function timechart(g, width, height, duration) {
 	    y_values[i].values.push(sample[i]);
 	    y_values[i].path.attr('d', line);
 	}
+	// Smooth update (optional -- remove if gets heavy)
+	paths.interrupt()
+	    .attr('transform', null)
+	    .transition()
+	    .duration(1000*duration)
+	    .ease(d3.easeLinear)
+	    .attr('transform', smooth_transform);
     }
 
     return {
