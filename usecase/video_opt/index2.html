@@ -1,0 +1,122 @@
+<html>
+  <head>
+    </head>
+    <body>
+        <h2>Web control</h2>
+        <h3 style="display: inline;">To test POST messages, follow <a href='/post.html'>this link</a></h3>
+        <p id="header"></p>
+        <select id="paramsSelect"> </select>
+    </body>
+</html>
+
+<script type="text/javascript">
+"use strict";
+
+var header = document.getElementById("header");
+var paramsSelect = document.getElementById("paramsSelect");
+
+var host = 'localhost';
+//var host = 'malnatidid.polito.it';
+var port = 9090;
+
+function enableSelectClickEvent(webSocket){
+    paramsSelect.addEventListener("change", function(){
+        forceQualityChange(webSocket);
+    });
+    /*bitratesSelect.addEventListener("change", function(){
+        forceQualityChange(webSocket);
+    });*/
+}
+
+function disableSelectClickEvent(webSocket){
+    paramsSelect.removeEventListener("change", function(){
+        forceQualityChange(webSocket);
+    });
+    /*bitratesSelect.removeEventListener("change", function(){
+        forceQualityChange(webSocket);
+    });*/
+}
+
+var i=1, j=1;
+function forceQualityChange(ws){
+    var str = paramsSelect.options[paramsSelect.selectedIndex].text;
+    var res = str.split(" ");
+	var size = res[0];
+	var bitrate = res[1];
+	res = size.split("x");
+    if (res.length != 2){
+        return;
+    }
+    var width = res[0]
+    var height = res[1]
+    //var currentBitrate = bitratesSelect.options[bitratesSelect.selectedIndex].text;
+    var obj = {
+        rule: 'browser',
+        type: 'reset',
+        width: width,
+        height: height,
+        bitrate: bitrate
+    }
+    //log.innerHTML = "sent #"+(i++)+": "+JSON.stringify(obj);
+    ws.send(JSON.stringify(obj));
+}
+
+if ("WebSocket" in window){
+	var url = 'ws://' + host + ':' + port + '/';
+
+   // Let us open a web socket
+   var ws = new WebSocket(url);
+
+   ws.onopen = function(){
+       header.innerHTML = "Opened socket";
+       enableSelectClickEvent(ws);
+       var obj = {
+           rule: 'browser',
+           type: 'hello'
+       }
+	   ws.send(JSON.stringify(obj));
+   };
+
+   ws.onmessage = function (evt){
+      var msg = JSON.parse(evt.data);
+	  console.log("RECEIVED: "+evt.data);
+      if (!msg.hasOwnProperty("type")){
+		  return;
+      }
+	  switch (msg.type) {
+		  case 'qualitiesNotice':
+			  while (paramsSelect.firstChild) {
+				  paramsSelect.removeChild(paramsSelect.firstChild);
+			  }
+			  //console.log("cur: "+JSON.stringify(msg.currentSize));
+			  msg.sizes.forEach(function(element, index, array){
+				  var option = document.createElement("option");
+				  option.text = element.width + "x" + element.height + " " + element.bitrate + " Kbps";
+				  paramsSelect.add(option);
+				  if (
+					  element.width == msg.currentSize.width
+					  && element.height == msg.currentSize.height
+					  && element.bitrate == msg.currentSize.bitrate
+					){
+					  paramsSelect.selectedIndex = index;
+				  }
+			  });
+			  //in any case, print incoming JSON messages content into the webpage
+			  //log2.innerHTML = "received #"+(j++)+": "+JSON.stringify(msg);
+			  break;
+	  }
+   };
+
+   ws.onclose = function() {
+      // websocket is closed.
+      header.innerHTML = "Closed socket";
+      alert("Connection is closed...");
+  };
+}
+
+else
+{
+   // The browser doesn't support WebSocket
+   alert("WebSocket NOT supported by your Browser!");
+}
+</script>
