@@ -1,0 +1,12 @@
+{
+  "name": "raven-streaming-server",
+  "version": "1.0.1",
+  "author": "Luigi Renda <tolkkimetal91@gmail.com>",
+  "description": "RAVEN PoC streaming server",
+  "dependencies": {
+    "forever": "^0.15.3",
+    "path": "^0.12.7",
+    "url": "^0.11.0",
+    "websocket": "^1.0.24"
+  }
+}
