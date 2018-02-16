@@ -137,12 +137,6 @@ class rrc_trigger_meas(object):
         self.rrc_meas[rrc_triggers.ONE_SHOT]      = 'ONE_SHOT'
         self.rrc_meas[rrc_triggers.PERIODICAL]       = 'PERIODICAL'
         self.rrc_meas[rrc_triggers.EVENT_DRIVEN]  = 'EVENT_DRIVEN'
-        
-    def __del__(self):
-        if self.recording:
-            with open('recorded_data.json', 'w') as outfile:
-                json.dump(self.stats_data_recorded_log, outfile)
-
 
 
     def trigger_meas(self, type='EVENT_DRIVEN'):
@@ -269,7 +263,13 @@ class rrm_policy (object):
         self.pf_yaml=flexran_rest_api.pf_yaml
         self.pf_json=flexran_rest_api.pf_json
         self.tf_yaml=flexran_rest_api.tf_yaml
-        
+
+    def __del__(self):
+        if self.recording:
+            with open('recorded_data.json', 'w') as outfile:
+                json.dump(self.stats_data_recorded_log, outfile)
+
+                
     # read the policy file     
     def read_policy(self, pf=''):
         """!@brief Read the policy either from a user-defined policy file or the default one
@@ -474,17 +474,6 @@ class rrm_policy (object):
 
         return  self.policy_data['mac'][index][key_sched]['parameters'][key_slice]
        
-    # Function to record stats in json list format for later reading by any application
-    def set_recorder_status(self, record='off'):
-        if record == 'on' or record=='ON' :
-            self.recording=True
-        else :
-            self.recording=False
-
-
-
-
-
     def set_slice_rb(self, sid, rb, dir='dl'):
         """!@brief Set the resource block share for a slice in a direction. 
         
@@ -881,13 +870,13 @@ class stats_manager(object):
                     with open(file) as data_file:
                         #self.stats_data = json.load(data_file) # get the entire file
                         self.stats_data_log = json.load(data_file) # get the entire file
-                        print ("Successfully read list of jsons. length=" + str(len(self.stats_data_log)))
+                        #self.log.debug ("Successfully read list of jsons. length=" + str(len(self.stats_data_log)))
                     self.stats_data_index = 0
 
-                self.stats_data=self.stats_data_log[int(self.stats_data_index) % len(self.stats_data_log)] # read the sample with index i 
-                self.stats_data_index +=1 # increase the indes for the next time
-                print "Successfully read element from a list of jsons"
-
+                self.stats_data=self.stats_data_log[self.stats_data_index] # read the sample with index i 
+                self.stats_data_index = (self.stats_data_index + 1) % len(self.stats_data_log) # increase the indes for the next time
+#                print self.stats_data #"Successfully read element from a list of jsons"
+ #               print self.stats_data_log[0]
                 self.status='connected'
                 
             except :
@@ -926,6 +915,13 @@ class stats_manager(object):
             self.log.debug('Stats Manager requested data')
             self.log.debug(json.dumps(self.stats_data, indent=2))
                 
+     # Function to record stats in json list format for later reading by any application
+    def set_recorder_status(self, record='off'):
+        if record == 'on' or record=='ON' :
+            self.recording=True
+        else :
+            self.recording=False
+
     def get_enb_config(self,enb=0):
         """!@brief Get the entire eNB configuration
         

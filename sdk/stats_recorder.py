@@ -62,13 +62,10 @@ from array import *
 from threading import Timer
 from time import sleep
 
-import rrm_app_vars
-
 from lib import flexran_sdk 
 from lib import logger
-from lib import app_sdk
 import signal
-import visualize
+
 
 def sigint_handler(signum,frame):
     print 'Exiting, wait for the timer to expire... Bye'
@@ -76,61 +73,65 @@ def sigint_handler(signum,frame):
 
 signal.signal(signal.SIGINT, sigint_handler)
 
+class recording_app(object):
+    period=0.01
 
-def run(sm,period=0.01):
-    sm.stats_manager('all')
-    t = Timer(period, run,kwargs=dict(sm=sm,period))
-    t.start()
+    def __init__(self, log, log_level='error', op_mode='test'):
+        super(recording_app, self).__init__()
         
+        self.log = log
+        self.log_level = log_level
+        self.op_mode = op_mode
+        
+    def run(self,sm):
 
-parser = argparse.ArgumentParser(description='Process some integers.')
+        self.log.info('Updating all the stats')
+        sm.stats_manager('all')
+        
+        t = Timer(recording_app.period, self.run,kwargs=dict(sm))
+        t.start()
+        
+if __name__ == '__main__':
 
-parser.add_argument('--url', metavar='[option]', action='store', type=str,
-                    required=False, default='http://localhost', 
-                    help='set the FlexRAN RTC URL: loalhost (default)')
-parser.add_argument('--port', metavar='[option]', action='store', type=str,
-                    required=False, default='9999', 
-                    help='set the FlexRAN RTC port: 9999 (default)')
-parser.add_argument('--url-app', metavar='[option]', action='store', type=str,
-                    required=False, default='http://localhost', 
-                    help='set the application server URL: loalhost (default)')
-parser.add_argument('--port-app', metavar='[option]', action='store', type=str,
-                    required=False, default='9090', 
-                    help='set the application server port: 9090 (default)')
-# need to may be rename parameters - do not know
-parser.add_argument('--app-url', metavar='[option]', action='store', type=str,
-                    required=False, default='http://localhost', 
-                    help='set the App address to open data: loalhost (default)')
-parser.add_argument('--app-port', metavar='[option]', action='store', type=int,
-                    required=False, default=8080, 
-                    help='set the App port to open data: 8080 (default)')
+    parser = argparse.ArgumentParser(description='Process some integers.')
 
-parser.add_argument('--op-mode', metavar='[option]', action='store', type=str,
-                    required=False, default='test', 
-                    help='Set the app operation mode either with FlexRAN or with the test json files: test(default), sdk')
-parser.add_argument('--rrc_meas', metavar='[option]', action='store', type=str,
-                    required=False, default='periodical', 
-                    help='Set the RRC trigger measurement type: one-shot, perodical(default), event-driven')
-parser.add_argument('--log',  metavar='[level]', action='store', type=str,
-                    required=False, default='info', 
-                    help='set the log level: debug, info (default), warning, error, critical')
-parser.add_argument('--period',  metavar='[option]', action='store', type=float,
-                    required=False, default=0.001, 
-                    help='set the period of the app: 1s (default)')
-
-parser.add_argument('--version', action='version', version='%(prog)s 1.0')
-
-args = parser.parse_args()
+    parser.add_argument('--url', metavar='[option]', action='store', type=str,
+                        required=False, default='http://localhost', 
+                        help='set the FlexRAN RTC URL: loalhost (default)')
+    parser.add_argument('--port', metavar='[option]', action='store', type=str,
+                        required=False, default='9999', 
+                        help='set the FlexRAN RTC port: 9999 (default)')
+    parser.add_argument('--op-mode', metavar='[option]', action='store', type=str,
+                        required=False, default='test', 
+                        help='Set the app operation mode either with FlexRAN or with the test json files: test(default), sdk')
+    parser.add_argument('--log',  metavar='[level]', action='store', type=str,
+                        required=False, default='error', 
+                        help='set the log level: debug, info (default), warning, error, critical')
+    parser.add_argument('--period',  metavar='[option]', action='store', type=float,
+                        required=False, default=0.01, 
+                        help='set the period of the app: 1s (default)')
     
-sm = flexran_sdk.stats_manager(log=log,
-                               url=args.url,
-                               port=args.port,
-                               op_mode=args.op_mode)
+    parser.add_argument('--version', action='version', version='%(prog)s 1.0')
+    
+    args = parser.parse_args()
+    
+    log=flexran_sdk.logger(log_level=args.log).init_logger()
+    
+    sm = flexran_sdk.stats_manager(log=log,
+                                   url=args.url,
+                                   port=args.port,
+                                   op_mode=args.op_mode)
+    
+    recording_app = recording_app(log=log,
+                                  log_level=args.log,
+                                  op_mode=args.op_mode)
 
-py3_flag = version_info[0] > 2
+    recording_app.period=args.period
+    
+    py3_flag = version_info[0] > 2
+    
+    
+    sm.set_recorder_status(record='on')
+    log.info('App period is set to : ' + str(recording_app.period))
+    recording_app.run(sm)
 
-
-sm.set_recorder_status(record='on'):
-run(sm,args.period)
-#t = Timer(args.period, run,kwargs=dict(sm=sm,period=argperiod))
-#t.start()
