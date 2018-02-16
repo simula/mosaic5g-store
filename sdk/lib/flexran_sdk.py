@@ -77,7 +77,7 @@ class flexran_rest_api(object):
     """
  
     """!@brief Input data sets for all the status used for test"""
-    pf_all='inputs/all_1.json'
+    pf_all='inputs/multiple_data_samples_file.json'
     """!@brief Input data sets for MAC  status used for test"""
     pf_mac='inputs/mac_stats_2.json'
     """!@brief Input data sets for eNB config status used for test"""
@@ -138,8 +138,14 @@ class rrc_trigger_meas(object):
         self.rrc_meas[rrc_triggers.PERIODICAL]       = 'PERIODICAL'
         self.rrc_meas[rrc_triggers.EVENT_DRIVEN]  = 'EVENT_DRIVEN'
         
+    def __del__(self):
+        if self.recording:
+            with open('recorded_data.json', 'w') as outfile:
+                json.dump(self.stats_data_recorded_log, outfile)
 
-    def trigger_meas(self, type='PERIODICAL'):
+
+
+    def trigger_meas(self, type='EVENT_DRIVEN'):
         """!@brief Set the type of RRC trigger measurments
         
         @param type: ONE_SHOT, PERIODICAL, and EVENT_DRIVEN
@@ -468,6 +474,16 @@ class rrm_policy (object):
 
         return  self.policy_data['mac'][index][key_sched]['parameters'][key_slice]
        
+    # Function to record stats in json list format for later reading by any application
+    def set_recorder_status(self, record='off'):
+        if record == 'on' or record=='ON' :
+            self.recording=True
+        else :
+            self.recording=False
+
+
+
+
 
     def set_slice_rb(self, sid, rb, dir='dl'):
         """!@brief Set the resource block share for a slice in a direction. 
@@ -836,8 +852,13 @@ class stats_manager(object):
         self.pfile_mac=flexran_rest_api.pf_mac
         """!@brief Test policy files for eNB"""
         self.pfile_enb=flexran_rest_api.pf_enb
+        # to iterate over json file with multiple data components
+        self.stats_data_index = -1
+        self.stats_data_log = ''
+        self.stats_data_recorded_log = []
+        self.recording=False
         
-
+    # called every run loop from monitoring_app        
     def stats_manager(self, api):
         """!@brief Request the statistics from the controller and store it locally.
         
@@ -856,12 +877,22 @@ class stats_manager(object):
                 file =  self.pfile_enb
             
             try:
-                with open(file) as data_file:
-                    self.stats_data = json.load(data_file)
-                    self.status='connected'
+                if  self.stats_data_index == -1 :  
+                    with open(file) as data_file:
+                        #self.stats_data = json.load(data_file) # get the entire file
+                        self.stats_data_log = json.load(data_file) # get the entire file
+                        print ("Successfully read list of jsons. length=" + str(len(self.stats_data_log)))
+                    self.stats_data_index = 0
+
+                self.stats_data=self.stats_data_log[int(self.stats_data_index) % len(self.stats_data_log)] # read the sample with index i 
+                self.stats_data_index +=1 # increase the indes for the next time
+                print "Successfully read element from a list of jsons"
+
+                self.status='connected'
+                
             except :
                 self.status='disconnected'
-                self.log.error('cannot find the input data file'  + file )       
+                self.log.error('cannot find or cannot read the input data file '  + file )        
 
         elif self.op_mode == 'sdk' :
 
@@ -878,6 +909,9 @@ class stats_manager(object):
                 req = requests.get(url)
                 if req.status_code == 200:
                     self.stats_data = req.json()
+                    if self.recording:
+                        # this is where the sdk data is coming in the json format
+                        self.stats_data_recorded_log.append(self.stats_data)
                     self.status='connected'
                 else :
                     self.status='disconnected'
@@ -1108,6 +1142,27 @@ class stats_manager(object):
 
         return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['rlcReport'][lc]['txQueueSize']
     
+    def get_ue_lc_hol_delay(self,enb=0,ue=0,lc=0):
+        """!@brief Get the UE RLC buffer occupancy for a particular logical channel
+        
+        @param enb: index of eNB
+        @param ue: index of UE
+        @param lc: logical channel id
+        """
+
+        return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['rlcReport'][lc]['txQueueHolDelay']
+    
+    def get_ue_lc_num_pdus(self,enb=0,ue=0,lc=0):
+        """!@brief Get the UE RLC buffer occupancy for a particular logical channel
+        
+        @param enb: index of eNB
+        @param ue: index of UE
+        @param lc: logical channel id
+        """
+
+        return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['rlcReport'][lc]['statusPduSize']
+    
+
     def get_ue_dlcqi_report(self,enb=0,ue=0):
         """!@brief Get the UE downlink channel quality indicator (CQI) report
         
@@ -1139,7 +1194,7 @@ class stats_manager(object):
         if lc == 0 or lc == 1:
             return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['bsr'][0]
         elif lc == 2 :
-            aggregated_bsr= self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['bsr'][1]+self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['bsr'][2]+self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['bsr'][3]
+            aggregated_bsr= self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['bsr'][0]+self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['bsr'][1]+self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['bsr'][2]
             return aggregated_bsr
         else :
             return 0
@@ -1333,7 +1388,170 @@ class stats_manager(object):
             if 'pcellRsrp' in self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['rrcMeasurements'] :
                 return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['rrcMeasurements']['pcellRsrp']
         return 0
-   
+
+    def get_ue_tbs(self, enb=0, ue=0, dir='UL'):
+        """!@brief Get the RRC RSRP value
+        
+        @param enb: index of eNB
+        @param ue: index of UE
+        """
+        if dir == 'dl' or dir == 'DL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['tbsDl']
+        elif dir == 'ul' or dir == 'UL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['tbsUl']
+        else :
+            self.log.warning('unknown direction ' + dir + 'set to DL')
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['tbsDl']
+    def get_harq_round(self, enb=0,ue=0):
+        """!@brief Get the HARQ round value
+        
+        @param enb: index of eNB
+        @param ue: index of UE
+        """
+        return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['harqRound']
+
+    def get_ue_prb_retx(self, enb=0, ue=0, dir='UL'):
+        """!@brief Get the RRC RSRP value
+        
+        @param enb: index of eNB
+        @param ue: index of UE
+        """
+        if dir == 'dl' or dir == 'DL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['prbRetxDl']
+        elif dir == 'ul' or dir == 'UL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['prbRetxUl']
+        else :
+            self.log.warning('unknown direction ' + dir + 'set to DL')
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['prbRetxDl']
+    
+    def get_ue_prb(self, enb=0, ue=0, dir='UL'):
+        """!@brief Get the RRC RSRP value
+        
+        @param enb: index of eNB
+        @param ue: index of UE
+        """
+        if dir == 'dl' or dir == 'DL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['prbDl']
+        elif dir == 'ul' or dir == 'UL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['prbUl']
+        else :
+            self.log.warning('unknown direction ' + dir + 'set to DL')
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['prbDl']
+
+    def get_ue_mcs1(self, enb=0, ue=0, dir='UL'):
+        """!@brief Get the RRC RSRP value
+        
+        @param enb: index of eNB
+        @param ue: index of UE
+        """
+        if dir == 'dl' or dir == 'DL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['mcs1Dl']
+        elif dir == 'ul' or dir == 'UL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['mcs1Ul']
+        else :
+            self.log.warning('unknown direction ' + dir + 'set to DL')
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['mcs1Dl']
+
+    def get_ue_mcs2(self, enb=0, ue=0, dir='UL'):
+        """!@brief Get the RRC RSRP value
+        
+        @param enb: index of eNB
+        @param ue: index of UE
+        """
+        if dir == 'dl' or dir == 'DL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['mcs2Dl']
+        elif dir == 'ul' or dir == 'UL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['mcs2Ul']
+        else :
+            self.log.warning('unknown direction ' + dir + 'set to DL')
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['mcs2Dl']
+
+    def get_ue_total_bytes_sdus(self, enb=0, ue=0, dir='UL'):
+        """!@brief Get the RRC RSRP value
+        
+        @param enb: index of eNB
+        @param ue: index of UE
+        """
+        if dir == 'dl' or dir == 'DL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['totalbytesSdusDl']
+        elif dir == 'ul' or dir == 'UL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['totalbytesSdusUl']
+        else :
+            self.log.warning('unknown direction ' + dir + 'set to DL')
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['totalbytesSdusDl']
+
+    def get_ue_total_bytes_sdus(self, enb=0, ue=0, dir='UL'):
+        """!@brief Get the RRC RSRP value
+        
+        @param enb: index of eNB
+        @param ue: index of UE
+        """
+        if dir == 'dl' or dir == 'DL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['totalbytesSdusDl']
+        elif dir == 'ul' or dir == 'UL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['totalbytesSdusUl']
+        else :
+            self.log.warning('unknown direction ' + dir + 'set to DL')
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['totalbytesSdusDl']
+
+    def get_ue_total_prb(self, enb=0, ue=0, dir='UL'):
+        """!@brief Get the RRC RSRP value
+        
+        @param enb: index of eNB
+        @param ue: index of UE
+        """
+        if dir == 'dl' or dir == 'DL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['totalPrbDl']
+        elif dir == 'ul' or dir == 'UL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['totalPrbUl']
+        else :
+            self.log.warning('unknown direction ' + dir + 'set to DL')
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['totalPrbDl']
+
+    def get_ue_total_tbs(self, enb=0, ue=0, dir='UL'):
+        """!@brief Get the RRC RSRP value
+        
+        @param enb: index of eNB
+        @param ue: index of UE
+        """
+        if dir == 'dl' or dir == 'DL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['totalTbsDl']
+        elif dir == 'ul' or dir == 'UL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['totalTbsUl']
+        else :
+            self.log.warning('unknown direction ' + dir + 'set to DL')
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['totalTbsDl']
+
+    def get_ue_mac_sdu_length(self, enb=0, ue=0, dir='UL'):
+        """!@brief Get the RRC RSRP value
+        
+        @param enb: index of eNB
+        @param ue: index of UE
+        """
+        if dir == 'dl' or dir == 'DL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['macSdusDl'][0]['sduLength']
+        elif dir == 'ul' or dir == 'UL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['macSdusDl'][0]['sduLength']
+        else :
+            self.log.warning('unknown direction ' + dir + 'set to DL')
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['macSdusDl'][0]['sduLength']
+
+    def get_ue_mac_sdu_lcid(self, enb=0, ue=0, dir='UL'):
+        """!@brief Get the RRC RSRP value
+        
+        @param enb: index of eNB
+        @param ue: index of UE
+        """
+        if dir == 'dl' or dir == 'DL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['macSdusDl'][0]['lcid']
+        elif dir == 'ul' or dir == 'UL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['macSdusDl'][0]['lcid']
+        else :
+            self.log.warning('unknown direction ' + dir + 'set to DL')
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['macSdusDl'][0]['lcid']
+
+
+
 class ss_policy (object):
     """!@brief Spectrum sharing class
         
