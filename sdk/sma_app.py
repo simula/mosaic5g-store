@@ -37,6 +37,7 @@ from random import shuffle
 import random
 from lib import flexran_sdk 
 from lib import logger
+from lib import app_graphs
 from threading import Timer
 from time import sleep
 import argparse
@@ -44,6 +45,7 @@ import json
 import yaml
 import tornado 
 import datetime
+import time
 
 from lib import polish_calc as calc
 
@@ -63,7 +65,7 @@ class sma_app(object):
     next_decisions = []
     changes = []
     output = []
-
+    graphs = []
     period=1
     name="sma_app"
     
@@ -76,10 +78,12 @@ class sma_app(object):
         self.op_mode = op_mode
 	self.open_data_all_options = []
 
-    def load_rrm_data(self):
+    def load_rrm_data(self, sm):
 	count = 0
 	try:
 	    count = sm.get_num_enb()
+	    if len(self.graphs) < sm.get_num_enb():
+		self.graphs = [{'x':[], 'y':[]}] * count
 	except:
 	    count = -1
 
@@ -284,9 +288,10 @@ class sma_app(object):
 			   
 			# choose the best one
 			self.options = sorted(self.options, key=lambda k: k['weight'],reverse = True)
-
+			# interface for presentation / visualisation
 			self.open_data_all_options.append({'cell_id':bs, 'options': self.options})
-
+						
+			self.save_to_graph(bs, self.options)
 			log.debug('\n' + yaml.dump(self.options))
 	
 			# save option to next_decision vector
@@ -389,13 +394,24 @@ class sma_app(object):
         self.general_policy = ss.get_general_policy()
         self.sensing_data = ss.get_sensing_data()
 	self.enb_assign = ss.get_enb_assign()
+	
+    def save_to_graph(self, enb, options):
+	x = []
+	y = []
+	for i, opt in enumerate(options):
+	    x.append([opt['freq_min'], 0])
+	    y.append([opt['bandwidth'], opt['price']])
+	self.graphs[enb] = {'x':x, 'y':y}
+
+    def get_graphs(self):
+	return self.graphs
+	    
 
     def run(self, sm,sma_app, sma_open_data):
 
-        
         log.info('Reading the status of the underlying eNBs')
         sm.stats_manager('all')
-        self.load_rrm_data()
+        self.load_rrm_data(sm)
 
         log.info('Load all policy files from ss_policy')
         ss.load_config_files()  
@@ -411,7 +427,7 @@ class sma_app(object):
         self.check_changes_policy()
 
         self.generate_output()
-
+	
 	# send the updated list when there is a changes
         if self.check_if_decisions_changed():
             ss.apply_policy(self.output)
@@ -431,8 +447,22 @@ class sma_app(object):
     def handle_open_data(self, client, message):
 	client.send(json.dumps(self.open_data_all_options))
 	
-
-	
+# main thread function - because shows GUI 
+def visualisation(sma_app, fm, period, enable):
+    graphs = []
+    while True:
+	time.sleep(period)
+	if enable:
+	    data = sma_app.get_graphs()
+	    if len(graphs) < len(data):
+		for i in range(len(data) - len(graphs)):
+		    graphs.append('graph-' + str(len(graphs) + 1))
+		    fm.create(name=graphs[-1])
+	    for i, enb in enumerate(data):
+		fm.clear(name=graphs[i])
+		fm.axis(name=graphs[i], args=[2600, 2720, 0, 2])	
+		for rect in range(len(enb['x'])):	    	    
+		    fm.show(name=graphs[i], x=enb['x'][rect], y=enb['y'][rect], fill=(rect==0), autoscale=False, fig_type=app_graphs.FigureType.Rect)
         
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process some integers.')
@@ -446,6 +476,9 @@ if __name__ == '__main__':
     parser.add_argument('--port', metavar='[option]', action='store', type=str,
                         required=False, default='9999', 
                         help='set the FlexRAN RTC port: 9999 (default)')
+    parser.add_argument('--graph', metavar='[option]', action='store', type=bool,
+                        required=False, default=False, 
+                        help='set true to visualize (default true)')
     parser.add_argument('--app-port', metavar='[option]', action='store', type=int,
                         required=False, default=8080, 
                         help='set the App port to open data: 8080 (default)')
@@ -458,6 +491,9 @@ if __name__ == '__main__':
     parser.add_argument('--period',  metavar='[option]', action='store', type=int,
                         required=False, default=10, 
                         help='set the period of the app: 1s (default)')
+    parser.add_argument('--graph-period',  metavar='[option]', action='store', type=int,
+                        required=False, default=5, 
+                        help='set the period of the app visualisation: 5s (default)')
 
     parser.add_argument('--version', action='version', version='%(prog)s 1.0')
 
@@ -484,7 +520,7 @@ if __name__ == '__main__':
                                port=args.port,
                                op_mode=args.op_mode)
 
-
+    fm = app_graphs.FigureManager() 
 
     # open data additions 
     app_open_data=app_sdk.app_builder(log=log,
@@ -497,11 +533,14 @@ if __name__ == '__main__':
 
     app_open_data.add_options("list", handler=sma_open_data)
     app_open_data.run_app()
-    #app_open_data.add_runtime_options("list2", handler=sma_open_data)
 
     log.info('Waiting ' + str(sma_app.period) + ' seconds...')
-    t = Timer(sma_app.period, sma_app.run,kwargs=dict(sm=sm,sma_app=sma_app,sma_open_data=sma_open_data))
-    t.start()
-    
-    app_sdk.run_all_apps()
+    sma_app.run(sm=sm,sma_app=sma_app,sma_open_data=sma_open_data)	    
+
+    t2 = Timer(1,app_sdk.run_all_apps) 
+    t2.start()
+
+    visualisation(sma_app, fm, args.graph_period, args.graph)
+	    
+	    
    

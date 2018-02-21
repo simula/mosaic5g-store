@@ -64,6 +64,7 @@ from time import sleep
 
 import rrm_app_vars
 
+from lib import app_graphs
 from lib import flexran_sdk 
 from lib import logger
 from lib import app_sdk
@@ -211,6 +212,7 @@ class monitoring_app(object):
         self.op_mode = op_mode
 
     def initialize_data_holders(self,sm):
+	 sm.stats_manager('all')
          for enb in range(0, sm.get_num_enb()) :
             self.enb_dl_pdcp_sfn[enb]=0# super frame number (length 10 ms)
             self.enb_dl_mac_maxmcs[enb]=0# Fixed
@@ -577,6 +579,17 @@ class monitoring_app(object):
                 log.info('------------------------------------------------------------------------------------')
                 log.info('------------------------------------------------------------------------------------')
 
+    def get_graphs_data(self, sm):
+	output = []
+	for enb in range(0, sm.get_num_enb()) :
+            for ue in range(0, sm.get_num_ue(enb=enb)):
+	        if self.enb_ue_dl_pdcp_bytes[enb, ue] > 20: # LIMIT 
+		      output.append({'enb':enb,'ue':ue,'dl_pdcp_bytes':self.enb_ue_dl_pdcp_bytes[enb, ue]})
+	print(output)
+	return output
+
+
+
     def run(self, sm,rrc):
         # update the all stats 
         sm.stats_manager('all')
@@ -604,7 +617,32 @@ class monitoring_app(object):
         
     def handle_open_data(self, client, message):
 	   client.send(json.dumps({'monitoring_app':'please fill this function'}))
-        
+
+# main thread function - because shows GUI 
+def visualisation(monitoring_app, fm, sm, period, enable):
+    graphs = []
+    while True:
+	time.sleep(period)
+	if enable:
+	    data = monitoring_app.get_graphs_data(sm)
+            used = []
+	    for i in data:
+		name = str(i['enb'])+'-'+str(i['ue'])
+		if not name in graphs: 
+ 		    graphs.append(name)
+		    fm.create(name=name)
+		    fm.show(name=name, x=1, y=i['dl_pdcp_bytes'], fig_type=app_graphs.FigureType.Plot)
+		elif name in graphs:
+		    fm.append(name=name, y=i['dl_pdcp_bytes'], fig_type=app_graphs.FigureType.Plot)
+		used.append(name)
+	    for i, name in enumerate(graphs):
+		if not name in used:
+		    fm.close(name=name)
+		    del graphs[i]
+		    
+	         
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process some integers.')
     
@@ -627,6 +665,12 @@ if __name__ == '__main__':
     parser.add_argument('--app-port', metavar='[option]', action='store', type=int,
                         required=False, default=8080, 
                         help='set the App port to open data: 8080 (default)')
+    parser.add_argument('--graph', metavar='[option]', action='store', type=bool,
+                        required=False, default=False, 
+                        help='set true to visualize (default true)')
+    parser.add_argument('--graph-period',  metavar='[option]', action='store', type=int,
+                        required=False, default=5, 
+                        help='set the period of the app visualisation: 5s (default)')
 
     parser.add_argument('--op-mode', metavar='[option]', action='store', type=str,
                         required=False, default='test', 
@@ -651,15 +695,15 @@ if __name__ == '__main__':
 
     # If this block is uncommented then monitoring app does not do the run loop.
     # open data additions 
-    # app_open_data=app_sdk.app_builder(log=log,
-    #                 app=monitoring_app.name,
-    #                 address=args.app_url,
-    #                 port=args.app_port)
+    app_open_data=app_sdk.app_builder(log=log,
+                    app=monitoring_app.name,
+                     address=args.app_url,
+                     port=args.app_port)
 
-    # monitoring_open_data = app_sdk.app_handler(log=log, callback=monitoring_app.handle_open_data)
-    # app_open_data.add_options(monitoring_app.name, handler=monitoring_open_data)
-    # app_open_data.run_app()
-    # app_sdk.run_all_apps() 
+    monitoring_open_data = app_sdk.app_handler(log=log, callback=monitoring_app.handle_open_data)
+    app_open_data.add_options(monitoring_app.name, handler=monitoring_open_data)
+    app_open_data.run_app()
+
     
     sm = flexran_sdk.stats_manager(log=log,
                                    url=args.url,
@@ -670,6 +714,8 @@ if __name__ == '__main__':
                                       url=args.url,
                                       port=args.port,
                                       op_mode=args.op_mode)
+
+    fm = app_graphs.FigureManager() 
     
     py3_flag = version_info[0] > 2 
     sm.log.info('1. Reading the status of the underlying eNBs')
@@ -685,10 +731,9 @@ if __name__ == '__main__':
     monitoring_app.period=args.period
     monitoring_app.initialize_data_holders(sm)       
     log.info('App period is set to : ' + str(monitoring_app.period))
-    t = Timer(monitoring_app.period, monitoring_app.run,kwargs=dict(sm=sm,rrc=rrc))
-    t.start()
+    monitoring_app.run(sm=sm,rrc=rrc)
+
+    t2 = Timer(1,app_sdk.run_all_apps) 
+    t2.start()
     
-    # for visualization 
-    #num_samples_in_plot = 100
-    #viz = visualize.visualize(num_samples_in_plot,True)
-    #viz.create(plot_type='simple',fig_num=1)
+    visualisation(monitoring_app, fm, sm, args.graph_period, args.graph)
