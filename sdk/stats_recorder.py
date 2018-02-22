@@ -1,29 +1,26 @@
-'''
-   The MIT License (MIT)
+"""
+   Licensed to the Mosaic5G under one or more contributor license
+   agreements. See the NOTICE file distributed with this
+   work for additional information regarding copyright ownership.
+   The Mosaic5G licenses this file to You under the
+   Apache License, Version 2.0  (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+  
+    	http://www.apache.org/licenses/LICENSE-2.0
+  
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+ -------------------------------------------------------------------------------
+   For more information about the Mosaic5G:
+   	contact@mosaic-5g.io
+"""
 
-   Copyright (c) 2017
-
-   Permission is hereby granted, free of charge, to any person obtaining a copy
-   of this software and associated documentation files (the "Software"), to deal
-   in the Software without restriction, including without limitation the rights
-   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-   copies of the Software, and to permit persons to whom the Software is
-   furnished to do so, subject to the following conditions:
-   
-   The above copyright notice and this permission notice shall be included in all
-   copies or substantial portions of the Software.
-   
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-   SOFTWARE.
-'''
-
-'''
-    File name: te_app.py
+"""
+    File name: stats_recorder_app.
     Author: navid nikaein
     Description: This app triggers an external event based on the predefined threshold through FLEXRAN SDK
     version: 1.0
@@ -31,19 +28,7 @@
     Date last modified: 7 July 2017 
     Python Version: 2.7
     
-'''
-
-# Naming convention 
-# enb, ue, lc are idices which mean that the observed measurement depends on these parameters
-# dl, ul. 
-# _w means it is over a window. Without it means it is for tti. 
-# It is assumed that all measurements are obtained from the eNB, but tis can contain measurements made dl and sent ul by UE
-# I am only interested in the impact on data channel. But the control channel traffic can have impact on the data channel. 
-# I have decided to ignore this for simplicity.   
-# Commenting convention 
-# tti - means this is updated every tti. 
-# tti uc - means it is updated every tti and a counter is incremented.  
-# window - means it is updated every window
+"""
 
 
 import json
@@ -73,23 +58,6 @@ def sigint_handler(signum,frame):
 
 signal.signal(signal.SIGINT, sigint_handler)
 
-class recording_app(object):
-    period=0.01
-
-    def __init__(self, log, log_level='error', op_mode='test'):
-        super(recording_app, self).__init__()
-        
-        self.log = log
-        self.log_level = log_level
-        self.op_mode = op_mode
-        
-    def run(self,sm):
-
-        self.log.info('Updating all the stats')
-        sm.stats_manager('all')
-        
-        t = Timer(recording_app.period, self.run,kwargs=dict(sm))
-        t.start()
         
 if __name__ == '__main__':
 
@@ -107,9 +75,12 @@ if __name__ == '__main__':
     parser.add_argument('--log',  metavar='[level]', action='store', type=str,
                         required=False, default='error', 
                         help='set the log level: debug, info (default), warning, error, critical')
-    parser.add_argument('--period',  metavar='[option]', action='store', type=float,
-                        required=False, default=0.01, 
+    parser.add_argument('--app-period',  metavar='[option]', action='store', type=float,
+                        required=False, default=0.1, 
                         help='set the period of the app: 1s (default)')
+    parser.add_argument('--num-samples',  metavar='[option]', action='store', type=int,
+                        required=False, default=100, 
+                        help='set the number of samples to record: (default 100)')
     
     parser.add_argument('--version', action='version', version='%(prog)s 1.0')
     
@@ -121,17 +92,23 @@ if __name__ == '__main__':
                                    url=args.url,
                                    port=args.port,
                                    op_mode=args.op_mode)
-    
-    recording_app = recording_app(log=log,
-                                  log_level=args.log,
-                                  op_mode=args.op_mode)
 
-    recording_app.period=args.period
-    
+    period=args.app_period
+    n_samples=args.num_samples
+    c_sample=0
     py3_flag = version_info[0] > 2
     
     
-    sm.set_recorder_status(record='on')
-    log.info('App period is set to : ' + str(recording_app.period))
-    recording_app.run(sm)
+    log.info('App period : ' + str(period))
+    log.info('Num samples is set to : ' + str(n_samples))
+
+    sm.start_recorder()
+    while c_sample < n_samples :
+        sm.stats_manager('all')
+        c_sample+=1
+        sleep(period)
+
+    sm.stop_recorder()
+    log.info('recording is finished')
+
 

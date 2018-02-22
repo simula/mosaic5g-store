@@ -1,25 +1,22 @@
 """
-   The MIT License (MIT)
-
-   Copyright (c) 2017
-
-   Permission is hereby granted, free of charge, to any person obtaining a copy
-   of this software and associated documentation files (the "Software"), to deal
-   in the Software without restriction, including without limitation the rights
-   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-   copies of the Software, and to permit persons to whom the Software is
-   furnished to do so, subject to the following conditions:
-   
-   The above copyright notice and this permission notice shall be included in all
-   copies or substantial portions of the Software.
-   
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-   SOFTWARE.
+   Licensed to the Mosaic5G under one or more contributor license
+   agreements. See the NOTICE file distributed with this
+   work for additional information regarding copyright ownership.
+   The Mosaic5G licenses this file to You under the
+   Apache License, Version 2.0  (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+  
+    	http://www.apache.org/licenses/LICENSE-2.0
+  
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+ -------------------------------------------------------------------------------
+   For more information about the Mosaic5G:
+   	contact@mosaic-5g.io
 """
 
 """ FlexRAN software development kit (SDK)
@@ -263,11 +260,6 @@ class rrm_policy (object):
         self.pf_yaml=flexran_rest_api.pf_yaml
         self.pf_json=flexran_rest_api.pf_json
         self.tf_yaml=flexran_rest_api.tf_yaml
-
-    def __del__(self):
-        if self.recording:
-            with open('recorded_data.json', 'w') as outfile:
-                json.dump(self.stats_data_recorded_log, outfile)
 
                 
     # read the policy file     
@@ -844,8 +836,37 @@ class stats_manager(object):
         # to iterate over json file with multiple data components
         self.stats_data_index = -1
         self.stats_data_log = ''
-        self.stats_data_recorded_log = []
+        self.stats_data_recorded = []
+        self.stats_data_recorded_file = './output/recorded_data.json'
+        
         self.recording=False
+
+    def __del__(self):
+        if self.recording:
+            with open(self.stats_data_recorded_file, 'w') as outfile:
+                json.dump(self.stats_data_recorded, outfile)
+
+              
+    def start_recorder(self):
+
+        self.log.info('start the recorder app')
+        self.recording=True
+            
+    def stop_recorder(self, basedir='./outputs', basefn='recorded_data', formatfn='json'):
+
+        self.stats_data_recorded_file=basedir+'/'+basefn+'.'+formatfn
+        
+        if self.recording : 
+            self.log.info('stop the recorder app')
+            self.recording=False
+            try:
+                with open(self.stats_data_recorded_file, 'w') as outfile:
+                    json.dump(self.stats_data_recorded, outfile)
+                    self.log.info('recorded file can be found at '+ self.stats_data_recorded_file)
+            except:
+                self.log.error('cannot open the file ' + self.stats_data_recorded_file)
+        else :
+            self.log.warn('recording is not enabled')
         
     # called every run loop from monitoring_app        
     def stats_manager(self, api):
@@ -868,20 +889,17 @@ class stats_manager(object):
             try:
                 if  self.stats_data_index == -1 :  
                     with open(file) as data_file:
-                        #self.stats_data = json.load(data_file) # get the entire file
-                        self.stats_data_log = json.load(data_file) # get the entire file
-                        #self.log.debug ("Successfully read list of jsons. length=" + str(len(self.stats_data_log)))
+                        # get the entire file
+                        self.stats_data_log = json.load(data_file) 
                     self.stats_data_index = 0
-
-                self.stats_data=self.stats_data_log[self.stats_data_index] # read the sample with index i 
-                self.stats_data_index = (self.stats_data_index + 1) % len(self.stats_data_log) # increase the indes for the next time
-#                print self.stats_data #"Successfully read element from a list of jsons"
- #               print self.stats_data_log[0]
+                self.stats_data=self.stats_data_log[self.stats_data_index]  
+                self.stats_data_index = (self.stats_data_index + 1) % len(self.stats_data_log)
+                if self.recording:
+                    self.stats_data_recorded.append(self.stats_data)
                 self.status='connected'
-                
             except :
                 self.status='disconnected'
-                self.log.error('cannot find or cannot read the input data file '  + file )        
+                self.log.error('cannot find or cannot read the input data file '  + file )                        
 
         elif self.op_mode == 'sdk' :
 
@@ -897,11 +915,10 @@ class stats_manager(object):
             try :
                 req = requests.get(url)
                 if req.status_code == 200:
+                    self.status='connected'
                     self.stats_data = req.json()
                     if self.recording:
-                        # this is where the sdk data is coming in the json format
                         self.stats_data_recorded_log.append(self.stats_data)
-                    self.status='connected'
                 else :
                     self.status='disconnected'
                     self.log.error('Request error code : ' + req.status_code)
@@ -914,13 +931,6 @@ class stats_manager(object):
         if self.status == 'connected' :     
             self.log.debug('Stats Manager requested data')
             self.log.debug(json.dumps(self.stats_data, indent=2))
-                
-     # Function to record stats in json list format for later reading by any application
-    def set_recorder_status(self, record='off'):
-        if record == 'on' or record=='ON' :
-            self.recording=True
-        else :
-            self.recording=False
 
     def get_enb_config(self,enb=0):
         """!@brief Get the entire eNB configuration

@@ -1,25 +1,22 @@
 """
-   The MIT License (MIT)
-
-   Copyright (c) 2017
-
-   Permission is hereby granted, free of charge, to any person obtaining a copy
-   of this software and associated documentation files (the "Software"), to deal
-   in the Software without restriction, including without limitation the rights
-   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-   copies of the Software, and to permit persons to whom the Software is
-   furnished to do so, subject to the following conditions:
-   
-   The above copyright notice and this permission notice shall be included in all
-   copies or substantial portions of the Software.
-   
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-   SOFTWARE.
+   Licensed to the Mosaic5G under one or more contributor license
+   agreements. See the NOTICE file distributed with this
+   work for additional information regarding copyright ownership.
+   The Mosaic5G licenses this file to You under the
+   Apache License, Version 2.0  (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+  
+    	http://www.apache.org/licenses/LICENSE-2.0
+  
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+ -------------------------------------------------------------------------------
+   For more information about the Mosaic5G:
+   	contact@mosaic-5g.io
 """
 
 """
@@ -73,6 +70,7 @@ class sma_app(object):
         super(sma_app, self).__init__()
         
         self.url = url+port
+        self.log = log
         self.log_level = log_level
         self.status = 0
         self.op_mode = op_mode
@@ -88,10 +86,10 @@ class sma_app(object):
 	    count = -1
 
 	if count == -1:
-	    log.info('Could not connect to flexran rtc')
+	    self.log.info('Could not connect to flexran rtc')
 	    count = 0
 	else:
-            log.info('Current number of eNB attached to rtc: ' + str(count))
+            self.log.info('Current number of eNB attached to rtc: ' + str(count))
         self.base_stations = [];
         for enb in range(count):          
             dlFreq = sm.get_cell_freq(enb,dir='dl')
@@ -101,8 +99,8 @@ class sma_app(object):
             self.base_stations.append({'dl_freq':dlFreq, \
                                        'ul_freq':ulFreq, \
                                        'dl_bandwidth': dlBand, 'ul_bandwidth': ulBand})
-        log.debug('All eNB attached to rtc, that we can control: ')
-        log.info(yaml.dump(self.base_stations))
+        self.log.debug('All eNB attached to rtc, that we can control: ')
+        self.log.info(yaml.dump(self.base_stations))
 
     def add_operator_options(self):
          for op in range(len(self.operator_policy)):
@@ -151,15 +149,15 @@ class sma_app(object):
 	      operator = self.lsa_policy[i]['operator']
               self.options.append({'lsa':True,'freq_min': f_min,'operator':operator, 'freq_max': f_max, 'duration_lease': time * count, \
                                  'bandwidth': bandwidth,'min_lease_time': time, 'price': 1.0*price/time})
-       log.debug('All available options: ')
-       log.debug(yaml.dump(self.options))
+       self.log.debug('All available options: ')
+       self.log.debug(yaml.dump(self.options))
 
     def filter_options(self,rule):
 
         for criteria in self.rules[rule]['criteria'].keys():
             if self.rules[rule]['criteria'][criteria][0] == 0:
                continue
-            log.info('Apply criteria: ' + criteria + ' ' + self.rules[rule]['criteria'][criteria][1] \
+            self.log.info('Apply criteria: ' + criteria + ' ' + self.rules[rule]['criteria'][criteria][1] \
                         + ' than ' + str(self.rules[rule]['criteria'][criteria][0]))
             if self.rules[rule]['criteria'][criteria][1] == 'more':
                for option in self.options[:]:
@@ -196,7 +194,7 @@ class sma_app(object):
     
                     #print weight
                 except:
-                    log.error('Error in cost pattern (wrong pattern or wrong param name) weight = 0')
+                    self.log.error('Error in cost pattern (wrong pattern or wrong param name) weight = 0')
 
             else:
                 for param in range(len(self.rules[rule]['cost'])):
@@ -213,7 +211,7 @@ class sma_app(object):
                         weight += self.rules[rule]['cost'][param_name] * \
                          (1.0*self.options[option][param_name]/max_values[param_name])
                     else:
-                        log.warn('Wrong COST name, skipped cost: ' + param_name)
+                        self.log.warn('Wrong COST name, skipped cost: ' + param_name)
                 
                 if weight_sum == 0:
                     weight = random.random();
@@ -292,7 +290,7 @@ class sma_app(object):
 			self.open_data_all_options.append({'cell_id':bs, 'options': self.options})
 						
 			self.save_to_graph(bs, self.options)
-			log.debug('\n' + yaml.dump(self.options))
+			self.log.debug('\n' + yaml.dump(self.options))
 	
 			# save option to next_decision vector
 			if len(self.options) > 0:
@@ -303,20 +301,20 @@ class sma_app(object):
 			    self.next_decisions.append({'error':'No options available'})
 			break
 	       if not found_rule:
-	           log.info('not found mvno group named ' +str(mvno_group)+ ' for cell id ' +str(cell_id))
+	           self.log.info('not found mvno group named ' +str(mvno_group)+ ' for cell id ' +str(cell_id))
            else:
-	       log.info('cell id ' + str(cell_id) + ' do not have any mvno group assigned')	
+	       self.log.info('cell id ' + str(cell_id) + ' do not have any mvno group assigned')	
 
-        log.debug('Next decisions: ')
-        log.debug(yaml.dump(self.next_decisions))
+        self.log.debug('Next decisions: ')
+        self.log.debug(yaml.dump(self.next_decisions))
 
     def check_changes_policy(self):
         if(len(self.decisions) == 0):
             # first time 
            self.decisions = self.next_decisions 
            self.changes = self.decisions
-           log.info('Set first time policy')
-           log.debug(self.decisions)
+           self.log.info('Set first time policy')
+           self.log.debug(self.decisions)
            return # to assign for first time use
 
         a = []
@@ -324,14 +322,14 @@ class sma_app(object):
             a.append({})  
 
 	    if( len(self.next_decisions) == 0 and len(self.decisions) > 0) :
-	        log.info("WE DO NOT IMPLEMENTED TURNING OFF ENB") 	
+	        self.log.info("WE DO NOT IMPLEMENTED TURNING OFF ENB") 	
 
             if(self.decisions[i] == self.next_decisions[i]): # if the current decision is the same as previous, skip 
-                log.info('Skip changes to eNB: ' + str(self.decisions[i]['eNB_index']) + \
+                self.log.info('Skip changes to eNB: ' + str(self.decisions[i]['eNB_index']) + \
                          ' MVNO_group: ' + str(self.decisions[i]['MVNO_group']))
                 self.decisions[i] = self.next_decisions[i]
             else:
-                log.info('Change policy to eNB: ' + str(self.next_decisions[i]['eNB_index']) + \
+                self.log.info('Change policy to eNB: ' + str(self.next_decisions[i]['eNB_index']) + \
                         ' MVNO_group: ' + str(self.next_decisions[i]['MVNO_group'])) 
                 for j in self.decisions[i].keys():
                     if (self.decisions[i][j] != self.next_decisions[i][j]):
@@ -385,7 +383,7 @@ class sma_app(object):
                         self.output['enb'][enb_id][enb_id]['ul_freq_offset']=int(self.options[i]['fdd_spacing'])
         
         yaml.dump(self.output,file,default_flow_style=False)
-        log.info('\n' + yaml.dump(self.output)) 
+        self.log.info('\n' + yaml.dump(self.output)) 
 
     def load_policy(self):
         self.rules = ss.get_rules()
@@ -409,20 +407,20 @@ class sma_app(object):
 
     def run(self, sm,sma_app, sma_open_data):
 
-        log.info('Reading the status of the underlying eNBs')
+        self.log.info('Reading the status of the underlying eNBs')
         sm.stats_manager('all')
         self.load_rrm_data(sm)
 
-        log.info('Load all policy files from ss_policy')
+        self.log.info('Load all policy files from ss_policy')
         ss.load_config_files()  
         self.load_policy()
        
         # large time scale
-        log.info('Make decision')
+        self.log.info('Make decision')
         self.make_decision()  # physical BS: there is no selection or a second level of selection
         
         # generate spectrum policy 
-        log.info('Generate decision')
+        self.log.info('Generate decision')
         # apply spectrum sharing policy
         self.check_changes_policy()
 
@@ -440,7 +438,7 @@ class sma_app(object):
             # set istrubctions to rrm_app # ran shring
             # alternatively, do it manualy through sdk
 
-        log.info('Waiting ' + str(sma_app.period) + ' seconds...')
+        self.log.info('Waiting ' + str(sma_app.period) + ' seconds...')
         t = Timer(sma_app.period,self.run,kwargs=dict(sm=sm,sma_app=sma_app,sma_open_data=sma_open_data))
         t.start()
 

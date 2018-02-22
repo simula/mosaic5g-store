@@ -1,3 +1,35 @@
+"""
+   Licensed to the Mosaic5G under one or more contributor license
+   agreements. See the NOTICE file distributed with this
+   work for additional information regarding copyright ownership.
+   The Mosaic5G licenses this file to You under the
+   Apache License, Version 2.0  (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+  
+    	http://www.apache.org/licenses/LICENSE-2.0
+  
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+ -------------------------------------------------------------------------------
+   For more information about the Mosaic5G:
+   	contact@mosaic-5g.io
+"""
+
+"""
+    File name: app_sdk.py
+    Author: Lukasz Kulacz and navid nikaein
+    Description: This lib provides APIs for a control app to visualize data in different format
+    version: 1.0
+    Date created:  22 Fev 2018
+    Date last modified: 22 Fev 2018
+    Python Version: 2.7
+    ToDo: support multi-line plots. Beautify a figure, 
+    
+"""
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
@@ -15,6 +47,7 @@ class Figure:
 		self.__rows = rows
 		self.__cols = cols
 		self.__rects = [0]*(rows*cols)
+                self.__lines = 0
 		fig, axes = plt.subplots(rows, cols)
 		fig.suptitle(name, fontsize=14)
 		if rows == 1 and cols == 1:
@@ -162,25 +195,28 @@ if __name__ == "__main__":
 	fm.create(cols=3, rows=2)
 	
 	time.sleep(1)
+	#xy_origin=(5,3), x_target+=2, y_target+=1 
+	fm.show((5, 3), [2, 1], col=3, row=2, fig_type=FigureType.Rect)
+	fm.show((1, 1), [1, 1], col=3, row=2, fig_type=FigureType.Rect, fill=True)
+        # x and y array
+	fm.show([1, 2, 3, 4], [2, 2, 3, 5], col=2)
+
+        # x and y array
+	fm.show([1, 2, 3], [231, 211, 243], col=1, row=2, fig_type=FigureType.Bar)
+        # y for x+=x_step
+	fm.append(200, x_step=2, col=1, row=2, fig_type=FigureType.Bar)
 	
-	fm.show((5, 5), [5, 1], col=3, row=2, fig_type=FigureType.Rect)
-	fm.show((1, 1), [2, 2], col=3, row=2, fig_type=FigureType.Rect, fill=True)
-
-
-	fm.show([1, 2, 3, 4], [2, 2, 3, 3], col=1)
-
-	fm.show([1, 2, 3], [231, 211, 243], col=1, row=2, fig_type=FigureType.Bar)	
-	fm.append(200, col=1, row=2, fig_type=FigureType.Bar)
+	time.sleep(10)
+        # x and y array 
+	fm.show(x=[2, 4], y=[21, 2], col=2, row=2)
+	fm.show(x=[3, 5], y=[15, 4], col=2, row=2)
+	# append y for x+=1
+        time.sleep(10)
+        # append clear the fig before redrawing it, 
+	fm.append(15, col=2, row=2)
+        fm.append(10, col=2, row=2)
 	
-	time.sleep(2)
-
-	fm.show(x=[2, 4], y=[21, 2], col=2, row=3)
-	
-	time.sleep(2)
-
-	fm.append(15, col=2, row=3)
-	
-	time.sleep(2)
+	time.sleep(10)
 	
 	fm.axis([-2, 5, 0, 30], col=1, row=1)
 

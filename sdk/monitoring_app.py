@@ -1,37 +1,33 @@
-'''
-   The MIT License (MIT)
-
-   Copyright (c) 2017
-
-   Permission is hereby granted, free of charge, to any person obtaining a copy
-   of this software and associated documentation files (the "Software"), to deal
-   in the Software without restriction, including without limitation the rights
-   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-   copies of the Software, and to permit persons to whom the Software is
-   furnished to do so, subject to the following conditions:
-   
-   The above copyright notice and this permission notice shall be included in all
-   copies or substantial portions of the Software.
-   
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-   SOFTWARE.
-'''
-
-'''
-    File name: te_app.py
+"""
+   Licensed to the Mosaic5G under one or more contributor license
+   agreements. See the NOTICE file distributed with this
+   work for additional information regarding copyright ownership.
+   The Mosaic5G licenses this file to You under the
+   Apache License, Version 2.0  (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+  
+    	http://www.apache.org/licenses/LICENSE-2.0
+  
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+ -------------------------------------------------------------------------------
+   For more information about the Mosaic5G:
+   	contact@mosaic-5g.io
+"""
+"""
+    File name: monitoring_app.py
     Author: navid nikaein
-    Description: This app triggers an external event based on the predefined threshold through FLEXRAN SDK
+    Description: This app gathers RAN statistics per function and provides open data API for other apps to access RAN stats. Also it provides dynamic graphs to monitor the RAN statistic of interest.
     version: 1.0
     Date created: 7 July 2017
-    Date last modified: 7 July 2017 
+    Date last modified: 22 Fev 2018
     Python Version: 2.7
     
-'''
+"""
 
 # Naming convention 
 # enb, ue, lc are idices which mean that the observed measurement depends on these parameters
@@ -211,7 +207,7 @@ class monitoring_app(object):
         self.status = 'none'
         self.op_mode = op_mode
 
-    def initialize_data_holders(self,sm):
+    def init_data_holders(self,sm):
 	 sm.stats_manager('all')
          for enb in range(0, sm.get_num_enb()) :
             self.enb_dl_pdcp_sfn[enb]=0# super frame number (length 10 ms)
@@ -665,26 +661,22 @@ if __name__ == '__main__':
     parser.add_argument('--app-port', metavar='[option]', action='store', type=int,
                         required=False, default=8080, 
                         help='set the App port to open data: 8080 (default)')
+    parser.add_argument('--app-period',  metavar='[option]', action='store', type=float,
+                        required=False, default=1, 
+                        help='set the period of the app: 1s (default)')
     parser.add_argument('--graph', metavar='[option]', action='store', type=bool,
                         required=False, default=False, 
-                        help='set true to visualize (default true)')
+                        help='set true to visualize (default false)')
     parser.add_argument('--graph-period',  metavar='[option]', action='store', type=int,
                         required=False, default=5, 
                         help='set the period of the app visualisation: 5s (default)')
-
     parser.add_argument('--op-mode', metavar='[option]', action='store', type=str,
                         required=False, default='test', 
                         help='Set the app operation mode either with FlexRAN or with the test json files: test(default), sdk')
-    parser.add_argument('--rrc_meas', metavar='[option]', action='store', type=str,
-                        required=False, default='periodical', 
-                        help='Set the RRC trigger measurement type: one-shot, perodical(default), event-driven')
     parser.add_argument('--log',  metavar='[level]', action='store', type=str,
                         required=False, default='info', 
                         help='set the log level: debug, info (default), warning, error, critical')
-    parser.add_argument('--period',  metavar='[option]', action='store', type=float,
-                        required=False, default=1, 
-                        help='set the period of the app: 1s (default)')
-
+   
     parser.add_argument('--version', action='version', version='%(prog)s 1.0')
 
     args = parser.parse_args() 
@@ -728,8 +720,8 @@ if __name__ == '__main__':
                                 log_level=args.log,
                                 op_mode=args.op_mode)
 
-    monitoring_app.period=args.period
-    monitoring_app.initialize_data_holders(sm)       
+    monitoring_app.period=args.app_period
+    monitoring_app.init_data_holders(sm)
     log.info('App period is set to : ' + str(monitoring_app.period))
     monitoring_app.run(sm=sm,rrc=rrc)
 
