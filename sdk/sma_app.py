@@ -34,7 +34,7 @@ from random import shuffle
 import random
 from lib import flexran_sdk 
 from lib import logger
-from lib import app_graphs
+from lib.app_graphs import  Color, LineType, FigureType, FigureManager
 from threading import Timer
 from time import sleep
 import argparse
@@ -455,12 +455,19 @@ def visualisation(sma_app, fm, period, enable):
 	    if len(graphs) < len(data):
 		for i in range(len(data) - len(graphs)):
 		    graphs.append('graph-' + str(len(graphs) + 1))
-		    fm.create(name=graphs[-1])
+		    fm.create(name=graphs[-1], rows=2)
+		    fm.show(name=graphs[-1], row=2, x=(0,), y=(0,))
+		    
 	    for i, enb in enumerate(data):
 		fm.clear(name=graphs[i])
-		fm.axis(name=graphs[i], args=[2600, 2720, 0, 2])	
+		fm.axis(name=graphs[i], args=[2600, 2720, 0, 2])
+		fm.beautify(name=graphs[i], title="Price (e.g. EUR / s)", xlabel='freq [MHz]', ylabel='price [EUR/s]')	
 		for rect in range(len(enb['x'])):	    	    
-		    fm.show(name=graphs[i], x=enb['x'][rect], y=enb['y'][rect], fill=(rect==0), autoscale=False, fig_type=app_graphs.FigureType.Rect)
+		    fm.show(name=graphs[i], x=enb['x'][rect], y=enb['y'][rect], fill=(rect==0), autoscale=False, fig_type=FigureType.Rect)
+
+		fm.append(name=graphs[i], row=2, y=enb['y'][0][1], x_step=period)
+		fm.beautify(name=graphs[i], row=2, title='Price in time domain', xlabel='time [s]', ylabel='price [EUR]', grid=True, color=Color.Red, line=LineType.Dashed)
+		fm.update(name=graphs[i])
         
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process some integers.')
@@ -518,7 +525,7 @@ if __name__ == '__main__':
                                port=args.port,
                                op_mode=args.op_mode)
 
-    fm = app_graphs.FigureManager() 
+    fm = FigureManager() 
 
     # open data additions 
     app_open_data=app_sdk.app_builder(log=log,

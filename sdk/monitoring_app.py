@@ -631,6 +631,7 @@ def visualisation(monitoring_app, fm, sm, period, enable):
 		elif name in graphs:
 		    fm.append(name=name, y=i['dl_pdcp_bytes'], fig_type=app_graphs.FigureType.Plot)
 		used.append(name)
+		fm.update(name=name)
 	    for i, name in enumerate(graphs):
 		if not name in used:
 		    fm.close(name=name)
