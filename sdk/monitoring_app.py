@@ -665,9 +665,9 @@ if __name__ == '__main__':
     parser.add_argument('--app-period',  metavar='[option]', action='store', type=float,
                         required=False, default=1, 
                         help='set the period of the app: 1s (default)')
-    parser.add_argument('--graph', metavar='[option]', action='store', type=bool,
+    parser.add_argument('--graph', action='store_true',
                         required=False, default=False, 
-                        help='set true to visualize (default false)')
+                        help='set true to visualize (default true)')
     parser.add_argument('--graph-period',  metavar='[option]', action='store', type=int,
                         required=False, default=5, 
                         help='set the period of the app visualisation: 5s (default)')

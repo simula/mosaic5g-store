@@ -90,7 +90,7 @@ class Figure:
 
 	def show(self, row, col, x, y, fig_type, fill, autoscale):
 		index = self.get_index(row, col, 'show')
-		if not type(fig_type) is FigureType:
+		if not type(fig_type) is str:
 			print('fig_type must by "FigureType" class object')
 			return
 		if fig_type == FigureType.Plot:
@@ -115,7 +115,7 @@ class Figure:
 
 	def get_data(self, row, col, fig_type):
 		index = self.get_index(row, col, 'append')
-		if not type(fig_type) is FigureType:
+		if not type(fig_type) is str:
 			print('fig_type must by "FigureType" class object')
 			return None
 		if fig_type == FigureType.Plot:

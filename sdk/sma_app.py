@@ -481,7 +481,7 @@ if __name__ == '__main__':
     parser.add_argument('--port', metavar='[option]', action='store', type=str,
                         required=False, default='9999', 
                         help='set the FlexRAN RTC port: 9999 (default)')
-    parser.add_argument('--graph', metavar='[option]', action='store', type=bool,
+    parser.add_argument('--graph', action='store_true',
                         required=False, default=False, 
                         help='set true to visualize (default true)')
     parser.add_argument('--app-port', metavar='[option]', action='store', type=int,
