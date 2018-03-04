@@ -1,3 +1,35 @@
+"""
+   Licensed to the Mosaic5G under one or more contributor license
+   agreements. See the NOTICE file distributed with this
+   work for additional information regarding copyright ownership.
+   The Mosaic5G licenses this file to You under the
+   Apache License, Version 2.0  (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+  
+    	http://www.apache.org/licenses/LICENSE-2.0
+  
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+ -------------------------------------------------------------------------------
+   For more information about the Mosaic5G:
+   	contact@mosaic-5g.io
+"""
+
+"""
+    File name: stats_recorder_app.
+    Author: Navid Nikaein and Akhila Rao
+    Description: Collect the data from the monitoring app and write into a file. 
+    version: 1.0
+    Date created: 7 July 2017
+    Date last modified: 1 march 2018 
+    Python Version: 2.7
+    
+"""
+
 import json
 import io
 import requests
@@ -17,6 +49,7 @@ from lib import logger
 import signal
 import math
 import monitoring_app
+
 
 class data_collection_app(object):
     ### Data holders for data collection
@@ -97,17 +130,18 @@ class data_collection_app(object):
     # Number of bytes received successfully at eNB
     dc_enb_ue_ul_phy_harq_acked_bytes={}#[enb,ue]
     
-    tti_ms=1 # ms
+    tti_s=0.001 # = 1 ms
     dc_enb_ue_tti_sample_counter={}#[enb,ue]
+    
+    wm_s=0.1 # = 100 ms
 
     tti_log_file = None
     wm_log_file = None
 
 
 
-    # Class constructor, which is run when a class object is created. 
-    # This can accept arguments that are passed when the object is created
-    def __init__(self,measurement_time_window_ms):
+    def __init__(self,log, measurement_time_window_ms):
+        self.log = log
         self.measurement_time_window_ms = measurement_time_window_ms
        # self.initialize_data_holders(self)
 
@@ -115,12 +149,11 @@ class data_collection_app(object):
             self.tti_log_file.close()
             self.wm_log_file.close()
 
-    # Initialize the dictionaries and arrays required to store the metrics 
-    # obtained from the monitroing_app.
-    # An initialization function for the aquamet variables because the 
-    # initialization depends on the number of ues and enbs and window size, 
-    # so it should be done after the rest of the things are initialized.
-    def initialize_data_holders(self):
+    def initialize_data_holders(self,sm):
+        """!@brief Initialize the dictionaries and arrays required to store the metrics obtained from the monitroing_app.
+ 
+        """
+        sm.stats_manager('all')
         for enb in range(0, sm.get_num_enb()) :    
             for ue in range(0, sm.get_num_ue(enb=enb)) :
                 data_collection_app.dc_enb_ue_dl_rsrp[enb,ue]=0#[enb,ue]
@@ -185,59 +218,59 @@ class data_collection_app(object):
                 data_collection_app.dc_enb_ue_ul_phy_harq_acked_bytes[enb,ue]=monitoring_app.enb_ue_ul_phy_harq_acked_bytes[enb,ue]#[enb,ue]
 
 
-                log.info('k=' + str(data_collection_app.dc_enb_ue_tti_sample_counter[enb,ue]) + 
+                self.log.info('k=' + str(data_collection_app.dc_enb_ue_tti_sample_counter[enb,ue]) + 
                     ' eNB ' + str(enb) + ' UE ' + str(ue) + 
                     ' enb_ue_dl_tti_seq_num ' + str(data_collection_app.dc_enb_ue_dl_tti_seq_num[enb,ue]))
 
-                log.info('k=' + str(data_collection_app.dc_enb_ue_tti_sample_counter[enb,ue]) + 
+                self.log.info('k=' + str(data_collection_app.dc_enb_ue_tti_sample_counter[enb,ue]) + 
                     ' eNB ' + str(enb) + ' UE ' + str(ue) + 
                     ' enb_ue_dl_frame_seq_num ' + str(data_collection_app.dc_enb_ue_dl_frame_seq_num[enb,ue]))
 
-                log.info('k=' + str(data_collection_app.dc_enb_ue_tti_sample_counter[enb,ue]) + 
+                self.log.info('k=' + str(data_collection_app.dc_enb_ue_tti_sample_counter[enb,ue]) + 
                     ' eNB ' + str(enb) + ' UE ' + str(ue) + 
                     ' enb_ue_dl_num_prb_sch ' + str(data_collection_app.dc_enb_ue_dl_num_prb_sch[enb,ue]))
 
-                log.info('k=' + str(data_collection_app.dc_enb_ue_tti_sample_counter[enb,ue]) + 
+                self.log.info('k=' + str(data_collection_app.dc_enb_ue_tti_sample_counter[enb,ue]) + 
                     ' eNB ' + str(enb) + ' UE ' + str(ue) + 
                     ' enb_ue_dl_pdcp_sdu_bytes ' + str(data_collection_app.dc_enb_ue_dl_pdcp_sdu_bytes[enb,ue]))
 
-                log.info('k=' + str(data_collection_app.dc_enb_ue_tti_sample_counter[enb,ue]) + 
+                self.log.info('k=' + str(data_collection_app.dc_enb_ue_tti_sample_counter[enb,ue]) + 
                     ' eNB ' + str(enb) + ' UE ' + str(ue) + 
                     ' enb_ue_dl_rlc_sdu_bytes ' + str(data_collection_app.dc_enb_ue_dl_rlc_sdu_bytes[enb,ue]))
 
-                log.info('k=' + str(data_collection_app.dc_enb_ue_tti_sample_counter[enb,ue]) + 
+                self.log.info('k=' + str(data_collection_app.dc_enb_ue_tti_sample_counter[enb,ue]) + 
                     ' eNB ' + str(enb) + ' UE ' + str(ue) + 
                     ' enb_ue_dl_mac_sdu_bytes ' + str(data_collection_app.dc_enb_ue_dl_mac_sdu_bytes[enb,ue]))
 
-                log.info('k=' + str(data_collection_app.dc_enb_ue_tti_sample_counter[enb,ue]) + 
+                self.log.info('k=' + str(data_collection_app.dc_enb_ue_tti_sample_counter[enb,ue]) + 
                     ' eNB ' + str(enb) + ' UE ' + str(ue) + 
                     ' enb_ue_dl_mac_queue_len_bytes ' + str(data_collection_app.dc_enb_ue_dl_mac_queue_len_bytes[enb,ue]))
 
-                log.info('k=' + str(data_collection_app.dc_enb_ue_tti_sample_counter[enb,ue]) + 
+                self.log.info('k=' + str(data_collection_app.dc_enb_ue_tti_sample_counter[enb,ue]) + 
                     ' eNB ' + str(enb) + ' UE ' + str(ue) + 
                     ' enb_ue_dl_tbs ' + str(data_collection_app.dc_enb_ue_dl_tbs[enb,ue]))
 
-                log.info('k=' + str(data_collection_app.dc_enb_ue_tti_sample_counter[enb,ue]) + 
+                self.log.info('k=' + str(data_collection_app.dc_enb_ue_tti_sample_counter[enb,ue]) + 
                     ' eNB ' + str(enb) + ' UE ' + str(ue) + 
                     ' enb_ue_dl_cqi ' + str(data_collection_app.dc_enb_ue_dl_cqi[enb,ue]))
 
-                log.info('k=' + str(data_collection_app.dc_enb_ue_tti_sample_counter[enb,ue]) + 
+                self.log.info('k=' + str(data_collection_app.dc_enb_ue_tti_sample_counter[enb,ue]) + 
                     ' eNB ' + str(enb) + ' UE ' + str(ue) + 
                     ' enb_ue_dl_phy_harq_acked_bytes ' + str(data_collection_app.dc_enb_ue_dl_phy_harq_acked_bytes[enb,ue]))
 
-                log.info('k=' + str(data_collection_app.dc_enb_ue_tti_sample_counter[enb,ue]) + 
+                self.log.info('k=' + str(data_collection_app.dc_enb_ue_tti_sample_counter[enb,ue]) + 
                     ' eNB ' + str(enb) + ' UE ' + str(ue) + 
                     ' enb_ue_ul_num_prb_sch ' + str(data_collection_app.dc_enb_ue_ul_num_prb_sch[enb,ue]))
 
-                log.info('k=' + str(data_collection_app.dc_enb_ue_tti_sample_counter[enb,ue]) + 
+                self.log.info('k=' + str(data_collection_app.dc_enb_ue_tti_sample_counter[enb,ue]) + 
                     ' eNB ' + str(enb) + ' UE ' + str(ue) + 
                     ' enb_ue_ul_tbs ' + str(data_collection_app.dc_enb_ue_ul_tbs[enb,ue]))
 
-                log.info('k=' + str(data_collection_app.dc_enb_ue_tti_sample_counter[enb,ue]) + 
+                self.log.info('k=' + str(data_collection_app.dc_enb_ue_tti_sample_counter[enb,ue]) + 
                     ' eNB ' + str(enb) + ' UE ' + str(ue) + 
                     ' enb_ue_ul_mcs ' + str(data_collection_app.dc_enb_ue_ul_mcs[enb,ue]))
 
-                log.info('k=' + str(data_collection_app.dc_enb_ue_tti_sample_counter[enb,ue]) + 
+                self.log.info('k=' + str(data_collection_app.dc_enb_ue_tti_sample_counter[enb,ue]) + 
                     ' eNB ' + str(enb) + ' UE ' + str(ue) + 
                     ' enb_ue_ul_phy_harq_acked_bytes ' + str(data_collection_app.dc_enb_ue_ul_phy_harq_acked_bytes[enb,ue]))
 
@@ -286,63 +319,63 @@ class data_collection_app(object):
                 data_collection_app.dc_enb_ue_ul_succ_rx_delay_moments[enb,ue]=monitoring_app.enb_ue_ul_succ_rx_delay_moments[enb,ue]#[enb,ue][]
                 data_collection_app.dc_enb_ue_ul_etx_moments[enb,ue]=monitoring_app.enb_ue_ul_etx_moments[enb,ue]#[enb,ue][]
 
-                log.info('k=' + str(data_collection_app.dc_enb_ue_wm_sample_counter[enb,ue]) + 
+                self.log.info('k=' + str(data_collection_app.dc_enb_ue_wm_sample_counter[enb,ue]) + 
                     ' eNB ' + str(enb) + ' UE ' + str(ue) + 
                     ' enb_ue_dl_rsrp ' + str(data_collection_app.dc_enb_ue_dl_rsrp[enb,ue]))
 
-                log.info('k=' + str(data_collection_app.dc_enb_ue_wm_sample_counter[enb,ue]) + 
+                self.log.info('k=' + str(data_collection_app.dc_enb_ue_wm_sample_counter[enb,ue]) + 
                     ' eNB ' + str(enb) + ' UE ' + str(ue) + 
                     ' enb_ue_dl_rsrq ' + str(data_collection_app.dc_enb_ue_dl_rsrq[enb,ue]))
 
-                log.info('k=' + str(data_collection_app.dc_enb_ue_wm_sample_counter[enb,ue]) + 
+                self.log.info('k=' + str(data_collection_app.dc_enb_ue_wm_sample_counter[enb,ue]) + 
                     ' eNB ' + str(enb) + ' UE ' + str(ue) + 
                     ' enb_ue_ul_rssi ' + str(data_collection_app.dc_enb_ue_ul_rssi[enb,ue]))
 
-                log.info('k=' + str(data_collection_app.dc_enb_ue_wm_sample_counter[enb,ue]) + 
+                self.log.info('k=' + str(data_collection_app.dc_enb_ue_wm_sample_counter[enb,ue]) + 
                     ' eNB ' + str(enb) + ' UE ' + str(ue) + 
                     ' enb_ue_dl_cqi_moments ' + str(data_collection_app.dc_enb_ue_dl_cqi_moments[enb,ue]))
 
-                log.info('k=' + str(data_collection_app.dc_enb_ue_wm_sample_counter[enb,ue]) + 
+                self.log.info('k=' + str(data_collection_app.dc_enb_ue_wm_sample_counter[enb,ue]) + 
                     ' eNB ' + str(enb) + ' UE ' + str(ue) + 
                     ' enb_ue_dl_sch_delay_moments ' + str(data_collection_app.dc_enb_ue_dl_sch_delay_moments[enb,ue]))
 
-                log.info('k=' + str(data_collection_app.dc_enb_ue_wm_sample_counter[enb,ue]) + 
+                self.log.info('k=' + str(data_collection_app.dc_enb_ue_wm_sample_counter[enb,ue]) + 
                     ' eNB ' + str(enb) + ' UE ' + str(ue) + 
                     ' enb_ue_dl_succ_rx_delay_moments ' + str(data_collection_app.dc_enb_ue_dl_succ_rx_delay_moments[enb,ue]))
 
-                log.info('k=' + str(data_collection_app.dc_enb_ue_wm_sample_counter[enb,ue]) + 
+                self.log.info('k=' + str(data_collection_app.dc_enb_ue_wm_sample_counter[enb,ue]) + 
                     ' eNB ' + str(enb) + ' UE ' + str(ue) + 
                     ' enb_ue_dl_mac_phy_delay_moments ' + str(data_collection_app.dc_enb_ue_dl_mac_phy_delay_moments[enb,ue]))
 
-                log.info('k=' + str(data_collection_app.dc_enb_ue_wm_sample_counter[enb,ue]) + 
+                self.log.info('k=' + str(data_collection_app.dc_enb_ue_wm_sample_counter[enb,ue]) + 
                     ' eNB ' + str(enb) + ' UE ' + str(ue) + 
                     ' enb_ue_dl_etx_moments ' + str(data_collection_app.dc_enb_ue_dl_etx_moments[enb,ue]))
 
-                log.info('k=' + str(data_collection_app.dc_enb_ue_wm_sample_counter[enb,ue]) + 
+                self.log.info('k=' + str(data_collection_app.dc_enb_ue_wm_sample_counter[enb,ue]) + 
                     ' eNB ' + str(enb) + ' UE ' + str(ue) + 
                     ' enb_ue_dl_pdcp_sdu_pkt_len_moments ' + str(data_collection_app.dc_enb_ue_dl_pdcp_sdu_pkt_len_moments[enb,ue]))
 
-                log.info('k=' + str(data_collection_app.dc_enb_ue_wm_sample_counter[enb,ue]) + 
+                self.log.info('k=' + str(data_collection_app.dc_enb_ue_wm_sample_counter[enb,ue]) + 
                     ' eNB ' + str(enb) + ' UE ' + str(ue) + 
                     ' enb_ue_dl_pdcp_sdu_inter_pkt_time_moments ' + str(data_collection_app.dc_enb_ue_dl_pdcp_sdu_inter_pkt_time_moments[enb,ue]))
 
-                log.info('k=' + str(data_collection_app.dc_enb_ue_wm_sample_counter[enb,ue]) + 
+                self.log.info('k=' + str(data_collection_app.dc_enb_ue_wm_sample_counter[enb,ue]) + 
                     ' eNB ' + str(enb) + ' UE ' + str(ue) + 
                     ' enb_ue_dl_pdcp_sdu_arr_rate ' + str(data_collection_app.dc_enb_ue_dl_pdcp_sdu_arr_rate[enb,ue]))
 
-                log.info('k=' + str(data_collection_app.dc_enb_ue_wm_sample_counter[enb,ue]) + 
+                self.log.info('k=' + str(data_collection_app.dc_enb_ue_wm_sample_counter[enb,ue]) + 
                     ' eNB ' + str(enb) + ' UE ' + str(ue) + 
                     ' enb_ue_ul_mcs_moments ' + str(data_collection_app.dc_enb_ue_ul_mcs_moments[enb,ue]))
 
-                log.info('k=' + str(data_collection_app.dc_enb_ue_wm_sample_counter[enb,ue]) + 
+                self.log.info('k=' + str(data_collection_app.dc_enb_ue_wm_sample_counter[enb,ue]) + 
                     ' eNB ' + str(enb) + ' UE ' + str(ue) + 
                     ' enb_ue_ul_sch_delay_moments ' + str(data_collection_app.dc_enb_ue_ul_sch_delay_moments[enb,ue]))
 
-                log.info('k=' + str(data_collection_app.dc_enb_ue_wm_sample_counter[enb,ue]) + 
+                self.log.info('k=' + str(data_collection_app.dc_enb_ue_wm_sample_counter[enb,ue]) + 
                     ' eNB ' + str(enb) + ' UE ' + str(ue) + 
                     ' enb_ue_ul_succ_rx_delay_moments ' + str(data_collection_app.dc_enb_ue_ul_succ_rx_delay_moments[enb,ue]))
 
-                log.info('k=' + str(data_collection_app.dc_enb_ue_wm_sample_counter[enb,ue]) + 
+                self.log.info('k=' + str(data_collection_app.dc_enb_ue_wm_sample_counter[enb,ue]) + 
                     ' eNB ' + str(enb) + ' UE ' + str(ue) + 
                     ' enb_ue_ul_etx_moments ' + str(data_collection_app.dc_enb_ue_ul_etx_moments[enb,ue]))
 
@@ -365,35 +398,30 @@ class data_collection_app(object):
                 wm_log_file.write(str(data_collection_app.dc_enb_ue_ul_etx_moments[enb,ue]) + '\n')
 
 
-    #  This runs in a loop. At the end of this function it is initilized again with a timer.
-    # So this measn that we get the monitroing info periodically with this period.
-    def run_tti(self, sm, rrc, monitoring_app):
-        log.info('TTI timer fired')
-        log.info('Reading the status of the underlying eNBs')
-        sm.stats_manager('all')
-        log.info('Gather measurements')
-        monitoring_app.get_rsrp_rsrq(sm)
-        monitoring_app.get_tti_level_measurements(sm)
-        data_collection_app.log_tti_measurements(sm,monitoring_app)
+    def run_tti(self, sm, rrc, monitoring_app_tti):
+        """!@brief Collect the monitroing info per TTI (the higher granularity)
+ 
+        """
+        self.log.debug('TTI timer fired: Reading the status of the underlying eNBs')
+        monitoring_app_tti.run(sm,rrc)        
+        data_collection_app.log_tti_measurements(sm,monitoring_app_tti)
         
-        t1 = Timer(data_collection_app.tti_ms, 
-            self.run,kwargs=dict(sm=sm,rrc=rrc,monitoring_app=monitoring_app))
+        t1 = Timer(data_collection_app.tti_s, 
+            self.run,kwargs=dict(sm=sm,rrc=rrc,monitoring_app_tti=monitoring_app_tti))
         t1.start()
 
 
-    #  This runs in a loop. At the end of this function it is initilized again with a timer.
-    # So this measn that we get the monitroing info periodically with this period.
-    def run_wm(self, sm, rrc, monitoring_app):
-        log.info('Wm timer fired')
-        log.info('Reading the status of the underlying eNBs')
-        sm.stats_manager('all')
-        log.info('Gather measurements')
-        monitoring_app.get_rsrp_rsrq(sm)
-        monitoring_app.get_wm_level_measurements(sm)
-        data_collection_app.log_wm_measurements(sm,monitoring_app)
+    
+    def run_wm(self, sm, rrc, monitoring_app_wm):
+        """!@brief Collect the monitroing info periodically for an observation window
+ 
+        """ 
+        self.log.info('Wm timer fired : Reading the status of the underlying eNBs')
+        monitoring_app_wm.run(sm,rrc)
+        data_collection_app.log_wm_measurements(sm,monitoring_app_wm)
         
-        t2 = Timer(data_collection_app.wm_ms, 
-            self.run,kwargs=dict(sm=sm,rrc=rrc,monitoring_app=monitoring_app))
+        t2 = Timer(data_collection_app.wm_s, 
+            self.run,kwargs=dict(sm=sm,rrc=rrc,monitoring_app_wm=monitoring_app_wm))
         t2.start()
 
 
@@ -427,13 +455,22 @@ if __name__ == '__main__':
     # Create logger object
     log=flexran_sdk.logger(log_level=args.log).init_logger()
     # Create monitoring_app object
-    monitoring_app = monitoring_app.monitoring_app(log=log,
+    monitoring_app_tti = monitoring_app.monitoring_app(log=log,
                                     url=args.url,
                                     port=args.port,
                                     url_app=args.url_app,
                                     port_app=args.port_app,
                                     log_level=args.log,
                                     op_mode=args.op_mode)
+
+    monitoring_app_wm = monitoring_app.monitoring_app(log=log,
+                                    url=args.url,
+                                    port=args.port,
+                                    url_app=args.url_app,
+                                    port_app=args.port_app,
+                                    log_level=args.log,
+                                    op_mode=args.op_mode)
+      
     # Create stats_manager object
     sm = flexran_sdk.stats_manager(log=log,
                                    url=args.url,
@@ -447,15 +484,23 @@ if __name__ == '__main__':
     
     # Does this mean it does not work for python version 3 ???
     py3_flag = version_info[0] > 2 
+
+    
+    monitoring_app_tti.init_data_holders(sm) 
+    monitoring_app_tti.set_observation_period(data_collection_app.tti_s)
+    log.info('Set the observation period in monitoring app 1 to: '+str(monitoring_app_tti.get_observation_period()))
+
+    monitoring_app_wm.init_data_holders(sm) 
+    monitoring_app_wm.set_observation_period(data_collection_app.wm_s)
+    log.info('Set the observation period in monitoring app 2 to: '+str(monitoring_app_wm.get_observation_period()))
+    
     # This needs to be called after stats_manager has been instansiated 
     # since it used information from stats_manager
-    data_collection_app = data_collection_app(measurement_time_window_ms=100)
-    data_collection_app.initialize_data_holders()
-    # Start the periodic timer for each TTI (1 ms)
-    t1 = Timer(data_collection_app.tti_ms, data_collection_app.run_tti,kwargs=dict(sm=sm,rrc=rrc,monitoring_app=monitoring_app))
-    t1.start() 
-    # Start the periodic timer for each Wm (adjustable)
-    t2 = Timer(data_collection_app.wm_ms, data_collection_app.run_wm,kwargs=dict(sm=sm,rrc=rrc,monitoring_app=monitoring_app))
-    t2.start()
+    data_collection_app = data_collection_app(log, measurement_time_window_ms=100)
+    data_collection_app.initialize_data_holders(sm)
 
-            
+    # Start the periodic timer for each TTI (1 ms)
+    data_collection_app.run_tti(sm=sm,rrc=rrc,monitoring_app_tti=monitoring_app_tti)
+
+    # Start the periodic timer for each Wm (adjustable)
+    data_collection_app.run_wm(sm=sm,rrc=rrc,monitoring_app_vm=monitoring_app_vm)

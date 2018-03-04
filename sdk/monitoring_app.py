@@ -207,9 +207,15 @@ class monitoring_app(object):
         self.status = 'none'
         self.op_mode = op_mode
 
+    def set_observation_period(self, period):
+        monitoring_app.period=period
+        
+    def get_observation_period(self):
+        return monitoring_app.period
+        
     def init_data_holders(self,sm):
-	 sm.stats_manager('all')
-         for enb in range(0, sm.get_num_enb()) :
+        sm.stats_manager('all')
+        for enb in range(0, sm.get_num_enb()) :
             self.enb_dl_pdcp_sfn[enb]=0# super frame number (length 10 ms)
             self.enb_dl_mac_maxmcs[enb]=0# Fixed
             self.enb_dl_mac_sfn[enb]=0
@@ -396,7 +402,6 @@ class monitoring_app(object):
 
 
     def process_harq_stats(self, sm):
-        print "processing harq stats"
         for enb in range(0, sm.get_num_enb()) :
             for ue in range(0, sm.get_num_ue(enb=enb)) :
                 # This is the harq_pid of the TB in this TTI for which the mac stats was just reported. 
@@ -404,7 +409,7 @@ class monitoring_app(object):
                 hid = int(self.enb_dl_pdcp_sfn[enb]) % 8
                 # Harq round for the harq_pid
                 curr_round = sm.get_harq_round(enb=enb,ue=ue)
-                log.info('TEST sfn=' + str(self.enb_dl_pdcp_sfn[enb]) + 
+                self.log.debug('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) + 
                         ' tti=' + str(0) + 
                         ' eNB ' + str(enb) +
                         ' ue ' + str(ue) + 
@@ -414,7 +419,7 @@ class monitoring_app(object):
                 #prev_round[enb,ue,hid]=curr_round
                 # increment the ttl counter. To be done every TTI.
                 self.enb_ue_hid_dl_phy_tx_delay_cnt[enb,ue,hid]+=1
-                log.info('TEST sfn=' + str(self.enb_dl_pdcp_sfn[enb]) + 
+                self.log.debug('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) + 
                         ' tti=' + str(0) + 
                         ' eNB ' + str(enb) +
                         ' ue ' + str(ue) + 
@@ -436,7 +441,7 @@ class monitoring_app(object):
                     self.enb_ue_hid_dl_phy_tx_delay_cnt[enb,ue,hid]=0
                     # save the tx attempt counter and then reset it
                     self.enb_ue_dl_phy_tx_ack_attempts[enb,ue]=self.enb_ue_hid_dl_phy_tx_attempts_cnt[enb,ue,hid]
-                    log.info('TEST sfn=' + str(self.enb_dl_pdcp_sfn[enb]) + 
+                    self.log.debug('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) + 
                         ' tti=' + str(0) + 
                         ' eNB ' + str(enb) +
                         ' ue ' + str(ue) +     
@@ -455,7 +460,7 @@ class monitoring_app(object):
                     # get_phy_stats is called after get_mac_stats, so to save the ttrouble of always 
                     # ensuring the order we can just have another variable
                     self.enb_ue_dl_phy_acked_bytes[enb,ue]=self.enb_ue_prev_hid_tbs[enb,ue,hid]
-                    log.info('TEST sfn=' + str(self.enb_dl_pdcp_sfn[enb]) + 
+                    self.log.debug('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) + 
                         ' tti=' + str(0) + 
                         ' eNB ' + str(enb) +
                         ' ue ' + str(ue) +      
@@ -482,7 +487,7 @@ class monitoring_app(object):
                 #elif enb_ue_dl_mac_retx_rb[enb,ue] > 0 and harq_round < 8 :
                    # if (prev_round[enb,ue,hid]+1)%8 == 1 :
                     self.enb_ue_hid_dl_phy_tx_attempts_cnt[enb,ue,hid]+=1
-                    log.info('TEST sfn=' + str(self.enb_dl_pdcp_sfn[enb]) + 
+                    self.log.debug('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) + 
                         ' tti=' + str(0) + 
                         ' eNB ' + str(enb) +
                         ' ue ' + str(ue) + 
@@ -497,15 +502,15 @@ class monitoring_app(object):
         for enb in range(0, sm.get_num_enb()) :
             for ue in range(0, sm.get_num_ue(enb=enb)) :
                 # PDCP
-                log.info('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) + 
+                self.log.info('--------------------------------------PDCP------------------------------------------')
+                self.log.info('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) + 
                         ' tti=' + str(0) + 
                         ' eNB ' + str(enb) +
                         ' ue ' + str(ue) +
                         ' enb_ue_dl_pdcp ' + str(self.enb_ue_dl_pdcp[enb,ue]) +
                         ' enb_ue_dl_pdcp_bytes ' + str(self.enb_ue_dl_pdcp_bytes[enb,ue]) +
                         ' enb_ue_dl_pdcp_aiat ' + str(self.enb_ue_dl_pdcp_aiat[enb,ue]))
-                log.info('------------------------------------------------------------------------------------')
-                log.info('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) + 
+                self.log.info('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) + 
                         ' tti=' + str(0) + 
                         ' eNB ' + str(enb) +
                         ' ue ' + str(ue) +        
@@ -513,18 +518,17 @@ class monitoring_app(object):
                         ' enb_ue_ul_pdcp_bytes ' + str(self.enb_ue_ul_pdcp_bytes[enb,ue]) +
                         ' enb_ue_ul_pdcp_aiat ' + str(self.enb_ue_ul_pdcp_aiat[enb,ue]) +
                         ' enb_ue_ul_pdcp_oo ' + str(self.enb_ue_ul_pdcp_oo[enb,ue]))
-                log.info('------------------------------------------------------------------------------------')
-                log.info('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) + 
+                self.log.info('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) + 
                         ' tti=' + str(0) + 
                         ' eNB ' + str(enb) +
                         ' ue ' + str(ue) +        
                         ' enb_ue_dl_pdcp_w ' + str(self.enb_ue_dl_pdcp_w[enb,ue]) +
                         ' enb_ue_dl_pdcp_bytes_w ' + str(self.enb_ue_dl_pdcp_bytes_w[enb,ue]) +
                         ' enb_ue_dl_pdcp_aiat_w ' + str(self.enb_ue_dl_pdcp_aiat_w[enb,ue]))
-                log.info('------------------------------------------------------------------------------------')
                 # RLC
+                self.log.info('-----------------------------------------RLC---------------------------------------')
                 for lc in range(0,3) :
-                    log.info('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) + 
+                    self.log.info('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) + 
                             ' tti=' + str(0) + 
                             ' eNB ' + str(enb) +
                             ' ue ' + str(ue) +
@@ -533,8 +537,8 @@ class monitoring_app(object):
                             ' enb_ue_dl_rlc_queue_num_pdu ' + str(self.enb_ue_dl_rlc_queue_num_pdu[enb,ue,lc]) +
                             ' enb_ue_dl_rlc_hol_delay ' + str(self.enb_ue_dl_rlc_hol_delay[enb,ue,lc]))
                 # MAC    
-                log.info('------------------------------------------------------------------------------------')
-                log.info('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) + 
+                self.log.info('-----------------------------------------MAC----------------------------------------')
+                self.log.info('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) + 
                         ' tti=' + str(0) + 
                         ' eNB ' + str(enb) +
                         ' ue ' + str(ue) +        
@@ -545,8 +549,7 @@ class monitoring_app(object):
                         ' enb_ue_dl_mac_tbs ' + str(self.enb_ue_dl_mac_tbs[enb,ue]) +
                         ' enb_ue_dl_mac_mcs ' + str(self.enb_ue_dl_mac_mcs[enb,ue]))
 
-                log.info('------------------------------------------------------------------------------------')
-                log.info('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) + 
+                self.log.info('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) + 
                         ' tti=' + str(0) + 
                         ' eNB ' + str(enb) +
                         ' ue ' + str(ue) + 
@@ -556,25 +559,24 @@ class monitoring_app(object):
                         ' enb_ue_ul_mac_bytes ' + str(self.enb_ue_ul_mac_bytes[enb,ue]) +
                         ' enb_ue_ul_mac_tbs ' + str(self.enb_ue_ul_mac_tbs[enb,ue]) +
                         ' enb_ue_ul_mac_mcs ' + str(self.enb_ue_ul_mac_mcs[enb,ue]))
-                log.info('------------------------------------------------------------------------------------')
                 for lc in range(0,4) :
-                    log.info('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) + 
+                    self.log.info('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) + 
                         ' tti=' + str(0) + 
                         ' eNB ' + str(enb) +
                         ' ue ' + str(ue) +
                         ' lc ' + str(lc) +
                         ' lc_ue_bsr ' + str(self.lc_ue_bsr[enb,ue,lc]))
 
-                log.info('------------------------------------------------------------------------------------')
-                log.info('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) + 
+                    self.log.info('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) + 
                         ' tti=' + str(0) + 
                         ' eNB ' + str(enb) +
                         ' ue ' + str(ue) + 
                         ' enb_ue_rsrp ' + str(self.enb_ue_rsrp[enb,ue]) +
                         ' enb_ue_rsrq ' + str(self.enb_ue_rsrq[enb,ue]))
-                log.info('------------------------------------------------------------------------------------')
-                log.info('------------------------------------------------------------------------------------')
+                #PHY
+                #self.log.info('------------------------------------------PHY---------------------------------------')
 
+                
     def get_graphs_data(self, sm):
 	output = []
 	for enb in range(0, sm.get_num_enb()) :
@@ -591,21 +593,21 @@ class monitoring_app(object):
         sm.stats_manager('all')
 
         self.log.info('2.1 Gather PDCP statistics')
-        monitoring_app.get_pdcp_statistics(sm)
+        self.get_pdcp_statistics(sm)
 
         self.log.info('2.2 Gather RLC statistics')
-        monitoring_app.get_rlc_statistics(sm)
+        self.get_rlc_statistics(sm)
 
         self.log.info('2.3 Gather MAC statistics')
-        monitoring_app.get_mac_statistics(sm)
+        self.get_mac_statistics(sm)
 
         self.log.info('2.4 Gather PHY statistics')
-        monitoring_app.get_phy_statistics(sm)
+        self.get_phy_statistics(sm)
 
         self.log.info('2.5 Gather RRC statistics')
-        monitoring_app.get_rrc_statistics(sm)     
+        self.get_rrc_statistics(sm)     
 
-        monitoring_app.print_logs(sm)   
+        self.print_logs(sm)   
        
         
         t = Timer(monitoring_app.period, self.run,kwargs=dict(sm=sm,rrc=rrc))
@@ -711,8 +713,7 @@ if __name__ == '__main__':
     fm = app_graphs.FigureManager() 
     
     py3_flag = version_info[0] > 2 
-    sm.log.info('1. Reading the status of the underlying eNBs')
-    sm.stats_manager('all')
+    
     monitoring_app = monitoring_app(log=log,
                                 url=args.url,
                                 port=args.port,
@@ -721,9 +722,10 @@ if __name__ == '__main__':
                                 log_level=args.log,
                                 op_mode=args.op_mode)
 
-    monitoring_app.period=args.app_period
-    monitoring_app.init_data_holders(sm)
+    monitoring_app.set_observation_period(args.app_period)
     log.info('App period is set to : ' + str(monitoring_app.period))
+
+    monitoring_app.init_data_holders(sm) 
     monitoring_app.run(sm=sm,rrc=rrc)
 
     t2 = Timer(1,app_sdk.run_all_apps) 
