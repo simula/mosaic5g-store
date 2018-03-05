@@ -238,7 +238,8 @@ class rrm_policy (object):
     """!@brief Apply a radio resource management policy to the underlying RAN
         
         This class reads, creates, updates, and applies a policy 
-        """
+            
+    """
     def __init__(self, log, url='http://localhost', port='9999', op_mode='test'):
         """!@brief Class constructor """
         super(rrm_policy, self).__init__()
@@ -264,14 +265,29 @@ class rrm_policy (object):
                 
     # read the policy file     
     def read_policy(self, pf=''):
-        """!@brief Read the policy either from a user-defined policy file or the default one
+        """
+        !@brief Read the policy either from a user-defined policy file or the default one
      
         Read the policy file specified as parameter. If this file does not
         exist or is left blank, it will default to the file specified in 
         flexran_rest_api.pf_yaml
      
-        @param pf: the absolut path to the policy file, of type str
+        @param pf: the absolut path to the policy file of type str
         @return:  A dictionnary filled with data extracted from the policy file of rtype: dict
+
+        @api {function} read_policy(self,pf='') Read the RAN policy either from a user-defined policy file or the default one
+        @apiVersion 0.1.0
+        @apiName read_policy
+        @apiGroup RRM Class 
+        @apiPermission None
+        @apiDescription Read the policy file specified as parameter. If this file does not exist or is left blank, it will default to the file specified in 
+        flexran_rest_api.pf_yaml
+        @apiExample Example usage: 
+        see RRM app      
+        @apiParam {file} policyfile the absolut path to the policy file of type str
+        @apiSuccess {dictionary} dict A dictionnary filled with data extracted from the policy file of rtype: dict
+
+
         """
 
         if os.path.isfile(pf) :
