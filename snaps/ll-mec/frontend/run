@@ -4,8 +4,8 @@ export DEBIAN_FRONTEND=noninteractive
 set -e
 
 if [ ! -e $SNAP/ll-mec ]; then
-    echo "Cannot find $SNAP/ll-mec executable"
-    exit -1 
+    echo "Command $SNAP/ll-mec not found"
+    exit 127
 fi		   	   
 
 if [ -r $SNAP_USER_DATA/config.sh ]; then

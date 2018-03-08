@@ -3,6 +3,11 @@ version: '1.0'
 summary: Low Latency MEC platform
 description: |
    LL-MEC is a Low Latency Multi-access Edge Computing platform licensed under Apache License V2.0. It is one of the projects of Mosaic5G inititive.
+type: app
+architectures:
+  - amd64
+  - i386
+icon: meta/gui/icon.png  
 grade: devel
 confinement: devmode
 
