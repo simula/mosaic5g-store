@@ -28,58 +28,57 @@ input:checked ~ label {
 
 .handle {
     position: absolute;
-    /*background: green;*/
 }
-.top {
+.handle.top {
     top: 0;
     left: 0;
     right: 0;
     height: 10px;
     cursor: n-resize;
 }
-.bottom {
+.handle.bottom {
     bottom: 0;
     left: 0;
     right: 0;
     height: 10px;
     cursor: s-resize;
 }
-.right {
+.handle.right {
     top: 0;
     bottom: 0;
     right: 0;
     width: 10px;
     cursor: e-resize;
 }
-.left {
+.handle.left {
     top: 0;
     bottom: 0;
     left: 0;
     width: 10px;
     cursor: w-resize;
 }
-.top-left {
+.handle.top-left {
     top: 0;
     left: 0;
     width: 10px;
     height: 10px;
     cursor: nw-resize;
 }
-.top-right {
+.handle.top-right {
     top: 0;
     right: 0;
     width: 10px;
     height: 10px;
     cursor: ne-resize;
 }
-.bottom-left {
+.handle.bottom-left {
     bottom: 0;
     left: 0;
     width: 10px;
     height: 10px;
     cursor: sw-resize;
 }
-.bottom-right {
+.handle.bottom-right {
     bottom: 0;
     right: 0;
     width: 10px;
@@ -87,36 +86,71 @@ input:checked ~ label {
     cursor: se-resize;
 }
 
+.panes {
+    display: flex;
+}
+.panes > .pane {
+    overflow: auto;
+    box-sizing: border-box;
+    flex: 1 0 auto;
+}
+.horizontal.panes {
+    height: 100%;
+}
+.vertical.panes {
+    flex-direction: column;
+    width: 100%;
+}
+.pane-resizer {
+    border: 1px solid #F2F1F0;
+    border-style: inset;
+    /* background: rgb(217,241,255); */
+    background: transparent;
+    flex: 0 0 auto;
+}
+
+.vertical.panes > .pane-resizer {
+    height: 2px;
+    width: 100%;
+    cursor: row-resize;
+}
+.horizontal.panes > .pane-resizer {
+    width: 2px;
+    /* margin: 0 3px 0 3px; */
+    height: 100%;
+    cursor: col-resize;
+}
+
+.vertical.panes > .pane {
+    margin: 3px 0 3px 0;
+    width: 100%;
+}
+.horizontal.panes > .pane {
+    height: 100%;
+    margin: 0 3px 0 3px;
+}
+
+.pane.panes {
+    overflow: hidden;
+}
+
 .popup-wrapper {
     position: absolute;
-    /* display: flex; */
-    /* flex-direction: column; */
-    /* box-sizing: border-box; */
     border: 0;
     top: 0;
     left: 0;
     bottom: 0;
     right: 0;
     margin: 3px;
-    /*box-shadow: 3px 3px 3px 3px #888888;*/
     border-top-left-radius: 0.5em;
     border-top-right-radius: 0.5em;
     text-align: left;
-    /*background: #cfe7f5;*/
-    /*float:left;*/
     overflow: hidden;
  }
 .popup {
     cursor: default;
-    /* min-width: 150px; */
-    /* min-height: 100px; */
-    /* width: auto; */
-    /* height: auto; */
-    /*font-size: 80%;*/
     border-top-left-radius: 0.5em;
     border-top-right-radius: 0.5em;
-    /* background: rgb(217,241,255); */
-    /*background: #F2F1F0;*/
     position: fixed;
     z-index: 100000;
     overflow: hidden;
@@ -138,16 +172,16 @@ input:checked ~ label {
     position: fixed;
 }
 
-.popup-menu-open:hover {
+.popup-menu-open:hover:not(.input) {
     background-color: rgba(85,85,85,0.5);
 }
 
-.popup-menu-open:hover > .popup-menu {
+.popup-menu-open:hover:not(.input) > .popup-menu {
     display: block;
     /*cursor: default;*/
     /*transform: translate(0.8em,-0.5em);*/
 }
-.popup-menu-open > .popup-menu {
+.popup-menu-open:not(.input) > .popup-menu {
     /* margin-top: 5px; */
     margin-top: 0;
     margin-left: 1em;
@@ -168,9 +202,6 @@ input:checked ~ label {
     padding-right: 1em;
 }
 
-/* .popup-action { */
-/* } */
-
 .popup-menu-open {
     min-height: 1em;
     cursor: default;
@@ -185,15 +216,8 @@ input:checked ~ label {
 }
 
 .popup-menu-open:before {
-    /* top: -0.3em; */
     content: "\2003\2630\00a0";
 }
-
-/* .popup-action:before { */
-/*     content: "\00a0\25B8\00a0"; */
-/*     text-align: right; */
-/*     float: right; */
-/* } */
 
 .popup-header {
     display: block;
@@ -268,6 +292,14 @@ input:checked ~ label {
     color: yellow;
 }
 
+.expander:not(.closed):after {
+    content: "\00a0\25bc\00a0";
+}
+
+.expander.closed:after {
+    content: "\00a0\25b6\00a0";
+}
+
 .cancel:hover, .sorter:hover {
     color: red;
 }
@@ -307,8 +339,6 @@ ul.menubar {
     margin: 0;
     list-style-type: none;
     font-size: 110%;
-    /* background: #3E3D39; */
-    /* color: #FFF; */
 }
 ul.menubar > li {
     display: inline-block;
@@ -318,29 +348,23 @@ ul.menubar > li {
 ul.menubar > li:hover > .popup-menu {
     display: block;
 }
-
-
 .tabs {
-    position: relative;
 }
-.tabs:not(.vertical) .tab {
-    position: relative;   
-    border: 1px solid #ccc;
+
+.tab {
+    border: 1px solid #F2F1F0;
+    /* border: 1px solid #ccc; */
+    background: rgb(217,241,255);
     padding: 6px;
     margin: 0;
-    width: 100%;
-    background: rgb(141,221,255);
     box-sizing: border-box;
+}
+
+.tabs:not(.vertical) .tab {
+    width: 100%;
 }
 .tabs.vertical .tab {
-    position: relative;   
-    border: 1px solid #ccc;
-    padding: 6px;
-    margin: 0;
-    background: rgb(141,221,255);
-    box-sizing: border-box;
     flex-grow: 1;
-    /* overflow: scroll; */
     overflow: auto;
 }
 .tabs .tab:not(.open) {
@@ -354,15 +378,17 @@ ul.tabsbar {
 ul.tabsbar > li {
     display: inline-block;
     padding: 6px;
-    border: 1px solid #ccc;
-    margin-right: 2px;
+    /* border: 1px solid #ccc; */
+    border: 1px solid #F2F1F0;
+    margin-right: 3px;
+    background: rgba(50,50,50, 0.1);
     position: relative;
-    left: 1px;
+    left: 0px;
     border-top-left-radius: 6px;
     border-top-right-radius: 6px;
     border-bottom: 0px;
     width: auto;
-    white-space: nowrap;
+
 }
 .tabs.vertical {
     display: flex;
@@ -370,13 +396,16 @@ ul.tabsbar > li {
 }
 .tabs.vertical ul.tabsbar {
     margin: 0;
+    /* Does not work right on firefox if tab content is wide! */
+    /* overflow-y: auto; */
+    /* overflow-x: hidden; */
 }
 .tabs.vertical ul.tabsbar > li {
     display: block;
 }
 ul.tabsbar > li.selected {
     padding-top: 6px;
-    background: rgb(141,221,255);
+    background: rgb(217,241,255);
     z-index: 1;
 }
 
@@ -388,26 +417,22 @@ ul.tabsbar > li.selected {
     display: flex;
 }
 .horizontal > * {
-    /* display: inline-block; */
-    position: relative;
     vertical-align: top;
 }
-
 
 
 .tooltip {   
     visibility: hidden;
     position: absolute;
-    /* top: 0px; */
-    /* left: 105%; */
-    top: 105%;
-    left: %
+    top: 0px;
+    left: 105%;
     text-align: left;
-    width: 30em;
+    width: 120px;
+    /* max-width: 20em; */
     padding: 2px;
     font: 12px sans-serif;
     font-size: 90%;
-    border: 0px;
+    border: 1px solid black;
     border-radius: 0.5em;
     pointer-events: none;
     background: #aaccff;
@@ -415,27 +440,85 @@ ul.tabsbar > li.selected {
     white-space: normal;
     overflow: visible;
     z-index: 3;
+    box-sizing: border-box;
 }
 
-/* .tooltip::after { */
-/*     content: " "; */
-/*     position: absolute; */
-/*     left: -10px; */
-/*     top: 10px; */
-/*     /\*margin-top: -10px;*\/ */
-/*     border-width: 5px; */
-/*     border-style: solid; */
-/*     border-color: transparent #aaccff transparent transparent; */
-/* } */
+.tooltip::after {
+    content: "";
+    position: absolute;
+    border-width: 5px;
+    border-style: solid;
+    border-color: transparent;
+}
+.tooltip::before {
+    content: "";
+    position: absolute;
+    border-width: 6px;
+    border-style: solid;
+    border-color: transparent;
+}
+
+.tooltip.right::after,.tooltip:not(.left):not(.top):not(.bottom)::after {
+    margin-top: -5px;
+    top: 1em;
+    right: 100%;
+    border-right-color: #aaccff;
+}
+.tooltip.right::before,.tooltip:not(.left):not(.top):not(.bottom)::before {
+    margin-top: -6px;
+    top: 1em;
+    right: 100%;
+    border-right-color: black;
+}
+
+.tooltip.left::after {
+    margin-top: -5px;
+    top: 1em;
+    left: 100%;
+    border-left-color: #aaccff;
+}
+.tooltip.left::before {
+    margin-top: -6px;
+    top: 1em;
+    left: 100%;
+    border-left-color: black;
+}
+.tooltip.bottom::after {
+    bottom: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-bottom-color: #aaccff;
+}
+.tooltip.bottom::before {
+    bottom: 100%;
+    left: 50%;
+    margin-left: -6px;
+    border-bottom-color: black;
+}
+.tooltip.top::after {
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-top-color: #aaccff;
+}
+.tooltip.top::before {
+    top: 100%;
+    left: 50%;
+    margin-left: -6px;
+    border-top-color: black;
+}
+
 .toolhint {
-    position: relative;
+    /* float: right; */
+    /* position: relative; */
 }
 .tooltipbox {
-    position: relative;
+    /* position: relative; */
 }
-.toolhint:after {
+.toolhint:before {
     color: blue;
     content: "\00a0\1f6c8\00a0";
+    float: right;
 }
 
 :hover > .tooltip {

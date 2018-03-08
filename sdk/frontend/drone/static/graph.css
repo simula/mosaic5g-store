@@ -5,11 +5,11 @@
     font-size: 10px;
 }
 
-.node .graph rect {
-    stroke: black;
-    fill: green;
-    opacity: 0.8;
-}
+/* .node .graph rect { */
+/*     stroke: black; */
+/*     fill: green; */
+/*     opacity: 0.8; */
+/* } */
 
 .node .graph circle {
     fill:  green;

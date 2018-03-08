@@ -12,6 +12,11 @@
   <body>
     <div id="holding">
       <ul class="popup-menu shared" id="source_types">
+	<li data-value="RPC">RPC
+	  <div class="tooltip">
+	    COHERENT Application Protocol based on JSON-RPC 2.0
+	  </div>
+	</li>
 	<li data-value="APP">APP
 	  <div class="tooltip">
 	    Generic application. Either REST or WebSocket API
@@ -87,22 +92,23 @@
 	<img src="images/Coherent_logo_v2.png" width="90">
 	<img src="images/vtt-logo.png" width="50">
       </div>
-      <div id="drones" data-popup="edit-task" style="clear: both;">
-	<div class="tab topology" data-label="Topology" data-popup="edit-sources" data-open="resizeGraph">
-	  <div class="horizontal">
-	    <div id="topology" data-resize="resizeGraph">
-	    </div>
-	    <div id="parameters">
-	      <table>
-		<thead>
-		  <tr>
-		    <th colspan="2"></th>
-		  </tr>
-		</thead>
-		<tbody>
-		</tbody>
-	      </table>
-	    </div>
+      <div id="drones" data-popup="edit-task" data-resize="resizeMain" style="clear: both;">
+	<div class="tab topology horizontal" data-label="Topology" data-popup="edit-sources" data-open="resizeGraph">
+	  <div id="topology" data-resize="resizeGraph">
+	  </div>
+	  <div id="parameters">
+	    <table>
+	      <thead>
+	  	<tr>
+	  	  <th colspan="2" style="position:relative;"></th>
+	  	</tr>
+	      </thead>
+	      <tbody>
+	      </tbody>
+	    </table>
+	  </div>
+	  <div id="methods" data-action="sendCommand">
+	    Methods
 	  </div>
 	</div>
       </div>
@@ -110,27 +116,31 @@
 	<table>
 	  <thead>
 	    <tr>
-	      <th style="position:relative;">Type
-		<div class="tooltip">
-		  Application type defines the message format
-		  used by the application at the end of the url.
-		</div>
+	      <th>Type
+		  <span class="tooltip">
+		    Application type defines the message format
+		    used by the application at the end of the url.
+		  </span>
 	      </th>
-	      <th>Name
-		<div class="tooltip">
-		  Name label for the source to be shown under the icon.
+	      <th><div>
+		  Name
+		  <span class="tooltip">
+		    Name label for the source to be shown under the icon.
+		  </span>
 		</div>
 	      </th>
 	      <th>
 		Url
 		<div class="tooltip">
 		  The url pointing to the application, either HTTP
-		  REST (http:) or Web socket API (ws:).
+		  REST (http:) or Web socket API (ws:). If host name
+		  is written as '*', then it will be replaced by the
+		  hostname from current web location.
 		</div>
 	      </th>
 	      <th><span>
 		  Refresh Interval [s]
-		  <div class="tooltip">
+		  <div class="tooltip left">
 		    <p>
 		      For REST API this specifies the interval of
 		      issed GET requests, for WebSocket API this is
@@ -191,14 +201,18 @@
 	</table>
       </form>
       <form class="popup" id="saveAs" title="Save or delete" data-submit="saveTasks">
-	<input name="fileName" type="text" id="configName">
-	<span class="tooltip">
-	  Type the name of configuration to save the current state. Commit by ENTER, or OK
+	<span>
+	  <input name="fileName" type="text" id="configName">
+	  <span class="tooltip">
+	    Type the name of configuration to save the current state. Commit by ENTER, or OK
+	  </span>
 	</span>
-	<input type="button" class="submit-action" value="Delete" data-submit="deleteTasks">
-	<div class="tooltip">
-	  Delete a configuration with the given name.
-	</div>
+	<span>
+	  <input type="button" class="submit-action" value="Delete" data-submit="deleteTasks">
+	  <span class="tooltip">
+	    Delete a configuration with the given name.
+	  </span>
+	</span>
       </form>
     </div>
     <script src="uitools.js"></script>

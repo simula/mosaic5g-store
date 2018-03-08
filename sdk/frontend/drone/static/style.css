@@ -1,5 +1,7 @@
 body {
-    background: rgb(217,241,255);
+    /* background: rgb(217,241,255); */
+    background: rgb(141,221,255);
+    font: 12px sans-serif;
 }
 .log {
     white-space: nowrap;
@@ -29,19 +31,53 @@ td {
     white-space: nowrap;
 }
 
-#topology {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    flex-grow: 2;
-    box-sizing: border-box;
-    border: 2px solid rgb(141,221,255);
-    background: rgb(217,241,255);
-}
-#parameters {
-    flex-grow: 1;
+.tab.topology {
+    background: transparent;
 }
 
+#topology {
+    position: relative;
+    /* width: 100%; */
+    /* height: 100%; */
+    /* flex-grow: 2; */
+    box-sizing: border-box;
+    /* border: 2px solid rgb(141,221,255); */
+    background: rgb(217,241,255);
+    overflow: hidden;
+    flex: 1 0 auto;
+}
+#parameters {
+    flex: 0 0 auto;
+    border-left: 2px solid transparent;
+    padding-right: 0.5em;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+#methods {
+    flex: 0 0 auto;
+    margin-left: 3px;
+    max-width: 20%;
+}
+#methods .application {
+    background: rgb(217,241,255);
+    margin-bottom: 3px;
+}
+#methods .application > .name {
+    font-weight: bold;
+    text-align: center;
+}
+#methods .application .control {
+    display: flex;
+    flex-wrap: wrap;
+    flex: 0 0 auto;
+}
+#methods .application .command {
+    min-height: 50px;
+}
+#methods .application input {
+    height: 100%;
+    width: 100%;
+}
 #mainMenu {
     background: #333333;
     color: #FFF;
@@ -106,7 +142,6 @@ ul.tabsbar > li.stopping .control .runstop:after {
 }
 
 .error_x {
-    font-size: 400%;
     fill: red;
 }
 
@@ -143,7 +178,7 @@ ul.tabsbar > li.stopping .control .runstop:after {
 }
 
 th {
-    position: relative;
+    /* position: relative; */
 }
 
 .linepath {
