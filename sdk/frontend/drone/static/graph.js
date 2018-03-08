@@ -23,6 +23,7 @@ function graph(graph_selector, NAME_MAP, CALLBACKS) {
     
     var nodes = [];
     var links = [];
+    var clusters = [];
     var nodemap = {};
     var linkmap = {};
 
@@ -46,7 +47,12 @@ function graph(graph_selector, NAME_MAP, CALLBACKS) {
 
     var PORT = {
 	// .. radius of the port circle
-	R: 10
+	S: 8,
+	R: 8 * Math.sqrt(2) / 2,
+	translate: function (x, y) { return "translate(" + (x - this.S/2) + "," + (y - this.S/2) + ")";}
+    };
+
+    var LINK = {
     };
 
     // This defines the initial settings
@@ -66,6 +72,36 @@ function graph(graph_selector, NAME_MAP, CALLBACKS) {
 	    }));
 	};
 	return force;
+    }
+    function ports_only(force) {
+	var init = force.initialize;
+	force.initialize = function () {
+	    init(nodes.filter(function (d) {
+		return d.node;
+	    }));
+	};
+	return force;
+    }
+    // function cluster_only(force) {
+    // 	var init = force.initialize;
+    // 	force.initialize = function () {
+    // 	    var n = clusters;
+    // 	    console.log("cluster size=", n.length);
+    // 	    init(n);
+    // 	};
+    // 	return force;
+    // }
+
+    function forceCluster(alpha) {
+	var k = alpha * 0.1;
+    	for (var i = 0, n = nodes.length; i < n; ++i) {
+    	    var node = nodes[i];
+	    if (node.node) continue;
+    	    var cluster = clusters[node.cluster || 0];
+	    if (!cluster) return; // can happen, if node.cluster is changed to yet unseen cluster in application
+    	    node.vx -= (node.x - cluster.x) * k;
+    	    node.vy -= (node.y - cluster.y) * k;
+    	}
     }
 
     var force;
@@ -88,14 +124,20 @@ function graph(graph_selector, NAME_MAP, CALLBACKS) {
 	    .on("dragend", dragended);
     } else {
 	force = d3.forceSimulation()
-	    .force("link", d3.forceLink(links).distance(200))
-	    .force("collide", nodes_only(d3.forceCollide(NODE.R)))
-	    .force("charge", nodes_only(d3.forceManyBody().strength(-100)))
+	    .force("link", d3.forceLink().id(function (d) { return d.id;}).distance(150))
+	    .force("collide", d3.forceCollide())
+	    .force("cluster", forceCluster)
+	    .force("charge", nodes_only(d3.forceManyBody()
+	    				.strength(-2000)
+	    				.distanceMax(500)
+	    			       ))
+	    // .force("center", d3.forceCenter())
 	    .on("tick", tick);
 	zoom = d3.zoom()
 	    .scaleExtent([0.2,6])
 	    .on("zoom", zoomed);
 	drag = d3.drag()
+	    .clickDistance(3)
 	    .on("start", dragstarted)
 	    .on("drag", dragged)
 	    .on("end", dragended);
@@ -174,9 +216,11 @@ function graph(graph_selector, NAME_MAP, CALLBACKS) {
 	resize_pending = false;
 	if (D3_IS_V3) {
 	} else {
-	    //force.force("center", d3.forceCenter(view_w/2,view_h/2));
+	    // force.force("center", d3.forceCenter(view_w/2,view_h/2));
 	    force.force("x", nodes_only(d3.forceX(view_w/2)));
 	    force.force("y", nodes_only(d3.forceY(view_h/2)));
+	    // force.force("x", nodes_only(d3.forceX(0.001)));
+	    // force.force("y", nodes_only(d3.forceY(0.001)));
 	}
     }
     
@@ -355,20 +399,18 @@ function graph(graph_selector, NAME_MAP, CALLBACKS) {
 	d3.event.preventDefault();
     	d3.event.stopPropagation();
 	if (CALLBACKS.nodeSelect)
-	    (CALLBACKS.nodeSelect)(d);
+	    (CALLBACKS.nodeSelect)(d, this);
     }
     
     function node_context(d) {
     	d3.event.preventDefault();
     	d3.event.stopPropagation();
-    	//var data = d3.select("#nodedata");
-    	//data.text("");
     	if (d.node) {
 	    if (CALLBACKS.portContext)
-    		(CALLBACKS.portContext)(d);
+    		(CALLBACKS.portContext)(d, this);
 	} else {
 	    if (CALLBACKS.nodeContext)
-    		(CALLBACKS.nodeContext)(d);
+    		(CALLBACKS.nodeContext)(d, this);
 	}
     }
 
@@ -504,6 +546,8 @@ function graph(graph_selector, NAME_MAP, CALLBACKS) {
 		    d3.select(this).append("line");
 		}
 	    });
+	if (LINK.create)
+	    (LINK.create)(link);
     }
     
     function node_icon(d) {
@@ -539,12 +583,17 @@ function graph(graph_selector, NAME_MAP, CALLBACKS) {
 	var nodes = node.filter(function (d) {return !d.node;});
 	var internal = nodes.append('g')
 		.attr("class", "graph");
-	internal.append("image")
-	    .attr("class", "icon")
-	    .attr("transform", NODE.translate(0,0))
-	    .attr("width", NODE.S)
-	    .attr("height", NODE.S)
-	    .attr("xlink:href", node_icon);
+	internal.each(function (d) {
+	    var icon = node_icon(d);
+	    if (icon) {
+		d3.select(this).append("image")
+		    .attr("class", "icon")
+		    .attr("transform", NODE.translate(0,0))
+		    .attr("width", NODE.S)
+		    .attr("height", NODE.S)
+		    .attr("xlink:href", icon);
+	    }
+	});
 	internal.append("text")
 	    .attr("class", "vendor")
 	    .attr("dy", -NODE.S/2)
@@ -561,6 +610,17 @@ function graph(graph_selector, NAME_MAP, CALLBACKS) {
 	internal = ports
 	    .append('g')
 	    .attr("class", "graph");
+	internal.each(function (d) {
+	    var icon = node_icon(d);
+	    if (icon) {
+		d3.select(this).append("image")
+		    .attr("class", "icon")
+		    .attr("transform", PORT.translate(0,0))
+		    .attr("width", PORT.S)
+		    .attr("height", PORT.S)
+		    .attr("xlink:href", node_icon);
+	    }
+	});
 	// for ports, put label in center
 	internal.append("circle")
 	    .attr("r", PORT.R);
@@ -603,7 +663,8 @@ function graph(graph_selector, NAME_MAP, CALLBACKS) {
 
 	links.splice(0, links.length);
 	nodes.splice(0, nodes.length);
-		
+	// clusters.splice(0, clusters.length);
+
 	var id;
 
 	// Collect active nodes
@@ -613,6 +674,10 @@ function graph(graph_selector, NAME_MAP, CALLBACKS) {
 		if (fn.node) {
 		    // A port node
 		    fn.neighbors = [];
+		} else {
+		    var cluster = fn.cluster || 0;
+		    if (fn.fixed || !clusters[cluster])
+			clusters[cluster] = fn;
 		}
 		nodes.push(fn);
 	    }
@@ -636,17 +701,17 @@ function graph(graph_selector, NAME_MAP, CALLBACKS) {
 	node.call(node_update);
 	node.exit().remove();
 	
-	node.enter()
-	    .append("g")
-	    //.attr("title", function(d) { return d.id;})
-	    .attr("class", function (d) {
-		return (d.info && d.info.class) ? "node " + d.info.class : "node";
-	    })
-	    .on("click", node_click)
-	    .on("contextmenu", node_context)
-	    .call(node_create)
-	    //.call(node_update)
-	    .call(drag);
+	var nodeenter = node.enter()
+		.append("g")
+	//.attr("title", function(d) { return d.id;})
+		.attr("class", function (d) {
+		    return (d.info && d.info.class) ? "node " + d.info.class : "node";
+		})
+		.on("click", node_click)
+		.on("contextmenu", node_context)
+		.call(node_create)
+	// .call(node_update)
+		.call(drag);
 
 	link = svg_links.selectAll(".link")
 	    .data(links, function (d) { return d.id; })
@@ -674,15 +739,11 @@ function graph(graph_selector, NAME_MAP, CALLBACKS) {
 		.charge(function (d) { return d.node ? 0 : -2000;})
 		.start();
 	} else {
-	    force.nodes(nodes);
-	    force.force("link").links(links);
-	
-	    // REVISIT: setting charge 0 for ports seems to stabilize
-	    // initial graph, need to add some intelligent collision
-	    // detection for ports.
-	    //.gravity(function (d) { return d.node ? 0.4 : 0.4;})
-	    //.charge(function (d) { return d.node ? 0 : -2000;})
-	    force.restart();
+	    node = nodeenter.merge(node);
+	    link = linkenter.merge(link);
+	    force.nodes(nodes)
+		.force("link").links(links);
+	    force.restart().alpha(1);
 	}
     }
 
@@ -701,8 +762,10 @@ function graph(graph_selector, NAME_MAP, CALLBACKS) {
 	// var k = e.alpha;
 
 	nodes.forEach(function (d) {
-	    if (!d.node) return;
-	    // console.log(d);
+	    if (!d.node) {
+		return;
+	    }
+
 	    if (d.dragged) {
 		d.cx = d.x - d.node.x;
 		d.cy = d.y - d.node.y;
@@ -716,8 +779,8 @@ function graph(graph_selector, NAME_MAP, CALLBACKS) {
 		    // nodes.
 		    dx = dy = 0;
 		    for (var i = 0; i < weight; ++i) {
-			dx += d.neighbors[i].x;
-			dy += d.neighbors[i].y;
+			dx += d.neighbors[i].x || 0;
+			dy += d.neighbors[i].y || 0;
 		    }
 		    dx /= weight;
 		    dy /= weight;
@@ -725,12 +788,20 @@ function graph(graph_selector, NAME_MAP, CALLBACKS) {
 		    dx = d.x;
 		    dy = d.y;
 		}
+		var radius = d.radius;
+		if (!d.node.ports) console.log("No ports!", d.node, d);
+		if (d.node.ports.length > 8) {
+		    var limit = PORT.R / Math.sin(Math.PI / d.node.ports.length);
+		    // console.log("adjust " + radius + " -> " + limit);
+		    if (radius < limit) {
+			radius = limit;
+		    }
+		}
 		dx -= d.node.x;
 		dy -= d.node.y;
-
 		var r = Math.sqrt(dx*dx + dy*dy);
-		var cx = dx * d.radius / r;
-		var cy = dy * d.radius / r;
+		var cx = dx * radius / r;
+		var cy = dy * radius / r;
 
 		d.cx += (cx - d.cx);
 		d.cy += (cy - d.cy);
@@ -850,7 +921,7 @@ function graph(graph_selector, NAME_MAP, CALLBACKS) {
 	    else
 		node.ports = [port];
 	}
-	port.radius = radius || NODE.R + PORT.R;
+	port.radius = radius || PORT.distance || NODE.R + PORT.R;
 	port.gap = PORT.R;
 	// Always add a link between port and node
 	//var arc = add_link(port.node, port, 'port', {}, undefined, MARKER.NONE);
@@ -872,6 +943,8 @@ function graph(graph_selector, NAME_MAP, CALLBACKS) {
 	if (node.ports) {
 	    for (var i = 0; i < node.ports.length; ++i) {
 		var port = node.ports[i];
+		if (port.node !== node) alert("Bad node/port", node, port);
+		port.node = undefined;
 		delete_node(port.id);
 		port.id = undefined; // just in case it wasn't in nodemap!
 	    }
@@ -879,7 +952,18 @@ function graph(graph_selector, NAME_MAP, CALLBACKS) {
 	}
     }
     function remove_node(id) {
-	// First, delete node and all attached ports
+	// First, delete node and all attached ports.
+
+	// If node is a port, remove the reference to port from the
+	// ports of the attached node.
+	var port = nodemap[id];
+	if (port && port.node) {
+	    var i = port.node.ports.indexOf(port);
+	    if (i > -1) {
+		port.node.ports.splice(i,1);
+	    }
+	}
+
 	delete_node (id);
 	
 	// Clean up all links pointing to deleted nodes and ports
@@ -943,7 +1027,7 @@ function graph(graph_selector, NAME_MAP, CALLBACKS) {
     }
 
     fill_defaults(view, VIEW);
-    //reset_size();
+    reset_size();
 
     // Get the intial default view
     return {
@@ -1051,12 +1135,15 @@ function graph(graph_selector, NAME_MAP, CALLBACKS) {
 	remove: remove_node,
 
 	/**
-	 * Find node by id
+	 * Find node (or port) by id
 	 *
 	 * @param {string} id The unique id of the node to find
+	 * @param {string} port The port id relative to node (optional)
 	 *
+	 * Returns undefined, if node does not exist
 	 */
-	find: function (id) {
+	find: function (id, port) {
+	    if (port) id = id + "_" + port;
 	    return nodemap[id];
 	},
 
@@ -1205,8 +1292,13 @@ function graph(graph_selector, NAME_MAP, CALLBACKS) {
 		    node = {id: info.id};
 		nodemap[info.id] = node;
 		node.fixed = true;
-		node.px = node.x = info.x;
-		node.py = node.y = info.y;
+		if (D3_IS_V3) {
+		    node.px = node.x = info.x;
+		    node.py = node.y = info.y;
+		} else {
+		    node.fx = node.x = info.x;
+		    node.fy = node.y = info.y;
+		}
 		if (info.port) {
 		    node.cx = info.port[0];
 		    node.cy = info.port[1];
@@ -1232,6 +1324,7 @@ function graph(graph_selector, NAME_MAP, CALLBACKS) {
 
 	MARKER: MARKER,
 	NODE: NODE,
-	PORT: PORT
+	PORT: PORT,
+	LINK: LINK
     };
 }

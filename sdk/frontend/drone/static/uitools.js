@@ -120,7 +120,9 @@
 var uitools = (function () {
 
     var D3_IS_V3 = d3.version.startsWith("3.");
-    
+    var DRAG = D3_IS_V3 ? d3.behavior.drag : d3.drag;
+    var DRAG_START = D3_IS_V3 ? "dragstart" : "start";
+
     var call_backs = {};
 
     // The popup_stack records stack of open popups, for each a pair
@@ -129,7 +131,7 @@ var uitools = (function () {
 
     function call(callback, elem, params) {
 	var close = false;
-	if (d3.event)
+	if (d3.event && d3.event.stopPropagation)
 	    d3.event.stopPropagation();
 	if (!callback) {
 	    alert("No action defined");
@@ -509,7 +511,8 @@ var uitools = (function () {
 		if (params.value == undefined) {
 		    params.value = d3.select(elem).attr("value");
 		    if (params.value == undefined) {
-			params.value = elem.value;
+			if (elem.type != 'checkbox' || elem.checked)
+			    params.value = elem.value;
 		    }
 		}
 	    }
@@ -566,14 +569,6 @@ var uitools = (function () {
     }
 
     function getPosition(element) {
-	var rect = element.getBoundingClientRect();
-	return {x: rect.left,
-		y: rect.top,
-		w: rect.right - rect.left,
-		h: rect.bottom - rect.top};
-    }
-
-    function getRect(element) {
 	var rect = element.getBoundingClientRect();
 	return {x: rect.left,
 		y: rect.top,
@@ -715,8 +710,8 @@ var uitools = (function () {
 	    };
 	}
     };
-    var drag_popup = (D3_IS_V3 ? d3.behavior.drag : d3.drag)()
-     	    .on(D3_IS_V3 ? "dragstart" : "start", function () {
+    var drag_popup = DRAG()
+     	    .on(DRAG_START, function () {
 		drag_action = null;
 		for (var i = 0; i < d3.event.sourceEvent.target.classList.length; ++i) {
 		    var act = d3.event.sourceEvent.target.classList[i];
@@ -926,7 +921,7 @@ var uitools = (function () {
 	    // callbacks have been set up.
 	    setTimeout(function() {
 		tab_select(content[0]);
-	    }, 1);
+	    }, 10);
 	}
     };
     /**
@@ -998,7 +993,99 @@ var uitools = (function () {
 	if (action) call(action.value, content, { datum: content.__data__});
     }
 
-    var tabs = d3.selectAll(".tabs").each(function () { prepare_tabs(this);});
+    d3.selectAll(".tabs").each(function () { prepare_tabs(this);});
+
+    // Transforem pane sets, add resize controls between panes
+    //
+    // <.panes>
+    //   <pane-1>... </pane-1>
+    //   <pane-2>...</pane-2>
+    //   ...
+    //   <pane-N>...</pane-N>
+    // </.panes>
+    // =>
+    // <.panes>
+    //   <pane-1>...</pane-1>
+    //    <.pane-resizer></.pane-resizer>
+    //    <pane-2>...</pane-2>
+    //    <.pane-resizer><./pane-resizer>
+    //    ...
+    //    <pane-N>..<pane-N>
+    // </.panes>
+    var drag_pane = DRAG()
+	    .on(DRAG_START, function () {
+	    })
+	    .on("drag", function (d) {
+		var panes = this.parentNode;
+		var max;
+		var dv, vl, vr;
+		if (!panes.classList.contains('panes')) {
+		    alert(panes);
+		    return;
+		}
+		if (panes.classList.contains('horizontal')) {
+		    max = panes.clientWidth;
+		    vl = d[0].offsetWidth;
+		    vr = d[1].offsetWidth;
+		    dv = d3.event.dx;
+		} else {
+		    max = panes.clientHeight;
+		    dv = d3.event.dy;
+		    vl = d[0].offsetHeight;
+		    vr = d[1].offsetHeight;
+		}
+		if (dv) {
+		    console.log(vl, vr, dv);
+		    vl += dv;
+		    vr -= dv;
+		    if (panes.classList.contains('auto')) {
+			// If pane size is flexible (auto), use absolute pixel values and
+			// control only left pane.
+			d3.select(d[0])
+			    .style('flex-basis', vl + "px");
+			call_resize(d[0]);
+			d3.select(d[0])
+			    .selectAll("[data-resize]")
+			    .each(function() {call_resize(this);});
+		    } else {
+			d3.select(d[0])
+			    .style('flex-basis', (vl / max * 100) + "%");
+			call_resize(d[0]);
+			d3.select(d[0])
+			    .selectAll("[data-resize]")
+			    .each(function() {call_resize(this);});
+			d3.select(d[1])
+			    .style('flex-basis', (vr / max * 100) + "%");
+			call_resize(d[1]);
+			d3.select(d[1])
+			    .selectAll("[data-resize]")
+			    .each(function () { call_resize(this);});
+		    }
+		}
+	    });
+		   
+    function prepare_panes(element) {
+	var prev;
+	for (var i = 0; i < element.children.length; ++i) {
+	    var pane = element.children[i];
+	    if (pane.classList.contains('pane')) {
+		// console.log(i,pane);
+		if (prev) {
+		    // Add resizer BETWEEN panes
+		    var resizer = document.createElement('div');
+		    element.insertBefore(resizer, pane);
+		    d3.select(resizer)
+			.datum([prev, pane])
+			.attr('class', 'pane-resizer')
+			.call(drag_pane);
+		    ++i; // ... avoid getting the same pane again!!!
+		}
+		prev = pane;
+	    }
+	}
+    }
+
+    d3.selectAll(".panes").each(function () { prepare_panes(this);});
 
     // Enable context menu
     d3.selectAll(".context-menu")
@@ -1045,6 +1132,40 @@ var uitools = (function () {
 	selection.on("change", click_action);
     }
 
+    function _tooltip_position() {
+	var tip = d3.select(this).select(".tooltip").node();
+	var box = getPosition(this);
+	var top = 0;
+	var left = this.offsetWidth; // 'right' placement is the default
+	if (tip.classList.contains('left')) {
+	    left = -tip.offsetWidth;
+	} else if (tip.classList.contains('top')) {
+	    left = (left - tip.offsetWidth) / 2;
+	    top = -tip.offsetHeight;
+	} else if (tip.classList.contains('bottom')) {
+	    left = (left - tip.offsetWidth) / 2;
+	    top = this.offsetHeight;
+	}
+	d3.select(tip)
+	    .style('position', 'fixed')
+	    .style('left', (box.x + left)+"px")
+	    .style('top', (box.y + top)+"px");
+    }
+    
+    function add_tooltip_action(selection) {
+	// The main responsibility of the tooltip outlook in CSS. This
+	// function is only for positioning the tooltip (left, top).
+	//
+	// "tooltip_action" is optional, the but fixed positioning is
+	// necessary when the tooltip would extend outside positioned
+	// parent and thus clipped off.
+	selection.each(function () {
+	    var tip = this;
+	    d3.select(tip.parentNode)
+		.on("mouseover", _tooltip_position);
+	});
+    }
+
     function replace_text(elem, newtext) {
 	var node;
 	for (var i = 0; i < elem.childNodes.length; ++i) {
@@ -1069,6 +1190,7 @@ var uitools = (function () {
     d3.selectAll(".submit-action").on("click", submit_popup);
     d3.selectAll(".popup-menu-open").call(shared_menu);
     d3.selectAll(".menubar > li").call(shared_menu);
+    d3.selectAll(".tooltip").call(add_tooltip_action);
 
     d3.selectAll("input[type=range]")
 	.on("input", click_action)
@@ -1076,7 +1198,6 @@ var uitools = (function () {
     
     d3.select("body")
 	.on("contextmenu", context_clear);
-
 
     // Catch browser window resize events
     d3.select(window).on('resize', window_resize);
@@ -1102,6 +1223,7 @@ var uitools = (function () {
 	replace_text: replace_text,
 	add_click_action: add_click_action,
 	add_change_action: add_change_action,
+	add_tooltip_action: add_tooltip_action,
 	add_menu_action: shared_menu,
 	prepare_tabs: prepare_tabs,
 	tab_select: tab_select,

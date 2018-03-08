@@ -113,8 +113,134 @@ function topology(sources) {
 	GRAPH.resize();
     }
 
+    function sma_get_list(src) {
+	var node = src.node;
+    	var list = node.config;
+	if (!list) return;
+	for (var i = 0; i < list.length; ++i) {
+	    // Pick to values from first option of the last
+	    // message of the SMA_APP
+	    var cell_id = list[i].cell_id;
+	    var freq_min = list[i].options[0].freq_min;
+	    var freq_max = list[i].options[0].freq_max;
+	    var bandwidth = list[i].options[0].bandwidth;
+	    // This needs to change: now we just assume the
+	    // index of SMA_APP is the same as the enb index
+	    // from flexran. Must be replaced by proper id of
+	    // the enb being controlled.
+	    var cell = GRAPH.node('RTC_0_eNB_' + i);
+	    // The 'end' parameter defines what is shown at
+	    // the end of the dashed line from SMA_APP to
+	    // eNB. The styling of the line is defined by
+	    // ".link.control" in style.css.
+	    GRAPH.relation(node, cell, 'control', {'end': ['['+freq_min+'..'+freq_max+'] ' + bandwidth]},
+			   undefined, GRAPH.MARKER.END);
+	}
+    }
+
+    function sendCommand(elem, params) {
+	// elem === #methods
+	console.log(elem, params);
+	var app = params.target;
+	while (app) {
+	    if (app === elem) break; // App div not found
+	    if (app.classList.contains('application')) {
+		var src = app.__data__;
+		if (src.ws && src.capabilities[params.datum]) {
+		    var msg = { method: params.datum, id: params.datum};
+		    console.log("sending:", msg);
+		    src.ws.send(JSON.stringify(msg));
+		}
+		break;
+	    }
+	    app = app.parentNode;
+	}
+    }
+    
+    function update_capabilities() {
+	var targets = d3.select("#methods")
+		.text("")
+		.selectAll("div")
+		.data(LIST.filter(function (src) {
+		    if (src.capabilities == undefined) return false;
+		    var keys = Object.keys(src.capabilities);
+		    return keys.length > 0;
+		}));
+	var set = targets.enter()
+		.append("div")
+		.attr("class", "application");
+	set.append("div")
+	    .attr("class", "name")
+	    .text(function (src) { return src.name + ' ' + src.index;});
+	var cmd = set.append("div")
+		.attr("class", "control")
+		.selectAll("div")
+		.data(function (src) {
+		    var keys = Object.keys(src.capabilities);
+		    return keys;
+		})
+		.enter()
+		.append("div")
+		.attr("class", "command");
+	cmd.append("input")
+	    .attr("type", "button")
+	    .attr("value", function (d) { return d;})
+	    .call(uitools.add_click_action);
+	cmd.append("div")
+	    .attr("class", "tooltip left")
+	    .call(uitools.add_tooltip_action)
+	    .text(function (d) {
+		var app = this;
+		while (app) {
+		    if (app.classList.contains('application')) {
+			var src = app.__data__;
+			return src.capabilities[d].help;
+		    }
+		    app = app.parentNode;
+		}
+		return undefined;
+	    });
+    }
+    
     var SOURCE_UPDATE = {
-	"APP": function (node) {
+	"RPC": function (src) {
+	    var data = src.node.config;
+	    if (!data) return false;
+	    if (data.id === undefined) {
+		// Assume notification
+		if (data.method == 'capabilities') {
+		    src.capabilities = data.params;
+		    update_capabilities();
+		} else if (data.method == 'get-list') {
+		    // get-list notification
+		    src.node.config = data.params;
+		    sma_get_list(src);
+		}
+	    } else if (data.method !== undefined) {
+		// No methods implemented by the this GUI
+		// Invalid request, send error
+		src.ws.send({error: {code: -32601, message: "Method not found"}, id: data.id});
+	    } else if (data.error !== undefined) {
+		// An error reply on some previous method request
+		src.node.error = true;
+		return false;
+	    }
+	    if (data.result !== undefined) {
+		// Succesful completion of a previous method request
+		src.node.error = false;
+		if (data.id == 'get-list') {
+		    src.node.config = data.result;
+		    sma_get_list(src);
+		}
+		return false;
+	    }
+	    // silently ignore all non-conformant messages (no
+	    // 'method', 'error' or 'result' present).
+	    return true; // For now, no associated graphic udpate needed
+	},
+
+	"APP": function (src) {
+	    var node = src.node;
 	    var data = node.config;
 	    if (data && data.msg && data.app) {
 		var app = GRAPH.port(node, data.app);
@@ -123,29 +249,10 @@ function topology(sources) {
 		    SOURCE_UPDATE[data.app](app);
 	    }
 	},
-	"SMA": function (node) {
-	    var list = node.config;
-	    for (var i = 0; i < list.length; ++i) {
-		// Pick to values from first option of the last
-		// message of the SMA_APP
-		var cell_id = list[i].cell_id;
-		var freq_min = list[i].options[0].freq_min;
-		var freq_max = list[i].options[0].freq_max;
-		var bandwidth = list[i].options[0].bandwidth;
-		// This needs to change: now we just assume the
-		// index of SMA_APP is the same as the enb index
-		// from flexran. Must be replaced by proper id of
-		// the enb being controlled.
-		var cell = GRAPH.node('RTC_0_eNB_' + i);
-		// The 'end' parameter defines what is shown at
-		// the end of the dashed line from SMA_APP to
-		// eNB. The styling of the line is defined by
-		// ".link.control" in style.css.
-		GRAPH.relation(node, cell, 'control', {'end': ['['+freq_min+'..'+freq_max+'] ' + bandwidth]},
-			       undefined, GRAPH.MARKER.END);
-	    }
-	},
-	"RTC": function (node) {
+	"SMA": sma_get_list,
+
+	"RTC": function (src) {
+	    var node = src.node;
 	    var data = node.config;
 	    if (!data) return;
 
@@ -274,13 +381,15 @@ function topology(sources) {
     // WebSocket APIs that require some initial (once only) messages
     // after opening the socket.
     var SOURCE_OPEN = {
+	RPC: function (src) {
+	    src.ws.send(JSON.stringify({method: 'capabilities'}));
+	},
 	SMA: function (src) {
-	    if (src.ws)
-		src.ws.send(JSON.stringify('get-list'));
+	    src.ws.send(JSON.stringify('get-list'));
 	}
     };
     function open_src(src) {
-	if (SOURCE_OPEN[src.type])
+	if (src.ws && SOURCE_OPEN[src.type])
 	    SOURCE_OPEN[src.type](src);
     }
     
@@ -293,8 +402,10 @@ function topology(sources) {
 	}
 	if (src.node.error)
 	    return; // Don't refresh links from a node in error state
+
+	// Graphic update...
 	if (SOURCE_UPDATE[src.type])
-	    SOURCE_UPDATE[src.type](src.node);
+	    SOURCE_UPDATE[src.type](src);
     }
 
     function update_all() {
@@ -303,9 +414,25 @@ function topology(sources) {
     	    update_src(LIST[s]);
     	GRAPH.update();
     }
+
+    // var URL_PARSER = document.createElement('a');
+    function url(href) {
+	// Support only hostname substitution...
+	return href.replace('*', window.location.hostname);
+	// FIX LATER...
+	// URL_PARSER.href = href;
+	// href =
+	//     (URL_PARSER.protocol == '_' ? window.location.protocol : URL_PARSER.protocol) +
+	//     '//' + (URL_PARSER.host == '_' ? window.location.host : URL_PARSER.host) +
+	//     URL_PARSER.pathname +
+	//     URL_PARSER.search +
+	//     URL_PARSER.hash;
+	// console.log(href);
+	//return href;
+    }
     
     function refresh(src) {
-	d3.json(src.url, function (error, data) {
+	d3.json(url(src.url), function (error, data) {
 	    src.node.error = !!error;
 	    if (error) {
 		console.log("Refresh fail: " + src.url);
@@ -325,7 +452,7 @@ function topology(sources) {
     function refresh_ws(src) {
 	src.timeout = undefined;
 	if (src.ws === undefined) {
-	    src.ws = new WebSocket(src.url);
+	    src.ws = new WebSocket(url(src.url));
 	    console.log("Trying WS");
 	    src.ws.onopen = function () {
 		if (src.node)
@@ -362,7 +489,7 @@ function topology(sources) {
 	    src.ws.onmessage = function (evt) {
 		if (src.node) {
 		    src.node.error = false;
-		    console.log(evt.data);
+		    //console.log(evt.data);
 		    var msg = JSON.parse(evt.data);
 		    src.node.config = msg;
 		}
@@ -375,7 +502,7 @@ function topology(sources) {
     }
     
     function resize(elem, param) {
-	expandBottom(elem,param);
+	// expandBottom(elem,param);
 	GRAPH.resize();
 	GRAPH.update();
     }
@@ -414,6 +541,7 @@ function topology(sources) {
 		src.timeout = setTimeout(src.refresh, src.timer*1000);
 	    return src;
 	});
+	update_capabilities();
 	GRAPH.update();
     }
 
@@ -478,8 +606,9 @@ function topology(sources) {
 		      {},
 		      {
 			  nodeSelect: function (d) {
-			      console.log("show ",d.id);
-			      if (show_id != d.id) {
+			      if (show_id == d.id) {
+				  closeConfig();
+			      } else if (show_id != d.id) {
 				  show_id = d.id;
 				  show_config(d.config);
 			      }
@@ -500,11 +629,13 @@ function topology(sources) {
 		type: x.type,
 		name: x.name,
 		url: x.url,
-		timer: x.timer
+		timer: x.timer,
+		capabilities: x.capabilities
 	    };
 	});},
 	setSources: function (sources) { setup(sources); },
 	closeConfig: closeConfig,
+	sendCommand: sendCommand,
 	GRAPH: GRAPH,
 	update: update_all,
 	resizeGraph: function () { resize(d3.select("#topology").node());}

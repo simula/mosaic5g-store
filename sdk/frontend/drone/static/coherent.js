@@ -248,6 +248,7 @@ uitools.callbacks(
 	    var h = window.innerHeight;
 	    // Ad hoc: -30 for potential borders and margins -- not a
 	    // stable solution
+	    // console.log("innerHeight="+h+" rect=",rect);
 	    var vh = Math.max(200, (h - rect.top) - 30);
 	    d3.select(elem).style("height", vh + "px");
 	}
@@ -486,7 +487,7 @@ uitools.callbacks(
 	    if (error) {
 	    } else if (reply) {
 		if (reply.id) {
-		    d3.json("config/"+reply.id, handle_reply);
+		    d3.json("/config/"+reply.id, handle_reply);
 		}
 	    }
 	}
@@ -496,7 +497,7 @@ uitools.callbacks(
 	    if (!name) {
 		uitools.notify("The application name not given", elem);
 	    } else {
-		d3.json("config/tasks/" + name)
+		d3.json("/config/tasks/" + name)
 		    .send("DELETE",undefined, function (error, reply) {
 			file_reply(error, reply, elem);
 		    });
@@ -518,7 +519,7 @@ uitools.callbacks(
 		return true;
 	    }
 
-	    d3.json("config/tasks/" + name)
+	    d3.json("/config/tasks/" + name)
 		.header("Content-Type", "application/json")
 		.post(JSON.stringify(build_saveset()), function (error, reply) {
 		    file_reply(error, reply, elem);
@@ -528,11 +529,12 @@ uitools.callbacks(
 
 	function loadTasks(elem, params) {
 	    d3.select("#configName").node().value = params.value;
+	    uitools.replace_text(elem.parentNode, "Tasks (" + (params.value || "no task") + ")");
 	    if (!params.value) {
 		CONFIG = [];
 		updateDashBoard();
 	    } else {
-		d3.json("config/tasks/" + params.value,
+		d3.json("/config/tasks/" + params.value,
 			function (error, reply) {
 			    if (!reply) {
 				console.log("NULL reply: " + error);
@@ -548,19 +550,24 @@ uitools.callbacks(
 	    {
 		type: 'RTC',
 		name: 'flexran-rtc',
-		url: "http://localhost:9999/stats_manager/json/all",
+		url: "http://*:9999/stats_manager/json/all",
 		timer: 1
 	    },
 	    {
-		type: 'SMA',
+		type: 'RPC',
 		name: 'sma-app',
-		url: "ws://localhost:8080/list",
+		url: "ws://*:8080/list",
 		timer: 1
 	    }
 	]);
+
+	function resizeMain() {
+	    expandBottom(d3.select("#drones").node());
+	};
 	
 	updateDashBoard();
 	d3.json("/config/tasks", handle_reply);
+	resizeMain();
 
 	return {
 	    loadTasks: loadTasks,
@@ -573,7 +580,9 @@ uitools.callbacks(
 	    setSourceType: setSourceType,
 	    addSources: addSources,
 	    openTaskTab: openTaskTab,
+	    resizeMain: resizeMain,
 	    resizeGraph: TOPOLOGY.resizeGraph,
-	    closeConfig: TOPOLOGY.closeConfig
+	    closeConfig: TOPOLOGY.closeConfig,
+	    sendCommand: TOPOLOGY.sendCommand
 	};
     })());
