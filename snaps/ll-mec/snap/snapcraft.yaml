@@ -16,7 +16,7 @@ apps:
   show-conf:
     command: conf cat
   daemon:
-    command: run gdb
+    command: run
     daemon: simple
     stop-command: run stop
     stop-timeout: 5s
