@@ -1,0 +1,41 @@
+#!/bin/sh
+
+export DEBIAN_FRONTEND=noninteractive
+set -e
+
+if [ ! -e $SNAP/ll-mec ]; then
+    echo "Cannot find $SNAP/ll-mec executable"
+    exit -1 
+fi		   	   
+
+if [ -r $SNAP_USER_DATA/config.sh ]; then
+    . $SNAP_USER_DATA/config.sh
+fi
+
+export HOME="$SNAP_DATA"
+
+# default config file is llmec_config.json (unless set in above config)
+CONFIG=${CONFIG:-$SNAP/llmec_config.json}
+exe_arguments="$exe_arguments -c $CONFIG"
+
+case "$1" in
+    "gdb" )
+	echo "Running ll-mec with the gdb"
+	touch      $SNAP_USER_DATA/.gdb_ll_mec
+	chmod 777  $SNAP_USER_DATA/.gdb_ll_mec
+	echo "file $SNAP/ll-mec"        > $SNAP_USER_DATA/.gdb_ll_mec
+	echo "set args $exe_arguments" >> $SNAP_USER_DATA/.gdb_ll_mec
+	echo "run"                     >> $SNAP_USER_DATA/.gdb_ll_mec
+	cat $SNAP_USER_DATA/.gdb_ll_mec
+	exec $SNAP/gdb --data-directory=$SNAP_USER_DATA  -n -x $SNAP_USER_DATA/.gdb_ll_mec
+	;;
+    
+    "stop" )
+	exec pkill -f ll-mec
+	;;
+
+    *)
+	echo "run with confilg file: $CONFIG"
+	exec $SNAP/ll-mec  `echo $exe_arguments` "$@"
+	;;
+esac

@@ -1,0 +1,80 @@
+name: ll-mec
+version: '1.0' 
+summary: Low Latency MEC platform
+description: |
+   LL-MEC is a Low Latency Multi-access Edge Computing platform licensed under Apache License V2.0. It is one of the projects of Mosaic5G inititive.
+grade: devel
+confinement: devmode
+
+apps:
+  ll-mec:
+    command: run
+  set-conf:
+    command: conf set
+  get-conf:
+    command: conf echo
+  show-conf:
+    command: conf cat
+  daemon:
+    command: run gdb
+    daemon: simple
+    stop-command: run stop
+    stop-timeout: 5s
+  debug:
+    command: run gdb
+  
+parts:
+  gdb:
+    plugin: nil
+    install: |
+      sudo apt install gdb -y
+      mkdir $SNAPCRAFT_PART_INSTALL/share 
+      cp -r /usr/share/gdb $SNAPCRAFT_PART_INSTALL/share
+      cp /usr/bin/gdb* $SNAPCRAFT_PART_INSTALL
+    prime:
+      - gdb*
+      - share/*
+      
+  pistache:
+    plugin: cmake
+    source:  https://github.com/oktal/pistache.git
+    build: |
+      mkdir -p build
+      cd build
+      cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ..
+      make
+      sudo make install
+    install: |
+      mkdir -p $SNAPCRAFT_PART_INSTALL/lib
+      cp /usr/local/lib/libpistache.a $SNAPCRAFT_PART_INSTALL/lib
+    prime:
+      - lib/libpistache.a
+  ll-mec:
+    after: [ pistache, ]
+    plugin: cmake
+    source: https://gitlab.eurecom.fr/mosaic5g/ll-mec.git
+    source-branch: develop
+    build-packages: [build-essential, g++, libevent-dev, libssl-dev]
+    stage-packages:
+      - libssl1.0.0 
+      - libevent-2.0-5 
+    build: |
+      ./build_ll-mec.sh
+    install: |
+      #mkdir -p $SNAPCRAFT_PART_INSTALL/bin
+      cp ./llmec_config.json $SNAPCRAFT_PART_INSTALL
+      cp ./ll-mec $SNAPCRAFT_PART_INSTALL
+    stage:
+      - ll-mec
+      - llmec_config.json
+      - usr/lib/*
+      - lib/*
+    prime:
+      - ll-mec
+      - llmec_config.json
+      - usr/lib/*
+      - lib/*
+
+  frontend:
+    plugin: dump
+    source: frontend

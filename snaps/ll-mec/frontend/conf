@@ -1,0 +1,48 @@
+#!/bin/sh
+
+export DEBIAN_FRONTEND=noninteractive
+set -e
+
+SUDO='sudo -E '
+
+case "$1" in
+    "set" )
+	CONFIG_FILE=$2
+	if [ -f $(dirname $(readlink -f $0))/$CONFIG_FILE ]; then
+	    CONFIG_FILE=$(dirname $(readlink -f $0))/$CONFIG_FILE
+	    echo "Setting the default config file to: $CONFIG_FILE"
+	else
+	    # may be absolute path 
+	    if [ -f "$CONFIG_FILE" ]; then
+		if [ -f $SNAP_USER_DATA/$CONFIG_FILE ] ; then 
+		    echo "Reset the config file to: $SNAP_USER_DATA/$CONFIG_FILE"
+		else 
+		    echo "Adding and setting a new config file : $SNAP_USER_DATA/$CONFIG_FILE"
+		    cp $CONFIG_FILE $SNAP_USER_DATA/
+		fi
+	    else
+		echo "Config file <$CONFIG_FILE> not found in /snap/$SNAP_NAME/current directory"
+		echo "Reset to default config file: $SNAP/llmec_config.json"
+		CONFIG_FILE=""
+	    fi
+	fi
+	echo "CONFIG=$CONFIG_FILE" > $SNAP_USER_DATA/config.sh
+	;;
+    
+    *)
+	if [ -r $SNAP_USER_DATA/config.sh ]; then
+	    . $SNAP_USER_DATA/config.sh
+	fi
+	
+	# default config file is llmec_config.json (unless set in above config)
+	CONFIG=${CONFIG:-$SNAP/llmec_config.json}
+	# echo (get), cat (show)
+	$1 $CONFIG
+	;;
+esac
+
+#cat >$SNAP_USER_DATA/config.sh <<EOF
+#CONFIG=$CONFIG_FILE
+#EOF
+    
+
