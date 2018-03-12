@@ -1,0 +1,60 @@
+#!/bin/sh
+
+export DEBIAN_FRONTEND=noninteractive
+set -e
+
+if [ ! -e $SNAP/bin/$SNAP_NAME ]; then
+    echo "Command $SNAP/bin/$SNAP_NAME not found"
+    exit 127
+fi		   	   
+
+export HOME="$SNAP_DATA"
+
+# default config file is xxxx (unless set in above config)
+#CONFIG=${CONFIG:-$SNAP/xxx}
+exe_arguments=""
+
+case "$1" in
+    "gdb" )
+        cd $SNAP/bin
+		echo "Running $SNAP_NAME with the gdb"
+		touch      $SNAP_USER_DATA/.gdb_$SNAP_NAME
+		chmod 777  $SNAP_USER_DATA/.gdb_$SNAP_NAME
+		echo "file $SNAP/bin/$SNAP_NAME" > $SNAP_USER_DATA/.gdb_$SNAP_NAME
+		echo "set args $exe_arguments" >> $SNAP_USER_DATA/.gdb_$SNAP_NAME
+		echo "run"                     >> $SNAP_USER_DATA/.gdb_$SNAP_NAME
+		cat $SNAP_USER_DATA/.gdb_$SNAP_NAME
+		exec $SNAP/gdb --data-directory=$SNAP_USER_DATA  -n -x $SNAP_USER_DATA/.gdb_$SNAP_NAME
+		;;
+   "start"  )
+		sudo snap start $SNAP_NAME
+		;;
+	"stop" )
+		sudo snap stop $SNAP_NAME
+		;;
+	"restart" )
+		sudo snap restart $SNAP_NAME
+		;;
+	"status" )
+		sudo systemctl status  snap.$SNAP_NAME.daemon.service
+		;;
+	"journal" )
+		sudo journalctl -u snap.$SNAP_NAME.daemon.service
+		;;
+  	"help" )
+		echo "Usage:     $SNAP_NAME or $SNAP_NAME.[options]"
+		echo "Options:"
+		echo "  debug:   debug the $SNAP_NAME with gdb"
+		echo "  start:   start the $SNAP_NAME daemon"
+		echo "  stop:    stop the $SNAP_NAME daemon"
+		echo "  restart: restart the $SNAP_NAME daemon"
+		echo "  status:  get the $SNAP_NAME status"
+		echo "  journal: get the $SNAP_NAME logs"
+		echo "  help:    print this help"
+		;;	
+    *)
+		echo "Run FlexRAN RT-Controller "
+		cd $SNAP/bin
+		exec ./flexran  `echo $exe_arguments` "$@"
+		;;
+esac

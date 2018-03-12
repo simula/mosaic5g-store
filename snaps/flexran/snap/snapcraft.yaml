@@ -1,0 +1,118 @@
+name: flexran
+version: '1.0' 
+summary: FlexRAN SD-RAN platfrrom
+description: |
+   FlexRAN is a software-defined radio access network platform licensed under Apache License V2.0. It is one of the projects of Mosaic5G inititive.
+grade: stable
+type: app
+architectures:
+  - amd64
+  - i386
+confinement: devmode
+
+apps:
+  flexran:
+    command: run
+  daemon:
+    command: run
+    daemon: simple
+    stop-command: run stop
+    stop-timeout: 7s
+  start:
+    command: run start
+  stop:
+    command: run stop
+  restart:
+    command: run restart
+  status:
+    command: run status
+  journal:
+    command: run journal
+  help:
+    command: run help
+  debug:
+    command: run gdb
+  
+parts:
+  gdb:
+    plugin: nil
+    install: |
+      sudo apt install gdb -y
+      mkdir $SNAPCRAFT_PART_INSTALL/share 
+      cp -r /usr/share/gdb $SNAPCRAFT_PART_INSTALL/share
+      mkdir -p $SNAPCRAFT_PART_INSTALL/bin
+      cp /usr/bin/gdb* $SNAPCRAFT_PART_INSTALL/bin
+    prime:
+      - bin/gdb*
+      - share/*
+      
+  pistache:
+    plugin: cmake
+    source:  https://github.com/oktal/pistache.git
+    build: |
+      mkdir -p build
+      cd build
+      cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ..
+      make
+      sudo make install
+    install: |
+      mkdir -p $SNAPCRAFT_PART_INSTALL/lib
+      cp /usr/local/lib/libpistache.a $SNAPCRAFT_PART_INSTALL/lib
+    prime:
+      - lib/libpistache.a
+  protobuf:
+    plugin: make
+    source:  https://github.com/google/protobuf.git
+    build-packages: [ autoconf, automake, libtool, curl, g++, unzip, ]
+    build: |
+      ./autogen.sh
+      mkdir -p $SNAPCRAFT_PART_INSTALL/lib
+      #./configure --prefix=$SNAPCRAFT_PART_INSTALL/lib
+      ./configure 
+      make
+      sudo make install
+      sudo ldconfig
+    install: |
+      #mkdir -p $SNAPCRAFT_PART_INSTALL/lib
+      #cp /usr/local/lib/libproto* $SNAPCRAFT_PART_INSTALL/lib
+      mkdir -p $SNAPCRAFT_PART_INSTALL/bin
+      cp /usr/local/bin/protoc* $SNAPCRAFT_PART_INSTALL/bin
+    stage:
+      - lib/*
+      - bin/*
+  flexran:
+    after: [ pistache, protobuf]
+    plugin: cmake
+    source: https://gitlab.eurecom.fr/flexran/flexran-rtc.git
+    source-branch: develop-uplink
+    build-packages: [build-essential, ]
+    stage-packages:
+      - libboost-all-dev
+      - liblog4cxx-dev
+    build: |
+      ./build_flexran_rtc.sh
+    install: |
+      mkdir -p $SNAPCRAFT_PART_INSTALL/bin
+      cp build/rt_controller $SNAPCRAFT_PART_INSTALL/bin/flexran
+      #mv $SNAPCRAFT_PART_INSTALL/bin/rt_controller $SNAPCRAFT_PART_INSTALL/bin/flexran 	
+      mkdir -p $SNAPCRAFT_PART_INSTALL/log_config
+      cp -r log_config/* $SNAPCRAFT_PART_INSTALL/log_config
+    stage:
+      - bin/flexran
+      - usr/lib/x86_64-linux-gnu/liblog4cxx*
+      - usr/lib/x86_64-linux-gnu/libboost*
+      - usr/lib/x86_64-linux-gnu/libapr*
+      - lib/*
+      - log_config
+    prime:
+      - bin/flexran
+      - usr/lib/x86_64-linux-gnu/liblog4cxx*
+      - usr/lib/x86_64-linux-gnu/libboost*
+      - usr/lib/x86_64-linux-gnu/libapr*
+      #- usr/lib/*
+      - lib/*
+      - log_config
+
+  frontend:
+    plugin: dump
+    source: frontend
