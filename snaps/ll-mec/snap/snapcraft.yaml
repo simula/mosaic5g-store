@@ -1,5 +1,5 @@
 name: ll-mec
-version: '1.0' 
+version: '1.1' 
 summary: Low Latency MEC platform
 description: |
    LL-MEC is a Low Latency Multi-access Edge Computing platform licensed under Apache License V2.0. It is one of the projects of Mosaic5G inititive.
@@ -8,25 +8,37 @@ architectures:
   - amd64
   - i386
 icon: meta/gui/icon.png  
-grade: devel
+grade: stable
 confinement: devmode
 
 apps:
   ll-mec:
     command: run
+  daemon:
+    command: run
+    daemon: simple
+    stop-command: run stop
+    stop-timeout: 10s
+  start:
+    command: run start
+  stop:
+    command: run stop
+  restart:
+    command: run restart
+  status:
+    command: run status
+  journal:
+    command: run journal
+  help:
+    command: run help
+  debug:
+    command: run gdb
   set-conf:
     command: conf set
   get-conf:
     command: conf echo
   show-conf:
     command: conf cat
-  daemon:
-    command: run
-    daemon: simple
-    stop-command: run stop
-    stop-timeout: 5s
-  debug:
-    command: run gdb
   
 parts:
   gdb:

@@ -58,10 +58,3 @@ sudo journalctl -u snap.ll-mec.daemon.service
 The default configuration file is generated under
 `/var/snap/ll-mec/current/llmec_config.json`  during the snap installation.
 The customized configuration file, set by the user using the `ll-mec.set-conf  llmec_config.json` command, is stored in ~/snap/ll-mec/current directory.
-
-The log file are inline
-The default log file is `/var/snap/lteenb-lool/current/logs/enb0.log`.
-
-
-
-

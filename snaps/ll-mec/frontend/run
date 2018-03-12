@@ -3,8 +3,8 @@
 export DEBIAN_FRONTEND=noninteractive
 set -e
 
-if [ ! -e $SNAP/ll-mec ]; then
-    echo "Command $SNAP/ll-mec not found"
+if [ ! -e $SNAP/$SNAP_NAME ]; then
+    echo "Command $SNAP/$SNAP_NAME not found"
     exit 127
 fi		   	   
 
@@ -20,22 +20,44 @@ exe_arguments="$exe_arguments -c $CONFIG"
 
 case "$1" in
     "gdb" )
-	echo "Running ll-mec with the gdb"
-	touch      $SNAP_USER_DATA/.gdb_ll_mec
-	chmod 777  $SNAP_USER_DATA/.gdb_ll_mec
-	echo "file $SNAP/ll-mec"        > $SNAP_USER_DATA/.gdb_ll_mec
-	echo "set args $exe_arguments" >> $SNAP_USER_DATA/.gdb_ll_mec
-	echo "run"                     >> $SNAP_USER_DATA/.gdb_ll_mec
-	cat $SNAP_USER_DATA/.gdb_ll_mec
-	exec $SNAP/gdb --data-directory=$SNAP_USER_DATA  -n -x $SNAP_USER_DATA/.gdb_ll_mec
-	;;
+		echo "Running $SNAP_NAME with the gdb"
+		touch      $SNAP_USER_DATA/.gdb_$SNAP_NAME
+		chmod 777  $SNAP_USER_DATA/.gdb_$SNAP_NAME
+		echo "file $SNAP/$SNAP_NAME"        > $SNAP_USER_DATA/.gdb_$SNAP_NAME
+		echo "set args $exe_arguments" >> $SNAP_USER_DATA/.gdb_$SNAP_NAME
+		echo "run"                     >> $SNAP_USER_DATA/.gdb_$SNAP_NAME
+		cat $SNAP_USER_DATA/.gdb_$SNAP_NAME
+		exec $SNAP/gdb --data-directory=$SNAP_USER_DATA  -n -x $SNAP_USER_DATA/.gdb_$SNAP_NAME
+		;;
     
-    "stop" )
-	exec pkill -f ll-mec
-	;;
-
+   	"start"  )
+		sudo snap start $SNAP_NAME
+		;;
+	"stop" )
+		sudo snap stop $SNAP_NAME
+		;;
+	"restart" )
+		sudo snap restart $SNAP_NAME
+		;;
+	"status" )
+		sudo systemctl status  snap.$SNAP_NAME.daemon.service
+		;;
+	"journal" )
+		sudo journalctl -u snap.$SNAP_NAME.daemon.service
+		;;
+	"help" )
+		echo "Usage:     $SNAP_NAME or $SNAP_NAME.[options]"
+		echo "Options:"
+		echo "  debug:   debug the $SNAP_NAME with gdb"
+		echo "  start:   start the $SNAP_NAME daemon"
+		echo "  stop:    stop the $SNAP_NAME daemon"
+		echo "  restart: restart the $SNAP_NAME daemon"
+		echo "  status:  get the $SNAP_NAME status"
+		echo "  journal: get the $SNAP_NAME logs"
+		echo "  help:    print this help"
+		;;
     *)
 	echo "run with confilg file: $CONFIG"
-	exec $SNAP/ll-mec  `echo $exe_arguments` "$@"
+	exec $SNAP/$SNAP_NAME  `echo $exe_arguments` "$@"
 	;;
 esac
