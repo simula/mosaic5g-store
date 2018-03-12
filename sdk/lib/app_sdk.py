@@ -47,10 +47,11 @@ import datetime
 
 class app_handler:
 
-    def __init__(self, log, callback=None):
+    def __init__(self, log, callback=None, notification=None):
 	self.clients = []
 	self.log = log
 	self.callback = callback
+	self.notification = notification
 	
     def register(self, client, message):
 	if not client in self.clients:
@@ -69,6 +70,10 @@ class app_handler:
     def send(self, message):
 	for i in self.clients:
 	    i.send(message)
+
+    def notify(self, method, message):
+	for i in self.clients:
+	    i.send_notification(method, message)
 
 class client_handler(tornado.websocket.WebSocketHandler):
 	
@@ -91,10 +96,42 @@ class client_handler(tornado.websocket.WebSocketHandler):
 
     def on_message(self, message):
 	# its possibly optional and due to specific app        
-	# message = tornado.escape.json_decode(message)
         self.log.info("app_handler: received message="+ str(message))
-	self.log.info("app_handler: received on=" + str(self.uri))	
-	self.handler.callback(self, message)
+        self.log.info("app_handler: received on=" + str(self.uri))	
+
+        # main decoding part
+        message = tornado.escape.json_decode(message)
+        method = message.get('method')
+        id = message.get('id')
+
+        if method is None:
+            # The message is a reply (error/succes) to a command
+            # issued by this application to the client. As this app
+            # currently does not send commands to clients, this should
+            # not happen. The id should not be "None"...
+            error = message.get('error')
+            result = message.get('result')
+            if error is not None:
+                # Error reply to some command
+                pass
+            elif result is not None:
+                # Success of some command
+                pass
+            else:
+                # Invalid format
+                pass
+        elif id is None:
+            # This message is a notification from the client. Because
+            # "app_sdk" does not have a callback for new client
+            # connection, we use the "capabilities" notification from
+            # client to trigger capability notification from this app
+            # to the client. Obviously, this does not work if the
+            # client is using the same strategy (both would wait the
+            # other).
+	    self.handler.notification(self, method, message)
+        else:
+            # The message contains a command from the client
+            self.handler.callback(self, id, method, message)
 
     def on_close(self):
         self.handler.unregister(self, "you are unregistered")
@@ -102,6 +139,26 @@ class client_handler(tornado.websocket.WebSocketHandler):
          
     def send(self, msg):
         self.write_message(msg)
+
+    def send_error(self, id, code, message):
+	self.send({
+                    'id': id,
+                    'error': {
+                        'code': code,
+                        'message': message
+                    }})
+
+    def send_result(self, id, result):
+	self.send({
+                    'id': id,
+                    'result': result
+                    })
+
+    def send_notification(self, method, params):
+	self.send({
+		    'method': method,
+	            'params': params
+		   })
 
 class app_builder:
     

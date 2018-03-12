@@ -1639,6 +1639,14 @@ class ss_policy (object):
         self.log.debug('Loaded: enb assign file [yaml] :')
         self.log.debug(yaml.dump(self.enb_assign))
 
+    def set_enb_assign(self, enb=0, name='default'):
+	with open(self.enb_assign_file,'r') as file:
+            enb_assign_tmp = yaml.load(file)
+            enb_assign_tmp[enb]['MVNO_group'] = name
+	    enb_assign_tmp[enb]['cell_id'] = enb
+        with open(self.enb_assign_file,'w') as file:
+            yaml.dump(enb_assign_tmp, file, default_flow_style=False)
+
     def load_sensing_data(self):
         """!@brief load sensing data"""
         file = open(self.sensing_data_file,'r')
