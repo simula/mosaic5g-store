@@ -71,7 +71,7 @@ class app_handler:
 	for i in self.clients:
 	    i.send(message)
 
-    def notify(self, method, message):
+    def notify(self, method, message=None):
 	for i in self.clients:
 	    i.send_notification(method, message)
 
@@ -154,7 +154,7 @@ class client_handler(tornado.websocket.WebSocketHandler):
                     'result': result
                     })
 
-    def send_notification(self, method, params):
+    def send_notification(self, method, params=None):
 	self.send({
 		    'method': method,
 	            'params': params

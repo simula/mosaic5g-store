@@ -450,16 +450,20 @@ class sma_app(object):
                	'get-list':  { 'help': 'Get the current list'},
                 'command_1': { 'help': 'App command 1 that does something useful'},
                 'command_2': { 'help': 'App command 2 that does something useful'}, # i left it for example of usage error_message
-		'set_rule_group_A': { 'help': 'Prefer lower cost' },
-		'set_rule_group_B': { 'help': 'Prefer higher bandwidth' },
-		'enable_graph': {'help': 'Turn on graph.'},
-		'disable_graph' : {'help' : 'Trun off graph.'}		
+		'set_rule_group_A': { 'help': 'Prefer lower cost', 'group':'rule' },
+		'set_rule_group_B': { 'help': 'Prefer higher bandwidth', 'group': 'rule' },
+		'enable_graph': {'help': 'Turn on graph.', 'group':'graph'},
+		'disable_graph' : {'help' : 'Trun off graph.', 'group':'graph'}		
                 }
 
     def open_data_on_notification(self, client, method, message):
         if method == 'capabilities':
             client.send_notification(method, self.open_data_capabilities)
             client.send_notification('get-list', self.open_data_all_options)
+	elif method == 'enable_graph':
+	    self.graphs_enable = True
+	elif method == 'disable_graph':
+	    self.graphs_enable = False
 
     def open_data_on_message(self, client, id, method, message):
         if method == 'get-list':
@@ -471,15 +475,19 @@ class sma_app(object):
         elif method == 'set_rule_group_A':
             ss.set_enb_assign(0, 'groupA')
             client.send_result(id, 'Rules switched to group A')
+	    sma_open_data.notify('set_rule_group_A')
         elif method == 'set_rule_group_B':
             ss.set_enb_assign(0,'groupB')
             client.send_result(id, 'Rules switched to group B')
+	    sma_open_data.notify('set_rule_group_B')
 	elif method == 'enable_graph':
 	    self.graphs_enable = True
 	    client.send_result(id, 'Graphs turned on.')
+	    sma_open_data.notify('enable_graph')
 	elif  method == 'disable_graph':
 	    self.graphs_enable = False
 	    client.send_result(id, 'Graphs truned off.')
+	    sma_open_data.notify('disable_graph')
         else:
             client.send_error(id,-12345,'Method not found')
 	
