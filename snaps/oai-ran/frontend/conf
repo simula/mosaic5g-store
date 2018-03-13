@@ -1,0 +1,55 @@
+#!/bin/sh
+
+export DEBIAN_FRONTEND=noninteractive
+set -e
+
+SUDO='sudo -E '
+
+DEFAULT_CONF_DIR="$SNAP/enb/"
+DEFAULT_CONF_FILE="$DEFAULT_CONF_DIR/enb.band7.tm1.50PRB.usrpb210.conf"
+
+case "$1" in
+    "set" )
+	CONFIG_FILE=$2
+	if [ -f $(dirname $(readlink -f $0))/$CONFIG_FILE ]; then
+	    CONFIG_FILE=$(dirname $(readlink -f $0))/$CONFIG_FILE
+	    echo "Setting the default config file to: $CONFIG_FILE"
+	else
+	    # may be absolute path 
+	    if [ -f "$CONFIG_FILE" ]; then
+		if [ -f $SNAP_USER_DATA/$CONFIG_FILE ] ; then 
+		    echo "Reset the config file to: $SNAP_USER_DATA/$CONFIG_FILE"
+		else 
+		    echo "Adding and setting a new config file : $SNAP_USER_DATA/$CONFIG_FILE"
+		    cp $CONFIG_FILE $SNAP_USER_DATA/
+		fi
+	    else
+		echo "Config file <$CONFIG_FILE> not found in $SNAP/current directory"
+		echo "Reset to default config file: $DEFAULT_CONF_FILE"
+		CONFIG_FILE=""
+	    fi
+	fi
+	echo "CONFIG=$CONFIG_FILE" > $SNAP_USER_DATA/config.sh
+	;;
+    
+    "ls" )
+		$1 $DEFAULT_CONF_DIR/*.conf
+	;;
+
+	*)
+	if [ -r $SNAP_USER_DATA/config.sh ]; then
+	    . $SNAP_USER_DATA/config.sh
+	fi
+	
+	# default config file is (unless set in above config)
+	CONFIG=${CONFIG:-$DEFAULT_CONF_FILE}
+	# echo (get), cat (show)
+	$1 $CONFIG
+	;;
+esac
+
+#cat >$SNAP_USER_DATA/config.sh <<EOF
+#CONFIG=$CONFIG_FILE
+#EOF
+    
+

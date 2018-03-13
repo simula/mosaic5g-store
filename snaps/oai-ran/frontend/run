@@ -1,0 +1,68 @@
+#!/bin/sh
+
+export DEBIAN_FRONTEND=noninteractive
+set -e
+export HOME="$SNAP_DATA"
+
+export UHD_IMAGES_DIR=$SNAP/uhd_images
+
+DEFAULT_CONF_DIR="enb"
+DEFAULT_CONF_FILE="$SNAP/$DEFAULT_CONF_DIR/enb.band7.tm1.50PRB.usrpb210.conf"
+EXEC_FILE="$SNAP/$DEFAULT_CONF_DIR/$SNAP_NAME"
+
+CONFIG=${CONFIG:-$DEFAULT_CONF_FILE}
+EXEC_ARGS=" -O $CONFIG "
+
+
+
+if [ ! -e $EXEC_FILE ]; then
+    echo "Cannot find $EXEC_FILE executable"
+    exit -1 
+fi		   	   
+
+if [ -r $SNAP_USER_DATA/config.sh ]; then
+    . $SNAP_USER_DATA/config.sh
+fi
+
+case "$1" in
+    "gdb" )
+	echo "Running $SNAP_NAME with the gdb"
+	touch      $SNAP_USER_DATA/.gdb_$SNAP_NAME
+	chmod 777  $SNAP_USER_DATA/.gdb_$SNAP_NAME
+	echo "file $EXEC_FILE"        > $SNAP_USER_DATA/.gdb_$SNAP_NAME
+	echo "set args $EXEC_ARGS" >> $SNAP_USER_DATA/.gdb_$SNAP_NAME
+	echo "run"                     >> $SNAP_USER_DATA/.gdb_$SNAP_NAME
+	cat $SNAP_USER_DATA/.gdb_$SNAP_NAME
+	exec $SNAP/gdb --data-directory=$SNAP_USER_DATA  -n -x $SNAP_USER_DATA/.gdb_$SNAP_NAME
+	;;
+    "start"  )
+		sudo snap start $SNAP_NAME
+		;;
+	"stop" )
+		sudo snap stop $SNAP_NAME
+		;;
+	"restart" )
+		sudo snap restart $SNAP_NAME
+		;;
+	"status" )
+		sudo systemctl status  snap.$SNAP_NAME.daemon.service
+		;;
+	"journal" )
+		sudo journalctl -u snap.$SNAP_NAME.daemon.service
+		;;
+  	"help" )
+		echo "Usage:     $SNAP_NAME or $SNAP_NAME.[options] args"
+		echo "Options:"
+		echo "  debug:   debug the $SNAP_NAME with gdb"
+		echo "  start:   start the $SNAP_NAME daemon"
+		echo "  stop:    stop the $SNAP_NAME daemon"
+		echo "  restart: restart the $SNAP_NAME daemon"
+		echo "  status:  get the $SNAP_NAME status"
+		echo "  journal: get the $SNAP_NAME logs"
+		echo "  help:    print this help"
+		;;
+    *)
+	echo "run with confilg file: $CONFIG"
+	exec $EXEC_FILE  `echo $EXEC_ARGS` "$@"
+	;;
+esac

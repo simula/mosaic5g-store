@@ -1,0 +1,86 @@
+name: oai-ran
+version: '1.0' 
+summary: OpenAirInterface RAN entity with FlexRAN Agent/Runtime 
+description: |
+    OAI RAN is the openairinterface-based RAN with FlexRAN agent/runtime allowing to connect any commercial UEs with the band of your choice . It is one of the projects of Mosaic5G inititive.
+grade: devel
+type: app
+architectures:
+  - amd64
+  - i386
+confinement: devmode
+
+apps:
+  oai-ran:
+    command: run
+  daemon:
+    command: run gdb
+    daemon: simple
+    stop-command: run stop
+    stop-timeout: 7s
+  start:
+    command: run start
+  stop:
+    command: run stop
+  restart:
+    command: run restart
+  status:
+    command: run status
+  journal:
+    command: run journal
+  help:
+    command: run help
+  debug:
+    command: run gdb
+  set-conf:
+    command: conf set
+  get-conf:
+    command: conf echo
+  show-conf:
+    command: conf cat
+  list-conf:
+    command: conf ls
+parts:
+  gdb:
+    plugin: nil
+    install: |
+      sudo apt install gdb -y
+      mkdir $SNAPCRAFT_PART_INSTALL/share 
+      cp -r /usr/share/gdb $SNAPCRAFT_PART_INSTALL/share
+      cp /usr/bin/gdb* $SNAPCRAFT_PART_INSTALL
+    prime:
+      - gdb*
+      - share/*
+
+  oai-ran:
+    plugin: cmake
+    source: https://gitlab.eurecom.fr/oai/openairinterface5g.git
+    source-branch: develop
+    build-packages: [build-essential, ]
+    build: |
+      cd cmake_targets
+      ./build_oai -I -w USRP --uhd-images-dir ../common/uhd_images
+      ./build_oai --eNB -w USRP -c -C
+    install: |
+      mkdir -p $SNAPCRAFT_PART_INSTALL/enb
+      cp  targets/bin/* $SNAPCRAFT_PART_INSTALL/enb
+      cp -r common/uhd_images $SNAPCRAFT_PART_INSTALL/ 
+      cp targets/PROJECTS/GENERIC-LTE-EPC/CONF/* $SNAPCRAFT_PART_INSTALL/enb
+      cp cmake_targets/snap_environment.sh $SNAPCRAFT_PART_INSTALL/enb
+    stage:
+      - enb/*
+      - usr/lib/*
+      - lib/*
+      - uhd_images/*
+    prime:
+      - enb/*
+      - usr/lib/*
+      - lib/*
+      - uhd_images/*
+    organize:
+      enb/liboai_eth_transpro.so.Rel14: usr/lib/liboai_transpro.so
+      enb/liboai_usrpdevif.so.Rel14: usr/lib/liboai_device.so
+      enb/lte-softmodem.Rel14: enb/oai-ran
+  frontend:
+    plugin: dump
+    source: frontend
