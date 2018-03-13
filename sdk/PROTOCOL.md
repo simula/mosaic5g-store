@@ -65,12 +65,23 @@ The syntax of **cababilities** notification (*note the lack of id*):
      }
 
 The **params** is a dictionary of accepted capabilities, and each value
-may contain optional additional information. This generic section defines
-only one optional information field: **help**, which must be a text
-string representing a short description of the capability that
-could be used as a "tooltip" in graphical user interface. If there are
-no additional information, each capability value can be left as an
-empty dictionary (or **null**).
+may contain optional additional information.
+
+This generic section defines some optional information fields
+mainly used for hinting the graphical user interface
+
+**help**
+: must be a text string representing a short description of
+  the capability that could be used as a "tooltip" in graphical user
+  interface.
+
+**group**
+: the value should be a simple string token, hints the user interface about
+  grouping of capabilities. If not specified, the capability belongs to
+  an unnamed default group.
+
+If there are no additional information, each capability value can be
+left as an empty dictionary (or **null**).
 
 Example handshake of web GUI connecting the SMA application (*assuming
 the current semantics were upgraged to this protocol*):

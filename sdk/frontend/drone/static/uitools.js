@@ -1087,6 +1087,44 @@ var uitools = (function () {
 
     d3.selectAll(".panes").each(function () { prepare_panes(this);});
 
+    // Transform collapsible element
+    //
+    // <.collaps left|right|top|bottom>
+    //    < ...content... >
+    // </.collaps>
+    // =>
+    // <.collaps>
+    //    <.collaps-wrapper>
+    //      <..collaps content..>
+    //    <.collaps-wrapper>
+    //
+    function prepare_collaps(element) {
+	var collaps = d3.select(element);
+	collaps
+	    .insert("div", ":first-child")
+	    .attr("class", "collaps-wrapper")
+	    .each(function () {
+		var parent = this.parentNode;
+		var index = 0;
+		while (parent.childNodes.length > 1) {
+		    var child = parent.childNodes[index];
+		    if (child === this) {
+			index = 1;
+			continue;
+		    }
+		    this.appendChild(child);
+		}
+	    });
+	collaps
+	    .insert("div", ":first-child")
+	    .attr("class", "collaps-handle")
+	    .on("click", function () {
+		this.parentNode.classList.toggle("open");
+	});
+    }
+    
+    d3.selectAll(".collaps").each(function () { prepare_collaps(this);});
+    
     // Enable context menu
     d3.selectAll(".context-menu")
 	.on("contextmenu", context_menu)
@@ -1225,6 +1263,7 @@ var uitools = (function () {
 	add_change_action: add_change_action,
 	add_tooltip_action: add_tooltip_action,
 	add_menu_action: shared_menu,
+	prepare_collaps: prepare_collaps,
 	prepare_tabs: prepare_tabs,
 	tab_select: tab_select,
 	tab_bar: tab_bar,

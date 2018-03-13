@@ -404,8 +404,18 @@ uitools.callbacks(
 	    
 	    tasks.each(function (d) { d.init(this, task_message);});
 	    
+	    d3.select("#drones > .collaps").remove();
 	    d3.select("#drones").each(function () { uitools.prepare_tabs(this);});
-
+	    d3.select("#drones > .tabsbar")
+		.each(function () {
+		    var tabsbar = this;
+		    var collaps = document.createElement("div");
+		    tabsbar.parentNode.insertBefore(collaps, tabsbar);
+		    d3.select(collaps)
+			.classed("collaps top", true);
+		    collaps.appendChild(tabsbar);
+		    uitools.prepare_collaps(collaps);
+		});
 	    // Add task "bullet" balls into tab labels
 	    d3.selectAll("#drones .tab.task").each(function (d) {
 		var bar = uitools.tab_bar(this);

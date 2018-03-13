@@ -128,13 +128,15 @@ function topology(sources) {
 	    // index of SMA_APP is the same as the enb index
 	    // from flexran. Must be replaced by proper id of
 	    // the enb being controlled.
-	    var cell = GRAPH.node('RTC_0_eNB_' + i);
-	    // The 'end' parameter defines what is shown at
-	    // the end of the dashed line from SMA_APP to
-	    // eNB. The styling of the line is defined by
-	    // ".link.control" in style.css.
-	    GRAPH.relation(node, cell, 'control', {'end': ['['+freq_min+'..'+freq_max+'] ' + bandwidth]},
-			   undefined, GRAPH.MARKER.END);
+	    var cell = GRAPH.find('RTC_0_eNB_' + i);
+	    if (cell) {
+		// The 'end' parameter defines what is shown at
+		// the end of the dashed line from SMA_APP to
+		// eNB. The styling of the line is defined by
+		// ".link.control" in style.css.
+		GRAPH.relation(node, cell, 'control', {'end': ['['+freq_min+'..'+freq_max+'] ' + bandwidth]},
+			       undefined, GRAPH.MARKER.END);
+	    }
 	}
     }
 
@@ -147,9 +149,17 @@ function topology(sources) {
 	    if (app.classList.contains('application')) {
 		var src = app.__data__;
 		if (src.ws && src.capabilities[params.datum]) {
+		    src.capabilities[params.datum]._reply = undefined;
+		    d3.select("#methods")
+		    	.selectAll(".application")
+		    	.filter(function (d) { return d === src;})
+		    	.selectAll(".button")
+		    	.filter(function (d) { return d == params.datum;})
+		    	.classed("fail ok", false);
 		    var msg = { method: params.datum, id: params.datum};
 		    console.log("sending:", msg);
 		    src.ws.send(JSON.stringify(msg));
+		    // update_capabilities();
 		}
 		break;
 	    }
@@ -158,54 +168,87 @@ function topology(sources) {
     }
     
     function update_capabilities() {
-	var targets = d3.select("#methods")
-		.text("")
-		.selectAll("div")
-		.data(LIST.filter(function (src) {
+	var apps = LIST.filter(function (src) {
 		    if (src.capabilities == undefined) return false;
 		    var keys = Object.keys(src.capabilities);
 		    return keys.length > 0;
-		}));
-	var set = targets.enter()
+	});
+	if (apps.length == 0) {
+	    // No applications with capabilities
+	    d3.select("#methods-content")
+		.text("")
 		.append("div")
-		.attr("class", "application");
-	set.append("div")
-	    .attr("class", "name")
-	    .text(function (src) { return src.name + ' ' + src.index;});
-	var cmd = set.append("div")
-		.attr("class", "control")
+		.attr("class", "application")
+		.append("div")
+		.attr("class", "name")
+		.text("No Applications");
+	    return;
+	}
+	var targets = d3.select("#methods-content")
+		.text("")
 		.selectAll("div")
-		.data(function (src) {
-		    var keys = Object.keys(src.capabilities);
-		    return keys;
-		})
-		.enter()
-		.append("div")
-		.attr("class", "command");
-	cmd.append("input")
-	    .attr("type", "button")
-	    .attr("value", function (d) { return d;})
-	    .call(uitools.add_click_action);
-	cmd.append("div")
-	    .attr("class", "tooltip left")
-	    .call(uitools.add_tooltip_action)
-	    .text(function (d) {
-		var app = this;
-		while (app) {
-		    if (app.classList.contains('application')) {
-			var src = app.__data__;
-			return src.capabilities[d].help;
+		.data(apps);
+	targets.enter()
+	    .append("div")
+	    .attr("class", "application")
+	    .each(function (src) {
+		var set = d3.select(this);
+		set.append("div")
+		    .attr("class", "name")
+		    .text(function (src) { return src.name + ' ' + src.index;});
+		var keys = Object.keys(src.capabilities).sort();
+		// Sort capabilities into groups
+		var groups = {};
+		for (var i = 0; i < keys.length; ++i) {
+		    var cap = keys[i];
+		    var group = src.capabilities[cap].group;
+		    if (group === undefined) {
+			group = '_default';
+			src.capabilities[cap].group = group;
 		    }
-		    app = app.parentNode;
+		    if (groups[group] === undefined)
+			groups[group] = [cap];
+		    else
+			groups[group].push(cap);
 		}
-		return undefined;
+		var cmd = set.selectAll("div.control")
+			.data(Object.keys(groups).sort())
+			.enter()
+			.append("div")
+			.attr("class", "control")
+			.selectAll("div.command")
+			.data(function (d) { return groups[d];})
+			.enter()
+			.append("div")
+			.attr("class", "command");
+		cmd.append("div")
+		    .attr("class", function (d) {
+			var cls = "button";
+			console.log(d);
+			var reply = src.capabilities[d]._reply;
+			if (reply) {
+			    if (reply.error)
+				cls += " fail";
+			    else if (reply.result)
+				cls += " ok";
+			}
+			return cls;
+		    })
+		    .call(uitools.add_click_action)
+		    .text(function (d) { return d;});
+		cmd.append("div")
+		    .attr("class", "tooltip bottom")
+		    .call(uitools.add_tooltip_action)
+		    .text(function (d) {
+			return src.capabilities[d].help;
+		    });
 	    });
     }
     
     var SOURCE_UPDATE = {
 	"RPC": function (src) {
 	    var data = src.node.config;
-	    if (!data) return false;
+	    if (!data) return;
 	    if (data.id === undefined) {
 		// Assume notification
 		if (data.method == 'capabilities') {
@@ -220,23 +263,39 @@ function topology(sources) {
 		// No methods implemented by the this GUI
 		// Invalid request, send error
 		src.ws.send({error: {code: -32601, message: "Method not found"}, id: data.id});
-	    } else if (data.error !== undefined) {
-		// An error reply on some previous method request
-		src.node.error = true;
-		return false;
-	    }
-	    if (data.result !== undefined) {
-		// Succesful completion of a previous method request
-		src.node.error = false;
-		if (data.id == 'get-list') {
-		    src.node.config = data.result;
-		    sma_get_list(src);
+	    } else if (src.capabilities) {
+		var cap = src.capabilities[data.id];
+		if (!cap) return; // unknown method in reply
+		cap._reply = data; // Remember last reply
+		var ctl = d3.select("#methods")
+			.selectAll(".application")
+			.filter(function (d) { return d === src;})
+			.selectAll(".control")
+			.filter(function (d) { return d == cap.group;});
+		if (data.result !== undefined) {
+		    // Succesful completion of a previous method request
+		    src.node.error = false;
+		    if (data.id == 'get-list') {
+			src.node.config = data.result;
+			sma_get_list(src);
+		    }
+		    // Set OK to current button, clear from others in group
+		    ctl.selectAll(".button")
+			.classed("ok", function (d) { return  d == data.id;});
+		    // Remove fail from current button (don't touch others)
+		    ctl.selectAll(".button")
+			.filter(function (d) { return d == data.id;})
+			.classed("fail", false);
+		} else if (data.error !== undefined) {
+		    // Error completion of a previouse request.
+		    ctl.selectAll(".button")
+			.filter(function (d) { return d == data.id;})
+			.classed("fail", true)
+			.classed("ok", false);
 		}
-		return false;
 	    }
 	    // silently ignore all non-conformant messages (no
 	    // 'method', 'error' or 'result' present).
-	    return true; // For now, no associated graphic udpate needed
 	},
 
 	"APP": function (src) {
@@ -285,7 +344,7 @@ function topology(sources) {
 		if (config.UE.ueConfig) {
 		    for (var j = 0; j < config.UE.ueConfig.length; ++j) {
 			var ueConfig = config.UE.ueConfig[j];
-			if (ueConfig.rnti) {
+			if (ueConfig.rnti !== undefined) {
 			    ue_list[ueConfig.rnti] = GRAPH.node(enb.id + '_UE_'+ ueConfig.rnti, ueConfig.rnti, INFO_UE);
 			}
 		    }
@@ -293,7 +352,7 @@ function topology(sources) {
 		if (config.LC.lcUeConfig) {
 		    for (j = 0; j < config.LC.lcUeConfig.length; ++j) {
 			ueConfig = config.LC.lcUeConfig[j];
-			if (ueConfig.rnti) {
+			if (ueConfig.rnti !== undefined) {
 			    ue_list[ueConfig.rnti] = GRAPH.node(enb.id + '_UE_'+ ueConfig.rnti, ueConfig.rnti, INFO_LC_UE);
 			}
 		    }
@@ -388,11 +447,23 @@ function topology(sources) {
 	    src.ws.send(JSON.stringify('get-list'));
 	}
     };
+    // These are called once when the source is closed
+    var SOURCE_CLOSED = {
+	RPC: function (src) {
+	    src.capabilities = undefined;
+	    update_capabilities();
+	}
+    };
+    
     function open_src(src) {
 	if (src.ws && SOURCE_OPEN[src.type])
 	    SOURCE_OPEN[src.type](src);
     }
-    
+    function close_src(src) {
+	if (SOURCE_CLOSED[src.type])
+	    SOURCE_CLOSED[src.type](src);
+    }
+
     function update_src(src) {
 	if (!src.node) return;
 
@@ -463,6 +534,7 @@ function topology(sources) {
 		} else {
 		    console.log("WS Cancel open");
 		    src.ws.close();
+		    close_src(src);
 		}
 		update_src(src);
 		GRAPH.update();
@@ -476,6 +548,7 @@ function topology(sources) {
 		    src.timeout = setTimeout(src.refresh, src.timer*1000);
 		else
 		    src.timeout = undefined;
+		close_src(src);
 		update_src(src);
 		GRAPH.update();
 	    };
@@ -629,8 +702,7 @@ function topology(sources) {
 		type: x.type,
 		name: x.name,
 		url: x.url,
-		timer: x.timer,
-		capabilities: x.capabilities
+		timer: x.timer
 	    };
 	});},
 	setSources: function (sources) { setup(sources); },

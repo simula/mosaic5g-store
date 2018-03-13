@@ -508,6 +508,88 @@ ul.tabsbar > li.selected {
     border-top-color: black;
 }
 
+.collaps {
+    cursor: pointer;
+    display: flex;
+}
+.collaps.right {
+    flex-direction: row;
+}
+.collaps.left {
+    flex-direction: row-reverse;
+}
+.collaps.top {
+    flex-direction: column;
+}
+.collaps.bottom {
+    flex-direction: column-reverse;
+}
+
+.collaps-wrapper > * {
+    cursor: auto;
+}
+.collaps-handle {
+    color: green;
+}
+
+.collaps > .collaps-wrapper {
+    display: none;
+}
+.collaps.open > .collaps-wrapper {
+    display: block;
+}
+
+/*
+   25b2 up
+   25b6 right
+   25bc down
+   25c0 left
+*/
+.collaps-handle::before {
+    display: block;
+    padding-top: 20%;
+    width: 2em;
+    min-height: 2em;
+    text-align: center;
+    font-size: 200%;
+}
+.collaps.right > .collaps-handle::before {
+    content: '\25c0';
+}
+.collaps.right.open > .collaps-handle::before {
+    content: '\25b6';
+}
+.collaps.left > .collaps-handle::before {
+    content: '\25b6';
+}
+.collaps.left.open > .collaps-handle::before {
+    content: '\25c0';
+}
+.collaps.top > .collaps-handle::before {
+    content: '\25bc';
+    text-align: center;
+}
+.collaps.top.open > .collaps-handle::before {
+    content: '\25b2';
+    text-align: center;
+}
+
+/* .collaps::before { */
+/*     box-sizing: border-box; */
+/*     padding-top: 50px; */
+/*     content: 'x'; */
+/*     vertical-align: middle; */
+/*     text-align: center; */
+/*     background: red; */
+/*     height: 100%; */
+/* } */
+/* .collaps.right::before { */
+/*     float: left; */
+/* } */
+/* .collaps.left::before { */
+/*     float: right; */
+/* } */
+
 .toolhint {
     /* float: right; */
     /* position: relative; */

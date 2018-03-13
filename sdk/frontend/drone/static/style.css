@@ -33,6 +33,9 @@ td {
 
 .tab.topology {
     background: transparent;
+    position: relative;
+    padding: 0;
+    border: none;
 }
 
 #topology {
@@ -54,30 +57,60 @@ td {
     overflow-x: hidden;
 }
 #methods {
+    position: absolute;
+    background: rgb(217,241,255);
+    left: 0;
+    top: 0;
     flex: 0 0 auto;
-    margin-left: 3px;
-    max-width: 20%;
+    margin: 10px;
+    max-width: 50%;
+    align-self: flex-start;
+    box-shadow: 2px 2px 2px 2px #888888;
 }
 #methods .application {
-    background: rgb(217,241,255);
-    margin-bottom: 3px;
+    padding-bottom: 3px;
 }
 #methods .application > .name {
     font-weight: bold;
     text-align: center;
 }
+
 #methods .application .control {
     display: flex;
     flex-wrap: wrap;
+    justify-content: stretch;
     flex: 0 0 auto;
 }
 #methods .application .command {
+    box-sizing: border-box;
+    margin: 2px;
+    border: 2px solid #F2F1F0;
+    border-style: outset;
+    border-radius: 0.4em;
+    padding: 4px;
     min-height: 50px;
+    flex: 1 0 auto;
+    /* background: white; */
 }
-#methods .application input {
+
+#methods .application .button {
     height: 100%;
     width: 100%;
+    text-align: center;
 }
+#methods .application .button::after {
+    display: block;
+    font-size: 200%;
+}
+#methods .application .button.ok::after {
+    content: '\2714';
+    color: green;
+}
+#methods .application .button.fail::after {
+    content: '\2716';
+    color: red;
+}
+
 #mainMenu {
     background: #333333;
     color: #FFF;
