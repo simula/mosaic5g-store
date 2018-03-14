@@ -110,6 +110,15 @@ td {
     content: '\2716';
     color: red;
 }
+/* command failed, but this is still last succeeded one */
+#methods .application .button.ok.fail::after {
+    content: '\2714 (\2716)';
+    color: red;
+}
+#methods .application .button.ok.notified::after {
+    content: '\2714';
+    color: blue;
+}
 
 #mainMenu {
     background: #333333;

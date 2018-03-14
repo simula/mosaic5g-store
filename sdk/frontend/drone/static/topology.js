@@ -142,7 +142,6 @@ function topology(sources) {
 
     function sendCommand(elem, params) {
 	// elem === #methods
-	console.log(elem, params);
 	var app = params.target;
 	while (app) {
 	    if (app === elem) break; // App div not found
@@ -244,6 +243,14 @@ function topology(sources) {
 		    });
 	    });
     }
+
+    function select_control(src, cap) {
+	return d3.select("#methods")
+	    .selectAll(".application")
+	    .filter(function (d) { return d === src;})
+	    .selectAll(".control")
+	    .filter(function (d) { return d == src.capabilities[cap].group;});
+    }
     
     var SOURCE_UPDATE = {
 	"RPC": function (src) {
@@ -258,6 +265,13 @@ function topology(sources) {
 		    // get-list notification
 		    src.node.config = data.params;
 		    sma_get_list(src);
+		} else {
+		    var ctl = select_control(src, data.method);
+		    ctl.selectAll(".button")
+			.classed("ok notified", function (d) { return d == data.method;});
+		    ctl.selectAll(".button")
+			.filter(function (d) { return d == data.method;})
+			.classed("fail", false);
 		}
 	    } else if (data.method !== undefined) {
 		// No methods implemented by the this GUI
@@ -267,11 +281,7 @@ function topology(sources) {
 		var cap = src.capabilities[data.id];
 		if (!cap) return; // unknown method in reply
 		cap._reply = data; // Remember last reply
-		var ctl = d3.select("#methods")
-			.selectAll(".application")
-			.filter(function (d) { return d === src;})
-			.selectAll(".control")
-			.filter(function (d) { return d == cap.group;});
+		ctl = select_control(src, data.id);
 		if (data.result !== undefined) {
 		    // Succesful completion of a previous method request
 		    src.node.error = false;
@@ -285,13 +295,12 @@ function topology(sources) {
 		    // Remove fail from current button (don't touch others)
 		    ctl.selectAll(".button")
 			.filter(function (d) { return d == data.id;})
-			.classed("fail", false);
+			.classed("fail notified", false);
 		} else if (data.error !== undefined) {
 		    // Error completion of a previouse request.
 		    ctl.selectAll(".button")
 			.filter(function (d) { return d == data.id;})
-			.classed("fail", true)
-			.classed("ok", false);
+			.classed("fail", true);
 		}
 	    }
 	    // silently ignore all non-conformant messages (no
@@ -562,8 +571,8 @@ function topology(sources) {
 	    src.ws.onmessage = function (evt) {
 		if (src.node) {
 		    src.node.error = false;
-		    //console.log(evt.data);
 		    var msg = JSON.parse(evt.data);
+		    console.log("received:", msg);
 		    src.node.config = msg;
 		}
 		update_src(src);
