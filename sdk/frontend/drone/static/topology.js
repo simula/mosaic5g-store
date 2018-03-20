@@ -50,7 +50,7 @@ function topology(sources) {
 		    for (var i in obj) {
 			flatten(prefix + '[' + i + ']', obj[i]);
 		    }
-		} else {
+ 		} else {
 		    flatten(prefix + '[]', '');
 		}
 	    } else {
@@ -75,6 +75,17 @@ function topology(sources) {
 	    obj = obj[path[i]];
 	}
 	return obj;
+    }
+
+    function closeError() {
+	d3.select("#error_note")
+	    .classed("open", false);
+    }
+    function show_error(message) {
+	d3.select("#error_note")
+	    .classed("open", true)
+	    .select(".message")
+	    .text(message);
     }
     
     function closeConfig() {
@@ -141,29 +152,107 @@ function topology(sources) {
     }
 
     function sendCommand(elem, params) {
-	// elem === #methods
-	var app = params.target;
-	while (app) {
-	    if (app === elem) break; // App div not found
-	    if (app.classList.contains('application')) {
-		var src = app.__data__;
-		if (src.ws && src.capabilities[params.datum]) {
-		    src.capabilities[params.datum]._reply = undefined;
-		    d3.select("#methods")
-		    	.selectAll(".application")
-		    	.filter(function (d) { return d === src;})
-		    	.selectAll(".button")
-		    	.filter(function (d) { return d == params.datum;})
-		    	.classed("fail ok", false);
-		    var msg = { method: params.datum, id: params.datum};
-		    console.log("sending:", msg);
-		    src.ws.send(JSON.stringify(msg));
-		    // update_capabilities();
+	var src, method, cap, msg;
+
+	build_msg:
+	if (params.command) {
+	    // Command input 'appid/method/params/...'
+	    var app_id = params.command.split('/')[0];
+	    if (!app_id) return;
+	    var command = params.command.slice(app_id.length+1);
+	    // Find the source...
+	    for (var i = 0; i < LIST.length; ++i) {
+		src = LIST[i];
+		if (app_id == src.node.id) {
+		    if (!src.capabilities) {
+			show_error(src.name + " does not have capabilities");
+			return;
+		    }
+		    var caps = Object.keys(src.capabilities);
+		    for (var j = 0; j < caps.length; ++j) {
+			method = caps[j];
+			if (command.startsWith(method+'/')) {
+			    // A valid method of the src
+			    command = command.slice(method.length + 1).split('/');
+			    cap = src.capabilities[method];
+			    msg = { method: method,
+					id: method};
+			    if (cap.schema) {
+				msg.params = {};
+				for (var k = 0; k < cap.schema.length && k < command.length; ++k) {
+				    msg.params[cap.schema[k]] = command[k];
+				}
+			    } else {
+				// No schema, just pass 'command'
+				msg.params = command;
+			    }
+			    break build_msg;
+			}
+		    }
+		    show_error(app_id + ' does not have capability matching ' + command);
+		    return;
 		}
-		break;
 	    }
-	    app = app.parentNode;
+	    show_error(app_id + ' is not present');
+	    return;
+	} else {
+	    method = params.datum;
+	    var app = params.target;
+	    while (app) {
+		if (app === elem) break; // App div not found
+		if (app.classList.contains('application')) {
+		    src = app.__data__;
+		    if (!src || !src.capabilities) break;
+		    cap = src.capabilities[method];
+		    if (!cap) break;
+		    cap._reply = undefined;
+		    d3.select("#methods")
+			.selectAll(".application")
+			.filter(function (d) { return d === src;})
+			.selectAll(".button")
+			.filter(function (d) { return d == method;})
+			.classed("fail ok", false);
+		    if (cap.schema) {
+			d3.select("#command_input .name")
+			    .text(src.node.id + "/" + method + "/" + cap.schema.join("/"));
+			d3.select("#command_input input")
+			    .property("value", src.node.id + "/" + method + "/")
+			    .node().focus();
+			return;// ...not sending anything yet, wait for input
+		    }
+		    msg = { method: method, id: method};
+		    break build_msg;
+		}
+		app = app.parentNode;
+	    }
 	}
+	if (msg) {
+	    if (src.ws) {
+		console.log("sending:", msg);
+		src.ws.send(JSON.stringify(msg));
+	    } else {
+		show_error('Application ' + src.node.id + ' does not have websocket connection');
+	    }
+	} else {
+	    show_error("bad syntax");
+	}
+    }
+
+    function add_command_input () {
+	var cmd = d3.select("#methods-content")
+		.append("div")
+		.attr("id", "command_input")
+		.attr("class", "application");
+	cmd.append("div")
+	    .attr("class", "name")
+	    .text("Command");
+	cmd.append("form")
+	    .attr("class", "control")
+	    .attr("data-submit", "sendCommand")
+	    .call(uitools.add_submit_action)
+	    .append("input")
+	    .attr("name", "command")
+	    .attr("type", "text");
     }
     
     function update_capabilities() {
@@ -181,6 +270,7 @@ function topology(sources) {
 		.append("div")
 		.attr("class", "name")
 		.text("No Applications");
+	    add_command_input();
 	    return;
 	}
 	var targets = d3.select("#methods-content")
@@ -242,6 +332,7 @@ function topology(sources) {
 			return src.capabilities[d].help;
 		    });
 	    });
+	add_command_input();
     }
 
     function select_control(src, cap) {
@@ -608,11 +699,11 @@ function topology(sources) {
 	LIST = sources.map(function (src, index) {
 	    src.index = index;
 	    if (src.url.startsWith("ws")) {
-		src.node = GRAPH.node(src.type + '_' + src.index, src.name + ' ' + src.index, INFO_APP);
+		src.node = GRAPH.node(src.name + ' ' + src.index,undefined, INFO_APP);
 		src.node.error = true; // Start in error state until ws connection is up
 		src.refresh = function () { refresh_ws(src); };
 	    } else {
-		src.node = GRAPH.node(src.type + '_'+ src.index, src.name + ' ' + src.index, INFO_RTC);
+		src.node = GRAPH.node(src.name + ' '+ src.index, undefined, INFO_RTC);
 		src.refresh = function () { refresh(src);};
 	    }
 	    // Set the displayed data when node is clicked
@@ -716,6 +807,7 @@ function topology(sources) {
 	});},
 	setSources: function (sources) { setup(sources); },
 	closeConfig: closeConfig,
+	closeError: closeError,
 	sendCommand: sendCommand,
 	GRAPH: GRAPH,
 	update: update_all,

@@ -579,6 +579,7 @@ uitools.callbacks(
 	d3.json("/config/tasks", handle_reply);
 	resizeMain();
 
+	uitools.callbacks(TOPOLOGY);
 	return {
 	    loadTasks: loadTasks,
 	    saveTasks: saveTasks,
@@ -590,9 +591,6 @@ uitools.callbacks(
 	    setSourceType: setSourceType,
 	    addSources: addSources,
 	    openTaskTab: openTaskTab,
-	    resizeMain: resizeMain,
-	    resizeGraph: TOPOLOGY.resizeGraph,
-	    closeConfig: TOPOLOGY.closeConfig,
-	    sendCommand: TOPOLOGY.sendCommand
+	    resizeMain: resizeMain
 	};
     })());

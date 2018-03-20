@@ -1169,6 +1169,9 @@ var uitools = (function () {
     function add_change_action(selection) {
 	selection.on("change", click_action);
     }
+    function add_submit_action(selection) {
+	selection.on("submit", submit_popup);
+    }
 
     function _tooltip_position() {
 	var tip = d3.select(this).select(".tooltip").node();
@@ -1261,6 +1264,7 @@ var uitools = (function () {
 	replace_text: replace_text,
 	add_click_action: add_click_action,
 	add_change_action: add_change_action,
+	add_submit_action: add_submit_action,
 	add_tooltip_action: add_tooltip_action,
 	add_menu_action: shared_menu,
 	prepare_collaps: prepare_collaps,

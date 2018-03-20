@@ -90,7 +90,7 @@ td {
     padding: 4px;
     min-height: 50px;
     flex: 1 0 auto;
-    /* background: white; */
+    background: #ffdd58;
 }
 
 #methods .application .button {
@@ -118,6 +118,35 @@ td {
 #methods .application .button.ok.notified::after {
     content: '\2714';
     color: blue;
+}
+#command_input input {
+    width: 100%;
+    height: 40px;
+}
+
+#error_note {
+    display: none;
+    position: absolute;
+    top: 0;
+    /* left: 0; */
+    /* right: 0; */
+    width: 50%;
+    bottom: 0;
+    margin: 30%;
+    color: red;
+    background: white;
+    justify-content: center;
+    align-items: center;
+}
+#error_note .message {
+    /* display: inline-block; */
+    text-align: center;
+    /* width: 100%; */
+    /* height: 100%; */
+    /* vertical-align: middle; */
+}
+#error_note.open {
+    display: flex;
 }
 
 #mainMenu {
