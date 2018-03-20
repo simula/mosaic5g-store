@@ -67,13 +67,24 @@ class app_handler:
 	if self.callback is not None:
 	    self.callback(client, message)
 
-    def send(self, message):
+    def send(self, message, without=None):
 	for i in self.clients:
-	    i.send(message)
+	    if i is not without:
+		i.send(message)
 
-    def notify(self, method, message=None):
+    def notify(self, method, without=None, params=None):
 	for i in self.clients:
-	    i.send_notification(method, message)
+	    if i is not without:
+		i.send_notification(method, params)
+
+    def notify_others(self, message, without):
+	message = self.message_to_notification(message)
+	self.send(message, without);
+
+    @staticmethod
+    def message_to_notification(message):
+	del message['id']
+	return message
 
 class client_handler(tornado.websocket.WebSocketHandler):
 	

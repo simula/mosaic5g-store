@@ -460,6 +460,10 @@ class sma_app(object):
         if method == 'capabilities':
             client.send_notification(method, self.open_data_capabilities)
             client.send_notification('get-list', self.open_data_all_options)
+	    if self.graphs_enable:
+		sma_open_data.notify('enable_graph')
+	    else:
+		sma_open_data.notify('disable_graph')
 	elif method == 'enable_graph':
 	    self.graphs_enable = True
 	elif method == 'disable_graph':
@@ -475,19 +479,19 @@ class sma_app(object):
         elif method == 'set_rule_group_A':
             ss.set_enb_assign(0, 'groupA')
             client.send_result(id, 'Rules switched to group A')
-	    sma_open_data.notify('set_rule_group_A')
+	    sma_open_data.notify_others(message, client)
         elif method == 'set_rule_group_B':
             ss.set_enb_assign(0,'groupB')
             client.send_result(id, 'Rules switched to group B')
-	    sma_open_data.notify('set_rule_group_B')
+	    sma_open_data.notify_others(message, client)
 	elif method == 'enable_graph':
 	    self.graphs_enable = True
 	    client.send_result(id, 'Graphs turned on.')
-	    sma_open_data.notify('enable_graph')
+	    sma_open_data.notify_others(message, client)
 	elif  method == 'disable_graph':
 	    self.graphs_enable = False
 	    client.send_result(id, 'Graphs truned off.')
-	    sma_open_data.notify('disable_graph')
+	    sma_open_data.notify_others(message, client)
         else:
             client.send_error(id,-12345,'Method not found')
 	
