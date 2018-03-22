@@ -23,7 +23,7 @@ function topology(sources) {
     };
 
     var INFO_APP = {
-	//icon: "RTC",
+	icon: "APP",
 	class: "sma"
     };
     
@@ -740,9 +740,9 @@ function topology(sources) {
 	    .attr("class", "stats")
 	    .attr("dx", GRAPH.NODE.R)
 	    .attr("dy", -GRAPH.NODE.R);
-	nodes.filter(function (d) { return d.info === INFO_APP;})
-	    .append("circle")
-	    .attr("r", GRAPH.NODE.R * 0.6);
+	// nodes.filter(function (d) { return d.info === INFO_APP;})
+	//     .append("circle")
+	//     .attr("r", GRAPH.NODE.R * 0.6);
 	nodes.filter(function (d) { return d.info === INFO_LC_UE;})
 	    .append("g")
 	    .attr("transform", "translate("+(GRAPH.NODE.R/2)+','+(-GRAPH.NODE.R)+')')
