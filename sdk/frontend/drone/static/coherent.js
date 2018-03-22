@@ -238,8 +238,7 @@ uitools.callbacks(
 
 	function modifySources(elem, params) {
 	    console.log(params);
-	    TOPOLOGY.setSources(params.list);
-	    return true;
+	    return TOPOLOGY.setSources(params.list);
 	}
 	
 	function expandBottom(elem, params) {

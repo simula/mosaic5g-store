@@ -153,7 +153,7 @@ input:checked ~ label {
     border-top-right-radius: 0.5em;
     position: fixed;
     z-index: 100000;
-    overflow: hidden;
+    /* overflow: hidden; */ /* chromiun clips fixed position tooltips/menus with this */
 }
 
 
@@ -553,19 +553,19 @@ ul.tabsbar > li.selected {
     text-align: center;
     font-size: 200%;
 }
-.collaps.right > .collaps-handle::before {
+.collaps.right:not(.open) > .collaps-handle::before {
     content: '\25c0';
 }
 .collaps.right.open > .collaps-handle::before {
     content: '\25b6';
 }
-.collaps.left > .collaps-handle::before {
+.collaps.left:not(.open) > .collaps-handle::before {
     content: '\25b6';
 }
 .collaps.left.open > .collaps-handle::before {
     content: '\25c0';
 }
-.collaps.top > .collaps-handle::before {
+.collaps.top:not(.open) > .collaps-handle::before {
     content: '\25bc';
     text-align: center;
 }

@@ -139,7 +139,7 @@ function topology(sources) {
 	    // index of SMA_APP is the same as the enb index
 	    // from flexran. Must be replaced by proper id of
 	    // the enb being controlled.
-	    var cell = GRAPH.find('RTC_0_eNB_' + i);
+	    var cell = GRAPH.find('flexran-rtc_eNB_' + i);
 	    if (cell) {
 		// The 'end' parameter defines what is shown at
 		// the end of the dashed line from SMA_APP to
@@ -151,49 +151,64 @@ function topology(sources) {
 	}
     }
 
-    function sendCommand(elem, params) {
-	var src, method, cap, msg;
+    function send_ws_message(src, msg) {
+	if (msg) {
+	    if (src.ws) {
+		console.log("sending:", msg);
+		src.ws.send(JSON.stringify(msg));
+	    } else {
+		show_error('Application ' + src.node.id + ' does not have websocket connection');
+	    }
+	}
+    }
 
-	build_msg:
+    function sendCommand(elem, params) {
+	var src, method, cap;
+
 	if (params.command) {
-	    // Command input 'appid/method/params/...'
+	    // Command input 'appid/method/params/...'. If input
+	    // starts with '/', there is no application and message is
+	    // sent for all RPC applications.
 	    var app_id = params.command.split('/')[0];
-	    if (!app_id) return;
 	    var command = params.command.slice(app_id.length+1);
 	    // Find the source...
-	    for (var i = 0; i < LIST.length; ++i) {
+	    var send_count = 0;
+	    next_source: for (var i = 0; i < LIST.length; ++i) {
 		src = LIST[i];
-		if (app_id == src.node.id) {
-		    if (!src.capabilities) {
-			show_error(src.name + " does not have capabilities");
-			return;
-		    }
-		    var caps = Object.keys(src.capabilities);
-		    for (var j = 0; j < caps.length; ++j) {
-			method = caps[j];
-			if (command.startsWith(method+'/')) {
-			    // A valid method of the src
-			    command = command.slice(method.length + 1).split('/');
-			    cap = src.capabilities[method];
-			    msg = { method: method,
-					id: method};
-			    if (cap.schema) {
-				msg.params = {};
-				for (var k = 0; k < cap.schema.length && k < command.length; ++k) {
-				    msg.params[cap.schema[k]] = command[k];
+		if (src.type != 'RPC') continue;
+		if (!app_id || app_id == src.node.id) {
+		    if (src.capabilities) {
+			var caps = Object.keys(src.capabilities);
+			for (var j = 0; j < caps.length; ++j) {
+			    method = caps[j];
+			    if (command.startsWith(method+'/')) {
+				// A valid method of the src
+				command = command.slice(method.length + 1).split('/');
+				cap = src.capabilities[method];
+				var msg = { method: method, id: method};
+				if (cap.schema) {
+				    msg.params = {};
+				    for (var k = 0; k < cap.schema.length && k < command.length; ++k) {
+					msg.params[cap.schema[k]] = command[k];
+				    }
+				} else {
+				    // No schema, just pass 'command'
+				    msg.params = command;
 				}
-			    } else {
-				// No schema, just pass 'command'
-				msg.params = command;
+				send_ws_message(src, msg);
+				send_count += 1;
+				continue next_source;
 			    }
-			    break build_msg;
 			}
 		    }
-		    show_error(app_id + ' does not have capability matching ' + command);
-		    return;
+		    command = command.split('/');
+		    method = command.shift();
+		    send_ws_message(src, { method: method, id: method, params: command});
+		    send_count += 1;
 		}
 	    }
-	    show_error(app_id + ' is not present');
+	    if (!send_count)
+		show_error(app_id + ' is not present');
 	    return;
 	} else {
 	    method = params.datum;
@@ -220,21 +235,11 @@ function topology(sources) {
 			    .node().focus();
 			return;// ...not sending anything yet, wait for input
 		    }
-		    msg = { method: method, id: method};
-		    break build_msg;
+		    send_ws_message(src, { method: method, id: method});
+		    break;
 		}
 		app = app.parentNode;
 	    }
-	}
-	if (msg) {
-	    if (src.ws) {
-		console.log("sending:", msg);
-		src.ws.send(JSON.stringify(msg));
-	    } else {
-		show_error('Application ' + src.node.id + ' does not have websocket connection');
-	    }
-	} else {
-	    show_error("bad syntax");
 	}
     }
 
@@ -270,7 +275,6 @@ function topology(sources) {
 		.append("div")
 		.attr("class", "name")
 		.text("No Applications");
-	    add_command_input();
 	    return;
 	}
 	var targets = d3.select("#methods-content")
@@ -284,7 +288,7 @@ function topology(sources) {
 		var set = d3.select(this);
 		set.append("div")
 		    .attr("class", "name")
-		    .text(function (src) { return src.name + ' ' + src.index;});
+		    .text(function (src) { return src.name;});
 		var keys = Object.keys(src.capabilities).sort();
 		// Sort capabilities into groups
 		var groups = {};
@@ -680,9 +684,21 @@ function topology(sources) {
 	GRAPH.update();
     }
 
-    function setup(sources) {
+    function setSources(sources) {
+	// Check validity of the new list
+	// - source[i].name must be unique within the list
+	var names = {};
+	for (var i = 0; i < sources.length; ++i) {
+	    var src = sources[i];
+	    if (names[src.name]) {
+		show_error('The source name ' + src.name + ' used multiple times');
+		return false;
+	    }
+	    names[src.name] = true;
+	}
+
 	// Stop old timers
-	for (var i = 0; i < LIST.length; ++i) {
+	for (i = 0; i < LIST.length; ++i) {
 	    if (LIST[i].timeout)
 		clearTimeout(LIST[i].timeout);
 	    LIST[i].timeout = undefined;
@@ -699,11 +715,11 @@ function topology(sources) {
 	LIST = sources.map(function (src, index) {
 	    src.index = index;
 	    if (src.url.startsWith("ws")) {
-		src.node = GRAPH.node(src.name + ' ' + src.index,undefined, INFO_APP);
+		src.node = GRAPH.node(src.name,undefined, INFO_APP);
 		src.node.error = true; // Start in error state until ws connection is up
 		src.refresh = function () { refresh_ws(src); };
 	    } else {
-		src.node = GRAPH.node(src.name + ' '+ src.index, undefined, INFO_RTC);
+		src.node = GRAPH.node(src.name, undefined, INFO_RTC);
 		src.refresh = function () { refresh(src);};
 	    }
 	    // Set the displayed data when node is clicked
@@ -716,6 +732,7 @@ function topology(sources) {
 	});
 	update_capabilities();
 	GRAPH.update();
+	return true;
     }
 
     function node_presentation(nodes) {
@@ -791,7 +808,7 @@ function topology(sources) {
     GRAPH.NODE.update = node_status_indicator;
     GRAPH.NODE.create = node_presentation;
 
-    setup(sources);
+    setSources(sources);
 
     // initial size is slightly wrong, but following does not fix it...
     //setTimeout(function () {resize(d3.select("#topology").node());}, 100);
@@ -805,7 +822,7 @@ function topology(sources) {
 		timer: x.timer
 	    };
 	});},
-	setSources: function (sources) { setup(sources); },
+	setSources: setSources,
 	closeConfig: closeConfig,
 	closeError: closeError,
 	sendCommand: sendCommand,
