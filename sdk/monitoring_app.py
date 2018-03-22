@@ -93,6 +93,7 @@ class monitoring_app(object):
 
     # App specific vars
     period=1.0
+    open_data=True
     name="monitoring_app"
     first_time=True
     
@@ -198,7 +199,7 @@ class monitoring_app(object):
     enb_ue_dl_phy_acked_bytes={}#[enb,ue]
     enb_ue_prev_hid_tbs={}#[enb,ue,hid]
 
-    def __init__(self, log, url='http://localhost',port='9999',url_app='http://localhost',port_app='9090', log_level='info', op_mode='test'):
+    def __init__(self, log, url='http://localhost',port='9999',log_level='info', op_mode='test'):
         super(monitoring_app, self).__init__()
         
         self.url = url+':'+port
@@ -206,7 +207,8 @@ class monitoring_app(object):
         self.log_level = log_level
         self.status = 'none'
         self.op_mode = op_mode
-
+	self.graphs_enable = False
+        
     def set_observation_period(self, period):
         monitoring_app.period=period
         
@@ -496,8 +498,22 @@ class monitoring_app(object):
 
                 else:
                     print "I DON'T KNOW WHY I'M HERE !!!"
-
-
+    # example info that can be extracted/calculated from monitoring app
+    def get_cell_throughput (self,sm, dir='dl') :
+        total_tbs_tti=0
+        for enb in range(0, sm.get_num_enb()) :
+            for ue in range(0, sm.get_num_ue(enb=enb)) :
+                
+                if dir == 'dl' or dir == "DL":
+                    total_tbs_tti+= (self.enb_ue_dl_mac_tbs[enb,ue]*8/1000.0)
+                elif dir == 'ul' or dir == "UL":
+                    total_tbs_tti+= (self.enb_ue_ul_mac_tbs[enb,ue]*8/1000.0)
+                else :
+                    self.log.error('Unknown direction ' + dir)
+                    return 0
+                
+        return float(total_tbs_tti/1000.0)
+        
     def print_logs(self,sm):
         for enb in range(0, sm.get_num_enb()) :
             for ue in range(0, sm.get_num_ue(enb=enb)) :
@@ -577,15 +593,33 @@ class monitoring_app(object):
                 #self.log.info('------------------------------------------PHY---------------------------------------')
 
                 
-    def get_graphs_data(self, sm):
+    def get_graphs_data(self, sm, kpi='thr', type='cell', dir='dl'):
 	output = []
-	for enb in range(0, sm.get_num_enb()) :
-            for ue in range(0, sm.get_num_ue(enb=enb)):
-	        if self.enb_ue_dl_pdcp_bytes[enb, ue] > 20: # LIMIT 
-		      output.append({'enb':enb,'ue':ue,'dl_pdcp_bytes':self.enb_ue_dl_pdcp_bytes[enb, ue]})
-	print(output)
+
+        if type == 'cell' :
+            for enb in range(0, sm.get_num_enb()) :
+                if kpi == 'thr' : 
+                    print self.get_cell_throughput(sm,dir)
+                    output.append({'enb':enb,'ue':sm.get_num_ue(enb=enb),'cell_rate':self.get_cell_throughput(sm,dir)})
+                else:
+                    self.log.warn('Not supported KPIs')
+        elif type  == 'ue' :             
+            if kpi == 'pdcp' :
+                for enb in range(0, sm.get_num_enb()) :
+                    for ue in range(0, sm.get_num_ue(enb=enb)):
+                        if dir == 'ul' : 
+                            output.append({'enb':enb,'ue':ue,'ul_pdcp_bytes':self.enb_ue_ul_pdcp_bytes[enb, ue]})
+                        else:
+                            output.append({'enb':enb,'ue':ue,'dl_pdcp_bytes':self.enb_ue_dl_pdcp_bytes[enb, ue]})
+        else:
+            self.log.warn('Not supported node type')  
+                    
+        
+	#print(output)
 	return output
 
+    def enable_graphs(self):
+	return self.graphs_enable
 
 
     def run(self, sm,rrc):
@@ -612,29 +646,87 @@ class monitoring_app(object):
         
         t = Timer(monitoring_app.period, self.run,kwargs=dict(sm=sm,rrc=rrc))
         t.start()
-        
-    def handle_open_data(self, client, message):
-	   client.send(json.dumps({'monitoring_app':'please fill this function'}))
+
+    # monitoring app capabilities
+    # only used if open_data is enabled
+    open_data_capabilities = {
+        'get-list':  { 'help': 'Get the current list'},
+        'command_1': { 'help': 'App command 1 that does something useful'},
+        'command_2': { 'help': 'App command 2 that does something useful'}, # i left it for example of usage error_message
+ 	'cell_rate': {'help': 'Get cell rate.', 'params':{'dir':'dl'},  'group':'knowledge'},
+        'enable_graph': {'help': 'Turn on graph.', 'group':'graph'},
+	'disable_graph' : {'help' : 'Trun off graph.', 'group':'graph'}		
+    }
+ 
+    def open_data_on_notification(self, client, method, message):
+        if method == 'capabilities':
+            client.send_notification(method, self.open_data_capabilities)
+            client.send_notification('get-list', self.open_data_all_options)
+	    if self.graphs_enable:
+		monitoring_open_data.notify('enable_graph')
+	    else:
+		monitoring_open_data.notify('disable_graph')
+	elif method == 'enable_graph':
+	    self.graphs_enable = True
+	elif method == 'disable_graph':
+	    self.graphs_enable = False
+
+    def open_data_on_message(self, client, id, method, message):
+        if method == 'get-list':
+            client.send_result(id, self.open_data_all_options)
+        elif method == 'command_1':
+            client.send_result(id, 'Hi There! Command 1 succesfull')
+    	elif method == 'command_2':
+       	    client.send_error(id,-32601,'Command 2 not yet implemented')
+      	elif method == 'cell_rate':
+            # get params somehow and pass it to the function
+            client.send_result(id, self.get_cell_throughput())
+        elif method == 'enable_graph':
+	    self.graphs_enable = True
+	    client.send_result(id, 'Graphs turned on.')
+	    monitoring_open_data.notify_others(message, client)
+	elif  method == 'disable_graph':
+	    self.graphs_enable = False
+	    client.send_result(id, 'Graphs truned off.')
+	    monitoring_open_data.notify_others(message, client)
+        else:
+            client.send_error(id,-12345,'Method not found')
+            
 
 # main thread function - because shows GUI 
-def visualisation(monitoring_app, fm, sm, period, enable):
+def visualisation(monitoring_app, fm, sm, kpi, type, dir, period, enable):
     graphs = []
     while True:
 	time.sleep(period)
-	if enable:
-	    data = monitoring_app.get_graphs_data(sm)
+	if enable or monitoring_app.enable_graphs():
+	    data = monitoring_app.get_graphs_data(sm, kpi, type, dir)
             used = []
-	    for i in data:
-		name = str(i['enb'])+'-'+str(i['ue'])
-		if not name in graphs: 
- 		    graphs.append(name)
-		    fm.create(name=name)
-		    fm.show(name=name, x=1, y=i['dl_pdcp_bytes'], fig_type=app_graphs.FigureType.Plot)
-		elif name in graphs:
-		    fm.append(name=name, y=i['dl_pdcp_bytes'], fig_type=app_graphs.FigureType.Plot)
-		used.append(name)
-		fm.update(name=name)
-	    for i, name in enumerate(graphs):
+            for i in data:
+                if type == 'cell' :
+                    name = str(i['enb'])
+                    if not name in graphs: 
+ 		        graphs.append(name)
+		        fm.create(name=name)
+		        fm.show(name=name, x=1, y=i['cell_rate'], fig_type=app_graphs.FigureType.Plot)
+                        #fm.beautify(name=name, title="Cell Rate (Mbps)", xlabel='Time', ylabel='Throughput')	
+		    elif name in graphs:
+		        fm.append(name=name, y=i['cell_rate'], fig_type=app_graphs.FigureType.Plot)
+		    used.append(name)
+		    fm.update(name=name)
+                    
+                elif type == 'ue': # need more checks 
+		    name = str(i['enb'])+'-'+str(i['ue'])
+		    if not name in graphs: 
+ 		        graphs.append(name)
+		        fm.create(name=name)
+		        fm.show(name=name, x=1, y=i['dl_pdcp_bytes'], fig_type=app_graphs.FigureType.Plot)
+		    elif name in graphs:
+		        fm.append(name=name, y=i['dl_pdcp_bytes'], fig_type=app_graphs.FigureType.Plot)
+		    used.append(name)
+		    fm.update(name=name)
+                    
+        else:
+            for i, name in enumerate(graphs):
 		if not name in used:
 		    fm.close(name=name)
 		    del graphs[i]
@@ -648,25 +740,21 @@ if __name__ == '__main__':
     parser.add_argument('--url', metavar='[option]', action='store', type=str,
                         required=False, default='http://localhost', 
                         help='set the FlexRAN RTC URL: loalhost (default)')
-    parser.add_argument('--port', metavar='[option]', action='store', type=str,
-                        required=False, default='9999', 
-                        help='set the FlexRAN RTC port: 9999 (default)')
-    parser.add_argument('--url-app', metavar='[option]', action='store', type=str,
-                        required=False, default='http://localhost', 
-                        help='set the application server URL: loalhost (default)')
-    parser.add_argument('--port-app', metavar='[option]', action='store', type=str,
-                        required=False, default='9090', 
-                        help='set the application server port: 9090 (default)')
-    # need to may be rename parameters - do not know
     parser.add_argument('--app-url', metavar='[option]', action='store', type=str,
                         required=False, default='http://localhost', 
                         help='set the App address to open data: loalhost (default)')
+    parser.add_argument('--port', metavar='[option]', action='store', type=str,
+                        required=False, default='9999', 
+                        help='set the FlexRAN RTC port: 9999 (default)')
     parser.add_argument('--app-port', metavar='[option]', action='store', type=int,
                         required=False, default=8080, 
                         help='set the App port to open data: 8080 (default)')
     parser.add_argument('--app-period',  metavar='[option]', action='store', type=float,
-                        required=False, default=1, 
+                        required=False, default=10, 
                         help='set the period of the app: 1s (default)')
+    parser.add_argument('--open-data', action='store_true',
+                        required=False, default=True, 
+                        help='Enable open data interface among control apps (default true)')
     parser.add_argument('--graph', action='store_true',
                         required=False, default=False, 
                         help='set true to visualize (default true)')
@@ -686,20 +774,6 @@ if __name__ == '__main__':
 
     log=flexran_sdk.logger(log_level=args.log).init_logger()
     
-
-
-    # If this block is uncommented then monitoring app does not do the run loop.
-    # open data additions 
-    app_open_data=app_sdk.app_builder(log=log,
-                    app=monitoring_app.name,
-                     address=args.app_url,
-                     port=args.app_port)
-
-    monitoring_open_data = app_sdk.app_handler(log=log, callback=monitoring_app.handle_open_data)
-    app_open_data.add_options(monitoring_app.name, handler=monitoring_open_data)
-    app_open_data.run_app()
-
-    
     sm = flexran_sdk.stats_manager(log=log,
                                    url=args.url,
                                    port=args.port,
@@ -717,11 +791,27 @@ if __name__ == '__main__':
     monitoring_app = monitoring_app(log=log,
                                 url=args.url,
                                 port=args.port,
-                                url_app=args.url_app,
-                                port_app=args.port_app,
                                 log_level=args.log,
                                 op_mode=args.op_mode)
 
+    # If this block is uncommented then monitoring app does not do the run loop.
+    # open data additions
+    monitoring_app.open_data = args.open_data
+    if monitoring_app.open_data:
+        log.info('Enable Open data interface for monitoring app')
+        app_open_data=app_sdk.app_builder(log=log,
+                                          app=monitoring_app.name,
+                                          address=args.app_url,
+                                          port=args.app_port)
+
+        monitoring_open_data = app_sdk.app_handler(log=log, callback=monitoring_app.open_data_on_message,
+                                                   notification=monitoring_app.open_data_on_notification)
+    
+        app_open_data.add_options("list", handler=monitoring_open_data)
+        app_open_data.run_app()
+    
+
+    
     monitoring_app.set_observation_period(args.app_period)
     log.info('App period is set to : ' + str(monitoring_app.period))
 
@@ -730,5 +820,5 @@ if __name__ == '__main__':
 
     t2 = Timer(1,app_sdk.run_all_apps) 
     t2.start()
-    
-    visualisation(monitoring_app, fm, sm, args.graph_period, args.graph)
+   
+    visualisation(monitoring_app, fm, sm, 'thr', 'cell', 'dl', args.graph_period, args.graph)
