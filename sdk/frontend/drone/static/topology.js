@@ -163,7 +163,7 @@ function topology(sources) {
     }
 
     function sendCommand(elem, params) {
-	var src, method, cap;
+	var src, method, cap, args;
 
 	if (params.command) {
 	    // Command input 'appid/method/params/...'. If input
@@ -183,17 +183,17 @@ function topology(sources) {
 			    method = caps[j];
 			    if (command.startsWith(method+'/')) {
 				// A valid method of the src
-				command = command.slice(method.length + 1).split('/');
+				args = command.slice(method.length + 1).split('/');
 				cap = src.capabilities[method];
 				var msg = { method: method, id: method};
 				if (cap.schema) {
 				    msg.params = {};
-				    for (var k = 0; k < cap.schema.length && k < command.length; ++k) {
-					msg.params[cap.schema[k]] = command[k];
+				    for (var k = 0; k < cap.schema.length && k < args.length; ++k) {
+					msg.params[cap.schema[k]] = args[k];
 				    }
 				} else {
-				    // No schema, just pass 'command'
-				    msg.params = command;
+				    // No schema, just pass 'args' array
+				    msg.params = args;
 				}
 				send_ws_message(src, msg);
 				send_count += 1;
@@ -201,9 +201,9 @@ function topology(sources) {
 			    }
 			}
 		    }
-		    command = command.split('/');
-		    method = command.shift();
-		    send_ws_message(src, { method: method, id: method, params: command});
+		    args = command.split('/');
+		    method = args.shift();
+		    send_ws_message(src, { method: method, id: method, params: args});
 		    send_count += 1;
 		}
 	    }
