@@ -3,7 +3,8 @@ function topology(sources) {
     var LIST = [];
 
     var INFO_ENB = {
-	icon: "enb-black",
+	// icon: "enb-black",
+	icon: 'm5g-oai-ran',
 	class: "enb"
     };
     
@@ -18,12 +19,14 @@ function topology(sources) {
     };
     
     var INFO_RTC = {
-	icon: "RTC",
+	// icon: "RTC",
+	icon: 'm5g-flexran',
 	class: "rtc"
     };
 
     var INFO_APP = {
-	icon: "APP",
+	// icon: "APP",
+	icon: 'm5g-store',
 	class: "sma"
     };
     
