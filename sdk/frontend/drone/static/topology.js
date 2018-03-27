@@ -138,17 +138,21 @@ function topology(sources) {
 	    var freq_min = list[i].options[0].freq_min;
 	    var freq_max = list[i].options[0].freq_max;
 	    var bandwidth = list[i].options[0].bandwidth;
-	    // This needs to change: now we just assume the
-	    // index of SMA_APP is the same as the enb index
-	    // from flexran. Must be replaced by proper id of
-	    // the enb being controlled.
-	    var cell = GRAPH.find('flexran-rtc_eNB_' + i);
+	    var eNB_id = list[i].options[0].eNB_id;
+	    if (!eNB_id) {
+		// Just a testing fallback
+		if (LIST[0].type == 'RTC' && LIST[0].node) {
+		    eNB_id = LIST[0].node.config.eNB_config[i].eNB.eNBId;
+		}
+	    }
+	    var cell = GRAPH.find('eNB_' + eNB_id);
 	    if (cell) {
 		// The 'end' parameter defines what is shown at
 		// the end of the dashed line from SMA_APP to
 		// eNB. The styling of the line is defined by
 		// ".link.control" in style.css.
-		GRAPH.relation(node, cell, 'control', {'end': ['['+freq_min+'..'+freq_max+'] ' + bandwidth]},
+		cell.option = list[i].options[0];
+		GRAPH.relation(node, cell, 'control', {'end': [list[i].options[0].MVNO_group + ' ['+freq_min+'..'+freq_max+'] ' + bandwidth]},
 			       undefined, GRAPH.MARKER.END);
 	    }
 	}
@@ -227,7 +231,7 @@ function topology(sources) {
 		    d3.select("#methods")
 			.selectAll(".application")
 			.filter(function (d) { return d === src;})
-			.selectAll(".button")
+			.selectAll(".command")
 			.filter(function (d) { return d == method;})
 			.classed("fail ok", false);
 		    if (cap.schema) {
@@ -316,22 +320,27 @@ function topology(sources) {
 			.data(function (d) { return groups[d];})
 			.enter()
 			.append("div")
-			.attr("class", "command");
+			.call(uitools.add_click_action)
+			.attr("class",  function (d) {
+			    var cls = "command";
+			    var reply = src.capabilities[d]._reply;
+			    if (reply) {
+				if (reply.error)
+				    cls += " fail";
+				else if (reply.result)
+				    cls += " ok";
+			    }
+			    return cls;
+			});
 		cmd.append("div")
-		    .attr("class", function (d) {
-			var cls = "button";
-			console.log(d);
-			var reply = src.capabilities[d]._reply;
-			if (reply) {
-			    if (reply.error)
-				cls += " fail";
-			    else if (reply.result)
-				cls += " ok";
+		    .attr("class", "button")
+		    .each(function (d) {
+			if (src.capabilities[d].label) {
+			    d3.select(this).html(src.capabilities[d].label);
+			} else {
+			    d3.select(this).text(d);
 			}
-			return cls;
-		    })
-		    .call(uitools.add_click_action)
-		    .text(function (d) { return d;});
+		    });
 		cmd.append("div")
 		    .attr("class", "tooltip bottom")
 		    .call(uitools.add_tooltip_action)
@@ -365,9 +374,9 @@ function topology(sources) {
 		    sma_get_list(src);
 		} else {
 		    var ctl = select_control(src, data.method);
-		    ctl.selectAll(".button")
+		    ctl.selectAll(".command")
 			.classed("ok notified", function (d) { return d == data.method;});
-		    ctl.selectAll(".button")
+		    ctl.selectAll(".command")
 			.filter(function (d) { return d == data.method;})
 			.classed("fail", false);
 		}
@@ -387,16 +396,16 @@ function topology(sources) {
 			src.node.config = data.result;
 			sma_get_list(src);
 		    }
-		    // Set OK to current button, clear from others in group
-		    ctl.selectAll(".button")
+		    // Set OK to current command, clear from others in group
+		    ctl.selectAll(".command")
 			.classed("ok", function (d) { return  d == data.id;});
 		    // Remove fail from current button (don't touch others)
-		    ctl.selectAll(".button")
+		    ctl.selectAll(".command")
 			.filter(function (d) { return d == data.id;})
 			.classed("fail notified", false);
 		} else if (data.error !== undefined) {
 		    // Error completion of a previouse request.
-		    ctl.selectAll(".button")
+		    ctl.selectAll(".command")
 			.filter(function (d) { return d == data.id;})
 			.classed("fail", true);
 		}
@@ -438,10 +447,10 @@ function topology(sources) {
 	    node.enb_list = [];
 	    for (i = 0; i < data.eNB_config.length; ++i) {
 		var config = data.eNB_config[i];
-		enb = GRAPH.node(node.id + '_eNB_' + i, i, INFO_ENB);
+		enb = GRAPH.node('eNB_' + config.eNB.eNBId, i, INFO_ENB);
 		node.enb_list.push(enb);
 
-		GRAPH.relation(enb, node, 'connection', {},undefined,GRAPH.MARKER.END);
+		GRAPH.relation(enb, node, 'rtc', {},undefined,GRAPH.MARKER.END|GRAPH.MARKER.START);
 		enb.config = {
 		    cellConfig: config.eNB.cellConfig,
 		    ueConfig: config.UE.ueConfig,
@@ -513,10 +522,10 @@ function topology(sources) {
 			var lbls = {};
 			var pdcp = get(stats, ['mac_stats', 'pdcpStats'], {});
 			lbls.arrow = [''+pdcp.pktRxBytesW];
-			GRAPH.relation(ue, enb, 'connection', lbls, style, GRAPH.MARKER.END);
+			GRAPH.relation(ue, enb, 'oai', lbls, style, GRAPH.MARKER.END);
 			lbls.end = l;
 			lbls.arrow = [''+pdcp.pktTxBytesW];
-			GRAPH.relation(enb, ue, 'connection', lbls, style, GRAPH.MARKER.END);
+			GRAPH.relation(enb, ue, 'oai', lbls, style, GRAPH.MARKER.END);
 
 			if (ue.timechart && !ue.error) {
 			    var bytes = [ pdcp.pktTxBytes, pdcp.pktRxBytes ];
@@ -746,6 +755,11 @@ function topology(sources) {
 	// nodes.filter(function (d) { return d.info === INFO_APP;})
 	//     .append("circle")
 	//     .attr("r", GRAPH.NODE.R * 0.6);
+	nodes.filter(function (d) { return d.info === INFO_ENB;})
+	    .insert("circle", ":first-child")
+	    .attr("class", "config")
+	    .attr("r", GRAPH.NODE.R-8)
+	    .attr("cx", "-2px");
 	nodes.filter(function (d) { return d.info === INFO_LC_UE;})
 	    .append("g")
 	    .attr("transform", "translate("+(GRAPH.NODE.R/2)+','+(-GRAPH.NODE.R)+')')
@@ -776,6 +790,21 @@ function topology(sources) {
 	nodes.classed("ghost", function (d) { return d.info === INFO_UE;});
 
 	var stats = nodes.filter(function (d) { return d.info === INFO_ENB;})
+		.each(function (d) {
+		    var freq = d.config.cellConfig[0].dlFreq;
+		    if (d.option && freq) {
+			var waiting = (d.option.freq_min <= freq && d.option.freq_max <= freq);
+			d3.select(this)
+			    .select(".config")
+			    .classed("waiting", waiting);
+			if (!waiting) {
+			    // "borrow" existing "vendor" field for GROUP
+			    d3.select(this)
+				.select(".vendor")
+				.text(d.option.MVNO_group);
+			}
+		    }
+		})
 		.select("text.stats")
 		.selectAll("tspan")
 	// The following fields from cellConfig[0] will be show on
