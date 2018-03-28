@@ -99,7 +99,8 @@ td {
     display: flex;
     justify-content: center;
     align-items: center;
-    background: #ffdd58;
+    color: #8d197a;
+    /* background: #ffdd58; */
 }
 
 #methods .application .button {

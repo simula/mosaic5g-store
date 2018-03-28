@@ -152,7 +152,7 @@ function topology(sources) {
 		// eNB. The styling of the line is defined by
 		// ".link.control" in style.css.
 		cell.option = list[i].options[0];
-		GRAPH.relation(node, cell, 'control', {'end': [list[i].options[0].MVNO_group + ' ['+freq_min+'..'+freq_max+'] ' + bandwidth]},
+		GRAPH.relation(node, cell, 'control', {'start': [list[i].options[0].MVNO_group + ' ['+freq_min+'..'+freq_max+'] ' + bandwidth]},
 			       undefined, GRAPH.MARKER.END);
 	    }
 	}
@@ -235,8 +235,9 @@ function topology(sources) {
 			.filter(function (d) { return d == method;})
 			.classed("fail ok", false);
 		    if (cap.schema) {
+			last_command_label = src.node.id + "/" + method + "/" + cap.schema.join("/");
 			d3.select("#command_input .name")
-			    .text(src.node.id + "/" + method + "/" + cap.schema.join("/"));
+			    .text(last_command_label);
 			d3.select("#command_input input")
 			    .property("value", src.node.id + "/" + method + "/")
 			    .node().focus();
@@ -250,24 +251,39 @@ function topology(sources) {
 	}
     }
 
-    function add_command_input () {
+    var last_command_label = "Command";
+    function get_command_input() {
+	var command = d3.select('#command_input input');
+	if (command.empty()) return '';
+	return command.property("value");
+    }
+
+    function add_command_input (current) {
 	var cmd = d3.select("#methods-content")
 		.append("div")
 		.attr("id", "command_input")
 		.attr("class", "application");
 	cmd.append("div")
 	    .attr("class", "name")
-	    .text("Command");
+	    .text(last_command_label);
 	cmd.append("form")
 	    .attr("class", "control")
 	    .attr("data-submit", "sendCommand")
 	    .call(uitools.add_submit_action)
 	    .append("input")
 	    .attr("name", "command")
-	    .attr("type", "text");
+	    .attr("type", "text")
+	    .property("value", current);
     }
     
     function update_capabilities() {
+	// Temp solution. If input is active while executing this, try
+	// to save and restore the current content. Not fully working:
+	// if user is typing input while this happens, the focus is
+	// lost and typing goes to wrong place.. [Correct solution: DO
+	// NOT DELETE the command input div!]
+	var current = get_command_input();
+
 	var apps = LIST.filter(function (src) {
 		    if (src.capabilities == undefined) return false;
 		    var keys = Object.keys(src.capabilities);
@@ -286,7 +302,7 @@ function topology(sources) {
 	}
 	var targets = d3.select("#methods-content")
 		.text("")
-		.selectAll("div")
+		.selectAll("div.application")
 		.data(apps);
 	targets.enter()
 	    .append("div")
@@ -348,15 +364,16 @@ function topology(sources) {
 			return src.capabilities[d].help;
 		    });
 	    });
-	add_command_input();
+	add_command_input(current);
     }
 
     function select_control(src, cap) {
+	// Return empty selection, if cap is undefined
 	return d3.select("#methods")
 	    .selectAll(".application")
 	    .filter(function (d) { return d === src;})
 	    .selectAll(".control")
-	    .filter(function (d) { return d == src.capabilities[cap].group;});
+	    .filter(function (d) { return cap && d == cap.group;});
     }
     
     var SOURCE_UPDATE = {
@@ -373,7 +390,7 @@ function topology(sources) {
 		    src.node.config = data.params;
 		    sma_get_list(src);
 		} else {
-		    var ctl = select_control(src, data.method);
+		    var ctl = select_control(src, src.capabilities[data.method]);
 		    ctl.selectAll(".command")
 			.classed("ok notified", function (d) { return d == data.method;});
 		    ctl.selectAll(".command")
@@ -386,9 +403,8 @@ function topology(sources) {
 		src.ws.send({error: {code: -32601, message: "Method not found"}, id: data.id});
 	    } else if (src.capabilities) {
 		var cap = src.capabilities[data.id];
-		if (!cap) return; // unknown method in reply
-		cap._reply = data; // Remember last reply
-		ctl = select_control(src, data.id);
+		if (cap) cap._reply = data; // Remember last reply
+		ctl = select_control(src, cap);
 		if (data.result !== undefined) {
 		    // Succesful completion of a previous method request
 		    src.node.error = false;
@@ -396,9 +412,21 @@ function topology(sources) {
 			src.node.config = data.result;
 			sma_get_list(src);
 		    }
-		    // Set OK to current command, clear from others in group
+		    // Set OK to current command, clear from others in group. Also, remove
+		    // _reply from all other commands in same group.
 		    ctl.selectAll(".command")
-			.classed("ok", function (d) { return  d == data.id;});
+			.classed("ok", function (d) {
+			    if (d != data.id) {
+				var cap = src.capabilities[d];
+				if (cap) {
+				    if (cap._reply && cap._reply.result)
+					// only remove OK replies (leave errors on)
+					cap._reply = undefined;
+				}
+				return false;
+			    }
+			    return true;
+			});
 		    // Remove fail from current button (don't touch others)
 		    ctl.selectAll(".command")
 			.filter(function (d) { return d == data.id;})
@@ -408,6 +436,8 @@ function topology(sources) {
 		    ctl.selectAll(".command")
 			.filter(function (d) { return d == data.id;})
 			.classed("fail", true);
+		    show_error(src.name + ': Error (' + data.error.code + ') in ' +
+			       data.id + ': ' + data.error.message);
 		}
 	    }
 	    // silently ignore all non-conformant messages (no
