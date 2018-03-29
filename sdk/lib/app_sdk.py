@@ -49,7 +49,7 @@ import datetime
 
 class app_handler:
 
-    def __init__(self, app_name, log, callback=None, notification=None, init=None, load=None):
+    def __init__(self, app_name, log, callback=None, notification=None, init=None, save=None, load=None):
 	self.app_name = app_name
 	self.status_path = 'status_saves/'+str(self.app_name)+'.json'
 	self.clients = []
@@ -57,6 +57,8 @@ class app_handler:
 	self.callback = callback
 	self.notification = notification
 	self.init = init
+	self.load = load
+	self.save = save
 	
     def register(self, client, message):
 	if not client in self.clients:
@@ -98,9 +100,10 @@ class app_handler:
 	else:
 	    return default
 
-    def save_status(self, params):
-	with open(self.status_path, 'w') as file:
-	    json.dump(params, file)
+    def save_status(self):
+	if not self.save is None:
+	    with open(self.status_path, 'w') as file:
+	        json.dump(self.save(), file)
 
     def load_status(self):
 	if os.path.exists(self.status_path) and not self.load is None:

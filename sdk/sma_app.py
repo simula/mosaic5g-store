@@ -265,7 +265,11 @@ class sma_app(object):
         self.next_decisions = []
 	self.open_data_all_options = []
         for bs in range(sm.get_num_enb()):
-	   cell_id = sm.get_cell_config(enb=bs)['cellId']
+	   if 'eNBId' in sm.get_enb_config(enb=bs)['eNB']:
+	   	cell_id = sm.get_enb_config(enb=bs)['eNB']['eNBId']
+	   else:
+	 	cell_id = bs
+	   
 	   mvno_group = None
 	   for i in self.enb_assign:
 	       if i['cell_id'] == cell_id:
@@ -296,6 +300,7 @@ class sma_app(object):
 			# save option to next_decision vector
 			if len(self.options) > 0:
 			    self.options[0]['eNB_index'] = cell_id
+			    self.options[0]['eNB_id'] = cell_id
 			    self.options[0]['MVNO_group'] = self.rules[rule_index]['MVNO_group']
 			    self.next_decisions.append(self.options[0]) 
 			else:
@@ -448,22 +453,33 @@ class sma_app(object):
 
     open_data_capabilities = {
                	'get-list':  { 'help': 'Get the current list'},
-                'command_1': { 'help': 'App command 1 that does something useful'},
-                'command_2': { 'help': 'App command 2 that does something useful'}, # i left it for example of usage error_message
 		'set_rule_group_A': { 'help': 'Prefer lower cost', 'group':'rule' },
 		'set_rule_group_B': { 'help': 'Prefer higher bandwidth', 'group': 'rule' },
 		'set_rule': {'help': "Change rules for 'enb_id' and/or 'group'. Default enb_id:0, group:A"},
 		'enable_graph': {'help': 'Turn on graph.', 'group':'graph'},
 		'disable_graph' : {'help' : 'Trun off graph.', 'group':'graph'},
-		'save_status' : {'help' : 'Calls method to save current app status' }	
+		'save_status' : {'help' : 'Calls method to save current app status' }, # for testing only
+		'load_status' : {'help' : 'Calls method to load current app status' } # for testing only 	
                 }
 
     def open_data_init(self, client):
-	# on WS client connection established	
+	# on WS client connection established
+	# for example client.send_notification('hello', 'Welcome in app')	
 	pass
 
     def open_data_load_status(self, params):
-	pass
+	# callback - it can be run from sma_open_data.load_status()
+	for i in params['groups']:
+	    ss.set_enb_assign(i['cell_id'], i['MVNO_group'])
+	self.graphs_enable = params['graph']
+
+    def open_data_save_status(self):
+	# callback - it can be run from sma_open_data.save_status()
+	# it must return a string/dict/table in understable form for load_status method (upper)
+	output = {}
+	output['groups'] = ss.get_enb_assign()
+	output['graph'] = self.graphs_enable
+	return output
 
     def open_data_on_notification(self, client, method, params, message):
         if method == 'capabilities':
@@ -477,10 +493,6 @@ class sma_app(object):
     def open_data_on_message(self, client, id, method, params, message):
         if method == 'get-list':
             client.send_result(id, self.open_data_all_options)
-        elif method == 'command_1':
-            client.send_result(id, 'Hi There! Command 1 succesfull')
-    	elif method == 'command_2':
-       	    client.send_error(id,-32601,'Command 2 not yet implemented')
         elif method == 'set_rule_group_A':
             ss.set_enb_assign(0, 'groupA')
             client.send_result(id, 'Rules switched to group A')
@@ -504,8 +516,9 @@ class sma_app(object):
 	    client.send_result(id, 'Graphs truned off.')
 	    sma_open_data.notify_others(message, client)
 	elif method == 'save_status':
-	    pass
-	    #sma_open_data.save_status({})
+	    sma_open_data.save_status()
+	elif method == 'load_status':
+	    sma_open_data.load_status()
         else:
             client.send_error(id,-12345,'Method not found')
 	
@@ -606,6 +619,7 @@ if __name__ == '__main__':
 					callback=sma_app.open_data_on_message, 
 					notification=sma_app.open_data_on_notification,
 					init=sma_app.open_data_init,
+					save=sma_app.open_data_save_status,
 					load=sma_app.open_data_load_status)
 
 
