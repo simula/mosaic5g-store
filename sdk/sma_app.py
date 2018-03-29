@@ -452,24 +452,29 @@ class sma_app(object):
                 'command_2': { 'help': 'App command 2 that does something useful'}, # i left it for example of usage error_message
 		'set_rule_group_A': { 'help': 'Prefer lower cost', 'group':'rule' },
 		'set_rule_group_B': { 'help': 'Prefer higher bandwidth', 'group': 'rule' },
+		'set_rule': {'help': "Change rules for 'enb_id' and/or 'group'. Default enb_id:0, group:A"},
 		'enable_graph': {'help': 'Turn on graph.', 'group':'graph'},
-		'disable_graph' : {'help' : 'Trun off graph.', 'group':'graph'}		
+		'disable_graph' : {'help' : 'Trun off graph.', 'group':'graph'},
+		'save_status' : {'help' : 'Calls method to save current app status' }	
                 }
 
-    def open_data_on_notification(self, client, method, message):
+    def open_data_init(self, client):
+	# on WS client connection established	
+	pass
+
+    def open_data_load_status(self, params):
+	pass
+
+    def open_data_on_notification(self, client, method, params, message):
         if method == 'capabilities':
             client.send_notification(method, self.open_data_capabilities)
             client.send_notification('get-list', self.open_data_all_options)
-	    if self.graphs_enable:
-		sma_open_data.notify('enable_graph')
-	    else:
-		sma_open_data.notify('disable_graph')
 	elif method == 'enable_graph':
 	    self.graphs_enable = True
 	elif method == 'disable_graph':
 	    self.graphs_enable = False
 
-    def open_data_on_message(self, client, id, method, message):
+    def open_data_on_message(self, client, id, method, params, message):
         if method == 'get-list':
             client.send_result(id, self.open_data_all_options)
         elif method == 'command_1':
@@ -484,6 +489,12 @@ class sma_app(object):
             ss.set_enb_assign(0,'groupB')
             client.send_result(id, 'Rules switched to group B')
 	    sma_open_data.notify_others(message, client)
+	elif method == 'set_rule':
+	    enb_id = sma_open_data.get_param(params, 'enb_id', 0)
+	    group  = sma_open_data.get_param(params, 'group' , 'A')
+	    ss.set_enb_assign(enb_id, 'group'+group)
+	    client.send_result(id, 'Rules switched for enb '+str(enb_id)+' to group '+group)
+	    sma_open_data.notify_others(message, client)
 	elif method == 'enable_graph':
 	    self.graphs_enable = True
 	    client.send_result(id, 'Graphs turned on.')
@@ -492,6 +503,9 @@ class sma_app(object):
 	    self.graphs_enable = False
 	    client.send_result(id, 'Graphs truned off.')
 	    sma_open_data.notify_others(message, client)
+	elif method == 'save_status':
+	    pass
+	    #sma_open_data.save_status({})
         else:
             client.send_error(id,-12345,'Method not found')
 	
@@ -588,8 +602,11 @@ if __name__ == '__main__':
                                       address=args.app_url,
                                       port=args.app_port)
 
-    sma_open_data = app_sdk.app_handler(log=log, callback=sma_app.open_data_on_message, 
-					notification=sma_app.open_data_on_notification)
+    sma_open_data = app_sdk.app_handler(app_name='sma_app', log=log, 
+					callback=sma_app.open_data_on_message, 
+					notification=sma_app.open_data_on_notification,
+					init=sma_app.open_data_init,
+					load=sma_app.open_data_load_status)
 
 
     app_open_data.add_options("list", handler=sma_open_data)
@@ -597,6 +614,7 @@ if __name__ == '__main__':
 
     log.info('Waiting ' + str(sma_app.period) + ' seconds...')
     sma_app.run(sm=sm,sma_app=sma_app,sma_open_data=sma_open_data)	    
+
 
     t2 = Timer(1,app_sdk.run_all_apps) 
     t2.start()
