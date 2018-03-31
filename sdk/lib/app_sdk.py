@@ -35,8 +35,10 @@ import signal
 import pwd
 import glob
 import ssl
+import json
 import base64
 import subprocess
+import os.path
 import tornado.ioloop
 import tornado.iostream
 import tornado.process
@@ -47,11 +49,16 @@ import datetime
 
 class app_handler:
 
-    def __init__(self, log, callback=None, notification=None):
+    def __init__(self, app_name, log, callback=None, notification=None, init=None, save=None, load=None):
+	self.app_name = app_name
+	self.status_path = 'status_saves/'+str(self.app_name)+'.json'
 	self.clients = []
 	self.log = log
 	self.callback = callback
 	self.notification = notification
+	self.init = init
+	self.load = load
+	self.save = save
 	
     def register(self, client, message):
 	if not client in self.clients:
@@ -86,6 +93,25 @@ class app_handler:
 	del message['id']
 	return message
 
+    @staticmethod
+    def get_param(params, name, default):
+	if name in params.keys():
+	    return params[name]
+	else:
+	    return default
+
+    def save_status(self):
+	if not self.save is None:
+	    with open(self.status_path, 'w') as file:
+	        json.dump(self.save(), file)
+
+    def load_status(self):
+	if os.path.exists(self.status_path) and not self.load is None:
+	    with open(self.status_path, 'r') as file:
+	        self.load(json.load(file)) 
+	else:
+	    self.log.info(str(self.app_name) + ' loads status but file does not exists')
+
 class client_handler(tornado.websocket.WebSocketHandler):
 	
     def __init__(self, *args, **kwargs):
@@ -103,6 +129,8 @@ class client_handler(tornado.websocket.WebSocketHandler):
 
     def open(self):
        	self.handler.register(self, "you are registered")
+	if not self.handler.init is None:
+	    self.handler.init(self)
 	self.log.info("app_handler: registered")
 
     def on_message(self, message):
@@ -114,6 +142,9 @@ class client_handler(tornado.websocket.WebSocketHandler):
         message = tornado.escape.json_decode(message)
         method = message.get('method')
         id = message.get('id')
+	params = message.get('params')
+	if params is None:
+	    params = {}
 
         if method is None:
             # The message is a reply (error/succes) to a command
@@ -139,10 +170,10 @@ class client_handler(tornado.websocket.WebSocketHandler):
             # to the client. Obviously, this does not work if the
             # client is using the same strategy (both would wait the
             # other).
-	    self.handler.notification(self, method, message)
+	    self.handler.notification(self, method, params, message)
         else:
             # The message contains a command from the client
-            self.handler.callback(self, id, method, message)
+            self.handler.callback(self, id, method, params, message)
 
     def on_close(self):
         self.handler.unregister(self, "you are unregistered")
@@ -208,8 +239,8 @@ class app_builder:
 	client.send({'current_time': str(datetime.datetime.now())})
 
     def run_app(self):    
-	self.add_options("", app_handler(log=self.log, callback=self.send_apps_list))
-	self.add_options("time", app_handler(log=self.log, callback=self.send_time))
+	self.add_options("", app_handler(app_name='nothing', log=self.log, callback=self.send_apps_list))
+	self.add_options("time", app_handler(app_name='time', log=self.log, callback=self.send_time))
 	self.app = tornado.web.Application(self.handler_list, **self.settings)
 	self.app.listen(self.port, self.address)
         

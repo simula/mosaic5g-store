@@ -87,40 +87,49 @@ td {
     flex: 0 0 auto;
 }
 #methods .application .command {
-    box-sizing: border-box;
+    position: relative;
+    /* box-sizing: border-box; */
     margin: 2px;
-    border: 2px solid #F2F1F0;
+    border: 3px solid #F2F1F0;
     border-style: outset;
     border-radius: 0.4em;
     padding: 4px;
-    min-height: 50px;
+    min-height: 40px;
     flex: 1 0 auto;
-    background: #ffdd58;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #8d197a;
+    /* background: #ffdd58; */
 }
 
 #methods .application .button {
-    height: 100%;
-    width: 100%;
+    /* height: 100%; */
+    /* width: 100%; */
     text-align: center;
+    /* min-height: 40px; */
+    /* line-height: 40px; */
 }
-#methods .application .button::after {
+#methods .application .command::after {
     display: block;
     font-size: 200%;
+    position: absolute;
+    top: 0;
+    left: 0;
 }
-#methods .application .button.ok::after {
+#methods .application .command.ok {
+    border-style: inset;
+}
+
+#methods .application .command.ok::after {
     content: '\2714';
     color: green;
 }
-#methods .application .button.fail::after {
+#methods .application .command.fail::after {
     content: '\2716';
     color: red;
 }
-/* command failed, but this is still last succeeded one */
-#methods .application .button.ok.fail::after {
-    content: '\2714 (\2716)';
-    color: red;
-}
-#methods .application .button.ok.notified::after {
+#methods .application .command.ok.notified::after {
     content: '\2714';
     color: blue;
 }
@@ -229,22 +238,39 @@ ul.tabsbar > li.stopping .control .runstop:after {
     width: 100%;
 }
 
+.link line {
+    opacity: 1;
+}
 .link.control line {
-    stroke: red;
+    stroke: #8d197a;
     stroke-dasharray: 5;
 }
 
-.link.connection line {
-    stroke: green;
+.link.oai line {
+    stroke: #0093b7;
 }
+.link.rtc line {
+    stroke: #5cbf2b;
+}
+
 .link.connection.ghost line {
     stroke-dasharray: 5;
 }
 
-.node.sma circle {
-    fill: rgba(255,0,0,0.2);
-    stroke: red;
-    stroke-width: 5;
+@keyframes configuring {
+    0% { opacity: 0;}
+    50% { opacity: 1;}
+    100% { opacity: 0;}
+}
+.node circle.config.waiting {
+    visibility: visible;
+    animation-name: configuring;
+    animation-duration: 5s;
+    animation-iteration-count: infinite;
+    fill: #8d197a;
+}
+.node circle.config {
+    visibility: hidden;
 }
 .node text.stats {
     text-anchor: start;

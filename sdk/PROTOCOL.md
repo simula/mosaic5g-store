@@ -11,7 +11,7 @@ following "relaxations" (or modifications):
 
 - Event stream support (if needed)
 
-  A method can trigger a contiquous event stream, the specifics of which depend
+:  A method can trigger a contiquous event stream, the specifics of which depend
   totally on the method and supplied parameters. Once activated, the reponder will
   send responce objects with method specific frequency and duration, until stopped
   by another method call or an terminating error occurs. All responce objects must
@@ -20,10 +20,55 @@ following "relaxations" (or modifications):
 - Support for **Batch** feature is open to discussion and could be
   included, if there is need.
 
-- Error object
+Short recap from the JSON-RPC specification.
 
-  The error object from JSON-RPC is used as is. Application defined error codes can
-  be defined, if there is a need.
+**Request object**
+: The request object has following format:
+
+         {
+            'method': <REQUIRED: A string defining the method name>,
+            'params': <OPTIONAL: A structured value for parameters>,
+            'id': <REQUIRED: a string provided by the client, opaque to server>
+         }
+
+**Reply object**
+: The server must always send a reply to the any **request object**. The reply must
+  either indicate succes (reply has 'result' member), or failure (reply has
+  'error' member containing the **Error object**.
+
+: Reply reporting success:
+
+         {
+            'result': <REQUIRED: content depends on request>,
+            'id': <REQUIRED: a string provided by the client, copied from request>
+         }
+         
+: Reply reporting failure:
+
+         {
+            'error': <REQUIRED: Error object, see below>,
+            'id': <REQUIRED: a string provided by the client, copied from request>
+         }
+
+
+**Notification object**
+: A request object without an 'id' parameter is a notification object. Notifications
+  do not require any responses from the receiving entity.
+
+         {
+            'method': <REQUIRED: A string defining the method name>,
+            'params': <OPTIONAL: A structured value for parameters>,
+         }
+
+**Error object**
+: The error object (in fail reply) from JSON-RPC is used as is. Application defined
+  error codes can be defined, if there is a need.
+
+        {
+            'code': <A integer that indicates the error type>,
+            'message': <A string providing a short description>,
+            'data':  <Optional information, can be omitted>
+        }
 
 ## Generic Protocol Specification and Guidelines
 
@@ -67,18 +112,28 @@ The syntax of **cababilities** notification (*note the lack of id*):
 The **params** is a dictionary of accepted capabilities, and each value
 may contain optional additional information.
 
-This generic section defines some optional information fields
+This generic section defines some optional information members
 mainly used for hinting the graphical user interface
 
 **help**
 : must be a text string representing a short description of
   the capability that could be used as a "tooltip" in graphical user
-  interface.
+  interface (OPTIONAL).
 
 **group**
 : the value should be a simple string token, hints the user interface about
   grouping of capabilities. If not specified, the capability belongs to
   an unnamed default group.
+
+**label**
+: the value is a string containing a HTML fragment. This is used by the user
+  interface in place of the method. This allows the server to style the presented
+  command in the user interface (OPTIONAL).
+
+**schema**:
+: If present, indicates the method accepts the indicated parameters. The value
+  must be an array of member names, which will appear in the 'params' of the
+  request object.
 
 If there are no additional information, each capability value can be
 left as an empty dictionary (or **null**).

@@ -1647,6 +1647,10 @@ class ss_policy (object):
         with open(self.enb_assign_file,'w') as file:
             yaml.dump(enb_assign_tmp, file, default_flow_style=False)
 
+    def get_enb_assign(self):
+	with open(self.enb_assign_file,'r') as file:
+	    return yaml.load(file)
+
     def load_sensing_data(self):
         """!@brief load sensing data"""
         file = open(self.sensing_data_file,'r')
