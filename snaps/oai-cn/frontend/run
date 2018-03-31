@@ -1,0 +1,118 @@
+#!/bin/sh
+
+export DEBIAN_FRONTEND=noninteractive
+set -e
+export HOME="$SNAP_DATA"
+
+export UHD_IMAGES_DIR=$SNAP/uhd_images
+
+MME_CONF_DIR="mme"
+MME_CONF="$SNAP/$MME_CONF_DIR/mme.conf"
+MME_CONF_FD="$SNAP/$MME_CONF_DIR/mme_fd.conf"
+MME_EXEC="$SNAP/$MME_CONF_DIR/mme"
+
+SPGW_CONF_DIR="spgw"
+SPGW_CONF="$SNAP/$SPGW_CONF_DIR/spgw.conf"
+SPGW_EXEC="$SNAP/$SPGW_CONF_DIR/spgw"
+
+HSS_CONF_DIR="hss"
+HSS_CONF="$SNAP/$HSS_CONF_DIR/hss.conf"
+HSS_CONF_FD="$SNAP/$HSS_CONF_DIR/hss_fd.conf"
+HSS_EXEC="$SNAP/$HSS_CONF_DIR/oai_hss"
+
+
+MME_CONFIG=${MME_CONFIG:-$MME_CONF}
+MME_EXEC_ARGS=" -c $MME_CONFIG "
+
+SPGW_CONFIG=${SPGW_CONFIG:-$SPGW_CONF}
+SPGW_EXEC_ARGS=" -c $SPGW_CONFIG "
+
+HSS_CONFIG=${HSS_CONFIG:-$HSS_CONF}
+HSS_EXEC_ARGS=" -c $HSS_CONFIG "
+
+
+if [ ! -e $MME_EXEC ]; then
+    echo "Cannot find $MME_EXEC executable"
+    exit -1 
+fi		   	   
+
+if [ ! -e $SPGW_EXEC ]; then
+    echo "Cannot find $SPGW_EXEC executable"
+    exit -1
+fi
+
+if [ ! -e $HSS_EXEC ]; then
+    echo "Cannot find $HSS_EXEC executable"
+    exit -1
+fi
+
+
+if [ -r $SNAP_USER_DATA/config_mme.sh ]; then
+    . $SNAP_USER_DATA/config_mme.sh
+fi
+
+if [ -r $SNAP_USER_DATA/config_spgw.sh ]; then
+    . $SNAP_USER_DATA/config_spgw.sh
+fi
+if [ -r $SNAP_USER_DATA/config_hss.sh ]; then
+    . $SNAP_USER_DATA/config_hss.sh
+fi
+
+
+
+case "$1" in
+    "gdb" )
+	echo "Running $2 with the gdb"
+	touch      $SNAP_USER_DATA/.gdb_$2
+	chmod 777  $SNAP_USER_DATA/.gdb_$2
+	echo "file ${2^^}_EXEC"        > $SNAP_USER_DATA/.gdb_$2
+	echo "set args ${2^^}_EXEC_ARGS" >> $SNAP_USER_DATA/.gdb_$2
+	echo "run"                     >> $SNAP_USER_DATA/.gdb_$2
+	cat $SNAP_USER_DATA/.gdb_$2
+	exec $SNAP/gdb --data-directory=$SNAP_USER_DATA  -n -x $SNAP_USER_DATA/.gdb_$2
+	;;
+    "start"  )
+		echo "starting $2"
+		[ -z "${2^^}_EXEC" ] || ( sudo snap start $2 )
+		;;
+	"stop" )
+		sudo snap stop $SNAP_NAME
+		;;
+	"restart" )
+		sudo snap restart $SNAP_NAME
+		;;
+	"status" )
+		sudo systemctl status  snap.$SNAP_NAME.daemon.service
+		;;
+	"journal" )
+		sudo journalctl -u snap.$SNAP_NAME.daemon.service
+		;;
+  	"help" )
+		echo "Usage:     $SNAP_NAME or $SNAP_NAME.[options] args"
+		echo "Options:"
+		echo "  debug:   debug the $SNAP_NAME with gdb"
+		echo "  start:   start the $SNAP_NAME daemon"
+		echo "  stop:    stop the $SNAP_NAME daemon"
+		echo "  restart: restart the $SNAP_NAME daemon"
+		echo "  status:  get the $SNAP_NAME status"
+		echo "  journal: get the $SNAP_NAME logs"
+		echo "  help:    print this help"
+		;;
+    mme )
+	echo "run with confilg file: $MME_CONFIG"
+	exec $MME_EXEC  `echo $MME_EXEC_ARGS` 
+	;;
+    spgw )
+        echo "run with confilg file: $SPGW_CONFIG"
+        exec $SPGW_EXEC  `echo $SPGW_EXEC_ARGS` 
+        ;;
+
+    hss )
+        echo "run with confilg file: $HSS_CONFIG"
+        exec $HSS_EXEC  `echo $HSS_EXEC_ARGS` 
+        ;;
+     * )
+       echo "unknow run command"
+       ;;
+
+esac

@@ -1,0 +1,161 @@
+#!/bin/sh
+
+export DEBIAN_FRONTEND=noninteractive
+set -e
+
+SUDO='sudo -E '
+
+MME_CONF_DIR="$SNAP/mme"
+DEFAULT_MME_CONF_FILE="$MME_CONF_DIR/mme.conf"
+DEFAULT_MME_FD_CONF_FILE="$MME_CONF_DIR/mme_fd.conf"
+
+
+SPGW_CONF_DIR="$SNAP/spgw"
+DEFAULT_SPGW_CONF_FILE="$SPGW_CONF_DIR/spgw.conf"
+
+HSS_CONF_DIR="$SNAP/hss"
+DEFAULT_HSS_CONF_FILE="$HSS_CONF_DIR/hss.conf"
+DEFAULT_HSS_FD_CONF_FILE="$HSS_CONF_DIR/hss_fd.conf"
+
+
+case "$1" in
+    "set-mme" )
+	CONFIG_FILE=$2
+	if [ -f $(dirname $(readlink -f $0))/$CONFIG_FILE ]; then
+	    CONFIG_FILE=$(dirname $(readlink -f $0))/$CONFIG_FILE
+	    echo "Setting the default config file to: $CONFIG_FILE"
+	else
+	    # may be absolute path 
+	    if [ -f "$CONFIG_FILE" ]; then
+		if [ -f $SNAP_USER_DATA/$CONFIG_FILE ] ; then 
+		    echo "Reset the config file to: $SNAP_USER_DATA/$CONFIG_FILE"
+		else 
+		    cp $CONFIG_FILE $SNAP_USER_DATA/
+		    CONFIG_FILE=$SNAP_USER_DATA/$(basename $CONFIG_FILE)
+		    echo "Adding and setting a new config file : $CONFIG_FILE"
+		fi
+	    else
+		echo "Config file <$CONFIG_FILE> not found in $SNAP/current directory"
+		echo "Reset to default config file: $DEFAULT_MME_CONF_FILE"
+		CONFIG_FILE=$DEFAULT_MME_CONF_FILE
+	    fi
+	fi
+	echo "MME_CONF_FILE=$CONFIG_FILE" > $SNAP_USER_DATA/config_mme.sh
+	;;
+     "set-spgw" )
+	CONFIG_FILE=$2
+	if [ -f $(dirname $(readlink -f $0))/$CONFIG_FILE ]; then
+	    CONFIG_FILE=$(dirname $(readlink -f $0))/$CONFIG_FILE
+	    echo "Setting the default config file to: $CONFIG_FILE"
+	else
+	    # may be absolute path 
+	    if [ -f "$CONFIG_FILE" ]; then
+		if [ -f $SNAP_USER_DATA/$CONFIG_FILE ] ; then 
+		    echo "Reset the config file to: $SNAP_USER_DATA/$CONFIG_FILE"
+		else 
+		    cp $CONFIG_FILE $SNAP_USER_DATA/
+		    CONFIG_FILE=$SNAP_USER_DATA/$(basename $CONFIG_FILE)
+		    echo "Adding and setting a new config file : $CONFIG_FILE"
+		fi
+	    else
+		echo "Config file <$CONFIG_FILE> not found in $SNAP/current directory"
+		echo "Reset to default config file: $DEFAULT_SPGW_CONF_FILE"
+		CONFIG_FILE=$DEFAULT_SPGW_CONF_FILE
+	    fi
+	fi
+	echo "SPGW_CONF_FILE=$CONFIG_FILE" > $SNAP_USER_DATA/config_spgw.sh
+	;;
+     "set-hss" )
+	CONFIG_FILE=$2
+	if [ -f $(dirname $(readlink -f $0))/$CONFIG_FILE ]; then
+	    CONFIG_FILE=$(dirname $(readlink -f $0))/$CONFIG_FILE
+	    echo "Setting the default config file to: $CONFIG_FILE"
+	else
+	    # may be absolute path 
+	    if [ -f "$CONFIG_FILE" ]; then
+		if [ -f $SNAP_USER_DATA/$CONFIG_FILE ] ; then 
+		    echo "Reset the config file to: $SNAP_USER_DATA/$CONFIG_FILE"
+		else 
+		    cp $CONFIG_FILE $SNAP_USER_DATA/
+		    CONFIG_FILE=$SNAP_USER_DATA/$(basename $CONFIG_FILE)
+		    echo "Adding and setting a new config file : $CONFIG_FILE"
+		fi
+	    else
+		echo "Config file <$CONFIG_FILE> not found in $SNAP/current directory"
+		echo "Reset to default config file: $DEFAULT_HSS_CONF_FILE"
+		CONFIG_FILE=$DEFAULT_HSS_CONF_FILE
+	    fi
+	fi
+	echo "HSS_CONF_FILE=$CONFIG_FILE" > $SNAP_USER_DATA/config_hss.sh
+	;;
+    
+     "ls-mme" )
+	if [ -r $SNAP_USER_DATA/config_mme.sh ]; then
+	    . $SNAP_USER_DATA/config_mme.sh
+	fi
+	
+	# default config file is (unless set in above config)
+	MME_CONF_FILE=${MME_CONF_FILE:-$DEFAULT_MME_CONF_FILE}
+	ls $(dirname $MME_CONF_FILE)/*.conf
+	;;
+     "ls-spgw" )
+        if [ -r $SNAP_USER_DATA/config_spgw.sh ]; then
+	    . $SNAP_USER_DATA/config_spgw.sh
+	fi
+	
+	# default config file is (unless set in above config)
+	SPGW_CONF_FILE=${SPGW_CONF_FILE:-$DEFAULT_SPGW_CONF_FILE}
+	ls $(dirname SPGW_CONF_FILE)/*.conf
+	;;
+     "ls-hss" )
+        if [ -r $SNAP_USER_DATA/config_hss.sh ]; then
+	    . $SNAP_USER_DATA/config_hss.sh
+	fi
+	
+	# default config file is (unless set in above config)
+	HSS_CONF_FILE=${HSS_CONF_FILE:-$DEFAULT_HSS_CONF_FILE}
+	ls $(dirname $HSS_CONF_FILE)/*.conf
+	;;
+     "echo-mme" | "cat-mme" )
+	
+	if [ -r $SNAP_USER_DATA/config_mme.sh ]; then
+	    . $SNAP_USER_DATA/config_mme.sh
+	fi
+	
+	# default config file is (unless set in above config)
+	MME_CONF_FILE=${MME_CONF_FILE:-$DEFAULT_MME_CONF_FILE}
+	# echo (get), cat (show)
+        `echo $1 | cut -d"-" -f1` $MME_CONF_FILE
+	;;
+      "echo-spgw" | "cat-spgw" )
+	
+	if [ -r $SNAP_USER_DATA/config_spgw.sh ]; then
+	    . $SNAP_USER_DATA/config_spgw.sh
+	fi
+	
+	# default config file is (unless set in above config)
+	SPGW_CONF_FILE=${SPGW_CONF_FILE:-$DEFAULT_SPGW_CONF_FILE}
+	# echo (get), cat (show)
+	`echo $1 | cut -d"-" -f1` $SPGW_CONF_FILE
+	;;
+      "echo-hss" | "cat-hss" )
+	
+	if [ -r $SNAP_USER_DATA/config_hss.sh ]; then
+	    . $SNAP_USER_DATA/config_hss.sh
+	fi
+	
+	# default config file is (unless set in above config)
+	HSS_CONF_FILE=${HSS_CONF_FILE:-$DEFAULT_HSS_CONF_FILE}
+	# echo (get), cat (show)
+	`echo $1 | cut -d"-" -f1` $HSS_CONF_FILE
+	;;
+      *)
+       echo "unknown command $1"
+       ;;
+esac
+
+#cat >$SNAP_USER_DATA/config.sh <<EOF
+#CONFIG=$CONFIG_FILE
+#EOF
+    
+

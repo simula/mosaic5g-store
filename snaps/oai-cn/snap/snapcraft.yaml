@@ -1,0 +1,146 @@
+name: oai-cn
+version: '1.0' 
+summary: OpenAirInterface CN entity with LL-MEC Agent
+description: |
+    OAI-CN is the openairinterface-based CN with LL-MEC agent allowing to connect a 4G-comptaible BS and UEs to the core network. It is one of the projects of Mosaic5G inititive.
+grade: devel
+type: app
+architectures:
+  - amd64
+  - i386
+confinement: strict
+
+apps:
+  mme:
+    command: run mme 
+  spgw:
+    command: run spgw
+  hss:
+    command: run hss  
+#daemon:
+  #  command: run gdb
+  #  daemon: simple
+  #  stop-command: run stop
+  #  stop-timeout: 7s
+  start:
+    command: run start
+  stop:
+    command: run stop
+  restart:
+    command: run restart
+  status:
+    command: run status
+  journal:
+    command: run journal
+  help:
+    command: run help
+  debug:
+    command: run gdb
+  set-mme-conf:
+    command: conf set-mme
+  set-spgw-conf:
+    command: conf set-spgw
+  set-hss-conf:
+    command: conf set-hss
+  get-mme-conf:
+    command: conf echo-mme
+  get-spgw-conf:
+    command: conf echo-spgw
+  get-hss-conf:
+    command: conf echo-hss
+  show-mme-conf:
+    command: conf cat-mme
+  show-spgw-conf:
+    command: conf cat-spgw
+  show-hss-conf:
+    command: conf cat-hss
+  list-mme-conf:
+    command: conf ls-mme
+  list-spgw-conf:
+    command: conf ls-spgw
+  list-hss-conf:
+    command: conf ls-hss
+parts:
+  gdb:
+    plugin: nil
+    install: |
+      sudo apt install gdb -y
+      mkdir $SNAPCRAFT_PART_INSTALL/share 
+      cp -r /usr/share/gdb $SNAPCRAFT_PART_INSTALL/share
+      cp /usr/bin/gdb* $SNAPCRAFT_PART_INSTALL
+    prime:
+      - gdb*
+      - share/*
+
+  mme:
+    plugin: cmake
+    source: https://gitlab.eurecom.fr/oai/openair-cn.git
+    source-branch: openair-cn-llmec
+    build-packages: [build-essential, ]
+    build: |
+      #export DEBIAN_FRONTEND=noninteractive
+      cd scripts
+      ./build_mme -i -f
+      ./build_mme
+    install: |
+      mkdir -p $SNAPCRAFT_PART_INSTALL/mme/
+      cp etc/mme*  $SNAPCRAFT_PART_INSTALL/mme/
+      cp build/mme/build/*.*  $SNAPCRAFT_PART_INSTALL/mme/
+      cp build/mme/build/mme  $SNAPCRAFT_PART_INSTALL/mme/
+    stage:
+      - mme/*
+      - usr/lib/*
+      - lib/*
+    prime:
+      - mme/*
+      - usr/lib/*
+      - lib/*
+  spgw:
+    plugin: cmake
+    source: https://gitlab.eurecom.fr/oai/openair-cn.git
+    source-branch: openair-cn-llmec
+    build-packages: [build-essential, ]
+    build: |
+      #export DEBIAN_FRONTEND=noninteractive
+      cd scripts
+      ./build_spgw -i -f
+      ./build_spgw
+    install: |
+      mkdir -p $SNAPCRAFT_PART_INSTALL/spgw
+      cp etc/spgw*  $SNAPCRAFT_PART_INSTALL/spgw/
+      cp build/spgw/build/*.*  $SNAPCRAFT_PART_INSTALL/spgw
+      cp build/spgw/build/spgw  $SNAPCRAFT_PART_INSTALL/spgw/
+    stage:
+      - spgw/*
+      - usr/lib/*
+      - lib/*
+    prime:
+      - spgw/*
+      - usr/lib/*
+      - lib/*
+  hss:
+    plugin: cmake
+    source: https://gitlab.eurecom.fr/oai/openair-cn.git
+    source-branch: openair-cn-llmec
+    build-packages: [build-essential, ]
+    build: |
+      #export DEBIAN_FRONTEND=noninteractive
+      cd scripts
+      ./build_hss  -i -F
+      ./build_hss
+    install: |
+      mkdir -p $SNAPCRAFT_PART_INSTALL/hss
+      cp etc/hss*  $SNAPCRAFT_PART_INSTALL/hss/
+      cp build/hss/build/*.*  $SNAPCRAFT_PART_INSTALL/hss
+      cp build/hss/build/oai_hss  $SNAPCRAFT_PART_INSTALL/hss/
+    stage:
+      - hss/*
+      - usr/lib/*
+      - lib/*
+    prime:
+      - hss/*
+      - usr/lib/*
+      - lib/*
+  frontend:
+    plugin: dump
+    source: frontend
