@@ -1641,9 +1641,15 @@ class ss_policy (object):
 
     def set_enb_assign(self, enb=0, name='default'):
 	with open(self.enb_assign_file,'r') as file:
-            enb_assign_tmp = yaml.load(file)
-            enb_assign_tmp[enb]['MVNO_group'] = name
-	    enb_assign_tmp[enb]['cell_id'] = enb
+	    enb_assign_tmp = yaml.load(file)
+	    exists = False
+	    for i, v in enumerate(enb_assign_tmp):
+		if v['cell_id'] == enb:
+		    enb_assign_tmp[i]['MVNO_group'] = name
+		    exists = True
+		    break
+	    if not exists:
+	        enb_assign_tmp.append({'MVNO_group': name, 'cell_id' : enb})
         with open(self.enb_assign_file,'w') as file:
             yaml.dump(enb_assign_tmp, file, default_flow_style=False)
 
