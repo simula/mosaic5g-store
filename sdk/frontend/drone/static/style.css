@@ -72,21 +72,24 @@ td {
     overflow-y: auto;
     overflow-x: hidden;
 }
-#methods .application {
+.application {
     padding-bottom: 3px;
 }
-#methods .application > .name {
+.application > .name {
     font-weight: bold;
     text-align: center;
 }
+.control > .name {
+    margin-right: 0.2em;
+}
 
-#methods .application .control {
+.application .control {
     display: flex;
     flex-wrap: wrap;
     justify-content: stretch;
     flex: 0 0 auto;
 }
-#methods .application .command {
+.application .command {
     position: relative;
     /* box-sizing: border-box; */
     margin: 2px;
@@ -102,8 +105,10 @@ td {
     color: #8d197a;
     /* background: #ffdd58; */
 }
-
-#methods .application .button {
+.application input {
+    height: 100%;
+}
+.application .button {
     /* height: 100%; */
     /* width: 100%; */
     text-align: center;
@@ -159,6 +164,12 @@ td {
     transform: translate(-50%,-50%);
 }
 #error_note.open {
+    display: block;
+}
+#build_command {
+    display: none;
+}
+#build_command.open {
     display: block;
 }
 

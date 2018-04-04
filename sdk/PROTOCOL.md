@@ -11,7 +11,7 @@ following "relaxations" (or modifications):
 
 - Event stream support (if needed)
 
-:  A method can trigger a contiquous event stream, the specifics of which depend
+: A method can trigger a contiquous event stream, the specifics of which depend
   totally on the method and supplied parameters. Once activated, the reponder will
   send responce objects with method specific frequency and duration, until stopped
   by another method call or an terminating error occurs. All responce objects must
@@ -36,14 +36,14 @@ Short recap from the JSON-RPC specification.
   either indicate succes (reply has 'result' member), or failure (reply has
   'error' member containing the **Error object**.
 
-: Reply reporting success:
+  Reply reporting success
 
          {
             'result': <REQUIRED: content depends on request>,
             'id': <REQUIRED: a string provided by the client, copied from request>
          }
          
-: Reply reporting failure:
+  Reply reporting failure:
 
          {
             'error': <REQUIRED: Error object, see below>,

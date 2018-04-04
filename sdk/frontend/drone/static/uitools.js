@@ -256,11 +256,15 @@ var uitools = (function () {
 	    }
 
 	    var value = e.value;
-	    if (e.dataset.converter)
+	    if (e.dataset.converter) {
 		// If the element has a data-converter function, then
 		// the return value of that defines the value of the
 		// input (called without 'params').
 		value = call_backs[e.dataset.converter](e);
+		// Returning undefined, the converter can indicate
+		// that the value should be ignored.
+		if (value === undefined) continue;
+	    }
 	    if (e.type == 'select-multiple') {
 		// Force value always into array
 		if (tmp[f] === undefined)

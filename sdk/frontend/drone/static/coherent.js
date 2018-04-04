@@ -559,7 +559,7 @@ uitools.callbacks(
 	    {
 		type: 'RTC',
 		name: 'flexran-rtc',
-		url: "http://*:9999/stats_manager/json/all",
+		url: "http://*:9999/stats",
 		timer: 1
 	    },
 	    {

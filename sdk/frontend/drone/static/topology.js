@@ -129,6 +129,7 @@ function topology(sources) {
 
     function sma_get_list(src) {
 	var node = src.node;
+	GRAPH.hidelinks('control', src.node);
     	var list = node.config;
 	if (!list) return;
 	for (var i = 0; i < list.length; ++i) {
@@ -169,6 +170,159 @@ function topology(sources) {
 	}
     }
 
+    function find_src(elem) {
+	while (elem) {
+	    if (elem.classList.contains('application'))
+		return elem.__data__;
+	    elem = elem.parentNode;
+	}
+	return undefined;
+    }
+
+    function numberValue(btn) {
+	if (btn.value)
+	    return parseInt(btn.value, 10);
+	return undefined;
+    }
+
+    function buildChoice(choice) {
+	// Expand substitutions within a choice list
+	var list = [];
+	for (var i = 0; i < choice.length; ++i) {
+	    if (choice[i] == '#ENBID') {
+		// Collect a list of known eNBs
+		for (var j = 0; j < LIST.length; ++j) {
+		    if (LIST[j].type != 'RTC') continue;
+		    var node = LIST[j].node;
+		    if (!node || !node.enb_list) continue;
+		    for (var k = 0; k < node.enb_list.length; ++k) {
+			var enb = node.enb_list[k];
+			// Extract the eNBId part only
+			list.push(enb.id.split('_')[1]);
+		    }
+		}
+	    } else {
+		list.push(choice[i]);
+	    }		
+	}
+	return list;
+    }
+    
+    function buildSchema(container, schema, prefix) {
+	d3.select(container)
+	    .selectAll("div.control")
+	    .data(schema)
+	    .enter()
+	    .append("div")
+	    .attr("class", "control")
+	    .each(function (d) {
+		var control = d3.select(this);
+		if (typeof d == 'string') {
+		    control
+			.append("div")
+			.attr("class", "name")
+			.text(d);
+		    control
+			.append("div")
+			.attr("class", "command")
+			.append("input")
+			.attr("type", "text")
+			.attr("name", prefix + d)
+			.attr("class", "button");
+		} else {
+		    var name = prefix + d.name;
+		    control
+			.append("div")
+			.attr("class", "name")
+			.text(d.name);
+		    if (d.choice) {
+			control
+			    .selectAll("div.command")
+			    .data(buildChoice(d.choice))
+			    .enter()
+			    .append("label")
+			    .attr("class", "command")
+			    .text(function (d) { return d === null ? 'None' : d;})
+			    .append("input")
+			    .attr("class", "button")
+			    .attr("type", "radio")
+			    .attr("name", name)
+			    .attr("data-converter", d.type == 'number' ? 'numberValue' : undefined)
+			    .attr("value", function (d) { return d || '';});
+		    } else if (d.range) {
+			control
+			    .append("div")
+			    .attr("class", "command")
+			    .append("input")
+			    .attr("class", "button")
+			    .attr("type", "number")
+			    .attr("name", name)
+			    .attr("data-converter", 'numberValue')
+			    .attr("min", d.range[0])
+			    .attr("max", d.range[1])
+			    .attr("step", d.range[2]);
+		    } else if (d.schema) {
+			buildSchema(control
+				    .append("div")
+				    .attr("class", "application")
+				    .node(), d.schema, name + '.');
+		    } else {
+			control
+			    .append("div")
+			    .attr("class", "command")
+			    .text(d)
+			    .append("input")
+			    .attr("type", "text")
+			    .attr("name", name)
+			    .attr("class", "button");
+		    }
+		}
+	    });
+    }
+
+    function buildCommand(src, method, schema) {
+	var popup = d3.select("#build_command");
+	var app = popup.select(".popup-content > .application")
+		.text("");
+	uitools.replace_text(popup.select(".popup-header").node(), src.name + "/" + method);
+	
+	app.append("input")
+	    .attr("type", "hidden")
+	    .attr("name", "application")
+	    .attr("value", src.name);
+	app.append("input")
+	    .attr("type", "hidden")
+	    .attr("name", "method")
+	    .attr("value", method);
+	buildSchema(app.node(),schema, 'params.');
+	popup.classed("open", true);
+    }
+
+    function prepareCommand(elem, params) {
+	var src = find_src(params.target);
+	if (src) {
+	    buildCommand(src, params.datum, src.capabilities[params.datum].schema);
+	}
+    }
+
+    
+    function submitCommand(elem, msg) {
+	console.log(elem, msg);
+	// First, find the target application
+	for (var i = 0; i < LIST.length; ++i) {
+	    var src = LIST[i];
+	    if (src.name == msg.application && src.type == 'RPC') {
+		// Finalize message into proper request
+		delete msg.application;
+		msg.id = msg.method;
+		send_ws_message(src, msg);
+		return true;
+	    }
+	}
+	show_error(msg.application + ' does not exist');
+	return true;
+    }
+    
     function sendCommand(elem, params) {
 	var src, method, cap, args;
 
@@ -219,34 +373,21 @@ function topology(sources) {
 	    return;
 	} else {
 	    method = params.datum;
-	    var app = params.target;
-	    while (app) {
-		if (app === elem) break; // App div not found
-		if (app.classList.contains('application')) {
-		    src = app.__data__;
-		    if (!src || !src.capabilities) break;
-		    cap = src.capabilities[method];
-		    if (!cap) break;
-		    cap._reply = undefined;
-		    d3.select("#methods")
-			.selectAll(".application")
-			.filter(function (d) { return d === src;})
-			.selectAll(".command")
-			.filter(function (d) { return d == method;})
-			.classed("fail ok", false);
-		    if (cap.schema) {
-			last_command_label = src.node.id + "/" + method + "/" + cap.schema.join("/");
-			d3.select("#command_input .name")
-			    .text(last_command_label);
-			d3.select("#command_input input")
-			    .property("value", src.node.id + "/" + method + "/")
-			    .node().focus();
-			return;// ...not sending anything yet, wait for input
-		    }
-		    send_ws_message(src, { method: method, id: method});
-		    break;
+	    src = find_src(params.target);
+	    if (src && src.capabilities) {
+		cap = src.capabilities[method];
+		if (!cap) {
+		    show_error("Method " + method + " not defined by " + src.name);
+		    return;
 		}
-		app = app.parentNode;
+		cap._reply = undefined;
+		d3.select("#methods")
+		    .selectAll(".application")
+		    .filter(function (d) { return d === src;})
+		    .selectAll(".command")
+		    .filter(function (d) { return d == method;})
+		    .classed("fail ok", false);
+		send_ws_message(src, { method: method, id: method});
 	    }
 	}
     }
@@ -336,6 +477,9 @@ function topology(sources) {
 			.data(function (d) { return groups[d];})
 			.enter()
 			.append("div")
+			.attr("data-popup", function (d) {
+			    return src.capabilities[d].schema ? 'build_command' : undefined;
+			})
 			.call(uitools.add_click_action)
 			.attr("class",  function (d) {
 			    var cls = "command";
@@ -375,11 +519,20 @@ function topology(sources) {
 	    .selectAll(".control")
 	    .filter(function (d) { return cap && d == cap.group;});
     }
-    
+
+    function get_enb_node(enb_id) {
+	// Create or find existing eNB node
+	return GRAPH.node('eNB_' + enb_id, 'eNB ' + enb_id, INFO_ENB);
+    }
+    function get_ue_node(enb, ue_id, info) {
+	return GRAPH.node(enb.id + '_UE_'+ ue_id, ue_id, info);
+    }
+
     var SOURCE_UPDATE = {
 	"RPC": function (src) {
 	    var data = src.node.config;
 	    if (!data) return;
+	    console.log(data);
 	    if (data.id === undefined) {
 		// Assume notification
 		if (data.method == 'capabilities') {
@@ -389,7 +542,7 @@ function topology(sources) {
 		    // get-list notification
 		    src.node.config = data.params;
 		    sma_get_list(src);
-		} else {
+		} else if (data.method) {
 		    var ctl = select_control(src, src.capabilities[data.method]);
 		    ctl.selectAll(".command")
 			.classed("ok notified", function (d) { return d == data.method;});
@@ -461,23 +614,22 @@ function topology(sources) {
 	    var data = node.config;
 	    if (!data) return;
 
-	    // Need to hide/remove eNB's and associated UE's that are
-	    // not present in the new eNB_config. BUT, as there is no
-	    // way to identify eNB yet, this cannot be implemented
-	    // properly, unless all of them have gone away...
-	    if (!data.eNB_config.length) {
-		if (node.enb_list)
-		    for (var i = 0; i < node.enb_list.length; ++i) {
-			var enb = node.enb_list[i];
-			for (var rnti in enb.ue_list)
-			    GRAPH.remove(enb.ue_list[rnti].id);
-			GRAPH.remove(enb.id);
+	    // Hide eNB's not present in the new eNB_config.
+	    if (node.enb_list)
+		for (var i = 0; i < node.enb_list.length; ++i) {
+		    var enb = node.enb_list[i];
+		    for (var rnti in enb.ue_list) {
+		    	GRAPH.hide(enb.ue_list[rnti]);
 		    }
-	    }
+		    GRAPH.hidelinks(undefined, enb);
+		    GRAPH.hide(enb);
+		}
+	    GRAPH.hidelinks(undefined, node);
+	    
 	    node.enb_list = [];
 	    for (i = 0; i < data.eNB_config.length; ++i) {
 		var config = data.eNB_config[i];
-		enb = GRAPH.node('eNB_' + config.eNB.eNBId, i, INFO_ENB);
+		enb = get_enb_node(config.eNB.eNBId);
 		node.enb_list.push(enb);
 
 		GRAPH.relation(enb, node, 'rtc', {},undefined,GRAPH.MARKER.END|GRAPH.MARKER.START);
@@ -491,7 +643,7 @@ function topology(sources) {
 		    for (var j = 0; j < config.UE.ueConfig.length; ++j) {
 			var ueConfig = config.UE.ueConfig[j];
 			if (ueConfig.rnti !== undefined) {
-			    ue_list[ueConfig.rnti] = GRAPH.node(enb.id + '_UE_'+ ueConfig.rnti, ueConfig.rnti, INFO_UE);
+			    ue_list[ueConfig.rnti] = get_ue_node(enb, ueConfig.rnti, INFO_UE);
 			}
 		    }
 		}
@@ -499,7 +651,7 @@ function topology(sources) {
 		    for (j = 0; j < config.LC.lcUeConfig.length; ++j) {
 			ueConfig = config.LC.lcUeConfig[j];
 			if (ueConfig.rnti !== undefined) {
-			    ue_list[ueConfig.rnti] = GRAPH.node(enb.id + '_UE_'+ ueConfig.rnti, ueConfig.rnti, INFO_LC_UE);
+			    ue_list[ueConfig.rnti] = get_ue_node(enb, ueConfig.rnti, INFO_LC_UE);
 			}
 		    }
 		}
@@ -513,71 +665,80 @@ function topology(sources) {
 		    }
 		}
 		enb.ue_list = ue_list;
-		// Assuming data.mac_stats[i] holds stats for the current eNB
-		if (data.mac_stats[i]) {
-		    for (var m = 0; m < data.mac_stats[i].ue_mac_stats.length; ++m) {
-			var stats = data.mac_stats[i].ue_mac_stats[m];
-			if (!stats) continue;
-			var ue = ue_list[stats.rnti];
-			if (!ue) continue;
-			ue.config = stats;
-			// The array 'l' below defines the information
-			// set drawn at the end of the link from eNB
-			// to UE. Each pushed string will show up on
-			// their own line.
-			var l = [];
-			l.push('CQI='+ get(stats, ['mac_stats','dlCqiReport','csiReport', 0, 'p10csi', 'wbCqi']));
-			var rrc = get(stats, ['mac_stats','rrcMeasurements']);
-			if (rrc) {
-			    l.push('RSRP='+rrc.pcellRsrp);
-			    l.push('RSRQ='+rrc.pcellRsrq);
-			}
-			if (ue.id == show_id)
-			    show_config(ue.config);
-
-			var style = undefined;
-			if (ue.info === INFO_UE) {
-			    style = 'ghost';
-			    ue.error = true;
-			} else {
-			    ue.error = false;
-			}
-			// The "arrow" labels depend on the link
-			// direction, thus we need to call relation
-			// for each direction. Only one two-headed
-			// link is drawn, with arrow labels above and
-			// below the link center. The labels at UE end
-			// (array l) are only specified for the
-			// enb->ue link.
-			var lbls = {};
-			var pdcp = get(stats, ['mac_stats', 'pdcpStats'], {});
-			lbls.arrow = [''+pdcp.pktRxBytesW];
-			GRAPH.relation(ue, enb, 'oai', lbls, style, GRAPH.MARKER.END);
-			lbls.end = l;
-			lbls.arrow = [''+pdcp.pktTxBytesW];
-			GRAPH.relation(enb, ue, 'oai', lbls, style, GRAPH.MARKER.END);
-
-			if (ue.timechart && !ue.error) {
-			    var bytes = [ pdcp.pktTxBytes, pdcp.pktRxBytes ];
-			    var stamp = Date.now() / 1000;
-			    if (ue.timechart.bytes !== undefined) {
-				ue.timechart.chart.append(
-				    stamp, /* seconds! */
-				    ue.timechart.bytes.map(function (d, i) {
-					if (d === undefined || bytes[i] === undefined)
-					    return undefined;
-					else
-					    // Value is bits/second estimate
-					    return ((bytes[i] - d) * 8) / (stamp - ue.timechart.stamp);
-				    }));
-			    }
-			    ue.timechart.bytes = bytes;
-			    ue.timechart.stamp = stamp;
-			}
-		    }
-		}
 		if (enb.id == show_id)
 		    show_config(enb.config);
+	    }
+	    for (i = 0; i < data.mac_stats.length; ++i) {
+		enb = get_enb_node(data.mac_stats[i].eNBId);
+		for (var m = 0; m < data.mac_stats[i].ue_mac_stats.length; ++m) {
+		    var stats = data.mac_stats[i].ue_mac_stats[m];
+		    if (!stats) continue;
+		    var ue = enb.ue_list[stats.rnti];
+		    if (!ue) {
+			// mac_stats ghosts, UE's not shown by enb
+			// config -- for now just ignore (caused bad
+			// flickering because they are deleted in
+			// above enb loop, and recreated here)
+			
+			// ue = GRAPH.node(enb.id + '_UE_'+ stats.rnti, stats.rnti, INFO_UE);
+			// enb.ue_list[stats.rnti] = ue;
+			continue;
+		    }
+		    ue.config = stats;
+		    // The array 'l' below defines the information
+		    // set drawn at the end of the link from eNB
+		    // to UE. Each pushed string will show up on
+		    // their own line.
+		    var l = [];
+		    l.push('CQI='+ get(stats, ['mac_stats','dlCqiReport','csiReport', 0, 'p10csi', 'wbCqi']));
+		    var rrc = get(stats, ['mac_stats','rrcMeasurements']);
+		    if (rrc) {
+			l.push('RSRP='+rrc.pcellRsrp);
+			l.push('RSRQ='+rrc.pcellRsrq);
+		    }
+		    if (ue.id == show_id)
+			show_config(ue.config);
+		    
+		    var style = undefined;
+		    if (ue.info === INFO_UE) {
+			style = 'ghost';
+			ue.error = true;
+		    } else {
+			ue.error = false;
+		    }
+		    // The "arrow" labels depend on the link
+		    // direction, thus we need to call relation
+		    // for each direction. Only one two-headed
+		    // link is drawn, with arrow labels above and
+		    // below the link center. The labels at UE end
+		    // (array l) are only specified for the
+		    // enb->ue link.
+		    var lbls = {};
+		    var pdcp = get(stats, ['mac_stats', 'pdcpStats'], {});
+		    lbls.arrow = [''+pdcp.pktRxBytesW];
+		    GRAPH.relation(ue, enb, 'oai', lbls, style, GRAPH.MARKER.END);
+		    lbls.end = l;
+		    lbls.arrow = [''+pdcp.pktTxBytesW];
+		    GRAPH.relation(enb, ue, 'oai', lbls, style, GRAPH.MARKER.END);
+		    
+		    if (ue.timechart && !ue.error) {
+			var bytes = [ pdcp.pktTxBytes, pdcp.pktRxBytes ];
+			var stamp = Date.now() / 1000;
+			if (ue.timechart.bytes !== undefined) {
+			    ue.timechart.chart.append(
+				stamp, /* seconds! */
+				ue.timechart.bytes.map(function (d, i) {
+				    if (d === undefined || bytes[i] === undefined)
+					return undefined;
+				    else
+					// Value is bits/second estimate
+					return ((bytes[i] - d) * 8) / (stamp - ue.timechart.stamp);
+				}));
+			}
+			ue.timechart.bytes = bytes;
+			ue.timechart.stamp = stamp;
+		    }
+		}
 	    }
 	}
     };
@@ -842,7 +1003,7 @@ function topology(sources) {
 		.data(['cellId', 'dlFreq', 'ulFreq', 'eutraBand', 'dlPdschPower', 'ulPuschPower', 'dlBandwidth', 'ulBandwidth']);
 	stats.enter()
 	    .append("tspan")
-	    .attr("x", GRAPH.NODE.R)
+	    .attr("x", GRAPH.NODE.R+5)
 	    .attr("dx", 0)
 	    .attr("dy", "1em");
 	stats.merge(stats)
@@ -888,6 +1049,9 @@ function topology(sources) {
 	closeConfig: closeConfig,
 	closeError: closeError,
 	sendCommand: sendCommand,
+	prepareCommand: prepareCommand,
+	submitCommand: submitCommand,
+	numberValue: numberValue,
 	GRAPH: GRAPH,
 	update: update_all,
 	resizeGraph: function () { resize(d3.select("#topology").node());}
