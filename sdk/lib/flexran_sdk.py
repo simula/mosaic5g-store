@@ -97,19 +97,33 @@ class flexran_rest_api(object):
     """!@brief control delegation API endpoint for DL """ 
     cd_ul='/ul_sched'
 
-    """!@brief RRM API endpoint """ 
+    """!@brief RRM API endpoint with a predefined policy """ 
     rrm='/rrm'  
-    """!@brief RRM API endpoint with config as a payload """    
+    """!@brief RRM API endpoint with the policy as a payload """    
     rrm_policy='/rrm_config'  
 
 
-    """!@brief full status API endpoint for  """    
-    sm_all='/stats_manager/json/all'
-    """!@brief eNb config status API endpoint for  """    
-    sm_enb='/stats_manager/json/enb_config'
-    """!@brief MAC status API endpoint for  """    
-    sm_mac='/stats_manager/json/mac_stats'
-        
+    """!@brief full RAN status API endpoint (human-readable)  """    
+    sm_hr_all='/stats_manager/all'
+    """!@brief full RAN status API endpoint in json format  """    
+    sm_all='/stats'
+    """!@brief RAN config status API endpoint in json format """    
+    sm_enb='/stats/enb_config'
+    """!@brief MAC status API endpoint in json format   """    
+    sm_mac='/stats/mac_stats'
+    
+    """!@brief Record all RAN status in json format   """    
+    sm_record="/record/all"
+    """!@brief Record all RAN status in json format   """    
+    sm_enb_record="/record/enb"
+    """!@brief Record all RAN status in json format   """    
+    sm_mac_record="/record/stats"
+    """!@brief Record all RAN status in compact binary format  """    
+    sm_bin_record="/record/all/bin"
+
+    
+    
+    
 class rrc_trigger_meas(object):
     """!@brief RRC trigger measurement class
 
