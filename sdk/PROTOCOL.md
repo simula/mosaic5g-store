@@ -158,22 +158,22 @@ mainly used for hinting the graphical user interface
     corresponding message parameter value will be one of the listed
     choices. Currently, the following specials exist:
 	  
-	- **`#ENBID`**: If present, it represents a list of known eNB
-      identifiers (actually eNBId + cellId).
+     - **`#ENBID`**: If present, it represents a list of known eNB
+        identifiers (actually eNBId + cellId).
 
-	- **`None`**: (represented as `null` in JSON). If chosen, the
-      resulting parameter value is an empty string, unless also the
-      type `number` is present, in which case the choice omits the
-      parameter totally.
+     - **`None`**: (represented as `null` in JSON). If chosen, the
+       resulting parameter value is an empty string, unless also the
+       type `number` is present, in which case the choice omits the
+       parameter totally.
 
-	- **range**: The value is an array of at most 4 integer values:
-      `[<default>,<min>,<max>,<step>]`, any of which can be set to
-      `None` (`null` in JSON). In GUI these are used for number input
-      element. For example, `"range": [20]` requests an integer with
-      default 20, but no other limitations.
+  - **range**: The value is an array of at most 4 integer values:
+    `[<default>,<min>,<max>,<step>]`, any of which can be set to
+    `None` (`null` in JSON). In GUI these are used for number input
+     element. For example, `"range": [20]` requests an integer with
+     default 20, but no other limitations.
 		
-	- **schema**: Defines a parameter as an object, the value must be
-      an array of *parameter definitions*.
+  - **schema**: Defines a parameter as an object, the value must be
+    an array of *parameter definitions*.
 
   If none of the above is present, then this *parameter definition*
   defines a simple text string input for the parameter value.
