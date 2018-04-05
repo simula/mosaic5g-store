@@ -265,13 +265,9 @@ class sma_app(object):
         self.next_decisions = []
 	self.open_data_all_options = []
         for bs in range(sm.get_num_enb()):
-	   if 'eNBId' in sm.get_enb_config(enb=bs)['eNB']:
-	   	cell_id = sm.get_enb_config(enb=bs)['eNB']['eNBId']
-	   else:
-	 	cell_id = bs
-	   
+           cell_id = sm.get_enb_id(bs)
 	   mvno_group = None
-	   for i in self.enb_assign:
+   	   for i in self.enb_assign:
 	       if i['cell_id'] == cell_id:
 	           mvno_group = i['MVNO_group']
 		   break
@@ -299,7 +295,7 @@ class sma_app(object):
 	
 			# save option to next_decision vector
 			if len(self.options) > 0:
-			    self.options[0]['eNB_index'] = cell_id
+			    self.options[0]['eNB_index'] = bs
 			    self.options[0]['eNB_id'] = cell_id
 			    self.options[0]['MVNO_group'] = self.rules[rule_index]['MVNO_group']
 			    self.next_decisions.append(self.options[0]) 

@@ -969,6 +969,17 @@ class stats_manager(object):
         """
         return self.stats_data['eNB_config'][enb]
 
+    def get_enb_id(self,enb=0):
+        """!@brief Get the eNB identifier 
+        
+        @param enb: index of eNB
+        """
+        if 'eNBId' in self.stats_data['eNB_config'][enb]['eNB']: 
+            return int(self.stats_data['eNB_config'][enb]['eNB']['eNBId'])
+        else:
+            self.log.warn('eNB ID not available, sending the eNB index')
+            return enb;
+
     def get_num_enb(self):
         """!@brief Get the number of connected eNB to this controller 
         
