@@ -20,6 +20,8 @@ following "relaxations" (or modifications):
 - Support for **Batch** feature is open to discussion and could be
   included, if there is need.
 
+## JSON-RPC 2.0
+
 Short recap from the JSON-RPC specification.
 
 **Request object**
@@ -115,28 +117,71 @@ may contain optional additional information.
 This generic section defines some optional information members
 mainly used for hinting the graphical user interface
 
-**help**
-: must be a text string representing a short description of
+- **help**: must be a text string representing a short description of
   the capability that could be used as a "tooltip" in graphical user
   interface (OPTIONAL).
 
-**group**
-: the value should be a simple string token, hints the user interface about
+- **group**: the value should be a simple string token, hints the user interface about
   grouping of capabilities. If not specified, the capability belongs to
   an unnamed default group.
 
-**label**
-: the value is a string containing a HTML fragment. This is used by the user
+- **label**: the value is a string containing a HTML fragment. This is used by the user
   interface in place of the method. This allows the server to style the presented
   command in the user interface (OPTIONAL).
 
-**schema**:
-: If present, indicates the method accepts the indicated parameters. The value
-  must be an array of member names, which will appear in the 'params' of the
-  request object.
+- **schema**: If present, indicates the method accepts the indicated
+  parameters. The value must be an array of *parameter definitions*,
+  which will appear in the 'params' of the request object. In user
+  interfaces, the input elements for the parameters are presented in
+  the order they appear in the schema array.
+  
+  In simplest form, the *parameter definition* is a plain string,
+  which defines the name of the parameter, and the value of the
+  parameter will be a text string.
+  
+  When *parameter definition* is a dictionary, it can have following
+  members:
+  
+  - **name**: The name of the parameter (REQUIRED)
+  
+  - **type**: Type of the parameter (OPTIONAL). This is only needed,
+    if the JSON encoded parameter value should be something else than
+    a string. Currently, only one type keyword is supported: `"type":
+    "number"` requests that the input value is converted into integer.
+	
+  - **help**: Descrition of the parameter (OPTIONAL). This can be used
+    as a tooltip for the parameter.
+  
+  Optionally, **only one** of the following:
+  
+    - **choice**: The value must be an array of choices (strings). The
+      corresponding message parameter value will be one of the listed
+      choices. Currently, the following specials exist:
+	  
+	  - **`#ENBID`**: If present, it represents a list of known eNB
+        identifiers (actually eNBId + cellId).
 
+	  - **`None`**: (represented as `null` in JSON). If chosen, the
+        resulting parameter value is an empty string, unless also the
+        type `number` is present, in which case the choice omits the
+        parameter totally.
+
+	- **range**: The value is an array of at most 4 integer values:
+      `[<default>,<min>,<max>,<step>]`, any of which can be set to
+      `None` (`null` in JSON). In GUI these are used for number input
+      element. For example, `"range": [20]` requests an integer with
+      default 20, but no other limitations.
+		
+	- **schema**: Defines a parameter as an object, the value must be
+      an array of *parameter definitions*.
+
+  If none of the above is present, then this *parameter definition*
+  defines a simple text string input for the parameter value.
+  
 If there are no additional information, each capability value can be
 left as an empty dictionary (or **null**).
+
+### Examples
 
 Example handshake of web GUI connecting the SMA application (*assuming
 the current semantics were upgraged to this protocol*):

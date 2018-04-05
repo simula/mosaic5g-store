@@ -258,9 +258,10 @@ function topology(sources) {
 			    .attr("type", "number")
 			    .attr("name", name)
 			    .attr("data-converter", 'numberValue')
-			    .attr("min", d.range[0])
-			    .attr("max", d.range[1])
-			    .attr("step", d.range[2]);
+			    .attr("value", d.range[0])
+			    .attr("min", d.range[1])
+			    .attr("max", d.range[21])
+			    .attr("step", d.range[3]);
 		    } else if (d.schema) {
 			buildSchema(control
 				    .append("div")
@@ -275,6 +276,12 @@ function topology(sources) {
 			    .attr("type", "text")
 			    .attr("name", name)
 			    .attr("class", "button");
+		    }
+		    if (d.help) {
+			control.append("div")
+			    .attr("class", "tooltip bottom")
+			    .call(uitools.add_tooltip_action)
+			    .text(d.help);
 		    }
 		}
 	    });
