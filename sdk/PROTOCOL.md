@@ -154,17 +154,17 @@ mainly used for hinting the graphical user interface
   
   Optionally, **only one** of the following:
   
-    - **choice**: The value must be an array of choices (strings). The
-      corresponding message parameter value will be one of the listed
-      choices. Currently, the following specials exist:
+  - **choice**: The value must be an array of choices (strings). The
+    corresponding message parameter value will be one of the listed
+    choices. Currently, the following specials exist:
 	  
-	  - **`#ENBID`**: If present, it represents a list of known eNB
-        identifiers (actually eNBId + cellId).
+	- **`#ENBID`**: If present, it represents a list of known eNB
+      identifiers (actually eNBId + cellId).
 
-	  - **`None`**: (represented as `null` in JSON). If chosen, the
-        resulting parameter value is an empty string, unless also the
-        type `number` is present, in which case the choice omits the
-        parameter totally.
+	- **`None`**: (represented as `null` in JSON). If chosen, the
+      resulting parameter value is an empty string, unless also the
+      type `number` is present, in which case the choice omits the
+      parameter totally.
 
 	- **range**: The value is an array of at most 4 integer values:
       `[<default>,<min>,<max>,<step>]`, any of which can be set to
