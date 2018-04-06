@@ -127,10 +127,20 @@ function topology(sources) {
 	GRAPH.resize();
     }
 
+    function sma_cleanup(src) {
+	// Because sma_get_list adds src.option, it needs to be
+	// specially cleaned up
+	delete src.option;
+    }
+    
     function sma_get_list(src) {
 	var node = src.node;
 	GRAPH.hidelinks('control', src.node);
+	if (src.node.error) return;
+
     	var list = node.config;
+	src.option = {};
+	src.cleanup = sma_cleanup;
 	if (!list) return;
 	for (var i = 0; i < list.length; ++i) {
 	    // Pick to values from first option of the last
@@ -148,11 +158,14 @@ function topology(sources) {
 	    }
 	    var cell = GRAPH.find('eNB_' + eNB_id);
 	    if (cell) {
-		// The 'end' parameter defines what is shown at
-		// the end of the dashed line from SMA_APP to
+		// Record last setting for each controlled eNB cell
+		src.option[cell.id] = list[i].options[0];
+		cell.sma = src;
+
+		// The 'start' parameter defines what is shown at
+		// the start of the dashed line from SMA_APP to
 		// eNB. The styling of the line is defined by
 		// ".link.control" in style.css.
-		cell.option = list[i].options[0];
 		GRAPH.relation(node, cell, 'control', {'start': [list[i].options[0].MVNO_group + ' ['+freq_min+'..'+freq_max+'] ' + bandwidth]},
 			       undefined, GRAPH.MARKER.END);
 	    }
@@ -628,11 +641,8 @@ function topology(sources) {
 		    for (var rnti in enb.ue_list) {
 		    	GRAPH.hide(enb.ue_list[rnti]);
 		    }
-		    GRAPH.hidelinks(undefined, enb);
 		    GRAPH.hide(enb);
 		}
-	    GRAPH.hidelinks(undefined, node);
-	    
 	    node.enb_list = [];
 	    for (i = 0; i < data.eNB_config.length; ++i) {
 		var config = data.eNB_config[i];
@@ -774,6 +784,8 @@ function topology(sources) {
 	    SOURCE_OPEN[src.type](src);
     }
     function close_src(src) {
+	if (src.cleanup)
+	    src.cleanup(src);
 	if (SOURCE_CLOSED[src.type])
 	    SOURCE_CLOSED[src.type](src);
     }
@@ -989,19 +1001,26 @@ function topology(sources) {
 
 	var stats = nodes.filter(function (d) { return d.info === INFO_ENB;})
 		.each(function (d) {
+		    var waiting = false;
 		    var freq = d.config.cellConfig[0].dlFreq;
-		    if (d.option && freq) {
-			var waiting = (d.option.freq_min <= freq && d.option.freq_max <= freq);
-			d3.select(this)
-			    .select(".config")
-			    .classed("waiting", waiting);
+		    if (d.sma &&
+			d.sma.option &&
+			d.sma.option[d.id] &&
+			d.sma.node &&
+			!d.sma.node.error &&
+			freq) {
+			var option = d.sma.option[d.id];
+			waiting = (freq < option.freq_min || freq > option.freq_max);
 			if (!waiting) {
 			    // "borrow" existing "vendor" field for GROUP
 			    d3.select(this)
 				.select(".vendor")
-				.text(d.option.MVNO_group);
+				.text(option.MVNO_group);
 			}
 		    }
+		    d3.select(this)
+			.select(".config")
+			.classed("waiting", waiting);
 		})
 		.select("text.stats")
 		.selectAll("tspan")

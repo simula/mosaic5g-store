@@ -687,13 +687,16 @@ function graph(graph_selector, NAME_MAP, CALLBACKS) {
 	for (id in linkmap) {
 	    var lnk = linkmap[id];
 	    if (lnk.show || lnk.sequence > display_sequence) {
-		// The "tick()" needs a quick access to neighbors of
-		// the port nodes -- maintain neighbor lists for
-		// ports (at this point normal nodes do not need this
-		// tracking).
-		if (lnk.target.node) lnk.target.neighbors.push(lnk.source);
-		if (lnk.source.node) lnk.source.neighbors.push(lnk.target);
-		links.push(lnk);
+		// Add link only if both source and target is visible
+		if (lnk.target.sequence > display_sequence && lnk.source.sequence > display_sequence) {
+		    // The "tick()" needs a quick access to neighbors of
+		    // the port nodes -- maintain neighbor lists for
+		    // ports (at this point normal nodes do not need this
+		    // tracking).
+		    if (lnk.target.node) lnk.target.neighbors.push(lnk.source);
+		    if (lnk.source.node) lnk.source.neighbors.push(lnk.target);
+		    links.push(lnk);
+		}
 	    }
 	}
 	    
