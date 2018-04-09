@@ -451,7 +451,9 @@ class sma_app(object):
                	'get-list':  { 'help': 'Get the current list'},
 		'set_rule_group_A': { 'help': 'Prefer lower cost', 'group':'rule' },
 		'set_rule_group_B': { 'help': 'Prefer higher bandwidth', 'group': 'rule' },
-		'set_rule': {'help': "Change rules for 'enb_id' and/or 'group'. Default enb_id:0, group:A"},
+		'set_rule': {'help': "Change rules for 'enb_id' and/or 'group'. Default enb_id:0, group:A",
+	  		     'schema':[{'name': 'enb_id', 'type': 'number', 'choice': [None,'#ENBID']},
+                                        {'name': 'group', 'choice': ['A','B','C']}]   },
 		'enable_graph': {'help': 'Turn on graph.', 'group':'graph'},
 		'disable_graph' : {'help' : 'Trun off graph.', 'group':'graph'},
 		'save_status' : {'help' : 'Calls method to save current app status' }, # for testing only
