@@ -228,6 +228,8 @@ set of methods for subscrition service could be a better approach.
     GUI ---> {"method": "cancel", "id": "list-report-cancel-id", "params": "list-resport"}
     SMA ---> {"id": "list-report-cancel-id", "result": "list-resport"}
     
+## Remote Control App  
+
 
 ## SMA App Protocol (Spectrum Sharing)
 
