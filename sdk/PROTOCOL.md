@@ -230,6 +230,41 @@ set of methods for subscrition service could be a better approach.
     
 ## Remote Control App  
 
+The Remote Control App is a javascript application inside a web browser. It can be configured to retrieve information from different sources:
+
+- standard REST API get request using a regular URL.
+- COHERENT JSON-RPC web socket connection.
+
+### REST API
+
+Although the data retrieved by URL can be any JSON encoded reply, the control app currently only understands the reply from `flexran-rtc` /stats reply,
+from wich it generates graphical display of detected eNBs and UEs.
+
+For any new type of reply, support must be programmed into the application.
+
+### JSON-RPC API
+
+The JSON-RPC API takes advantage of the `capabilities` notification, and generates a command panel for each
+connected application. The command panel contains an action button for each advertised capability. When no
+other information is present, the action button simply sends
+
+```json
+    { "method": "command", "id": "command"}
+```
+
+If the capability description includes a `schema` definition (see description in above), then the
+action button pops up a new panel for providing each desired parameter. Accepting the popup panel (OK)
+sends
+
+```json
+    {"method": "command", "id": "command", "params": "the parameters from the popup panel"}
+```
+
+Like REST API, if application sends special reply or notification, the control app does visualization actions
+only if the support has been programmed into it. Currently, the following
+
+- **`get-list`**: the params is assumed to contain the *options list* from SMA app, and the display will indicate
+    which eNB is controlled, and whether the eNB has made the requested change.
 
 ## SMA App Protocol (Spectrum Sharing)
 
