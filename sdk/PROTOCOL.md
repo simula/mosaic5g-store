@@ -113,9 +113,11 @@ The syntax of **cababilities** notification (*note the lack of id*):
 
 The **params** is a dictionary of accepted capabilities, and each value
 may contain optional additional information.
+If there are no additional information, each capability value can be
+left as an empty dictionary (or **null**).
 
 This generic section defines some optional information members
-mainly used for hinting the graphical user interface
+mainly used for hinting the graphical user interface (e.g. Remote Control App)
 
 - **help**: must be a text string representing a short description of
   the capability that could be used as a "tooltip" in graphical user
@@ -178,8 +180,6 @@ mainly used for hinting the graphical user interface
   If none of the above is present, then this *parameter definition*
   defines a simple text string input for the parameter value.
   
-If there are no additional information, each capability value can be
-left as an empty dictionary (or **null**).
 
 ### Examples
 
@@ -238,7 +238,7 @@ The Remote Control App is a javascript application inside a web browser. It can 
 ### REST API
 
 Although the data retrieved by URL can be any JSON encoded reply, the control app currently only understands the reply from `flexran-rtc` /stats reply,
-from wich it generates graphical display of detected eNBs and UEs.
+from which it generates graphical display of detected eNBs and UEs.
 
 For any new type of reply, support must be programmed into the application.
 
