@@ -16,6 +16,7 @@ DEFAULT_SPGW_CONF_FILE="$SPGW_CONF_DIR/spgw.conf"
 HSS_CONF_DIR="$SNAP/hss"
 DEFAULT_HSS_CONF_FILE="$HSS_CONF_DIR/hss.conf"
 DEFAULT_HSS_FD_CONF_FILE="$HSS_CONF_DIR/hss_fd.conf"
+DEFAULT_HSS_ACL_CONF_FILE="$HSS_CONF_DIR/acl.conf"
 
 
 case "$1" in
@@ -41,6 +42,8 @@ case "$1" in
 	    fi
 	fi
 	echo "MME_CONF_FILE=$CONFIG_FILE" > $SNAP_USER_DATA/config_mme.sh
+	#copy the remaining mme config file
+	cp $DEFAULT_MME_FD_CONF_FILE $SNAP_USER_DATA
 	;;
      "set-spgw" )
 	CONFIG_FILE=$2
@@ -87,6 +90,9 @@ case "$1" in
 	    fi
 	fi
 	echo "HSS_CONF_FILE=$CONFIG_FILE" > $SNAP_USER_DATA/config_hss.sh
+	# copy the remaining hss config files
+	cp $DEFAULT_HSS_FD_CONF_FILE $SNAP_USER_DATA
+	cp $DEFAULT_HSS_ACL_CONF_FILE $SNAP_USER_DATA
 	;;
     
      "ls-mme" )

@@ -4,12 +4,18 @@ export DEBIAN_FRONTEND=noninteractive
 set -e
 export HOME="$SNAP_DATA"
 
-export UHD_IMAGES_DIR=$SNAP/uhd_images
+#export UHD_IMAGES_DIR=$SNAP/uhd_images
+
+DEFAULT_CONF_DIR="/usr/local/etc/oai/"
+
+REALM="openair4G.eur"
+FD_DIR="$SNAP_USER_DATA"
 
 MME_CONF_DIR="mme"
 MME_CONF="$SNAP/$MME_CONF_DIR/mme.conf"
 MME_CONF_FD="$SNAP/$MME_CONF_DIR/mme_fd.conf"
 MME_EXEC="$SNAP/$MME_CONF_DIR/mme"
+MME_CERT="$SNAP/scripts/check_mme_s6a_certificate $FD_DIR mme.$REALM"
 
 SPGW_CONF_DIR="spgw"
 SPGW_CONF="$SNAP/$SPGW_CONF_DIR/spgw.conf"
@@ -19,16 +25,19 @@ HSS_CONF_DIR="hss"
 HSS_CONF="$SNAP/$HSS_CONF_DIR/hss.conf"
 HSS_CONF_FD="$SNAP/$HSS_CONF_DIR/hss_fd.conf"
 HSS_EXEC="$SNAP/$HSS_CONF_DIR/oai_hss"
+HSS_DB="$SNAP/$HSS_CONF_DIR/oai_db.sql"
+#HSS_DB_DROP="$SNAP/$HSS_CONF_DIR/mysqladmin --force -h 127.0.0.1 -u root -p linux drop oai_db"
+HSS_DB_Q1="DROP DATABASE IF EXISTS oai_db;"
+HSS_DB_DROP="$SNAP/$HSS_CONF_DIR/mysql --force -h 127.0.0.1 -u root --password=linux -e "${HSS_DB_Q1}""
+HSS_DB_Q2="CREATE DATABASE IF NOT EXISTS oai_db;"
+HSS_DB_CREATE="$SNAP/$HSS_CONF_DIR/mysql -h 127.0.0.1 -u root --password=linux -e "${HSS_DB_Q2}""
+HSS_DB_IMPORT="$SNAP/$HSS_CONF_DIR/mysql -h 127.0.0.1 -u root -plinux oai_db < $HSS_DB" 
+HSS_CERT="$SNAP/scripts/check_hss_s6a_certificate $FD_DIR hss.$REALM"
+# test command
+# mysql -h 127.0.0.1 -u root --password=linux -e "DROP DATABASE IF EXISTS oai_db;"
+#mysql -h 127.0.0.1 -u root --password=linux -e "CREATE DATABASE IF NOT EXISTS oai_db;"
+#mysql -h 127.0.0.1 -u root -plinux oai_db < /snap/oai-cn/current/hss/oai_db.sql 
 
-
-MME_CONFIG=${MME_CONFIG:-$MME_CONF}
-MME_EXEC_ARGS=" -c $MME_CONFIG "
-
-SPGW_CONFIG=${SPGW_CONFIG:-$SPGW_CONF}
-SPGW_EXEC_ARGS=" -c $SPGW_CONFIG "
-
-HSS_CONFIG=${HSS_CONFIG:-$HSS_CONF}
-HSS_EXEC_ARGS=" -c $HSS_CONFIG "
 
 
 if [ ! -e $MME_EXEC ]; then
@@ -58,6 +67,14 @@ if [ -r $SNAP_USER_DATA/config_hss.sh ]; then
     . $SNAP_USER_DATA/config_hss.sh
 fi
 
+MME_CONFIG=${MME_CONFIG:-$MME_CONF}
+MME_EXEC_ARGS=" -c $MME_CONFIG "
+
+SPGW_CONFIG=${SPGW_CONFIG:-$SPGW_CONF}
+SPGW_EXEC_ARGS=" -c $SPGW_CONFIG "
+
+HSS_CONFIG=${HSS_CONFIG:-$HSS_CONF}
+HSS_EXEC_ARGS=" -c $HSS_CONFIG "
 
 
 case "$1" in
@@ -109,9 +126,73 @@ case "$1" in
 
     hss )
         echo "run with confilg file: $HSS_CONFIG"
-        exec $HSS_EXEC  `echo $HSS_EXEC_ARGS` 
+        $HSS_EXEC  $HSS_EXEC_ARGS 
         ;;
-     * )
+    import-db )
+	service mysql restart 
+
+	$SNAP/$HSS_CONF_DIR/mysql --force -h 127.0.0.1 -u root --password=linux -e "${HSS_DB_Q1}"
+	$SNAP/$HSS_CONF_DIR/mysql -h 127.0.0.1 -u root --password=linux -e "${HSS_DB_Q2}"
+	$SNAP/$HSS_CONF_DIR/mysql -h 127.0.0.1 -u root -plinux oai_db < $HSS_DB 
+
+	if [ $? -gt 0 ] ; then
+	    echo "failed to import HSS DB"
+	    rm -f $SNAP_USER_DATA/hss_db_import.sh
+	else
+	    echo "imported the HSS DB to mysql"
+	    echo "$HSS_DB_IMPORT" > $SNAP_USER_DATA/hss_db_import.sh
+	fi
+	;;
+    hss-certificate  )
+	if [ -z "$(grep -o "`hostname`.$REALM" /etc/hosts)" ]; then
+	    echo 127.0.0.1 localhost > /etc/hosts
+	    echo 127.0.0.1 `hostname`.$REALM `hostname` hss >> /etc/hosts
+	    echo 127.0.0.1 `hostname`.$REALM `hostname` mme >> /etc/hosts
+	fi
+
+	rm -rf ./demoCA
+	mkdir ./demoCA
+	echo 01 > ./demoCA/serial
+	touch ./demoCA/index.txt
+  
+	echo "Creating HSS certificate for user $FD_DIR hss.$REALM"
+	# Create a Root Certification Authority Certificate
+	openssl req  -new -batch -x509 -days 3650 -nodes -newkey rsa:1024 -out hss.cacert.pem -keyout hss.cakey.pem -subj /CN=$REALM/C=FR/ST=PACA/L=Aix/O=Eurecom/OU=CM
+	# Generate a Private Key
+	openssl genrsa -out hss.key.pem 1024
+	# Generate a CSR (Certificate Signing Request) that will be self-signed
+	openssl req -new -batch -out hss.csr.pem -key hss.key.pem -subj /CN=$REALM/C=FR/ST=PACA/L=Aix/O=Eurecom/OU=CM
+	#certificate authority 
+	openssl ca -cert hss.cacert.pem -keyfile hss.cakey.pem -in hss.csr.pem -out hss.cert.pem -outdir . -batch
+	mkdir -p $FD_DIR/
+	mv hss.cakey.pem hss.cert.pem hss.cacert.pem hss.key.pem $FD_DIR
+	;;
+
+    mme-certificate  )
+	if [ -z "$(grep -o "`hostname`.$REALM" /etc/hosts)" ]; then
+	    echo 127.0.0.1 localhost > /etc/hosts
+	    echo 127.0.0.1 `hostname`.$REALM `hostname` hss >> /etc/hosts
+	    echo 127.0.0.1 `hostname`.$REALM `hostname` mme >> /etc/hosts
+	fi
+	rm -rf ./demoCA
+	mkdir ./demoCA
+	echo 01 > ./demoCA/serial
+	touch ./demoCA/index.txt
+
+	echo "Creating MME certificate for user $FD_DIR hss.$REALM"
+	# Create a Root Certification Authority Certificate
+	openssl req  -new -batch -x509 -days 3650 -nodes -newkey rsa:1024 -out mme.cacert.pem -keyout mme.cakey.pem -subj /CN=$REALM/C=FR/ST=PACA/L=Aix/O=Eurecom/OU=CM
+	# Generate a Private Key
+	openssl genrsa -out hss.key.pem 1024
+	# Generate a CSR (Certificate Signing Request) that will be self-signed
+	openssl req -new -batch -out mme.csr.pem -key mme.key.pem -subj /CN=$REALM/C=FR/ST=PACA/L=Aix/O=Eurecom/OU=CM
+	#certificate authority
+	openssl ca -cert mme.cacert.pem -keyfile mme.cakey.pem -in mme.csr.pem -out mme.cert.pem -outdir . -batch
+	mkdir -p $FD_DIR/
+	mv mme.cakey.pem mme.cert.pem mme.cacert.pem mme.key.pem  $FD_DIR
+	;;
+    
+    * )
        echo "unknow run command"
        ;;
 
