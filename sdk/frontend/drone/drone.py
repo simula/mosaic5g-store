@@ -253,16 +253,17 @@ class ConfigHandler(tornado.web.RequestHandler):
 def main():
     tornado.options.define("address", default="localhost", help="Listening address")
     tornado.options.define("port", default=8080, help="Listening port")
+    tornado.options.define("tasks", default=False, type=bool, help="Enable Task Control")
     tornado.options.parse_command_line()
     
     settings = {
         "static_path": os.path.join(os.path.dirname(__file__), "static")
     }
-    application = tornado.web.Application([
-        (r"/drone", DroneClient),
-        (r"/config/(conf|tasks)(/.*)?", ConfigHandler),
-        (r"/(.*)", tornado.web.StaticFileHandler, {"path": settings['static_path'], "default_filename": "index.html"})
-    ], **settings);
+    routing = [(r"/drone", DroneClient)] if tornado.options.options.tasks else []
+    routing.append((r"/config/(conf|tasks)(/.*)?", ConfigHandler))
+    routing.append((r"/(.*)", tornado.web.StaticFileHandler,
+                    {"path": settings['static_path'], "default_filename": "index.html"}))
+    application = tornado.web.Application(routing, **settings);
     # ssl_ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
     # ssl_ctx.load_cert_chain('./keys/drone.crt', './keys/drone.key')
     #ssl_ctx.verify_mode = ssl.CERT_REQUIRED
