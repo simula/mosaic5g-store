@@ -1,4 +1,4 @@
-# Support web server for GUI
+# Supporting web server for GUI
 
 The **drone.py** provides
 
@@ -8,7 +8,7 @@ The **drone.py** provides
 
 - support for running processes (tasks) based on GUI commands
 
-**WARNING**: The current implmentation does not include any authentication
+**WARNING**: The current implementation does not include any authentication
 support. Due to drone being capable of running arbitrary commands as instructed
 by the GUI, is a security risk. Thus, do not change lightly the default setting of
 listening only to `localhost` connections. However, it is possible to change the
