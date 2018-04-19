@@ -1,60 +1,76 @@
 #!/bin/sh
 
-export DEBIAN_FRONTEND=noninteractive
-set -e
+. $SNAP/common
 
-if [ ! -e $SNAP/bin/$SNAP_NAME ]; then
-    echo "Command $SNAP/bin/$SNAP_NAME not found"
+if [ ! -e $FLEXRAN_EXEC ]; then
+    echo "Command $FLEXRAN_EXEC not found"
     exit 127
 fi		   	   
 
-export HOME="$SNAP_DATA"
+if [ -r $CONF_DIR/sbi_config.sh ] ; then 
+    . $CONF_DIR/sbi_config.sh
+else
+    . $FLEXRAN_DIR/etc/sbi_config.sh 
+    cp $FLEXRAN_DIR/etc/sbi_config.sh $CONF_DIR
+fi
 
-# default config file is xxxx (unless set in above config)
-#CONFIG=${CONFIG:-$SNAP/xxx}
-exe_arguments=""
+if [ -r $CONF_DIR/nbi_config.sh ] ; then 
+    . $CONF_DIR/nbi_config.sh
+else
+    . $FLEXRAN_DIR/etc/nbi_config.sh 
+    cp $FLEXRAN_DIR/etc/nbi_config.sh $CONF_DIR
+fi
+    
+FLEXRAN_EXEC_ARGS=" -p $SBI_PORT -n $NBI_PORT"
 
 case "$1" in
     "gdb" )
         cd $SNAP/bin
-		echo "Running $SNAP_NAME with the gdb"
-		touch      $SNAP_USER_DATA/.gdb_$SNAP_NAME
-		chmod 777  $SNAP_USER_DATA/.gdb_$SNAP_NAME
-		echo "file $SNAP/bin/$SNAP_NAME" > $SNAP_USER_DATA/.gdb_$SNAP_NAME
-		echo "set args $exe_arguments" >> $SNAP_USER_DATA/.gdb_$SNAP_NAME
-		echo "run"                     >> $SNAP_USER_DATA/.gdb_$SNAP_NAME
-		cat $SNAP_USER_DATA/.gdb_$SNAP_NAME
-		exec $SNAP/gdb --data-directory=$SNAP_USER_DATA  -n -x $SNAP_USER_DATA/.gdb_$SNAP_NAME
-		;;
-   "start"  )
-		sudo snap start $SNAP_NAME
-		;;
-	"stop" )
-		sudo snap stop $SNAP_NAME
-		;;
-	"restart" )
-		sudo snap restart $SNAP_NAME
-		;;
-	"status" )
-		sudo systemctl status  snap.$SNAP_NAME.daemon.service
-		;;
-	"journal" )
-		sudo journalctl -u snap.$SNAP_NAME.daemon.service
-		;;
-  	"help" )
-		echo "Usage:     $SNAP_NAME or $SNAP_NAME.[options]"
-		echo "Options:"
-		echo "  debug:   debug the $SNAP_NAME with gdb"
-		echo "  start:   start the $SNAP_NAME daemon"
-		echo "  stop:    stop the $SNAP_NAME daemon"
-		echo "  restart: restart the $SNAP_NAME daemon"
-		echo "  status:  get the $SNAP_NAME status"
-		echo "  journal: get the $SNAP_NAME logs"
-		echo "  help:    print this help"
-		;;	
+	echo "Running $SNAP_NAME with the gdb"
+	touch      $SNAP_DATA/.gdb_$SNAP_NAME
+	chmod 777  $SNAP_DATA/.gdb_$SNAP_NAME
+	echo "file $FLEXRAN_EXEC"           > $SNAP_DATA/.gdb_$SNAP_NAME
+	echo "set args $FLEXRAN_EXEC_ARGS" >> $SNAP_DATA/.gdb_$SNAP_NAME
+	echo "run"                         >> $SNAP_DATA/.gdb_$SNAP_NAME
+	cat $SNAP_DATA/.gdb_$SNAP_NAME
+	exec $SNAP/gdb --data-directory=$SNAP_DATA  -n -x $SNAP_DATA/.gdb_$SNAP_NAME
+	;;
+    "start"  )
+	snap start $SNAP_NAME
+	;;
+    "stop" )
+	snap stop $SNAP_NAME
+	;;
+    "restart" )
+	snap restart $SNAP_NAME
+	;;
+    "status" )
+	systemctl status  snap.$SNAP_NAME.daemon.service
+	;;
+    "journal" )
+	journalctl -u snap.$SNAP_NAME.daemon.service
+	;;
+    "help" )
+	echo "Usage:            sudo $SNAP_NAME or $SNAP_NAME.[options]"
+	echo "Note:             root priviliage required"
+	echo "Options:"
+	echo "  debug:          debug the $SNAP_NAME with gdb"
+	echo "  start:          start the $SNAP_NAME daemon"
+	echo "  stop:           stop the $SNAP_NAME daemon"
+	echo "  restart:        restart the $SNAP_NAME daemon"
+	echo "  status:         get the $SNAP_NAME status"
+	echo "  journal:        get the $SNAP_NAME logs"
+	echo ""
+	echo "  flexran:        run FLEXRAN as a process "
+	echo "  sbi-port port:  set the FLEXRAN SBI port  "
+	echo "  nbi-port port:  set the FLEXRAN NBI port"
+	echo "  port            get the FLEXRAN SBI and NBI ports"
+	
+	echo "  help:           print this help"
+	;;	
     *)
-		echo "Run FlexRAN RT-Controller "
-		cd $SNAP/bin
-		exec ./flexran  `echo $exe_arguments` "$@"
-		;;
+	export FLEXRAN_RTC_HOME=$FLEXRAN_DIR
+	echo "$FLEXRAN_EXEC  $FLEXRAN_EXEC_ARGS"
+	$FLEXRAN_EXEC  `echo $FLEXRAN_EXEC_ARGS` "$@"
+	;;
 esac

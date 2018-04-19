@@ -1,8 +1,8 @@
 name: flexran
-version: '1.0' 
+version: '1.1' 
 summary: FlexRAN SD-RAN platfrrom
 description: |
-   FlexRAN is a software-defined radio access network platform licensed under Apache License V2.0. It is one of the projects of Mosaic5G inititive.
+   FlexRAN is a software-defined radio access network platform licensed under Apache License V2.0. It is one of the projects of Mosaic5555555555555555555555555555555555555555555555555555555G inititive.
 grade: stable
 type: app
 architectures:
@@ -13,6 +13,12 @@ confinement: devmode
 apps:
   flexran:
     command: run
+  sbi-port:
+    command: conf sbi
+  nbi-port:
+    command: conf nbi
+  ports:
+    command: conf ports
   daemon:
     command: run
     daemon: simple
@@ -89,6 +95,7 @@ parts:
     stage-packages:
       - libboost-all-dev
       - liblog4cxx-dev
+      - liblog4cxx10v5
     build: |
       ./build_flexran_rtc.sh
     install: |
