@@ -217,7 +217,7 @@ class monitoring_app(object):
         
     def init_data_holders(self,sm):
         sm.stats_manager('all')
-        for enb in range(0, sm.get_num_enb()) :
+        for enb in range(sm.get_num_enb()) :
             self.enb_dl_pdcp_sfn[enb]=0# super frame number (length 10 ms)
             self.enb_dl_mac_maxmcs[enb]=0# Fixed
             self.enb_dl_mac_sfn[enb]=0
@@ -804,7 +804,9 @@ if __name__ == '__main__':
                                           address=args.app_url,
                                           port=args.app_port)
 
-        monitoring_open_data = app_sdk.app_handler(log=log, callback=monitoring_app.open_data_on_message,
+        monitoring_open_data = app_sdk.app_handler(app_name='mon_app',
+                                                   log=log,
+                                                   callback=monitoring_app.open_data_on_message,
                                                    notification=monitoring_app.open_data_on_notification)
     
         app_open_data.add_options("list", handler=monitoring_open_data)
