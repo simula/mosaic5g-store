@@ -92,7 +92,7 @@ class monitoring_app(object):
 
 
     # App specific vars
-    period=1.0
+    period=0.001
     open_data=True
     name="monitoring_app"
     first_time=True
@@ -139,8 +139,8 @@ class monitoring_app(object):
     enb_ue_ul_rlc_bytes_w={}
 
     #---------------------------------------------- RRC -----------------------------------------
-    enb_ue_rsrp={}
-    enb_ue_rsrq={}
+    enb_ue_dl_rsrp={}
+    enb_ue_dl_rsrq={}
     enb_ue_trigger_meas={}
 
     #------------------------------------- ????---------------------------------------------------
@@ -198,6 +198,7 @@ class monitoring_app(object):
 
     enb_ue_dl_phy_acked_bytes={}#[enb,ue]
     enb_ue_prev_hid_tbs={}#[enb,ue,hid]
+    ue_dl_noise = {}
 
     def __init__(self, log, url='http://localhost',port='9999',log_level='info', op_mode='test'):
         super(monitoring_app, self).__init__()
@@ -207,7 +208,8 @@ class monitoring_app(object):
         self.log_level = log_level
         self.status = 'none'
         self.op_mode = op_mode
-	self.graphs_enable = False
+        self.log.info('Using latest monitoring_app ')
+        self.graphs_enable = False
         
     def set_observation_period(self, period):
         monitoring_app.period=period
@@ -216,8 +218,11 @@ class monitoring_app(object):
         return monitoring_app.period
         
     def init_data_holders(self,sm):
-        sm.stats_manager('all')
-        for enb in range(sm.get_num_enb()) :
+        enf_of_file = sm.stats_manager('all')
+        if (enf_of_file == -1):
+            sys.exit(0)
+
+        for enb in range(0, sm.get_num_enb()) :
             self.enb_dl_pdcp_sfn[enb]=0# super frame number (length 10 ms)
             self.enb_dl_mac_maxmcs[enb]=0# Fixed
             self.enb_dl_mac_sfn[enb]=0
@@ -253,8 +258,8 @@ class monitoring_app(object):
                 self.enb_ue_ul_rlc_w[enb,ue]=0# number of SDUs received Ul in window
                 self.enb_ue_ul_rlc_bytes_w[enb,ue]=0
 
-                self.enb_ue_rsrp[enb,ue]=0
-                self.enb_ue_rsrq[enb,ue]=0
+                self.enb_ue_dl_rsrp[enb,ue]=0
+                self.enb_ue_dl_rsrq[enb,ue]=0
                 self.enb_ue_trigger_meas[enb,ue]=0
                 self.enb_ue_ul_snr[enb,ue]=0
 
@@ -266,7 +271,8 @@ class monitoring_app(object):
                 self.enb_ue_dl_mac_w[enb,ue]=0  
                 self.enb_ue_dl_mac_bytes_w[enb,ue]=0
                 self.enb_ue_ul_mac_rb[enb,ue]=0# number of Dl resource blocks scheduled by eNB for UE   
-                self.ue_ul_mac_maxmcs[ue]=0# Fixed 
+                self.ue_ul_mac_maxmcs[ue]=0# Fixed
+                self.ue_dl_noise[ue] = -120.0
                 self.enb_ue_ul_mac_w[enb,ue]=0  
                 self.enb_ue_ul_mac_bytes_w[enb,ue]=0
                 for lc in range(0,4) :
@@ -292,7 +298,7 @@ class monitoring_app(object):
 
                 for harq_id in range(0,8):
                     self.enb_ue_hid_dl_phy_tx_delay_cnt[enb,ue,harq_id]=0
-                    self.enb_ue_hid_dl_phy_tx_attempts_cnt[enb,ue,harq_id]=0
+                    self.enb_ue_hid_dl_phy_tx_attempts_cnt[enb,ue,harq_id]=1
                     self.enb_ue_prev_hid_tbs[enb,ue,harq_id]=0
 
 
@@ -389,8 +395,8 @@ class monitoring_app(object):
         for enb in range(0, sm.get_num_enb()) :
             for ue in range(0, sm.get_num_ue(enb=enb)) :
         
-                self.enb_ue_rsrp[enb,ue]=sm.get_ue_rsrp(enb,ue)
-                self.enb_ue_rsrq[enb,ue]=sm.get_ue_rsrq(enb,ue)
+                self.enb_ue_dl_rsrp[enb,ue]=sm.get_ue_rsrp(enb,ue)
+                self.enb_ue_dl_rsrq[enb,ue]=sm.get_ue_rsrq(enb,ue)
 
                 # if sm.get_ue_measid(enb,ue) == -1 : # and monitoring_app.enb_ue_trigger_meas[enb] == 1 :
                 #    self.log.info('2.1 Enable RRC trigger measurement event for eNB ' + str(enb))
@@ -411,22 +417,27 @@ class monitoring_app(object):
                 hid = int(self.enb_dl_pdcp_sfn[enb]) % 8
                 # Harq round for the harq_pid
                 curr_round = sm.get_harq_round(enb=enb,ue=ue)
-                self.log.debug('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) + 
-                        ' tti=' + str(0) + 
-                        ' eNB ' + str(enb) +
-                        ' ue ' + str(ue) + 
-                        ' harq_pid ' + str(hid) +      
-                        ' curr_round ' + str(curr_round))
+                # self.log.debug('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) +
+                #         ' tti=' + str(0) +
+                #         ' eNB ' + str(enb) +
+                #         ' ue ' + str(ue) +
+                #         ' harq_pid ' + str(hid) +
+                #         ' curr_round ' + str(curr_round))
                 # Save this round as prev round to use later
                 #prev_round[enb,ue,hid]=curr_round
                 # increment the ttl counter. To be done every TTI.
-                self.enb_ue_hid_dl_phy_tx_delay_cnt[enb,ue,hid]+=1
-                self.log.debug('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) + 
-                        ' tti=' + str(0) + 
-                        ' eNB ' + str(enb) +
-                        ' ue ' + str(ue) + 
-                        ' harq_pid ' + str(hid) +      
-                        ' enb_ue_hid_dl_phy_tx_delay_cnt ' + str(self.enb_ue_hid_dl_phy_tx_delay_cnt[enb,ue,hid]))
+                for h in range(0, 8):
+                    # increment the ttl counter. To be done every TTI.
+                    # for all harq ids.
+                    self.enb_ue_hid_dl_phy_tx_delay_cnt[enb, ue, h] += 1
+
+                # self.enb_ue_hid_dl_phy_tx_delay_cnt[enb,ue,hid]+=1
+                # self.log.debug('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) +
+                #         ' tti=' + str(0) +
+                #         ' eNB ' + str(enb) +
+                #         ' ue ' + str(ue) +
+                #         ' harq_pid ' + str(hid) +
+                #         ' enb_ue_hid_dl_phy_tx_delay_cnt ' + str(self.enb_ue_hid_dl_phy_tx_delay_cnt[enb,ue,hid]))
 
                 # Stopping condition to save the counters.
                 # The stopping condition is either an ack is received or the TB is dropped.
@@ -443,11 +454,11 @@ class monitoring_app(object):
                     self.enb_ue_hid_dl_phy_tx_delay_cnt[enb,ue,hid]=0
                     # save the tx attempt counter and then reset it
                     self.enb_ue_dl_phy_tx_ack_attempts[enb,ue]=self.enb_ue_hid_dl_phy_tx_attempts_cnt[enb,ue,hid]
-                    self.log.debug('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) + 
-                        ' tti=' + str(0) + 
-                        ' eNB ' + str(enb) +
-                        ' ue ' + str(ue) +     
-                        ' enb_ue_dl_phy_tx_ack_attempts ' + str(self.enb_ue_dl_phy_tx_ack_attempts[enb,ue]))
+                    # self.log.debug('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) +
+                    #     ' tti=' + str(0) +
+                    #     ' eNB ' + str(enb) +
+                    #     ' ue ' + str(ue) +
+                    #     ' enb_ue_dl_phy_tx_ack_attempts ' + str(self.enb_ue_dl_phy_tx_ack_attempts[enb,ue]))
                     self.enb_ue_hid_dl_phy_tx_attempts_cnt[enb,ue,hid]=1
                     # reset the boolean to track if previous Tx was new
                     #prev_tx_was_new=False
@@ -462,11 +473,11 @@ class monitoring_app(object):
                     # get_phy_stats is called after get_mac_stats, so to save the ttrouble of always 
                     # ensuring the order we can just have another variable
                     self.enb_ue_dl_phy_acked_bytes[enb,ue]=self.enb_ue_prev_hid_tbs[enb,ue,hid]
-                    self.log.debug('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) + 
-                        ' tti=' + str(0) + 
-                        ' eNB ' + str(enb) +
-                        ' ue ' + str(ue) +      
-                        ' enb_ue_dl_phy_acked_bytes ' + str(self.enb_ue_dl_phy_acked_bytes[enb,ue]))
+                    # self.log.debug('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) +
+                    #     ' tti=' + str(0) +
+                    #     ' eNB ' + str(enb) +
+                    #     ' ue ' + str(ue) +
+                    #     ' enb_ue_dl_phy_acked_bytes ' + str(self.enb_ue_dl_phy_acked_bytes[enb,ue]))
                     # set the prev_hid_tbs to the current value for use when round is complete. 
                     self.enb_ue_prev_hid_tbs[enb,ue,hid] = self.enb_ue_dl_mac_tbs[enb,ue]
 
@@ -489,12 +500,12 @@ class monitoring_app(object):
                 #elif enb_ue_dl_mac_retx_rb[enb,ue] > 0 and harq_round < 8 :
                    # if (prev_round[enb,ue,hid]+1)%8 == 1 :
                     self.enb_ue_hid_dl_phy_tx_attempts_cnt[enb,ue,hid]+=1
-                    self.log.debug('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) + 
-                        ' tti=' + str(0) + 
-                        ' eNB ' + str(enb) +
-                        ' ue ' + str(ue) + 
-                        ' harq_pid ' + str(hid) +      
-                        ' enb_ue_hid_dl_phy_tx_attempts_cnt ' + str(self.enb_ue_hid_dl_phy_tx_attempts_cnt[enb,ue,hid]))
+                    # self.log.debug('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) +
+                    #     ' tti=' + str(0) +
+                    #     ' eNB ' + str(enb) +
+                    #     ' ue ' + str(ue) +
+                    #     ' harq_pid ' + str(hid) +
+                    #     ' enb_ue_hid_dl_phy_tx_attempts_cnt ' + str(self.enb_ue_hid_dl_phy_tx_attempts_cnt[enb,ue,hid]))
 
                 else:
                     print "I DON'T KNOW WHY I'M HERE !!!"
@@ -587,8 +598,8 @@ class monitoring_app(object):
                         ' tti=' + str(0) + 
                         ' eNB ' + str(enb) +
                         ' ue ' + str(ue) + 
-                        ' enb_ue_rsrp ' + str(self.enb_ue_rsrp[enb,ue]) +
-                        ' enb_ue_rsrq ' + str(self.enb_ue_rsrq[enb,ue]))
+                        ' enb_ue_dl_rsrp ' + str(self.enb_ue_dl_rsrp[enb,ue]) +
+                        ' enb_ue_dl_rsrq ' + str(self.enb_ue_dl_rsrq[enb,ue]))
                 #PHY
                 #self.log.info('------------------------------------------PHY---------------------------------------')
 
@@ -626,22 +637,22 @@ class monitoring_app(object):
         # update the all stats 
         sm.stats_manager('all')
 
-        self.log.info('2.1 Gather PDCP statistics')
+        # self.log.info('2.1 Gather PDCP statistics')
         self.get_pdcp_statistics(sm)
 
-        self.log.info('2.2 Gather RLC statistics')
+        # self.log.info('2.2 Gather RLC statistics')
         self.get_rlc_statistics(sm)
 
-        self.log.info('2.3 Gather MAC statistics')
+        # self.log.info('2.3 Gather MAC statistics')
         self.get_mac_statistics(sm)
 
-        self.log.info('2.4 Gather PHY statistics')
+        # self.log.info('2.4 Gather PHY statistics')
         self.get_phy_statistics(sm)
 
-        self.log.info('2.5 Gather RRC statistics')
+        # self.log.info('2.5 Gather RRC statistics')
         self.get_rrc_statistics(sm)     
 
-        self.print_logs(sm)   
+        # self.print_logs(sm)
        
         
         t = Timer(monitoring_app.period, self.run,kwargs=dict(sm=sm,rrc=rrc))
@@ -750,8 +761,8 @@ if __name__ == '__main__':
                         required=False, default=8080, 
                         help='set the App port to open data: 8080 (default)')
     parser.add_argument('--app-period',  metavar='[option]', action='store', type=float,
-                        required=False, default=10, 
-                        help='set the period of the app: 1s (default)')
+                        required=False, default=0.001,
+                        help='set the period of the app: 1 ms (default)')
     parser.add_argument('--open-data', action='store_true',
                         required=False, default=True, 
                         help='Enable open data interface among control apps (default true)')
@@ -786,8 +797,8 @@ if __name__ == '__main__':
 
     fm = app_graphs.FigureManager() 
     
-    py3_flag = version_info[0] > 2 
-    
+    py3_flag = version_info[0] > 2
+    sm.stats_manager('all')
     monitoring_app = monitoring_app(log=log,
                                 url=args.url,
                                 port=args.port,
@@ -804,11 +815,9 @@ if __name__ == '__main__':
                                           address=args.app_url,
                                           port=args.app_port)
 
-        monitoring_open_data = app_sdk.app_handler(app_name='mon_app',
-                                                   log=log,
-                                                   callback=monitoring_app.open_data_on_message,
+        monitoring_open_data = app_sdk.app_handler(log=log, callback=monitoring_app.open_data_on_message,
                                                    notification=monitoring_app.open_data_on_notification)
-    
+
         app_open_data.add_options("list", handler=monitoring_open_data)
         app_open_data.run_app()
     
@@ -816,11 +825,12 @@ if __name__ == '__main__':
     
     monitoring_app.set_observation_period(args.app_period)
     log.info('App period is set to : ' + str(monitoring_app.period))
+    log.info('Using latest monitoring_app ')
 
     monitoring_app.init_data_holders(sm) 
     monitoring_app.run(sm=sm,rrc=rrc)
 
-    t2 = Timer(1,app_sdk.run_all_apps) 
+    t2 = Timer(0.001,app_sdk.run_all_apps)
     t2.start()
    
-    visualisation(monitoring_app, fm, sm, 'thr', 'cell', 'dl', args.graph_period, args.graph)
+    #visualisation(monitoring_app, fm, sm, 'thr', 'cell', 'dl', args.graph_period, args.graph)

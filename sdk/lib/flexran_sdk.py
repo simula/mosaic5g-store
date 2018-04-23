@@ -74,7 +74,9 @@ class flexran_rest_api(object):
     """
  
     """!@brief Input data sets for all the status used for test"""
-    pf_all='inputs/multiple_data_samples_file.json'
+    # pf_all='inputs/multiple_data_samples_file.json'
+    #pf_all = 'inputs/1eNB_2UEs_mobility_25PRB.json'
+    pf_all = 'UEs2_25PRB_10M.json'
     """!@brief Input data sets for MAC  status used for test"""
     pf_mac='inputs/mac_stats_2.json'
     """!@brief Input data sets for eNB config status used for test"""
@@ -917,7 +919,8 @@ class stats_manager(object):
                 file =  self.pfile_enb
             
             try:
-                if  self.stats_data_index == -1 :  
+                if  self.stats_data_index == -1 :
+                    self.log.info('Reading the json file for test mode. This can take a while...')
                     with open(file) as data_file:
                         # get the entire file
                         self.stats_data_log = json.load(data_file) 
