@@ -1,68 +1,77 @@
 #!/bin/sh
 
-export DEBIAN_FRONTEND=noninteractive
-set -e
-export HOME="$SNAP_DATA"
+. $SNAP/common
 
 export UHD_IMAGES_DIR=$SNAP/uhd_images
 
-DEFAULT_CONF_DIR="enb"
-DEFAULT_CONF_FILE="$SNAP/$DEFAULT_CONF_DIR/enb.band7.tm1.50PRB.usrpb210.conf"
-EXEC_FILE="$SNAP/$DEFAULT_CONF_DIR/$SNAP_NAME"
-
-CONFIG=${CONFIG:-$DEFAULT_CONF_FILE}
-EXEC_ARGS=" -O $CONFIG "
-
-
-
-if [ ! -e $EXEC_FILE ]; then
-    echo "Cannot find $EXEC_FILE executable"
-    exit -1 
+if [ ! -e $RAN_EXEC ]; then
+    echo "Cannot find $RANEXEC executable"
+    exit 127
 fi		   	   
 
-if [ -r $SNAP_USER_DATA/config.sh ]; then
-    . $SNAP_USER_DATA/config.sh
+if [ -r $SNAP_DATA/config.sh ]; then
+    . $SNAP_DATA/config.sh
 fi
+
+RAN_CONFIG=${RAN_CONF_FILE2:-$RAN_CONF_FILE}
+if [ -e "$RAN_CONFIG" ] ; then
+    RAN_EXEC_ARGS=" -O $RAN_CONFIG"
+else
+    #$SNAP/init
+    RAN_EXEC_ARGS=" -O $SNAP/etc/enb.band7.tm1.50PRB.usrpb210.conf"
+    cp $SNAP/etc/enb.band7.tm1.50PRB.usrpb210.conf $SNAP_USER_DATA
+fi
+
+EXEC_ARGS=" -O $CONFIG "
 
 case "$1" in
     "gdb" )
 	echo "Running $SNAP_NAME with the gdb"
-	touch      $SNAP_USER_DATA/.gdb_$SNAP_NAME
-	chmod 777  $SNAP_USER_DATA/.gdb_$SNAP_NAME
-	echo "file $EXEC_FILE"        > $SNAP_USER_DATA/.gdb_$SNAP_NAME
-	echo "set args $EXEC_ARGS" >> $SNAP_USER_DATA/.gdb_$SNAP_NAME
-	echo "run"                     >> $SNAP_USER_DATA/.gdb_$SNAP_NAME
-	cat $SNAP_USER_DATA/.gdb_$SNAP_NAME
-	exec $SNAP/gdb --data-directory=$SNAP_USER_DATA  -n -x $SNAP_USER_DATA/.gdb_$SNAP_NAME
+	touch      $SNAP_DATA/.gdb_$SNAP_NAME
+	chmod 777  $SNAP_DATA/.gdb_$SNAP_NAME
+	echo "file $RAN_EXEC"        > $SNAP_DATA/.gdb_$SNAP_NAME
+	echo "set args $RAN_EXEC_ARGS" >> $SNAP_DATA/.gdb_$SNAP_NAME
+	echo "run"                     >> $SNAP_DATA/.gdb_$SNAP_NAME
+	cat $SNAP_DATA/.gdb_$SNAP_NAME
+	exec $SNAP/gdb --data-directory=$SNAP_DATA  -n -x $SNAP_DATA/.gdb_$SNAP_NAME
 	;;
     "start"  )
-		sudo snap start $SNAP_NAME
-		;;
-	"stop" )
-		sudo snap stop $SNAP_NAME
-		;;
-	"restart" )
-		sudo snap restart $SNAP_NAME
-		;;
-	"status" )
-		sudo systemctl status  snap.$SNAP_NAME.daemon.service
-		;;
-	"journal" )
-		sudo journalctl -u snap.$SNAP_NAME.daemon.service
-		;;
-  	"help" )
-		echo "Usage:     $SNAP_NAME or $SNAP_NAME.[options] args"
-		echo "Options:"
-		echo "  debug:   debug the $SNAP_NAME with gdb"
-		echo "  start:   start the $SNAP_NAME daemon"
-		echo "  stop:    stop the $SNAP_NAME daemon"
-		echo "  restart: restart the $SNAP_NAME daemon"
-		echo "  status:  get the $SNAP_NAME status"
-		echo "  journal: get the $SNAP_NAME logs"
-		echo "  help:    print this help"
-		;;
+	snap start $SNAP_NAME
+	;;
+    "stop" )
+	snap stop $SNAP_NAME
+	;;
+    "restart" )
+	snap restart $SNAP_NAME
+	;;
+    "status" )
+	systemctl status  snap.$SNAP_NAME.daemon.service
+	;;
+    "journal" )
+	journalctl -u snap.$SNAP_NAME.daemon.service
+	;;
+    "help" )
+	echo "Usage:          sudo  $SNAP_NAME or $SNAP_NAME.[options] args"
+	echo "Note:           root priviliage required"
+	echo "Options:"
+	echo "  start:        start the $SNAP_NAME daemon"
+	echo "  stop:         stop the $SNAP_NAME daemon"
+	echo "  restart:      restart the $SNAP_NAME daemon"
+	echo "  status:       get the $SNAP_NAME status"
+	echo "  journal:      get the $SNAP_NAME logs"
+	echo ""
+	echo "  init:         initialize $SNAP_NAME (after the 1st installation)"
+	echo "  oai-ran:      run $SNAP_NAME as a process"
+	echo "  debug:        debug the $SNAP_NAME with gdb"
+	echo "  set-conf:     set the $SNAP_NAME configuration file"
+	echo "  get-conf:     get the current $SNAP_NAME configuration file"
+	echo "  show-conf:    show the path to the $SNAP_NAME configuration file"
+	echo "  list-conf:    list the $SNAP_NAME configuration files"
+	echo ""
+	echo "  help:    print this help"
+	;;
     *)
-	echo "run with confilg file: $CONFIG"
-	exec $EXEC_FILE  `echo $EXEC_ARGS` "$@"
+	echo "$RAN_EXEC  echo $RAN_EXEC_ARGS $@"
+	$RAN_EXEC  `echo $RAN_EXEC_ARGS` "$@"
 	;;
 esac

@@ -1,12 +1,6 @@
 #!/bin/sh
 
-export DEBIAN_FRONTEND=noninteractive
-set -e
-
-SUDO='sudo -E '
-
-DEFAULT_CONF_DIR="$SNAP/enb/"
-DEFAULT_CONF_FILE="$DEFAULT_CONF_DIR/enb.band7.tm1.50PRB.usrpb210.conf"
+. $SNAP/common
 
 case "$1" in
     "set" )
@@ -17,34 +11,36 @@ case "$1" in
 	else
 	    # may be absolute path 
 	    if [ -f "$CONFIG_FILE" ]; then
-		if [ -f $SNAP_USER_DATA/$CONFIG_FILE ] ; then 
-		    echo "Reset the config file to: $SNAP_USER_DATA/$CONFIG_FILE"
+		if [ -f $SNAP_DATA/$CONFIG_FILE ] ; then 
+		    echo "Reset the config file to: $SNAP_DATA/$CONFIG_FILE"
 		else 
-		    echo "Adding and setting a new config file : $SNAP_USER_DATA/$CONFIG_FILE"
-		    cp $CONFIG_FILE $SNAP_USER_DATA/
+		    cp $CONFIG_FILE $SNAP_DATA/
+		    CONFIG_FILE=$SNAP_DATA/$(basename $CONFIG_FILE)
+		    echo "Adding and setting a new config file : $CONFIG_FILE"
 		fi
 	    else
 		echo "Config file <$CONFIG_FILE> not found in $SNAP/current directory"
 		echo "Reset to default config file: $DEFAULT_CONF_FILE"
-		CONFIG_FILE=""
+		CONFIG_FILE=$RAN_CONFIG_FILE
 	    fi
 	fi
-	echo "CONFIG=$CONFIG_FILE" > $SNAP_USER_DATA/config.sh
+	echo "RAN_CONF_FILE2=$CONFIG_FILE" > $SNAP_DATA/config.sh
+	echo "RANCONF_FILE2=$CONFIG_FILE"  > $SNAP_USER_DATA/config.sh
 	;;
     
     "ls" )
-		$1 $DEFAULT_CONF_DIR/*.conf
+		$1 $RAN_DIR/*.conf
 	;;
 
 	*)
-	if [ -r $SNAP_USER_DATA/config.sh ]; then
-	    . $SNAP_USER_DATA/config.sh
+	if [ -r $SNAP_DATA/config.sh ]; then
+	    . $SNAP_DATA/config.sh
 	fi
 	
 	# default config file is (unless set in above config)
-	CONFIG=${CONFIG:-$DEFAULT_CONF_FILE}
+	RAN_CONFIG=${RAN_CONF_FILE2:-$RAN_CONF_FILE}
 	# echo (get), cat (show)
-	$1 $CONFIG
+	$1 $RAN_CONFIG
 	;;
 esac
 

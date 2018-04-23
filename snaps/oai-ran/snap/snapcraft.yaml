@@ -1,9 +1,9 @@
 name: oai-ran
-version: '1.0' 
+version: '1.2' 
 summary: OpenAirInterface RAN entity with FlexRAN Agent/Runtime 
 description: |
     OAI RAN is the openairinterface-based RAN with FlexRAN agent/runtime allowing to connect any commercial UEs with the band of your choice . It is one of the projects of Mosaic5G inititive.
-grade: devel
+grade: stable
 type: app
 architectures:
   - amd64
@@ -13,6 +13,8 @@ confinement: devmode
 apps:
   oai-ran:
     command: run
+  init:
+    command: init
   daemon:
     command: run gdb
     daemon: simple

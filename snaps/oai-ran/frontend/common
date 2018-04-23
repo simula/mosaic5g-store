@@ -1,0 +1,9 @@
+#!/bin/sh
+export DEBIAN_FRONTEND=noninteractive
+set -e
+
+CONF_DIR="$SNAP_DATA"
+
+RAN_DIR="$SNAP/enb"
+RAN_CONF_FILE="$CONF_DIR/enb.band7.tm1.50PRB.usrpb210.conf"
+RAN_EXEC="$RAN_DIR/$SNAP_NAME"
