@@ -34,6 +34,10 @@ The default configuration file is generated under
 The customized configuration file, set by the user using the `oai-cn.set-mme-conf  mymme.conf` command, is stored in ~/snap/oai-cn/current directory.
 
 
+# Setting
+The current configuration file assumes that the MME and HSS are located in the same machine. The realm is openair4G.eur, and the mme and hss fqdn are ubuntu.openair4G.eur.
+
+
 
 
 

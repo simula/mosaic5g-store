@@ -1,9 +1,9 @@
 name: oai-cn
-version: '1.0' 
+version: '1.2' 
 summary: OpenAirInterface CN entity with LL-MEC Agent
 description: |
     OAI-CN is the openairinterface-based CN with LL-MEC agent allowing to connect a 4G-comptaible BS and UEs to the core network. It is one of the projects of Mosaic5G inititive.
-grade: devel
+grade: stable
 type: app
 architectures:
   - amd64
@@ -17,58 +17,43 @@ apps:
     command: run spgw
   hss:
     command: run hss  
-#daemon:
-  #  command: run gdb
-  #  daemon: simple
-  #  stop-command: run stop
-  #  stop-timeout: 7s
-  #start:
-  #  command: run start
-  #stop:
-  #  command: run stop
-  #restart:
-  #  command: run restart
-  #status:
-  #  command: run status
-  #journal:
-  #  command: run journal
+  hss-init:
+    command: init hss 
+  mme-init:
+    command: init mme
+  spgw-init:
+    command: init spgw
   help:
     command: run help
   debug:
     command: run gdb
-  set-mme-conf:
+  mme-conf-set:
     command: conf set-mme
-  check-mme-cert:
-    command: run mme-certificate
-  set-spgw-conf:
+  spgw-conf-set:
     command: conf set-spgw
-  set-hss-conf:
+  hss-conf-set:
     command: conf set-hss
-  get-mme-conf:
+  mme-conf-get:
     command: conf echo-mme
-  get-spgw-conf:
+  spgw-conf-get:
     command: conf echo-spgw
-  get-hss-conf:
+  hss-conf-get:
     command: conf echo-hss
-  show-mme-conf:
+  mme-conf-show:
     command: conf cat-mme
-  show-spgw-conf:
+  spgw-conf-show:
     command: conf cat-spgw
-  show-hss-conf:
+  hss-conf-show:
     command: conf cat-hss
-  list-mme-conf:
+  mme-conf-list:
     command: conf ls-mme
-  list-spgw-conf:
+  spgw-conf-list:
     command: conf ls-spgw
-  list-hss-conf:
+  hss-conf-list:
     command: conf ls-hss
-  import-hss-db:
-    command: run import-db
-  check-hss-cert:
-    command: run hss-certificate
 #hooks:
 #  install:
-#    plugs: [home, network]
+#    plugs: [network]
 #  configure:
 #    plugs: [home, network]
 parts:
@@ -140,34 +125,57 @@ parts:
       - libsctp-dev
       - mysql-client
       - mysql-server
+      - libaio1
+      - libevent-core-2.0-5
+      - libhtml-template-perl
+      - mysql-client-5.7
+      - mysql-client-core-5.7
+      - mysql-common
+      - mysql-server-5.7
+      - mysql-server-core-5.7
+    stage:
+      - lib/*/*.so.*
+      - usr/lib/*/*.so.*
     build: |
       cd scripts
       ./build_hss  -i -F -e 
       ./build_hss
     install: |
       mkdir -p $SNAPCRAFT_PART_INSTALL/hss
-      mkdir -p $SNAPCRAFT_PART_INSTALL/scripts
-      cp etc/hss*  $SNAPCRAFT_PART_INSTALL/hss/
       cp /usr/bin/mysqladmin $SNAPCRAFT_PART_INSTALL/hss/
       cp /usr/bin/mysql $SNAPCRAFT_PART_INSTALL/hss/
-      cp etc/acl.conf  $SNAPCRAFT_PART_INSTALL/hss/
       cp src/oai_hss/db/oai_db.sql $SNAPCRAFT_PART_INSTALL/hss/
-      cp scripts/*  $SNAPCRAFT_PART_INSTALL/scripts
       cp build/hss/build/*.*  $SNAPCRAFT_PART_INSTALL/hss
       cp build/hss/build/oai_hss  $SNAPCRAFT_PART_INSTALL/hss/
     stage:
       - hss/*
-      - scripts/*
       - usr/lib/*
       - lib/*
     prime:
       - hss/*
-      - scripts/*
       - usr/lib/*
       - lib/*
+  fd:
+    plugin: cmake
+    source: https://gitlab.eurecom.fr/oai/freediameter.git
+    source-branch: eurecom-1.2.0
+    build: |
+      mkdir build
+      cd build
+      cmake -DCMAKE_INSTALL_PREFIX:PATH=$SNAPCRAFT_PART_INSTALL/usr/local ../
+      #cmake ../
+      make -j`nproc`     
+    install: |
+      cd build
+      sudo -S -E make install
+      #mkdir -p $SNAPCRAFT_PART_INSTALL/usr/local/lib/freeDiameter/
+      #sudo cp -r /usr/local/lib/freeDiameter $SNAPCRAFT_PART_INSTALL/usr/local/lib
+    stage:
+      - lib/*
+      - usr/local/*
+    prime:
+      - lib/*
+      - usr/local/*
   frontend:
     plugin: dump
     source: frontend
-  hooks:
-   plugin: dump
-   source: hooks

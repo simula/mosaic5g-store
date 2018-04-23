@@ -1,0 +1,79 @@
+#!/bin/sh
+
+. $SNAP/common
+
+echo "Init $1"
+
+case "$1" in
+    "hss" )
+	# this part needs sudo privilage 
+  	service mysql restart
+
+	if [ -z "$(grep -o "`hostname`.$REALM" /etc/hosts)" ]; then
+	    cp /etc/hosts /etc/hosts.orig
+	    echo 127.0.0.1 localhost > /etc/hosts
+	    echo 127.0.0.1 `hostname`.$REALM `hostname` hss >> /etc/hosts
+	    echo 127.0.0.1 `hostname`.$REALM `hostname` mme >> /etc/hosts
+	fi
+
+	$SNAP/run import-db
+	$SNAP/run hss-certificate
+	$SNAP/run hss-add-mme
+	
+	cp $SNAP/etc/hss.conf $CONF_DIR
+	cp $SNAP/etc/hss_fd.conf $CONF_DIR
+	cp $SNAP/etc/acl.conf $CONF_DIR
+	# set the hss.conf
+	$SNAP/conf set-hss $CONF_DIR/hss.conf
+
+	# a copy for the user
+	cp $SNAP/etc/hss.conf $SNAP_USER_DATA
+	cp $SNAP/etc/hss_fd.conf $SNAP_USER_DATA
+	cp $SNAP/etc/acl.conf $SNAP_USER_DATA
+	echo "HSS is initialized"
+	;;
+    
+    "mme" )
+
+	if [ -z "$(grep -o "`hostname`.$REALM" /etc/hosts)" ]; then
+	    cp /etc/hosts /etc/hosts.orig
+	    echo 127.0.0.1 localhost > /etc/hosts
+	    echo 127.0.0.1 `hostname`.$REALM `hostname` hss >> /etc/hosts
+	    echo 127.0.0.1 `hostname`.$REALM `hostname` mme >> /etc/hosts
+	fi
+	$SNAP/run mme-certificate
+
+	cp $SNAP/etc/mme.conf $CONF_DIR
+	cp $SNAP/etc/mme_fd.conf $CONF_DIR
+
+	# set the mme.conf
+	$SNAP/conf set-mme $CONF_DIR/mme.conf
+
+	# a copy for the user
+	cp $SNAP/etc/mme.conf $SNAP_USER_DATA
+	cp $SNAP/etc/mme_fd.conf $SNAP_USER_DATA
+	echo "MME is initialized"
+	echo "Now, configure the mme.conf file (mainly the NETWORK_INTERFACES section)"
+	
+	
+	;;
+    "spgw" )
+
+	cp $SNAP/etc/spgw.conf $CONF_DIR
+
+	# set the hss.conf
+	$SNAP/conf set-spgw $CONF_DIR/spgw.conf
+
+	# a copy for the user
+	cp $SNAP/etc/spgw.conf $SNAP_USER_DATA
+	echo "SPGW is initialized"
+	echo "Now, configure the mme.conf file (mainly the NETWORK_INTERFACES and P-GW sections)"
+	;;
+    * )
+	echo "Unknown command: $1"
+	;;
+
+esac
+
+	
+

@@ -1,0 +1,35 @@
+#!/bin/sh
+
+export DEBIAN_FRONTEND=noninteractive
+set -e
+#export UHD_IMAGES_DIR=$SNAP/uhd_images
+
+
+CONF_DIR="$SNAP_DATA"
+
+MME_DIR="$SNAP/mme"
+MME_CONF_FILE="$CONF_DIR/mme.conf"
+MME_FD_CONF_FILE="$CONF_DIR/mme_fd.conf"
+MME_EXEC="$MME_DIR/mme"
+
+
+SPGW_DIR="$SNAP/spgw"
+SPGW_CONF_FILE="$CONF_DIR/spgw.conf"
+SPGW_EXEC="$SPGW_DIR/spgw"
+
+
+HSS_DIR="$SNAP/hss"
+HSS_CONF_FILE="$CONF_DIR/hss.conf"
+HSS_FD_CONF_FILE="$CONF_DIR/hss_fd.conf"
+HSS_ACL_CONF_FILE="$CONF_DIR/acl.conf"
+HSS_EXEC="$HSS_DIR/oai_hss"
+HSS_DB="$HSS_DIR/oai_db.sql"
+
+
+# test command
+# mysql -h 127.0.0.1 -u root --password=linux -e "DROP DATABASE IF EXISTS oai_db;"
+#mysql -h 127.0.0.1 -u root --password=linux -e "CREATE DATABASE IF NOT EXISTS oai_db;"
+#mysql -h 127.0.0.1 -u root -plinux oai_db < /snap/oai-cn/current/hss/oai_db.sql 
+
+
+REALM="openair4G.eur"

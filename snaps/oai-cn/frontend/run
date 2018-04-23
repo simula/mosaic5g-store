@@ -1,42 +1,6 @@
 #!/bin/sh
 
-export DEBIAN_FRONTEND=noninteractive
-set -e
-export HOME="$SNAP_DATA"
-
-#export UHD_IMAGES_DIR=$SNAP/uhd_images
-
-DEFAULT_CONF_DIR="/usr/local/etc/oai/"
-
-REALM="openair4G.eur"
-FD_DIR="$SNAP_USER_DATA"
-
-MME_CONF_DIR="mme"
-MME_CONF="$SNAP/$MME_CONF_DIR/mme.conf"
-MME_CONF_FD="$SNAP/$MME_CONF_DIR/mme_fd.conf"
-MME_EXEC="$SNAP/$MME_CONF_DIR/mme"
-MME_CERT="$SNAP/scripts/check_mme_s6a_certificate $FD_DIR mme.$REALM"
-
-SPGW_CONF_DIR="spgw"
-SPGW_CONF="$SNAP/$SPGW_CONF_DIR/spgw.conf"
-SPGW_EXEC="$SNAP/$SPGW_CONF_DIR/spgw"
-
-HSS_CONF_DIR="hss"
-HSS_CONF="$SNAP/$HSS_CONF_DIR/hss.conf"
-HSS_CONF_FD="$SNAP/$HSS_CONF_DIR/hss_fd.conf"
-HSS_EXEC="$SNAP/$HSS_CONF_DIR/oai_hss"
-HSS_DB="$SNAP/$HSS_CONF_DIR/oai_db.sql"
-#HSS_DB_DROP="$SNAP/$HSS_CONF_DIR/mysqladmin --force -h 127.0.0.1 -u root -p linux drop oai_db"
-HSS_DB_Q1="DROP DATABASE IF EXISTS oai_db;"
-HSS_DB_DROP="$SNAP/$HSS_CONF_DIR/mysql --force -h 127.0.0.1 -u root --password=linux -e "${HSS_DB_Q1}""
-HSS_DB_Q2="CREATE DATABASE IF NOT EXISTS oai_db;"
-HSS_DB_CREATE="$SNAP/$HSS_CONF_DIR/mysql -h 127.0.0.1 -u root --password=linux -e "${HSS_DB_Q2}""
-HSS_DB_IMPORT="$SNAP/$HSS_CONF_DIR/mysql -h 127.0.0.1 -u root -plinux oai_db < $HSS_DB" 
-HSS_CERT="$SNAP/scripts/check_hss_s6a_certificate $FD_DIR hss.$REALM"
-# test command
-# mysql -h 127.0.0.1 -u root --password=linux -e "DROP DATABASE IF EXISTS oai_db;"
-#mysql -h 127.0.0.1 -u root --password=linux -e "CREATE DATABASE IF NOT EXISTS oai_db;"
-#mysql -h 127.0.0.1 -u root -plinux oai_db < /snap/oai-cn/current/hss/oai_db.sql 
+. $SNAP/common
 
 
 
@@ -55,141 +19,201 @@ if [ ! -e $HSS_EXEC ]; then
     exit -1
 fi
 
-
-if [ -r $SNAP_USER_DATA/config_mme.sh ]; then
-    . $SNAP_USER_DATA/config_mme.sh
+kern=`uname -r`
+kern_version=`echo $kern | cut -d '.' -f1`
+kern_major_revision=`echo $kern | cut -d '.' -f2`
+if [ $kern_version -lt 4 ] && [ $kern_major_revision -le 10 ]; then
+    echo "[Warn] Kernel $kern does not support GTP"
 fi
 
-if [ -r $SNAP_USER_DATA/config_spgw.sh ]; then
-    . $SNAP_USER_DATA/config_spgw.sh
-fi
-if [ -r $SNAP_USER_DATA/config_hss.sh ]; then
-    . $SNAP_USER_DATA/config_hss.sh
+
+if [ -r $SNAP_DATA/config_mme.sh ]; then
+    . $SNAP_DATA/config_mme.sh
 fi
 
-MME_CONFIG=${MME_CONFIG:-$MME_CONF}
+if [ -r $SNAP_DATA/config_spgw.sh ]; then
+    . $SNAP_DATA/config_spgw.sh
+fi
+if [ -r $SNAP_DATA/config_hss.sh ]; then
+    . $SNAP_DATA/config_hss.sh
+fi
+
+MME_CONFIG=${MME_CONF_FILE2:-$MME_CONF_FILE}
 MME_EXEC_ARGS=" -c $MME_CONFIG "
 
-SPGW_CONFIG=${SPGW_CONFIG:-$SPGW_CONF}
+SPGW_CONFIG=${SPGW_CONF_FILE2:-$SPGW_CONF_FILE}
 SPGW_EXEC_ARGS=" -c $SPGW_CONFIG "
 
-HSS_CONFIG=${HSS_CONFIG:-$HSS_CONF}
+HSS_CONFIG=${HSS_CONF_FILE2:-$HSS_CONF_FILE}
 HSS_EXEC_ARGS=" -c $HSS_CONFIG "
+
 
 
 case "$1" in
     "gdb" )
 	echo "Running $2 with the gdb"
-	touch      $SNAP_USER_DATA/.gdb_$2
-	chmod 777  $SNAP_USER_DATA/.gdb_$2
-	echo "file ${2^^}_EXEC"        > $SNAP_USER_DATA/.gdb_$2
-	echo "set args ${2^^}_EXEC_ARGS" >> $SNAP_USER_DATA/.gdb_$2
-	echo "run"                     >> $SNAP_USER_DATA/.gdb_$2
-	cat $SNAP_USER_DATA/.gdb_$2
-	exec $SNAP/gdb --data-directory=$SNAP_USER_DATA  -n -x $SNAP_USER_DATA/.gdb_$2
+	touch      $SNAP_DATA/.gdb_$2
+	chmod 777  $SNAP_DATA/.gdb_$2
+	echo "file ${2^^}_EXEC"        > $SNAP_DATA/.gdb_$2
+	echo "set args ${2^^}_EXEC_ARGS" >> $SNAP_DATA/.gdb_$2
+	echo "run"                     >> $SNAP_DATA/.gdb_$2
+	cat $SNAP_DATA/.gdb_$2
+	exec $SNAP/gdb --data-directory=$SNAP_DATA  -n -x $SNAP_DATA/.gdb_$2
 	;;
     "start"  )
-		echo "starting $2"
-		[ -z "${2^^}_EXEC" ] || ( sudo snap start $2 )
-		;;
-	"stop" )
-		sudo snap stop $SNAP_NAME
-		;;
-	"restart" )
-		sudo snap restart $SNAP_NAME
-		;;
-	"status" )
-		sudo systemctl status  snap.$SNAP_NAME.daemon.service
-		;;
-	"journal" )
-		sudo journalctl -u snap.$SNAP_NAME.daemon.service
-		;;
-  	"help" )
-		echo "Usage:     $SNAP_NAME or $SNAP_NAME.[options] args"
-		echo "Options:"
-		echo "  debug:   debug the $SNAP_NAME with gdb"
-		echo "  start:   start the $SNAP_NAME daemon"
-		echo "  stop:    stop the $SNAP_NAME daemon"
-		echo "  restart: restart the $SNAP_NAME daemon"
-		echo "  status:  get the $SNAP_NAME status"
-		echo "  journal: get the $SNAP_NAME logs"
-		echo "  help:    print this help"
-		;;
+	echo "starting $2"
+	[ -z "${2^^}_EXEC" ] || ( sudo snap start $2 )
+	;;
+    "stop" )
+	sudo snap stop $SNAP_NAME
+	;;
+    "restart" )
+	sudo snap restart $SNAP_NAME
+	;;
+    "status" )
+	sudo systemctl status  snap.$SNAP_NAME.daemon.service
+	;;
+    "journal" )
+	sudo journalctl -u snap.$SNAP_NAME.daemon.service
+	;;
+    "help" )
+	echo "Usage:   sudo  $SNAP_NAME.[options] args"
+	echo "Note:    need root priviliage"
+	echo "Options:"
+	echo "  hss:            run HSS "
+	echo "  hss-init:       initialize HSS (after the 1st installation)"
+	echo "  hss-conf-set:   set the HSS configuration file"
+	echo "  hss-conf-get:   get the current HSS configuration file (hss.conf)"
+	echo "  hss-conf-show:  show the path to the HSS configuration file (hss.conf)"
+	echo "  hss-conf-list:  list all the HSS configuration files (hss.conf, hss_fd)"
+	echo ""
+	echo "  mme:            run MME"
+	echo "  mme-init:       initialize MME"
+	echo "  mme-conf-set:   set the MME configuration file"
+	echo "  mme-conf-get:   get the current MME configuration file (mme.conf)"
+	echo "  mme-conf-show:  show the path to the MME configuration file (mme.conf)"
+	echo "  mme-conf-list:  list all the SPGW configuration files (mme.conf, mme_fd)"
+	echo ""
+	echo "  spgw:           run SPGW"
+	echo "  spgw-init:      initialize SPGW"
+	echo "  spgw-init:      initialize SPGW"
+	echo "  spgw-conf-set:  set the SPGW configuration file"
+	echo "  spgw-conf-get:  get the current SPGW configuration file (spgw.conf)"
+	echo "  spgw-conf-show: show the path to the SPGW configuration file (spgw.conf)"
+	echo "  spgw-conf-list: list all the SPGW configuration files (spgw.conf)"
+	echo "  help:           print this help"
+	echo "  Example: sudo oai-cn.hss-init; sudo oai-cn.hss;" 
+	;;
     mme )
-	echo "run with confilg file: $MME_CONFIG"
-	exec $MME_EXEC  `echo $MME_EXEC_ARGS` 
+	if [ -n "$LD_LIBRARY_PATH" ]; then
+	    LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$SNAP/lib:$SNAP/usr/lib:$SNAP/usr/local/lib:$SNAP/usr/local/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
+	else
+	    LD_LIBRARY_PATH=$SNAP/lib:$SNAP/usr/lib:$SNAP/usr/local/lib:$SNAP/usr/local/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu
+	fi
+	export LD_LIBRARY_PATH
+	
+	echo "$MME_EXEC  `echo $MME_EXEC_ARGS`"
+	$MME_EXEC  `echo $MME_EXEC_ARGS` "$@"
 	;;
     spgw )
-        echo "run with confilg file: $SPGW_CONFIG"
-        exec $SPGW_EXEC  `echo $SPGW_EXEC_ARGS` 
+	if [ -n "$LD_LIBRARY_PATH" ]; then
+	    LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$SNAP/lib:$SNAP/usr/lib:$SNAP/usr/local/lib:$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
+	else
+	    LD_LIBRARY_PATH=$SNAP/lib:$SNAP/usr/lib:$SNAP/usr/local/lib:$SNAP/usr/local/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu
+	fi
+	export LD_LIBRARY_PATH
+	
+        echo "$SPGW_EXEC  `echo $SPGW_EXEC_ARGS`" 
+	$SPGW_EXEC  `echo $SPGW_EXEC_ARGS` "$@"
         ;;
 
     hss )
-        echo "run with confilg file: $HSS_CONFIG"
-        $HSS_EXEC  $HSS_EXEC_ARGS 
+	if [ -n "$LD_LIBRARY_PATH" ]; then
+	    LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$SNAP/lib:$SNAP/usr/lib:$SNAP/usr/local/lib:$SNAP/usr/local/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
+	else
+	    LD_LIBRARY_PATH=$SNAP/lib:$SNAP/usr/lib:$SNAP/usr/local/lib:$SNAP/usr/local/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu
+	fi
+	export LD_LIBRARY_PATH
+	
+        echo "$HSS_EXEC  $HSS_EXEC_ARGS"
+	$HSS_EXEC  `echo $HSS_EXEC_ARGS`  "$@" $*
         ;;
+    
     import-db )
-	service mysql restart 
-
-	$SNAP/$HSS_CONF_DIR/mysql --force -h 127.0.0.1 -u root --password=linux -e "${HSS_DB_Q1}"
-	$SNAP/$HSS_CONF_DIR/mysql -h 127.0.0.1 -u root --password=linux -e "${HSS_DB_Q2}"
-	$SNAP/$HSS_CONF_DIR/mysql -h 127.0.0.1 -u root -plinux oai_db < $HSS_DB 
+	
+	HSS_DB_Q1="DROP DATABASE IF EXISTS oai_db;"
+	HSS_DB_Q2="CREATE DATABASE IF NOT EXISTS oai_db;"
+	
+	$HSS_DIR/mysql --force -h 127.0.0.1 -u root --password=linux -e "${HSS_DB_Q1}"
+	$HSS_DIR/mysql -h 127.0.0.1 -u root --password=linux -e "${HSS_DB_Q2}"
+	$HSS_DIR/mysql -h 127.0.0.1 -u root -plinux oai_db < $HSS_DB 
 
 	if [ $? -gt 0 ] ; then
 	    echo "failed to import HSS DB"
-	    rm -f $SNAP_USER_DATA/hss_db_import.sh
+	    rm -rf $SNAP_DATA/hss_db_import.sh
 	else
 	    echo "imported the HSS DB to mysql"
-	    echo "$HSS_DB_IMPORT" > $SNAP_USER_DATA/hss_db_import.sh
+	    echo "$HSS_DB_IMPORT" > $SNAP_DATA/hss_db_import.sh
+	fi
+	;;
+     hss-add-mme)
+	 fqdn=`hostname --fqdn`
+	 echo "Found MME FQDN: $fqdn"
+	 if [ -z "$($HSS_DIR/mysql -u root --password=linux -h 127.0.0.1 oai_db -e "select mmehost from mmeidentity where mmehost='$fqdn'";)" ]; then
+
+	    #count how many in order to compute the right primary key
+	    
+	    primary_key=`$HSS_DIR/mysql -u root --password=linux -h 127.0.0.1 oai_db -e "select max(idmmeidentity) from mmeidentity;" | egrep [0-9]+`
+
+	    primary_key=$((primary_key + 1))
+
+	    echo "Inserting the MME info in the mmeidentity table of oai_db database"
+	    #Inserting the mme in the database to let epc connect to hss
+	    $HSS_DIR/mysql -u root --password=linux -h 127.0.0.1 oai_db << EOF 
+INSERT INTO mmeidentity (\`idmmeidentity\`, \`mmehost\`, \`mmerealm\`, \`UE-Reachability\`) VALUES ('$primary_key', '$fqdn', '$REALM', 0);
+EOF
+
 	fi
 	;;
     hss-certificate  )
-	if [ -z "$(grep -o "`hostname`.$REALM" /etc/hosts)" ]; then
-	    echo 127.0.0.1 localhost > /etc/hosts
-	    echo 127.0.0.1 `hostname`.$REALM `hostname` hss >> /etc/hosts
-	    echo 127.0.0.1 `hostname`.$REALM `hostname` mme >> /etc/hosts
-	fi
-
+	
 	rm -rf ./demoCA
 	mkdir ./demoCA
 	echo 01 > ./demoCA/serial
 	touch ./demoCA/index.txt
-  
-	echo "Creating HSS certificate for user $FD_DIR hss.$REALM"
+	fqdn=`hostname --fqdn`
+	echo "Creating HSS certificate for user: $CONF_DIR $fqdn"
 	# Create a Root Certification Authority Certificate
-	openssl req  -new -batch -x509 -days 3650 -nodes -newkey rsa:1024 -out hss.cacert.pem -keyout hss.cakey.pem -subj /CN=$REALM/C=FR/ST=PACA/L=Aix/O=Eurecom/OU=CM
+	openssl req  -new -batch -x509 -days 3650 -nodes -newkey rsa:1024 -out hss.cacert.pem -keyout hss.cakey.pem -subj /CN=$fqdn/C=FR/ST=PACA/L=Aix/O=Eurecom/OU=CM
 	# Generate a Private Key
 	openssl genrsa -out hss.key.pem 1024
 	# Generate a CSR (Certificate Signing Request) that will be self-signed
-	openssl req -new -batch -out hss.csr.pem -key hss.key.pem -subj /CN=$REALM/C=FR/ST=PACA/L=Aix/O=Eurecom/OU=CM
+	openssl req -new -batch -out hss.csr.pem -key hss.key.pem -subj /CN=$fqdn/C=FR/ST=PACA/L=Aix/O=Eurecom/OU=CM
 	#certificate authority 
 	openssl ca -cert hss.cacert.pem -keyfile hss.cakey.pem -in hss.csr.pem -out hss.cert.pem -outdir . -batch
-	mkdir -p $FD_DIR/
-	mv hss.cakey.pem hss.cert.pem hss.cacert.pem hss.key.pem $FD_DIR
+	mkdir -p $CONF_DIR/
+	mv hss.cakey.pem hss.cert.pem hss.cacert.pem hss.key.pem $CONF_DIR
 	;;
 
     mme-certificate  )
-	if [ -z "$(grep -o "`hostname`.$REALM" /etc/hosts)" ]; then
-	    echo 127.0.0.1 localhost > /etc/hosts
-	    echo 127.0.0.1 `hostname`.$REALM `hostname` hss >> /etc/hosts
-	    echo 127.0.0.1 `hostname`.$REALM `hostname` mme >> /etc/hosts
-	fi
+
 	rm -rf ./demoCA
 	mkdir ./demoCA
 	echo 01 > ./demoCA/serial
 	touch ./demoCA/index.txt
 
-	echo "Creating MME certificate for user $FD_DIR hss.$REALM"
+	fqdn=`hostname --fqdn`
+	echo "Creating MME certificate for user $CONF_DIR $fqdn"
 	# Create a Root Certification Authority Certificate
-	openssl req  -new -batch -x509 -days 3650 -nodes -newkey rsa:1024 -out mme.cacert.pem -keyout mme.cakey.pem -subj /CN=$REALM/C=FR/ST=PACA/L=Aix/O=Eurecom/OU=CM
+	openssl req  -new -batch -x509 -days 3650 -nodes -newkey rsa:1024 -out mme.cacert.pem -keyout mme.cakey.pem -subj /CN=$fqdn/C=FR/ST=PACA/L=Aix/O=Eurecom/OU=CM
 	# Generate a Private Key
-	openssl genrsa -out hss.key.pem 1024
+	openssl genrsa -out mme.key.pem 1024
 	# Generate a CSR (Certificate Signing Request) that will be self-signed
-	openssl req -new -batch -out mme.csr.pem -key mme.key.pem -subj /CN=$REALM/C=FR/ST=PACA/L=Aix/O=Eurecom/OU=CM
+	openssl req -new -batch -out mme.csr.pem -key mme.key.pem -subj /CN=$fqdn/C=FR/ST=PACA/L=Aix/O=Eurecom/OU=CM
 	#certificate authority
 	openssl ca -cert mme.cacert.pem -keyfile mme.cakey.pem -in mme.csr.pem -out mme.cert.pem -outdir . -batch
-	mkdir -p $FD_DIR/
-	mv mme.cakey.pem mme.cert.pem mme.cacert.pem mme.key.pem  $FD_DIR
+	mkdir -p $CONF_DIR/
+	mv mme.cakey.pem mme.cert.pem mme.cacert.pem mme.key.pem  $CONF_DIR
 	;;
     
     * )
