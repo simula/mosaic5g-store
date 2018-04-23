@@ -268,7 +268,43 @@ only if the support has been programmed into it. Currently, the following
 
 ## SMA App Protocol (Spectrum Sharing)
 
-TBD <need examples and descriptions>
+Examples:
+
+Getting list of assigned rules to eNB
+```json
+    {"method":"get-list", "id":"get-list"}
+```
+Response contain all information about rule assigned to specific eNB in form of list with first entry as selected and next as optional possible but not selected. Each rule contain data such a frequency, bandwidth, cost, duration, etc.
+
+Setting rule group (due to specific eNB)
+```json
+    {"method":"set-rule", "id":"set-rule", "params": {"enb_id": 3, "group":"A"}}
+```
+This command set rule "A" to eNB with id equal 3. Both parameters are optional. Default enb_id is 0 and default group is A.
+
+Enable graph on PC with SMA_APP
+```json 
+    {"method": "enable_graph", "id":"enable_graph"}
+```
+
+Disalbe graph on PC with SMA_APP
+```json
+    {"method": "disable_graph", "id":"disable_graph"}
+```
+This two methods can turn on/off graph with price over time and with visualisation of selected bandwidth.
+
+Saving status of application
+```json
+    {"method":"save_status", "id":"save_status"}
+```
+
+Loading status of application
+```json
+    {"method":"load_status", "id":"load_status"}
+```
+Save/Load data such as information of enabling graphs or table with rule assigment to eNB. 
+
+
 
 ## Monitoring APP Protocol (KPIs)
 
