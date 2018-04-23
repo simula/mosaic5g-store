@@ -1,63 +1,75 @@
 #!/bin/sh
 
-export DEBIAN_FRONTEND=noninteractive
-set -e
+. $SNAP/common
 
-if [ ! -e $SNAP/$SNAP_NAME ]; then
-    echo "Command $SNAP/$SNAP_NAME not found"
+if [ ! -e $LLMEC_EXEC  ]; then
+    echo "Command $LLMEC_EXEC not found"
     exit 127
 fi		   	   
 
-if [ -r $SNAP_USER_DATA/config.sh ]; then
-    . $SNAP_USER_DATA/config.sh
+if [ -r $CONF_DIR/config.sh ]; then
+    . $CONF_DIR/config.sh
 fi
 
-export HOME="$SNAP_DATA"
-
 # default config file is llmec_config.json (unless set in above config)
-CONFIG=${CONFIG:-$SNAP/llmec_config.json}
-exe_arguments="$exe_arguments -c $CONFIG"
+LLMEC_CONFIG=${LLMEC_CONF_FILE2:-$LLMEC_CONF_FILE}
+# To let the service start automatically
+# if ll-mec config file is not initialized, get the default 
+if [ -e "$LLMEC_CONFIG" ] ; then
+    LLMEC_EXEC_ARGS=" -c $LLMEC_CONFIG"
+else
+    #$SNAP/init
+    LLMEC_EXEC_ARGS=" -c $SNAP/etc/llmec_config.json"
+    cp $SNAP/etc/llmec_config.json $SNAP_USER_DATA
+fi
 
 case "$1" in
     "gdb" )
-		echo "Running $SNAP_NAME with the gdb"
-		touch      $SNAP_USER_DATA/.gdb_$SNAP_NAME
-		chmod 777  $SNAP_USER_DATA/.gdb_$SNAP_NAME
-		echo "file $SNAP/$SNAP_NAME"        > $SNAP_USER_DATA/.gdb_$SNAP_NAME
-		echo "set args $exe_arguments" >> $SNAP_USER_DATA/.gdb_$SNAP_NAME
-		echo "run"                     >> $SNAP_USER_DATA/.gdb_$SNAP_NAME
-		cat $SNAP_USER_DATA/.gdb_$SNAP_NAME
-		exec $SNAP/gdb --data-directory=$SNAP_USER_DATA  -n -x $SNAP_USER_DATA/.gdb_$SNAP_NAME
-		;;
+	echo "Running $SNAP_NAME with the gdb"
+	touch      $SNAP_DATA/.gdb_$SNAP_NAME
+	chmod 777  $SNAP_DATA/.gdb_$SNAP_NAME
+	echo "file $LLMEC_EXEC"           > $SNAP_DATA/.gdb_$SNAP_NAME
+	echo "set args $LLMEC_EXEC_ARGS" >> $SNAP_DATA/.gdb_$SNAP_NAME
+	echo "run"                       >> $SNAP_DATA/.gdb_$SNAP_NAME
+	cat $SNAP_DATA/.gdb_$SNAP_NAME
+	exec $SNAP/gdb --data-directory=$SNAP_DATA  -n -x $SNAP_DATA/.gdb_$SNAP_NAME
+	;;
     
-   	"start"  )
-		sudo snap start $SNAP_NAME
-		;;
-	"stop" )
-		sudo snap stop $SNAP_NAME
-		;;
-	"restart" )
-		sudo snap restart $SNAP_NAME
-		;;
-	"status" )
-		sudo systemctl status  snap.$SNAP_NAME.daemon.service
-		;;
-	"journal" )
-		sudo journalctl -u snap.$SNAP_NAME.daemon.service
-		;;
-	"help" )
-		echo "Usage:     $SNAP_NAME or $SNAP_NAME.[options]"
-		echo "Options:"
-		echo "  debug:   debug the $SNAP_NAME with gdb"
-		echo "  start:   start the $SNAP_NAME daemon"
-		echo "  stop:    stop the $SNAP_NAME daemon"
-		echo "  restart: restart the $SNAP_NAME daemon"
-		echo "  status:  get the $SNAP_NAME status"
-		echo "  journal: get the $SNAP_NAME logs"
-		echo "  help:    print this help"
-		;;
+    "start"  )
+	snap start $SNAP_NAME
+	;;
+    "stop" )
+	snap stop $SNAP_NAME
+	;;
+    "restart" )
+	snap restart $SNAP_NAME
+	;;
+    "status" )
+	systemctl status  snap.$SNAP_NAME.daemon.service
+	;;
+    "journal" )
+	journalctl -u snap.$SNAP_NAME.daemon.service
+	;;
+    "help" )
+	echo "Usage:            sudo $SNAP_NAME or $SNAP_NAME.[options]"
+	echo "Note:             root priviliage required"
+	echo "Options:"
+	echo "  debug:          debug the $SNAP_NAME with gdb"
+	echo "  start:          start the $SNAP_NAME daemon"
+	echo "  stop:           stop the $SNAP_NAME daemon"
+	echo "  restart:        restart the $SNAP_NAME daemon"
+	echo "  status:         get the $SNAP_NAME status"
+	echo "  journal:        get the $SNAP_NAME logs"
+	echo ""
+	echo "  ll-mec:         run LLMEC as a process"
+	echo "  init:           initialize LLMEC (after the 1st installation)"
+	echo "  set-conf:       set the LLMEC configuration file"
+	echo "  get-conf:       get the current LLMEC configuration file"
+	echo "  show-conf:      show the path to the LLMEC configuration file"		
+	echo "  help:           print this help"
+	;;
     *)
-	echo "run with confilg file: $CONFIG"
-	exec $SNAP/$SNAP_NAME  `echo $exe_arguments` "$@"
+	echo "$LLMEC_EXEC  `echo $LLMEC_EXEC_ARGS` "$@"" 
+	$LLMEC_EXEC  `echo $LLMEC_EXEC_ARGS` "$@"
 	;;
 esac

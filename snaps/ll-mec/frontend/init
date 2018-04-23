@@ -1,0 +1,14 @@
+#!/bin/sh
+
+. $SNAP/common
+
+cp $SNAP/etc/llmec_config.json $CONF_DIR
+
+# set the conf
+$SNAP/conf set $CONF_DIR/llmec_config.json
+
+# a copy for the user
+cp $SNAP/etc/llmec_config.json $SNAP_USER_DATA
+
+
+echo "LLMEC init: done "

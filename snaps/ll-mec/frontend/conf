@@ -1,9 +1,6 @@
 #!/bin/sh
 
-export DEBIAN_FRONTEND=noninteractive
-set -e
-
-SUDO='sudo -E '
+. $SNAP/common
 
 case "$1" in
     "set" )
@@ -14,35 +11,33 @@ case "$1" in
 	else
 	    # may be absolute path 
 	    if [ -f "$CONFIG_FILE" ]; then
-		if [ -f $SNAP_USER_DATA/$CONFIG_FILE ] ; then 
-		    echo "Reset the config file to: $SNAP_USER_DATA/$CONFIG_FILE"
-		else 
-		    echo "Adding and setting a new config file : $SNAP_USER_DATA/$CONFIG_FILE"
-		    cp $CONFIG_FILE $SNAP_USER_DATA/
+		if [ -f $SNAP_DATA/$CONFIG_FILE ] ; then 
+		    echo "Reset the config file to: $SNAP_DATA/$CONFIG_FILE"
+		else
+		    cp $CONFIG_FILE $SNAP_DATA/
+		    CONFIG_FILE=$SNAP_DATA/$(basename $CONFIG_FILE)
+		    echo "Adding and setting a new config file : $CONFIG_FILE"
 		fi
 	    else
-		echo "Config file <$CONFIG_FILE> not found in /snap/$SNAP_NAME/current directory"
-		echo "Reset to default config file: $SNAP/llmec_config.json"
-		CONFIG_FILE=""
+		echo "Config file <$CONFIG_FILE> not found in $SNAP/current directory"
+		echo "Reset to default config file: $LLMEC_CONF_FILE"
+		CONFIG_FILE=$LLMEC_CONF_FILE
 	    fi
 	fi
-	echo "CONFIG=$CONFIG_FILE" > $SNAP_USER_DATA/config.sh
+	echo "LLMEC_CONF_FILE2=$CONFIG_FILE" > $CONF_DIR/config.sh
+	echo "LLMEC_CONF_FILE2=$CONFIG_FILE" > $SNAP_USER_DATA/config.sh
 	;;
     
     *)
-	if [ -r $SNAP_USER_DATA/config.sh ]; then
-	    . $SNAP_USER_DATA/config.sh
+	if [ -r $SNAP_DATA/config.sh ]; then
+	    . $SNAP_DATA/config.sh
 	fi
 	
 	# default config file is llmec_config.json (unless set in above config)
-	CONFIG=${CONFIG:-$SNAP/llmec_config.json}
+	LLMEC_CONFIG=${LLMEC_CONF_FILE2:-$LLMEC_CONF_FILE}
 	# echo (get), cat (show)
-	$1 $CONFIG
+	$1 $LLMEC_CONFIG
 	;;
 esac
-
-#cat >$SNAP_USER_DATA/config.sh <<EOF
-#CONFIG=$CONFIG_FILE
-#EOF
     
 

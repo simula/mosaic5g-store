@@ -1,0 +1,11 @@
+#!/bin/sh
+
+export DEBIAN_FRONTEND=noninteractive
+set -e
+
+
+CONF_DIR="$SNAP_DATA"
+
+LLMEC_DIR="$SNAP"
+LLMEC_CONF_FILE="$CONF_DIR/llmec_config.json"
+LLMEC_EXEC="$LLMEC_DIR/$SNAP_NAME"
