@@ -272,7 +272,7 @@ class monitoring_app(object):
                 self.enb_ue_dl_mac_bytes_w[enb,ue]=0
                 self.enb_ue_ul_mac_rb[enb,ue]=0# number of Dl resource blocks scheduled by eNB for UE   
                 self.ue_ul_mac_maxmcs[ue]=0# Fixed
-                self.ue_dl_noise[ue] = -120.0
+                self.ue_dl_noise[ue] = -130.0
                 self.enb_ue_ul_mac_w[enb,ue]=0  
                 self.enb_ue_ul_mac_bytes_w[enb,ue]=0
                 for lc in range(0,4) :
@@ -479,7 +479,7 @@ class monitoring_app(object):
                     #     ' ue ' + str(ue) +
                     #     ' enb_ue_dl_phy_acked_bytes ' + str(self.enb_ue_dl_phy_acked_bytes[enb,ue]))
                     # set the prev_hid_tbs to the current value for use when round is complete. 
-                    self.enb_ue_prev_hid_tbs[enb,ue,hid] = self.enb_ue_dl_mac_tbs[enb,ue]
+                    # self.enb_ue_prev_hid_tbs[enb,ue,hid] = self.enb_ue_dl_mac_tbs[enb,ue]
 
                 # I think this code block is redundant
                     
@@ -529,40 +529,40 @@ class monitoring_app(object):
         for enb in range(0, sm.get_num_enb()) :
             for ue in range(0, sm.get_num_ue(enb=enb)) :
                 # PDCP
-                self.log.info('--------------------------------------PDCP------------------------------------------')
-                self.log.info('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) + 
-                        ' tti=' + str(0) + 
-                        ' eNB ' + str(enb) +
-                        ' ue ' + str(ue) +
-                        ' enb_ue_dl_pdcp ' + str(self.enb_ue_dl_pdcp[enb,ue]) +
-                        ' enb_ue_dl_pdcp_bytes ' + str(self.enb_ue_dl_pdcp_bytes[enb,ue]) +
-                        ' enb_ue_dl_pdcp_aiat ' + str(self.enb_ue_dl_pdcp_aiat[enb,ue]))
-                self.log.info('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) + 
-                        ' tti=' + str(0) + 
-                        ' eNB ' + str(enb) +
-                        ' ue ' + str(ue) +        
-                        ' enb_ue_ul_pdcp ' + str(self.enb_ue_ul_pdcp[enb,ue]) +
-                        ' enb_ue_ul_pdcp_bytes ' + str(self.enb_ue_ul_pdcp_bytes[enb,ue]) +
-                        ' enb_ue_ul_pdcp_aiat ' + str(self.enb_ue_ul_pdcp_aiat[enb,ue]) +
-                        ' enb_ue_ul_pdcp_oo ' + str(self.enb_ue_ul_pdcp_oo[enb,ue]))
-                self.log.info('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) + 
-                        ' tti=' + str(0) + 
-                        ' eNB ' + str(enb) +
-                        ' ue ' + str(ue) +        
-                        ' enb_ue_dl_pdcp_w ' + str(self.enb_ue_dl_pdcp_w[enb,ue]) +
-                        ' enb_ue_dl_pdcp_bytes_w ' + str(self.enb_ue_dl_pdcp_bytes_w[enb,ue]) +
-                        ' enb_ue_dl_pdcp_aiat_w ' + str(self.enb_ue_dl_pdcp_aiat_w[enb,ue]))
-                # RLC
-                self.log.info('-----------------------------------------RLC---------------------------------------')
-                for lc in range(0,3) :
-                    self.log.info('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) + 
-                            ' tti=' + str(0) + 
-                            ' eNB ' + str(enb) +
-                            ' ue ' + str(ue) +
-                            ' lc ' + str(lc) +        
-                            ' enb_ue_dl_rlc_queue_len_bytes ' + str(self.enb_ue_dl_rlc_queue_len_bytes[enb,ue,lc]) +
-                            ' enb_ue_dl_rlc_queue_num_pdu ' + str(self.enb_ue_dl_rlc_queue_num_pdu[enb,ue,lc]) +
-                            ' enb_ue_dl_rlc_hol_delay ' + str(self.enb_ue_dl_rlc_hol_delay[enb,ue,lc]))
+                # self.log.info('--------------------------------------PDCP------------------------------------------')
+                # self.log.info('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) +
+                #         ' tti=' + str(0) +
+                #         ' eNB ' + str(enb) +
+                #         ' ue ' + str(ue) +
+                #         ' enb_ue_dl_pdcp ' + str(self.enb_ue_dl_pdcp[enb,ue]) +
+                #         ' enb_ue_dl_pdcp_bytes ' + str(self.enb_ue_dl_pdcp_bytes[enb,ue]) +
+                #         ' enb_ue_dl_pdcp_aiat ' + str(self.enb_ue_dl_pdcp_aiat[enb,ue]))
+                # self.log.info('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) +
+                #         ' tti=' + str(0) +
+                #         ' eNB ' + str(enb) +
+                #         ' ue ' + str(ue) +
+                #         ' enb_ue_ul_pdcp ' + str(self.enb_ue_ul_pdcp[enb,ue]) +
+                #         ' enb_ue_ul_pdcp_bytes ' + str(self.enb_ue_ul_pdcp_bytes[enb,ue]) +
+                #         ' enb_ue_ul_pdcp_aiat ' + str(self.enb_ue_ul_pdcp_aiat[enb,ue]) +
+                #         ' enb_ue_ul_pdcp_oo ' + str(self.enb_ue_ul_pdcp_oo[enb,ue]))
+                # self.log.info('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) +
+                #         ' tti=' + str(0) +
+                #         ' eNB ' + str(enb) +
+                #         ' ue ' + str(ue) +
+                #         ' enb_ue_dl_pdcp_w ' + str(self.enb_ue_dl_pdcp_w[enb,ue]) +
+                #         ' enb_ue_dl_pdcp_bytes_w ' + str(self.enb_ue_dl_pdcp_bytes_w[enb,ue]) +
+                #         ' enb_ue_dl_pdcp_aiat_w ' + str(self.enb_ue_dl_pdcp_aiat_w[enb,ue]))
+                # # RLC
+                # self.log.info('-----------------------------------------RLC---------------------------------------')
+                # for lc in range(0,3) :
+                #     self.log.info('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) +
+                #             ' tti=' + str(0) +
+                #             ' eNB ' + str(enb) +
+                #             ' ue ' + str(ue) +
+                #             ' lc ' + str(lc) +
+                #             ' enb_ue_dl_rlc_queue_len_bytes ' + str(self.enb_ue_dl_rlc_queue_len_bytes[enb,ue,lc]) +
+                #             ' enb_ue_dl_rlc_queue_num_pdu ' + str(self.enb_ue_dl_rlc_queue_num_pdu[enb,ue,lc]) +
+                #             ' enb_ue_dl_rlc_hol_delay ' + str(self.enb_ue_dl_rlc_hol_delay[enb,ue,lc]))
                 # MAC    
                 self.log.info('-----------------------------------------MAC----------------------------------------')
                 self.log.info('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) + 
@@ -576,30 +576,30 @@ class monitoring_app(object):
                         ' enb_ue_dl_mac_tbs ' + str(self.enb_ue_dl_mac_tbs[enb,ue]) +
                         ' enb_ue_dl_mac_mcs ' + str(self.enb_ue_dl_mac_mcs[enb,ue]))
 
-                self.log.info('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) + 
-                        ' tti=' + str(0) + 
-                        ' eNB ' + str(enb) +
-                        ' ue ' + str(ue) + 
-                        ' ue_phr ' + str(self.ue_phr[enb,ue]) +
-                        ' enb_ue_ul_mac_rb ' + str(self.enb_ue_ul_mac_rb[enb,ue]) +
-                        ' enb_ue_ul_mac_retx_rb ' + str(self.enb_ue_ul_mac_retx_rb[enb,ue]) +
-                        ' enb_ue_ul_mac_bytes ' + str(self.enb_ue_ul_mac_bytes[enb,ue]) +
-                        ' enb_ue_ul_mac_tbs ' + str(self.enb_ue_ul_mac_tbs[enb,ue]) +
-                        ' enb_ue_ul_mac_mcs ' + str(self.enb_ue_ul_mac_mcs[enb,ue]))
-                for lc in range(0,4) :
-                    self.log.info('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) + 
-                        ' tti=' + str(0) + 
-                        ' eNB ' + str(enb) +
-                        ' ue ' + str(ue) +
-                        ' lc ' + str(lc) +
-                        ' lc_ue_bsr ' + str(self.lc_ue_bsr[enb,ue,lc]))
-
-                    self.log.info('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) + 
-                        ' tti=' + str(0) + 
-                        ' eNB ' + str(enb) +
-                        ' ue ' + str(ue) + 
-                        ' enb_ue_dl_rsrp ' + str(self.enb_ue_dl_rsrp[enb,ue]) +
-                        ' enb_ue_dl_rsrq ' + str(self.enb_ue_dl_rsrq[enb,ue]))
+                # self.log.info('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) +
+                #         ' tti=' + str(0) +
+                #         ' eNB ' + str(enb) +
+                #         ' ue ' + str(ue) +
+                #         ' ue_phr ' + str(self.ue_phr[enb,ue]) +
+                #         ' enb_ue_ul_mac_rb ' + str(self.enb_ue_ul_mac_rb[enb,ue]) +
+                #         ' enb_ue_ul_mac_retx_rb ' + str(self.enb_ue_ul_mac_retx_rb[enb,ue]) +
+                #         ' enb_ue_ul_mac_bytes ' + str(self.enb_ue_ul_mac_bytes[enb,ue]) +
+                #         ' enb_ue_ul_mac_tbs ' + str(self.enb_ue_ul_mac_tbs[enb,ue]) +
+                #         ' enb_ue_ul_mac_mcs ' + str(self.enb_ue_ul_mac_mcs[enb,ue]))
+                # for lc in range(0,4) :
+                #     self.log.info('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) +
+                #         ' tti=' + str(0) +
+                #         ' eNB ' + str(enb) +
+                #         ' ue ' + str(ue) +
+                #         ' lc ' + str(lc) +
+                #         ' lc_ue_bsr ' + str(self.lc_ue_bsr[enb,ue,lc]))
+                #
+                #     self.log.info('sfn=' + str(self.enb_dl_pdcp_sfn[enb]) +
+                #         ' tti=' + str(0) +
+                #         ' eNB ' + str(enb) +
+                #         ' ue ' + str(ue) +
+                #         ' enb_ue_dl_rsrp ' + str(self.enb_ue_dl_rsrp[enb,ue]) +
+                #         ' enb_ue_dl_rsrq ' + str(self.enb_ue_dl_rsrq[enb,ue]))
                 #PHY
                 #self.log.info('------------------------------------------PHY---------------------------------------')
 
@@ -652,7 +652,7 @@ class monitoring_app(object):
         # self.log.info('2.5 Gather RRC statistics')
         self.get_rrc_statistics(sm)     
 
-        # self.print_logs(sm)
+        self.print_logs(sm)
        
         
         t = Timer(monitoring_app.period, self.run,kwargs=dict(sm=sm,rrc=rrc))
@@ -815,11 +815,11 @@ if __name__ == '__main__':
                                           address=args.app_url,
                                           port=args.app_port)
 
-        monitoring_open_data = app_sdk.app_handler(log=log, callback=monitoring_app.open_data_on_message,
-                                                   notification=monitoring_app.open_data_on_notification)
-
-        app_open_data.add_options("list", handler=monitoring_open_data)
-        app_open_data.run_app()
+        # monitoring_open_data = app_sdk.app_handler(log=log, callback=monitoring_app.open_data_on_message,
+        #                                            notification=monitoring_app.open_data_on_notification)
+        #
+        # app_open_data.add_options("list", handler=monitoring_open_data)
+        # app_open_data.run_app()
     
 
     

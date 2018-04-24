@@ -78,6 +78,7 @@ class AquametApp(object):
     tti_time_ms = 1.0  # ms
     aquamet_log_file = None
     tagged_ue_log_file = None
+    handover_trigger_log_file = None
     tti_sample_count = 0
     max_rb_per_tti = 25 
     ttis_per_wm = measurement_time_window_ms/tti_time_ms
@@ -89,7 +90,7 @@ class AquametApp(object):
     # This can accept arguments that are passed when the object is created
     def __init__(self, log, url='http://localhost', port='9999', url_app='http://localhost', port_app='9090',
                  log_level='info', op_mode='test',
-                 measurement_time_window_ms=1000, num_meas_in_slid_wind=5,thput_tolerance=0.7):
+                 measurement_time_window_ms=500.0, num_meas_in_slid_wind=20,thput_tolerance=0.7):
         super(AquametApp, self).__init__()
         
         self.url = url+':'+port
@@ -142,6 +143,7 @@ class AquametApp(object):
 
                 self.aquamet_log_file = open("aquamet_log.txt", "w")
                 self.tagged_ue_log_file = open("tagged_ue_log.txt", "w")
+                self.handover_trigger_log_file = open("handover_trigger_log.txt", "w")
                 self.aquamet_log_file.write('running_sample_counter ' + 'enb_id ' + 'ue_id ' +
                                             'rsrp ' + 'rsrq ' + 'noise ' + 'est_snr ' + 'est_cqi ' + 'est_mcs ' +
                                             'pdcp_pkt_len_bytes ' + 'pdcp_sdu_arr_rate_pps ' + 'meas_cqi ' +
@@ -150,7 +152,8 @@ class AquametApp(object):
                                             'rsrp ' + 'rsrq ' + 'noise ' + 'est_snr ' + 'est_cqi ' + 'est_mcs ' +
                                             'pdcp_pkt_len_bytes ' + 'pdcp_sdu_arr_rate_pps ' + 'meas_cqi ' +
                                             'meas_mcs ' + 'meas_ratio_of_frame_alloc ' + 'meas_thput ' +
-                                              'est_ratio_of_frame_alloc ' + 'meas_prob_goog_thput' + '\n')
+                                            'meas_prob_good_thput' + '\n')
+                self.handover_trigger_log_file.write('Handover Trigger information \n')
 
     def aggregate_and_add_metrics_to_sliding_window(self, sm, monitoring_app):
         for enb in range(0, sm.get_num_enb()):
@@ -188,7 +191,7 @@ class AquametApp(object):
                 self.aquamet_log_file.write(str(self.aq_enb_ue_dl_est_snr[enb, ue]) + ' ')
                 if enb == 0 and ue == self.tagged_ue_id:
                     self.tagged_ue_log_file.write(str(self.tagged_ue_wm_counter) + ' ' +
-                                                str(enb) + ' ' + str(ue))
+                                                str(enb) + ' ' + str(ue) + ' ')
                     self.tagged_ue_log_file.write(str(monitoring_app.enb_ue_dl_rsrp[enb, ue]) + ' ')
                     self.tagged_ue_log_file.write(str(monitoring_app.enb_ue_dl_rsrq[enb, ue]) + ' ')
                     self.tagged_ue_log_file.write(str(monitoring_app.ue_dl_noise[ue]) + ' ')
@@ -232,7 +235,7 @@ class AquametApp(object):
                     0, self.wm_enb_ue_dl_pdcp[enb, ue]*1000 / float(self.measurement_time_window_ms)))
                 self.log.info('k=' + str(self.aq_enb_ue_sample_counter[enb, ue]) +
                               ' eNB ' + str(enb) + ' UE ' + str(ue) +
-                              ' PDCP_sdu_arr_rate_kbps '+str(self.aq_enb_ue_dl_pdcp_sdu_arr_rate_pps[enb, ue][0]))
+                              ' PDCP_sdu_arr_rate_pps '+str(self.aq_enb_ue_dl_pdcp_sdu_arr_rate_pps[enb, ue][0]))
 
                 self.aquamet_log_file.write(str(self.aq_enb_ue_dl_pdcp_sdu_arr_rate_pps[enb, ue][0]) + ' ')
 
@@ -324,27 +327,30 @@ class AquametApp(object):
                     if self.aq_enb_ue_dl_pdcp_sdu_arr_rate_pps[enb, ue][wind_ind] > 0.0:
                         aq_enb_active_ues.append(ue)
 
-                self.log.info('k=' + str(self.aq_enb_ue_sample_counter[enb, ue]) + ' eNB ' + str(enb) +
-                              ' UE ' + str(ue) + ' Num. active UEs in window '+str(len(aq_enb_active_ues)))
+                # self.log.info('k=' + str(self.aq_enb_ue_sample_counter[enb, ue]) + ' eNB ' + str(enb) +
+                #               ' UE ' + str(ue) + ' Num. active UEs in window '+str(len(aq_enb_active_ues)))
                 for ue in aq_enb_active_ues:
                     # WARNING!! Make sure that the mcs index starts from 0 since that is what this table takes
                     # Number of PRB to be taken from a config file 
                     # tbs in bytes. The table gives it in bits
                     itbs = rrm_app_vars.mcs_to_itbs[self.aq_enb_ue_dl_est_mcs[enb, ue][wind_ind]]
-                    dl_cell_bw_in_prb = sm.get_cell_rb(enb=enb, cc=0, dir='dl')
+                    # self.log.info(' itbs ' + str(itbs))
+                    # dl_cell_bw_in_prb = sm.get_cell_rb(enb=enb, cc=0, dir='dl')
+                    dl_cell_bw_in_prb = 25
+                    # self.log.info(' dl_cell_bw_in_prb ' + str(dl_cell_bw_in_prb))
                     # WARNING!! MAke sure that this table returns TBS in bits as specified by the standard document
-                    max_tbs = rrm_app_vars.tbs_table[itbs][dl_cell_bw_in_prb] / 8.0  # should be 0 if set is empty
-                    self.log.info(' max_TBS ' + str(max_tbs)) 
+                    max_tbs = rrm_app_vars.tbs_table[itbs][dl_cell_bw_in_prb-1] / 8.0  # should be 0 if set is empty
+                    # self.log.info(' max_TBS ' + str(max_tbs))
                     # Number of TTIs needed to send one pkt
                     # will be 0 if set is empty
                     N = math.ceil((self.aq_enb_ue_dl_pdcp_pkt_len_bytes[enb, ue][wind_ind])/float(max_tbs))
-                    self.log.info(' N ' + str(N)) 
+                    # self.log.info(' N ' + str(N))
                     # Amount of resources requested by UE. units, TTIs/10ms or subframes/frame
                     # will be 0 if either components are 0
                     X = (float(self.aq_enb_ue_dl_pdcp_sdu_arr_rate_pps[enb, ue][wind_ind])/100.0) * N
                     # self.log.info('Wm=' + str(self.aq_enb_ue_sample_counter[enb, ue]) + ' eNB ' + str(enb) + ' UE ' +
                     #  str(ue) + ' meas_thput_kbps '+str(monitoring_app.aq_enb_ue_dl_meas_thput[enb, ue][0]))
-                    self.log.info(' X ' + str(X)) 
+                    # self.log.info(' X ' + str(X))
                     # Number of flows that are high rate flows. i.e.
                     # number of flows that request resources > their share.
                     # Their share here is total resources / num. of active UEs.
@@ -355,17 +361,18 @@ class AquametApp(object):
                         # Sum of the resources requested by UEs that are requesting less than their share. 
                         sum_LR_X += X
   
-                (self.log.info('k=' + str(self.aq_enb_ue_sample_counter[enb, ue]) + ' eNB ' + str(enb) +
-                               ' UE ' + str(ue) + ' Num_HR '+str(num_HR) + ' Sum_LR_X ' + str(sum_LR_X)))
+                # (self.log.info('k=' + str(self.aq_enb_ue_sample_counter[enb, ue]) + ' eNB ' + str(enb) +
+                #                ' UE ' + str(ue) + ' Num_HR '+str(num_HR) + ' Sum_LR_X ' + str(sum_LR_X)))
 
                 for ue in enb_assn_set[enb]:
                     if ue in aq_enb_active_ues:
                         # Get stats from the first structure object which is the ue 
                         # whose attainable throughput is to be measured
                         itbs = rrm_app_vars.mcs_to_itbs[self.aq_enb_ue_dl_est_mcs[enb, ue][wind_ind]]
-                        dl_cell_bw_in_prb = sm.get_cell_rb(enb=enb, cc=0, dir='dl')
+                        # dl_cell_bw_in_prb = sm.get_cell_rb(enb=enb, cc=0, dir='dl')
+                        dl_cell_bw_in_prb = 25
                         # WARNING!! MAke sure that this table returns TBS in bits as specified by the standard document
-                        max_tbs = rrm_app_vars.tbs_table[itbs][dl_cell_bw_in_prb]/8.0  # should be 0 if set is empty
+                        max_tbs = rrm_app_vars.tbs_table[itbs][dl_cell_bw_in_prb-1]/8.0  # should be 0 if set is empty
                         # Number of TTIs needed to send one pkt
                         # will be 0 if set is empty
                         N = math.ceil((self.aq_enb_ue_dl_pdcp_pkt_len_bytes[enb, ue][wind_ind])/float(max_tbs))
@@ -381,16 +388,16 @@ class AquametApp(object):
                             
                         self.aq_enb_ue_dl_est_ratio_of_frame_alloc[enb, ue][wind_ind] = est_resource_alloc
                         self.aq_enb_ue_dl_att_thput[enb, ue][wind_ind] = \
-                            min((est_resource_alloc * max_tbs),
+                            min((est_resource_alloc * max_tbs * 8 / 10.0),
                                 ((self.aq_enb_ue_dl_pdcp_sdu_arr_rate_pps[enb, ue][wind_ind]/100.0) *
                                  (self.aq_enb_ue_dl_pdcp_pkt_len_bytes[enb, ue][wind_ind]) * 8 / 10.0))  # Kbps
                         
-                        self.log.info('Wind_ind=' + str(wind_ind) + ' eNB ' + str(enb) +
-                                      ' UE ' + str(ue) + ' Est. frac. of resource alloc. per frame ' +
-                                      str(est_resource_alloc))
-                        self.log.info('Wind_ind=' + str(wind_ind) + ' eNB ' + str(enb) +
-                                      ' UE ' + str(ue) + ' Est. attainable throughput ' +
-                                      str(self.aq_enb_ue_dl_att_thput[enb, ue][wind_ind]))
+                        # self.log.info('Wind_ind=' + str(wind_ind) + ' eNB ' + str(enb) +
+                        #               ' UE ' + str(ue) + ' Est. frac. of resource alloc. per frame ' +
+                        #               str(est_resource_alloc))
+                        # self.log.info('Wind_ind=' + str(wind_ind) + ' eNB ' + str(enb) +
+                        #               ' UE ' + str(ue) + ' Est. attainable throughput ' +
+                        #               str(self.aq_enb_ue_dl_att_thput[enb, ue][wind_ind]))
                     else:
                         self.aq_enb_ue_dl_est_ratio_of_frame_alloc[enb, ue][wind_ind] = 0
                         self.aq_enb_ue_dl_att_thput[enb, ue][wind_ind] = 0
@@ -532,11 +539,13 @@ class AquametApp(object):
                                       ' eNB ' + str(enb) + ' UE ' + str(ue) +
                                       ' Meas_prob_good_thput '+str(self.aq_meas_prob_good_thput[enb, ue]))
                         if enb == 0 and ue == self.tagged_ue_id:
-                            self.tagged_ue_log_file.write(str(self.aq_meas_prob_good_thput[enb, ue]) + ' ')
+                            self.tagged_ue_log_file.write(str(self.aq_meas_prob_good_thput[enb, ue]) + '\n')
 
-                        if (self.aq_meas_prob_good_thput[enb, ue] < self.thput_tolerance) and \
-                                (enb == self.tagged_ue_enb) \
-                                and (ue == self.tagged_ue_id):
+                        # if (self.aq_meas_prob_good_thput[enb, ue] < self.thput_tolerance) and \
+                        #         (enb == self.tagged_ue_enb) \
+                        #         and (ue == self.tagged_ue_id):
+                        if (enb == self.tagged_ue_enb) \
+                                    and (ue == self.tagged_ue_id):
                             # TRIGGER re-evaluation of association sets only for tagged UE
                             eval_triggered_flag = True
                             self.log.info('k=' + str(self.aq_enb_ue_sample_counter[enb, ue]) + ' eNB ' + str(enb) +
@@ -545,11 +554,19 @@ class AquametApp(object):
                                           str(self.aq_meas_prob_good_thput[enb, ue]) + ' > ' +
                                           str(self.thput_tolerance))
 
+        else:
+            self.tagged_ue_log_file.write('\n')
+
+
         if eval_triggered_flag:  # only for tagged UE
+            self.log.info('--------------------')
             max_prob_satisfying_qos = self.aq_meas_prob_good_thput[self.tagged_ue_enb, self.tagged_ue_id]
             enb_assn_set = {}
             for enb in range(0, sm.get_num_enb()):
-                if enb != self.tagged_ue_enb:
+                self.log.info('-------------------- enb is ' + str(enb) + ' tagged_enb is ' + str(self.tagged_ue_enb))
+                # if enb != self.tagged_ue_enb:
+                if True:
+                    self.log.info('--------------------')
                     """ Take the current serving set of this candidate eNB and add the tagged UE to it to 
                     see how this affects the throughput of the tagged UE and the others in the serving set """
                     enb_assn_set[enb] = copy.copy(self.current_assoc_set[enb])
@@ -564,6 +581,20 @@ class AquametApp(object):
                     self.log.info('k=' + str(self.aq_enb_ue_sample_counter[enb, ue]) +
                                   ' eNB ' + str(enb) + ' UE ' + str(ue) +
                                   ' Est_prob_good_thput '+str(prob_satisfying_qos))
+
+                    self.handover_trigger_log_file.write(str(self.tagged_ue_wm_counter) + ' ' +
+                                                         'enb_ue_dl_est_ratio_of_frame_alloc ' +
+                                                         str(self.aq_enb_ue_dl_est_ratio_of_frame_alloc
+                                                             [enb, self.tagged_ue_id]) + '\n')
+                    self.handover_trigger_log_file.write(str(self.tagged_ue_wm_counter) + ' ' +
+                                                         'enb_ue_dl_att_thput ' + str(self.aq_enb_ue_dl_att_thput
+                                                             [enb, self.tagged_ue_id]) + '\n')
+                    self.handover_trigger_log_file.write(str(self.tagged_ue_wm_counter) + ' ' +
+                                                         'enb_ue_dl_meas_thput ' + str(self.aq_enb_ue_dl_meas_thput
+                                                             [self.tagged_ue_enb, self.tagged_ue_id]) + '\n')
+                    self.handover_trigger_log_file.write(str(self.tagged_ue_wm_counter) + ' ' +
+                                                         'Est_prob_good_thput ' + str(prob_satisfying_qos) + '\n')
+
                     if prob_satisfying_qos > max_prob_satisfying_qos:
                         # After this evaluation I need to see if this association set is a fit for the tagged sta.
                         max_prob_satisfying_qos = prob_satisfying_qos
@@ -572,6 +603,7 @@ class AquametApp(object):
                         self.log.info('k=' + str(self.aq_enb_ue_sample_counter[enb, ue]) +
                                       "eNB: " + str(enb) + " is better than current eNB: " +
                                       str(self.tagged_ue_enb))
+
         if association_changed_flag:
             self.tagged_ue_enb = best_target_enb
             self.tagged_ue_wm_counter = 0
@@ -580,7 +612,7 @@ class AquametApp(object):
 
         # New line for each measurement window Wm
         # self.aquamet_log_file.write('\n')
-        t_Wm = Timer(self.measurement_time_window_ms/1000, self.measurement_window_timer_fire,
+        t_Wm = Timer(self.measurement_time_window_ms/1000.0, self.measurement_window_timer_fire,
                      kwargs=dict(sm=sm, rrc=rrc, monitoring_app=monitoring_app))
         t_Wm.start()
 
@@ -669,8 +701,8 @@ if __name__ == '__main__':
                             port_app=args.port_app,
                             log_level=args.log,
                             op_mode=args.op_mode,
-                            measurement_time_window_ms=1000,
-                            num_meas_in_slid_wind=5,
+                            measurement_time_window_ms=500,
+                            num_meas_in_slid_wind=20,
                             thput_tolerance=0.7)
 
     py3_flag = version_info[0] > 2 
@@ -684,6 +716,6 @@ if __name__ == '__main__':
     t = Timer(AquametApp.tti_time_ms/1000, AquametApp.tti_timer_fire,
               kwargs=dict(sm=sm, rrc=rrc, monitoring_app=monitoring_app))
     t.start() 
-    t_Wm = Timer(AquametApp.measurement_time_window_ms/1000, AquametApp.measurement_window_timer_fire,
+    t_Wm = Timer(AquametApp.measurement_time_window_ms/1000.0, AquametApp.measurement_window_timer_fire,
                  kwargs=dict(sm=sm, rrc=rrc, monitoring_app=monitoring_app))
     t_Wm.start()
