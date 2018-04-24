@@ -569,7 +569,8 @@ class AquametApp(object):
                     self.log.info('--------------------')
                     """ Take the current serving set of this candidate eNB and add the tagged UE to it to 
                     see how this affects the throughput of the tagged UE and the others in the serving set """
-                    enb_assn_set[enb] = copy.copy(self.current_assoc_set[enb])
+                    # enb_assn_set[enb] = copy.copy(self.current_assoc_set[enb])
+                    enb_assn_set[enb] = []
                     enb_assn_set[enb].append(self.tagged_ue_id)
 
                     self.estimate_inst_att_thput_sliding_window_for_assosn_set(sm, monitoring_app, enb_assn_set)
