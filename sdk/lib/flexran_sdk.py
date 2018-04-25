@@ -76,7 +76,7 @@ class flexran_rest_api(object):
     """!@brief Input data sets for all the status used for test"""
     # pf_all='inputs/multiple_data_samples_file.json'
     # pf_all = 'inputs/1eNB_2UEs_mobility_25PRB.json'
-    #pf_all = 'inputs/test_hand.json'
+    #pf_all = 'inputs/test_20s.json'
     pf_all = 'inputs/UEs2_25PRB_10M.json'
     # pf_all = 'inputs/Last.json'
     """!@brief Input data sets for MAC  status used for test"""

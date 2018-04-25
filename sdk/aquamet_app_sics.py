@@ -9,7 +9,6 @@ from lib import flexran_sdk
 import math
 import monitoring_app
 
-
 class AquametApp(object):
     # Data holders for aquamet
 
@@ -65,6 +64,7 @@ class AquametApp(object):
     prev_enb_ue_dl_pdcp = {}  # [enb, ue]
     wm_enb_ue_dl_pdcp_bytes = {}  # [enb, ue]
     prev_enb_ue_dl_pdcp_bytes = {}  # [enb, ue]
+    prev_sfn = {}  # [enb]
 
     # Current associations of enb to ues
     current_assoc_set = {}  # [enb][set of ues]
@@ -73,7 +73,7 @@ class AquametApp(object):
     # Aquamet monitoring parameters. 
     num_meas_in_slid_wind = 20
     thput_tolerance = 0.7
-    thput_threshold = 5000  # Kbps
+    thput_threshold = 12000  # Kbps
     measurement_time_window_ms = 500.0  # ms
     tti_time_ms = 1.0  # ms
     aquamet_log_file = None
@@ -106,6 +106,7 @@ class AquametApp(object):
     def initialize_data_holders(self):
         for enb in range(0, sm.get_num_enb()):
             self.current_assoc_set[enb] = []
+            self.prev_sfn[enb] = 0
             for ue in range(0, sm.get_num_ue(enb=enb)):
                 self.aq_enb_ue_dl_pdcp_sdu_arr_rate_pps[enb, ue] = []  # [enb, ue][wind_ind]
                 self.aq_enb_ue_dl_pdcp_pkt_len_bytes[enb, ue] = []  # [enb, ue][wind_ind]
@@ -448,6 +449,8 @@ class AquametApp(object):
     # So this means that we get the monitroing info periodically with this period.
     def tti_timer_fire(self, sm, rrc, monitoring_app):
         self.tti_sample_count += 1
+        # self.log.info('tti timer fired: tti count is ' + str(self.tti_sample_count))
+        # self.log.info('tti timer fired: sfn is ' + str(monitoring_app.enb_dl_mac_sfn[0]))
         # self.log.info('TTI timer fired')
         # self.log.info('Reading the status of the underlying eNBs')
         # self.log.info('Gather measurements')
@@ -492,12 +495,17 @@ class AquametApp(object):
                 self.wm_enb_ue_dl_mac_rb[enb, ue] += monitoring_app.enb_ue_dl_mac_rb[enb, ue]
                 self.wm_enb_ue_dl_tbs[enb, ue] += monitoring_app.enb_ue_dl_mac_tbs[enb, ue]
         
-        t = Timer(self.tti_time_ms/1000,
-                  self.tti_timer_fire, kwargs=dict(sm=sm, rrc=rrc, monitoring_app=monitoring_app))
-        t.start()
+        if self.tti_sample_count >= self.ttis_per_wm:
+            self.measurement_window_timer_fire(sm=sm, rrc=rrc, monitoring_app=monitoring_app)
+        # else:
+        #     self.tti_timer_fire(sm=sm, rrc=rrc, monitoring_app=monitoring_app)
+        # t = Timer(self.tti_time_ms/1000,
+        #           self.tti_timer_fire, kwargs=dict(sm=sm, rrc=rrc, monitoring_app=monitoring_app))
+        # t.start()
+        return
 
     def measurement_window_timer_fire(self, sm, rrc, monitoring_app):
-        self.log.info('Wm timer fired')
+        self.log.info('Wm timer fired: tti count is ' + str(self.tti_sample_count))
         self.tti_sample_count = 0
         # Handle the upcounter that have been counting up for the last Wm time
         for enb in range(0, sm.get_num_enb()):
@@ -509,7 +517,13 @@ class AquametApp(object):
                     monitoring_app.enb_ue_dl_pdcp_bytes[enb, ue] - self.prev_enb_ue_dl_pdcp_bytes[enb, ue]
                 self.prev_enb_ue_dl_pdcp_bytes[enb, ue] = monitoring_app.enb_ue_dl_pdcp_bytes[enb, ue]
 
-        # Use this aggregated over Wm samples and add into sliding window.     
+
+        # Use this aggregated over Wm samples and add into sliding window.
+        self.log.info('----------- Bytes sent by pdcp in this window are ' + str(self.wm_enb_ue_dl_pdcp_bytes[0, 0]))
+        self.log.info('----------- Before and after sfn are ' +
+                      str(monitoring_app.enb_dl_mac_sfn[0] - self.prev_sfn[0]))
+        self.prev_sfn[0] = monitoring_app.enb_dl_mac_sfn[0]
+
         self.aggregate_and_add_metrics_to_sliding_window(sm, monitoring_app)
         # Reset the values that were being accumulated
         for enb in range(0, sm.get_num_enb()):
@@ -613,9 +627,12 @@ class AquametApp(object):
 
         # New line for each measurement window Wm
         # self.aquamet_log_file.write('\n')
-        t_Wm = Timer(self.measurement_time_window_ms/1000.0, self.measurement_window_timer_fire,
-                     kwargs=dict(sm=sm, rrc=rrc, monitoring_app=monitoring_app))
-        t_Wm.start()
+        # self.tti_timer_fire(sm=sm, rrc=rrc, monitoring_app=monitoring_app)
+
+        # t_Wm = Timer(self.measurement_time_window_ms/1000.0, self.measurement_window_timer_fire,
+        #              kwargs=dict(sm=sm, rrc=rrc, monitoring_app=monitoring_app))
+        # t_Wm.start()
+        return
 
 
 # Main function 
@@ -714,9 +731,14 @@ if __name__ == '__main__':
     the monitoring app. This is only because the logs are giving me a value every ms. 
     In reality this should be removed and a Wm timer should be used """
     # The unit for the fire time is in seconds
-    t = Timer(AquametApp.tti_time_ms/1000, AquametApp.tti_timer_fire,
-              kwargs=dict(sm=sm, rrc=rrc, monitoring_app=monitoring_app))
-    t.start() 
-    t_Wm = Timer(AquametApp.measurement_time_window_ms/1000.0, AquametApp.measurement_window_timer_fire,
-                 kwargs=dict(sm=sm, rrc=rrc, monitoring_app=monitoring_app))
-    t_Wm.start()
+    run_time_ms = 210*1000
+    for i in range(0, run_time_ms):
+        AquametApp.tti_timer_fire(sm=sm, rrc=rrc, monitoring_app=monitoring_app)
+        # print("Again !!! ")
+
+    # t = Timer(AquametApp.tti_time_ms/1000, AquametApp.tti_timer_fire,
+    #           kwargs=dict(sm=sm, rrc=rrc, monitoring_app=monitoring_app))
+    # t.start()
+    # t_Wm = Timer(AquametApp.measurement_time_window_ms/1000.0, AquametApp.measurement_window_timer_fire,
+    #              kwargs=dict(sm=sm, rrc=rrc, monitoring_app=monitoring_app))
+    # t_Wm.start()
