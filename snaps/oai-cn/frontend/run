@@ -45,6 +45,9 @@ SPGW_CONFIG=${SPGW_CONF_FILE2:-$SPGW_CONF_FILE}
 SPGW_EXEC_ARGS=" -c $SPGW_CONFIG "
 
 HSS_CONFIG=${HSS_CONF_FILE2:-$HSS_CONF_FILE}
+MYSQL_SERVER=`cat $HSS_CONFIG | grep  MYSQL_server  | cut -f2 -d'"'`
+MYSQL_USER=`cat $HSS_CONFIG | grep  MYSQL_user  | cut -f2 -d'"'`
+MYSQL_PW=`cat $HSS_CONFIG | grep  MYSQL_pass  | cut -f2 -d'"'`
 HSS_EXEC_ARGS=" -c $HSS_CONFIG "
 
 
@@ -112,7 +115,7 @@ case "$1" in
 	fi
 	export LD_LIBRARY_PATH
 	
-	echo "$MME_EXEC  `echo $MME_EXEC_ARGS`"
+	echo "$MME_EXEC  $MME_EXEC_ARGS"
 	$MME_EXEC  `echo $MME_EXEC_ARGS` "$@"
 	;;
     spgw )
@@ -123,7 +126,7 @@ case "$1" in
 	fi
 	export LD_LIBRARY_PATH
 	
-        echo "$SPGW_EXEC  `echo $SPGW_EXEC_ARGS`" 
+        echo "$SPGW_EXEC  $SPGW_EXEC_ARGS" 
 	$SPGW_EXEC  `echo $SPGW_EXEC_ARGS` "$@"
         ;;
 
@@ -140,13 +143,14 @@ case "$1" in
         ;;
     
     import-db )
+	echo "using: MYSQL_SERVER=$MYSQL_SERVER, MYSQL_USER=$MYSQL_USER, MYSQL_PASS=$MYSQL_PW"
 	
 	HSS_DB_Q1="DROP DATABASE IF EXISTS oai_db;"
 	HSS_DB_Q2="CREATE DATABASE IF NOT EXISTS oai_db;"
 	
-	$HSS_DIR/mysql --force -h 127.0.0.1 -u root --password=linux -e "${HSS_DB_Q1}"
-	$HSS_DIR/mysql -h 127.0.0.1 -u root --password=linux -e "${HSS_DB_Q2}"
-	$HSS_DIR/mysql -h 127.0.0.1 -u root -plinux oai_db < $HSS_DB 
+	$HSS_DIR/mysql --force -h $MYSQL_SERVER -u $MYSQL_USER --password=$MYSQL_PW -e "${HSS_DB_Q1}"
+	$HSS_DIR/mysql -h  $MYSQL_SERVER -u  $MYSQL_USER --password=$MYSQL_PW -e "${HSS_DB_Q2}"
+	$HSS_DIR/mysql -h  $MYSQL_SERVER -u  $MYSQL_USER -p$MYSQL_PW oai_db < $HSS_DB 
 
 	if [ $? -gt 0 ] ; then
 	    echo "failed to import HSS DB"
@@ -159,17 +163,17 @@ case "$1" in
      hss-add-mme)
 	 fqdn=`hostname --fqdn`
 	 echo "Found MME FQDN: $fqdn"
-	 if [ -z "$($HSS_DIR/mysql -u root --password=linux -h 127.0.0.1 oai_db -e "select mmehost from mmeidentity where mmehost='$fqdn'";)" ]; then
+	 if [ -z "$($HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h  $MYSQL_SERVER oai_db -e "select mmehost from mmeidentity where mmehost='$fqdn'";)" ]; then
 
 	    #count how many in order to compute the right primary key
 	    
-	    primary_key=`$HSS_DIR/mysql -u root --password=linux -h 127.0.0.1 oai_db -e "select max(idmmeidentity) from mmeidentity;" | egrep [0-9]+`
+	    primary_key=`$HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER oai_db -e "select max(idmmeidentity) from mmeidentity;" | egrep [0-9]+`
 
 	    primary_key=$((primary_key + 1))
 
 	    echo "Inserting the MME info in the mmeidentity table of oai_db database"
 	    #Inserting the mme in the database to let epc connect to hss
-	    $HSS_DIR/mysql -u root --password=linux -h 127.0.0.1 oai_db << EOF 
+	    $HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER oai_db << EOF 
 INSERT INTO mmeidentity (\`idmmeidentity\`, \`mmehost\`, \`mmerealm\`, \`UE-Reachability\`) VALUES ('$primary_key', '$fqdn', '$REALM', 0);
 EOF
 

@@ -16,7 +16,7 @@ apps:
   init:
     command: init
   daemon:
-    command: run gdb
+    command: run
     daemon: simple
     stop-command: run stop
     stop-timeout: 7s
@@ -62,7 +62,7 @@ parts:
     build: |
       cd cmake_targets
       ./build_oai -I -w USRP --uhd-images-dir ../common/uhd_images
-      ./build_oai --eNB -w USRP -c -C
+      ./build_oai --eNB -w USRP -c -C 
     install: |
       mkdir -p $SNAPCRAFT_PART_INSTALL/enb
       cp  targets/bin/* $SNAPCRAFT_PART_INSTALL/enb
@@ -82,6 +82,8 @@ parts:
     organize:
       enb/liboai_eth_transpro.so.Rel14: usr/lib/liboai_transpro.so
       enb/liboai_usrpdevif.so.Rel14: usr/lib/liboai_device.so
+      enb/libcoding.so: usr/lib/libcoding.so
+      enb/libparams_libconfig.so: usr/lib/libparams_libconfig.so
       enb/lte-softmodem.Rel14: enb/oai-ran
   frontend:
     plugin: dump

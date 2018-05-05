@@ -2,13 +2,14 @@
 
 . $SNAP/common
 
-cp $SNAP/etc/* $CONF_DIR
-
+if [ ! -f $CONF_DIR/enb.band7.tm1.50PRB.usrpb210.conf ] ; then
+    cp $SNAP/etc/* $CONF_DIR
+fi
 # set the conf
+#echo "set conf to  $CONF_DIR/enb.band7.tm1.50PRB.usrpb210.conf"
 $SNAP/conf set $CONF_DIR/enb.band7.tm1.50PRB.usrpb210.conf
 
 # a copy for the user
-cp $SNAP/etc/enb.band7.tm1.50PRB.usrpb210.conf $SNAP_USER_DATA
-
+cp $CONF_DIR/enb.band7.tm1.50PRB.usrpb210.conf $SNAP_USER_DATA
 
 echo "OAI_RAN init: done "

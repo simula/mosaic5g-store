@@ -71,7 +71,7 @@ case "$1" in
 	echo "  help:    print this help"
 	;;
     *)
-	echo "$RAN_EXEC  echo $RAN_EXEC_ARGS $@"
+	echo "$RAN_EXEC  $RAN_EXEC_ARGS $@"
 	$RAN_EXEC  `echo $RAN_EXEC_ARGS` "$@"
 	;;
 esac

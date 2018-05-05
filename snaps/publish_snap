@@ -1,0 +1,29 @@
+#!/bin/bash
+
+snapcraft login
+read -p "what is the version of the snap you want to publish? " version
+#version=$1
+echo "version is $version"
+
+declare -a snaps=("oai-ran")
+declare -a channels=("edge,beta")
+
+for s in "${channels[@]}"
+do
+    echo "channels: " $s
+    for k in "${snaps[@]}"
+    do
+        if [ -d $k ] ; then
+          cd $k
+          snap=$k"_"$version"_multi.snap"
+          echo "snapcraft push $snap --release $s"
+          rev=`snapcraft push $snap --release $s | grep -m1 Revision | cut -f2 -d' '`
+          echo "snapcraft release $k $rev $s"  
+          snapcraft release $k $rev $s  
+          cd ..
+        fi
+    done
+done
+
+
+

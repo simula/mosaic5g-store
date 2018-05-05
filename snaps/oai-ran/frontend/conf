@@ -11,13 +11,15 @@ case "$1" in
 	else
 	    # may be absolute path 
 	    if [ -f "$CONFIG_FILE" ]; then
-		if [ -f $SNAP_DATA/$CONFIG_FILE ] ; then 
-		    echo "Reset the config file to: $SNAP_DATA/$CONFIG_FILE"
+		# $CONFIG_FILE already exist in the $SNAP_DATA
+		if [ -f $SNAP_DATA/$(basename $CONFIG_FILE) ] ; then 
+		    echo "Reset the config file to: $SNAP_DATA/$(basename $CONFIG_FILE)"
 		else 
+		    #echo "$SNAP_DATA/$CONFIG_FILE"
 		    cp $CONFIG_FILE $SNAP_DATA/
-		    CONFIG_FILE=$SNAP_DATA/$(basename $CONFIG_FILE)
-		    echo "Adding and setting a new config file : $CONFIG_FILE"
+		    echo "Adding and setting a new config file : $SNAP_DATA/$(basename $CONFIG_FILE)"
 		fi
+		CONFIG_FILE=$SNAP_DATA/$(basename $CONFIG_FILE)
 	    else
 		echo "Config file <$CONFIG_FILE> not found in $SNAP/current directory"
 		echo "Reset to default config file: $DEFAULT_CONF_FILE"
