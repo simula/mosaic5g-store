@@ -35,8 +35,6 @@ import random
 from lib import flexran_sdk 
 from lib import logger
 from lib.app_graphs import  Color, LineType, FigureType, FigureManager
-from threading import Timer
-from time import sleep
 import argparse
 import json
 import yaml
@@ -76,6 +74,7 @@ class sma_app(object):
         self.op_mode = op_mode
 	self.open_data_all_options = []
 	self.graphs_enable = False
+        self.graphs_showing = []
 
     def load_rrm_data(self, sm):
 	count = 0
@@ -410,7 +409,7 @@ class sma_app(object):
 	return self.graphs_enable
 	    
 
-    def run(self, sm,sma_app, sma_open_data):
+    def run(self, sm, sma_open_data):
 
         self.log.info('Reading the status of the underlying eNBs')
         sm.stats_manager('all')
@@ -442,10 +441,6 @@ class sma_app(object):
         # if the decision is different
             # set istrubctions to rrm_app # ran shring
             # alternatively, do it manualy through sdk
-
-        self.log.info('Waiting ' + str(sma_app.period) + ' seconds...')
-        t = Timer(sma_app.period,self.run,kwargs=dict(sm=sm,sma_app=sma_app,sma_open_data=sma_open_data))
-        t.start()
 
     open_data_capabilities = {
                	'get-list':  { 'help': 'Get the current list'},
@@ -520,34 +515,30 @@ class sma_app(object):
         else:
             client.send_error(id,-12345,'Method not found')
 	
-# main thread function - because shows GUI 
-def visualisation(sma_app, fm, period, enable):
-    graphs = []
-    while True:
-	time.sleep(period)
-	if enable or sma_app.enable_graphs():
-	    data = sma_app.get_graphs()
-	    if len(graphs) < len(data):
-		for i in range(len(data) - len(graphs)):
-		    graphs.append('graph-' + str(len(graphs) + 1))
-		    fm.create(name=graphs[-1], rows=2)
-		    fm.show(name=graphs[-1], row=2, x=(0,), y=(0,))
-		    
-	    for i, enb in enumerate(data):
-		fm.clear(name=graphs[i])
-		fm.axis(name=graphs[i], args=[2600, 2720, 0, 2])
-		fm.beautify(name=graphs[i], title="Price (e.g. EUR / s)", xlabel='freq [MHz]', ylabel='price [EUR/s]')	
-		for rect in range(len(enb['x'])):	    	    
-		    fm.show(name=graphs[i], x=enb['x'][rect], y=enb['y'][rect], fill=(rect==0), autoscale=False, fig_type=FigureType.Rect)
+    def visualisation(self, fm, period, enable):
+        graphs = self.graphs_showing;
+        if enable or self.enable_graphs():
+            data = self.get_graphs()
+            if len(graphs) < len(data):
+                for i in range(len(data) - len(graphs)):
+                    graphs.append('graph-' + str(len(graphs) + 1))
+                    fm.create(name=graphs[-1], rows=2)
+                    fm.show(name=graphs[-1], row=2, x=(0,), y=(0,))
 
-		fm.append(name=graphs[i], row=2, y=enb['y'][0][1], x_step=period)
-		fm.beautify(name=graphs[i], row=2, title='Price in time domain', xlabel='time [s]', ylabel='price [EUR]', grid=True, color=Color.Red, line=LineType.Dashed)
-		fm.update(name=graphs[i])
-	else:
-	    for i, enb in enumerate(graphs):
-		fm.close(name=graphs[i])
-		del graphs[i]
-	    graphs = []
+            for i, enb in enumerate(data):
+                fm.clear(name=graphs[i])
+                fm.axis(name=graphs[i], args=[2600, 2720, 0, 2])
+                fm.beautify(name=graphs[i], title="Price (e.g. EUR / s)", xlabel='freq [MHz]', ylabel='price [EUR/s]')	
+                for rect in range(len(enb['x'])):
+                    fm.show(name=graphs[i], x=enb['x'][rect], y=enb['y'][rect], fill=(rect==0), autoscale=False, fig_type=FigureType.Rect)
+
+                fm.append(name=graphs[i], row=2, y=enb['y'][0][1], x_step=period)
+                fm.beautify(name=graphs[i], row=2, title='Price in time domain', xlabel='time [s]', ylabel='price [EUR]', grid=True, color=Color.Red, line=LineType.Dashed)
+                fm.update(name=graphs[i])
+        else:
+            for i, enb in enumerate(graphs):
+                fm.close(name=graphs[i])
+            self.graphs_showing = []
         
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process some integers.')
@@ -624,14 +615,11 @@ if __name__ == '__main__':
     app_open_data.add_options("list", handler=sma_open_data)
     app_open_data.run_app()
 
-    log.info('Waiting ' + str(sma_app.period) + ' seconds...')
-    sma_app.run(sm=sm,sma_app=sma_app,sma_open_data=sma_open_data)	    
-
-
-    t2 = Timer(1,app_sdk.run_all_apps) 
-    t2.start()
-
-    visualisation(sma_app, fm, args.graph_period, args.graph) 
-	    
-	    
+    log.info('Starting periodic for ' + str(sma_app.period) + ' seconds...')
+    tornado.ioloop.PeriodicCallback(lambda: sma_app.run(sm=sm, sma_open_data=sma_open_data),
+                                    sma_app.period*1000).start()
+    log.info('Starting periodic for visualisation ' + str(args.graph_period) + ' seconds...')
+    tornado.ioloop.PeriodicCallback(lambda: sma_app.visualisation(fm, args.graph_period, args.graph),
+                                    args.graph_period*1000).start()
+    app_sdk.run_all_apps()
    
