@@ -1,7 +1,7 @@
 #!/bin/bash
 
 snapcraft login
-read -p "what is the version of the snap you want to publish? " version
+read -p "what is the version of the snap you want to publish (e.g. 1.2)? " version
 #version=$1
 echo "version is $version"
 
