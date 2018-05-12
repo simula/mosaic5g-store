@@ -1,0 +1,89 @@
+#!/bin/bash
+################################################################################
+#
+# Copyright (c) 2016, EURECOM (www.eurecom.fr)
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# The views and conclusions contained in the software and documentation are those
+# of the authors and should not be interpreted as representing official policies,
+# either expressed or implied, of the FreeBSD Project.
+#
+################################################################################
+# file config-change
+# brief manage the config changes of ll-mec service, and occurs everytime a new configuration value is updated (juju set)
+# author navid.nikaein@eurecom.fr
+
+set -eux
+
+source $CHARM_DIR/utils/common
+set_env_paths
+
+if [ ! -f $conf_file ] ; then
+    juju-log "ll-mec config file does not exist $conf_file"
+fi
+
+if [ "$(config-get snap)" != "$(cat $CHARM_DIR/.snap)" ]; then
+    juju-log "snap channel changed"
+    $CHARM_DIR/hooks/upgrade-charm
+fi
+
+bind_addr=`config-get bind_addr`
+if [ "$bind_addr" != "$(cat $CHARM_DIR/.bind_addr)" ]; then
+    jq '.llmec.address="$bind_addr"' $conf_file
+    juju-log "changed the LL-MEC bind address to $bind_addr"
+    echo "$bind_addr"      >  $CHARM_DIR/.bind_addr
+fi
+
+
+bind_port=`config-get bind_sbi_port`
+if [ "$bind_port" != "$(cat $CHARM_DIR/.bind_port)" ]; then
+    jq '.llmec.port="$bind_port"' $conf_file
+    juju-log "changed the LL-MEC bind port number to $bind_port"
+    echo "$bind_port"      >  $CHARM_DIR/.bind_port
+fi
+
+rest_port=`config-get bind_nbi_port`
+if [ "$rest_port" != "$(cat $CHARM_DIR/.rest_port)" ]; then
+    jq '.northbound_api.port="$rest_port"' $conf_file
+    juju-log "changing the LL-MEC northbound port number to $rest_port"
+    echo "$rest_port"      >  $CHARM_DIR/.rest_port
+fi
+
+gw_mac_addr=`config-get gw_mac_addr`
+if [ "$gw_mac_addr" != "$(cat $CHARM_DIR/.gw_mac_addr)" ]; then
+    jq '.gateway.mac="$gw_mac_addr"' $conf_file
+    juju-log "changing the gateway MAC addr to $gw_mac_addr"
+    echo "$gw_mac_addr"      >  $CHARM_DIR/.gw_mac_addr
+fi
+
+
+iface=`config-get eth`
+
+if [ -n "$iface" ]; then
+   ipv4=`ifconfig $iface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
+   juju-log "eth interface is $iface with ip address $ipv4"
+
+fi
+
+#$CHARM_DIR/hooks/start
+

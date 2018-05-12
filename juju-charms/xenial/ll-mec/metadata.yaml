@@ -1,0 +1,16 @@
+name: ll-mec
+summary: LowLtanecy Multi-access edge computing (MEC) platform that acts as both edge and mobile core network controller.
+maintainer: Navid Nikaein <navid.nikaein@eurecom.fr> 
+description: |
+  This charm deploys the LL-MEC for the 4G-5G with openairinterface platform.
+tags:
+  - Telecom, Network
+  - 4G, 5G, LTE
+  - EPC, S-GW, P-GW
+  - OpenAirInterface, OAI
+  - MOSAIC-5G, LL-MEC
+  - Edge and Core Network Controller
+subordinate: false
+provides:
+  openflow:
+    interface: of13

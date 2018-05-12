@@ -1,0 +1,128 @@
+#!/bin/bash
+################################################################################
+#
+# Copyright (c) 2016, EURECOM (www.eurecom.fr)
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# The views and conclusions contained in the software and documentation are those
+# of the authors and should not be interpreted as representing official policies,
+# either expressed or implied, of the FreeBSD Project.
+#
+################################################################################
+# file install hook
+# brief install the ll-mec
+# author  navid.nikaein@eurecom.fr
+
+install_packages(){
+
+    gitAlreadyInstalled=$(dpkg --get-selections snapd 2>/dev/null | grep -c 'install') || true
+    if [ ! $gitAlreadyInstalled -eq 1 ]; then # If git is NOT installed
+	apt-get install -y --force-yes snapd # Ensure necessary git dependency exist.
+    fi
+
+    gitAlreadyInstalled=$(dpkg --get-selections jq 2>/dev/null | grep -c 'install') || true
+    if [ ! $gitAlreadyInstalled -eq 1 ]; then # If git is NOT installed
+	apt-get install -y --force-yes jq # Ensure necessary git dependency exist.
+    fi
+    gitAlreadyInstalled=$(dpkg --get-selections git 2>/dev/null | grep -c 'install') || true
+    if [ ! $gitAlreadyInstalled -eq 1 ]; then # If git is NOT installed
+	apt-get install -y --force-yes git # Ensure necessary git dependency exist.
+    fi
+    atAlreadyInstalled=$(dpkg --get-selections at 2>/dev/null | grep -c 'install') || true
+    if [ ! $atAlreadyInstalled -eq 1 ]; then 
+	# If at command is NOT installed
+	apt-get install -y --force-yes at
+	# Ensure at command exists to let juju reschedule this hook after rebooting the machine.
+    fi
+    virtwhatAlreadyInstalled=$(dpkg --get-selections virt-what 2>/dev/null | grep -c 'install') || true
+    if [ ! $virtwhatAlreadyInstalled -eq 1 ]; then 
+	apt-get install -y --force-yes virt-what
+    fi
+}
+
+clone_repro(){
+    juju-log  "Fetching the Mosaic5G repository"
+    status-set maintenance "Fetching the Mosaic5G repository"
+
+    echo -n | openssl s_client -showcerts -connect gitlab.eurecom.fr:443 2>/dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' >> /etc/ssl/certs/ca-certificates.crt
+
+    #everytime refresh the installation 
+    if [ -d "$mosaic_path" ]; then  
+	cd $mosaic_path
+	git reset --hard HEAD
+	cd - 
+    else
+	git clone https://gitlab.eurecom.fr/mosaic5g/mosaic5g.git $mosaic_path
+    fi
+}
+
+build_llmec(){
+    cd $mosaic_path
+    if [ "$snap" != "edge" ] || [ "snap" != "beta" ] ; then
+	juju-log "channel $snap is not supported, use edge"
+    else
+	juju-log "Installing and building the LL-MEC from snap"
+    fi
+    ./build_m5g -L
+}
+
+init_llmec(){
+    ll-mec.stop || true
+    ll-mec.stop || true
+    ll-mec.init || true 
+    # just a flag for start script to run the service
+    echo "yes" > $CHARM_DIR/.llmec_running_flag
+}
+
+set -eux
+export DEBIAN_FRONTEND=noninteractive
+source $CHARM_DIR/utils/common
+set_env_paths
+echo "no"  > $CHARM_DIR/.llmec_running_flag
+
+snap=`config-get snap`
+bind_addr=`config-get bind_addr`
+bind_port=`config-get bind_sbi_port`
+rest_port=`config-get bind_nbi_port`
+gw_mac_addr=`config-get gw_mac_addr`
+
+open-port $bind_port/tcp
+open-port $rest_port/tcp
+
+echo "$snap"           >  $CHARM_DIR/.snap
+echo ""      >  $CHARM_DIR/.bind_addr
+echo ""      >  $CHARM_DIR/.bind_port
+echo ""      >  $CHARM_DIR/.rest_port
+echo ""      >  $CHARM_DIR/.gw_mac_addr
+
+
+install_packages
+machine_type=`virt-what`
+
+clone_repro
+
+build_llmec
+
+init_llmec
+
+status-set blocked "LL-MEC is awaiting to be run"
