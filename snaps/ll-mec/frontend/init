@@ -2,13 +2,16 @@
 
 . $SNAP/common
 
-cp $SNAP/etc/llmec_config.json $CONF_DIR
+if [ ! -f $CONF_DIR/llmec_config.json ] ; then
+    cp $SNAP/etc/* $CONF_DIR
 
 # set the conf
 $SNAP/conf set $CONF_DIR/llmec_config.json
 
 # a copy for the user
-cp $SNAP/etc/llmec_config.json $SNAP_USER_DATA
+if [ ! -f $SNAP_USER_DATA/llmec_config.json ] ; then 
+    cp $CONF_DIR/llmec_config.json $SNAP_USER_DATA
+fi
 
 
 echo "LLMEC init: done "
