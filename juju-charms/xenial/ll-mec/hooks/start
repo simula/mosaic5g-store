@@ -36,6 +36,7 @@
 set -eux
 
 source $CHARM_DIR/utils/common
+set_env_paths
 
 if [ -f $CHARM_DIR/.llmec_running_flag ]; then
     llmec_running_flag=`cat $CHARM_DIR/.llmec_running_flag`

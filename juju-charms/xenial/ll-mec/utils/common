@@ -43,6 +43,8 @@ set_env_paths(){
     build_path=$mosaic_path
     conf_file=/var/snap/ll-mec/current/llmec_config.json
 
+    export PATH=$PATH:/snap/bin
+    
 }
 
 check_llmec_process(){

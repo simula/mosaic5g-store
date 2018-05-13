@@ -35,6 +35,7 @@
 
 set -eux
 source $CHARM_DIR/utils/common
+set_env_paths
 
 check_llmec_process || true
 if [ $status -eq 1 ]; then

@@ -83,10 +83,12 @@ build_llmec(){
     else
 	juju-log "Installing and building the LL-MEC from snap"
     fi
+    status-set maintenance "Snaping LL-MEC"
     ./build_m5g -L
 }
 
 init_llmec(){
+    export PATH=$PATH:/snap/bin
     ll-mec.stop || true
     ll-mec.stop || true
     ll-mec.init || true 
