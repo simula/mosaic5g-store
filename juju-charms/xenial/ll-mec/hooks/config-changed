@@ -49,7 +49,8 @@ fi
 
 bind_addr=`config-get bind_addr`
 if [ "$bind_addr" != "$(cat $CHARM_DIR/.bind_addr)" ]; then
-    jq '.llmec.address="$bind_addr"' $conf_file
+    jq .llmec.address="$bind_addr" $conf_file > $(basename $conf_file)
+    cp $(basename $conf_file) $conf_file
     juju-log "changed the LL-MEC bind address to $bind_addr"
     echo "$bind_addr"      >  $CHARM_DIR/.bind_addr
 fi
@@ -57,21 +58,24 @@ fi
 
 bind_port=`config-get bind_sbi_port`
 if [ "$bind_port" != "$(cat $CHARM_DIR/.bind_port)" ]; then
-    jq '.llmec.port="$bind_port"' $conf_file
+    jq .llmec.port="$bind_port" $conf_file > $(basename $conf_file)
+    cp $(basename $conf_file) $conf_file
     juju-log "changed the LL-MEC bind port number to $bind_port"
     echo "$bind_port"      >  $CHARM_DIR/.bind_port
 fi
 
 rest_port=`config-get bind_nbi_port`
 if [ "$rest_port" != "$(cat $CHARM_DIR/.rest_port)" ]; then
-    jq '.northbound_api.port="$rest_port"' $conf_file
+    jq .northbound_api.port="$rest_port" $conf_file  > $(basename $conf_file)
+    cp $(basename $conf_file) $conf_file
     juju-log "changing the LL-MEC northbound port number to $rest_port"
     echo "$rest_port"      >  $CHARM_DIR/.rest_port
 fi
 
 gw_mac_addr=`config-get gw_mac_addr`
 if [ "$gw_mac_addr" != "$(cat $CHARM_DIR/.gw_mac_addr)" ]; then
-    jq '.gateway.mac="$gw_mac_addr"' $conf_file
+    jq .gateway.mac="$gw_mac_addr" $conf_file  > $(basename $conf_file)
+    cp $(basename $conf_file) $conf_file
     juju-log "changing the gateway MAC addr to $gw_mac_addr"
     echo "$gw_mac_addr"      >  $CHARM_DIR/.gw_mac_addr
 fi
