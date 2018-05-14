@@ -35,7 +35,6 @@
 import json
 # Make it work for Python 2+3 and with Unicode
 import io
-import requests
 import time
 import logging
 import argparse
@@ -673,9 +672,36 @@ class rrm_kpi_app(object):
       else:
         log.info('No UE is attached yet')
 
-  def handle_open_data(self, client, message):
+  def handle_request(self, client, id, method, params, message):
     #print type(json.dumps(rrm.read_policy()))
-    client.send({'rrm_kpi_app':rrm.read_policy()})
+    if method == 'enforce_policy':
+      #
+      ## Modify something based on params... (TBD)
+      #
+      client.send({
+        'result': rrm.read_policy(), # just something to return as result.
+        'id': id})
+    else:
+      client.send({
+        'error': {
+          'code': -32601,
+          'message': 'Method not found'},
+        'id': id})
+        
+  def handle_notification(self, client, method, params, message):
+    print message
+
+  def handle_new_client(self, client):
+    client.send_notification('capabilities',
+                             {
+                               'enforce_policy': {
+                                 'help': 'Change enforced policy',
+                                 'schema': [
+                                   {'name': 'enb_id', 'type': 'number', 'choice': ['#ENBID'], 'help': 'Select eNB'},
+                                   {'name': 'slices', 'array': {'length': 3, 'range': [0,0,1,0.1] }}
+                                 ]
+                               }
+                             })
 
   def run(self, sm, rrm):
     log.info('2. Reading the status of the underlying eNBs')
@@ -746,7 +772,7 @@ if __name__ == '__main__':
                                     address=args.app_url,
                                     port=args.app_port)
 
-  rrm_kpi_open_data = app_sdk.app_handler(log=log, callback=rrm_kpi_app.handle_open_data)
+  rrm_kpi_open_data = app_sdk.app_handler(rrm_kpi_app.name, log=log, callback=rrm_kpi_app.handle_request, notification=rrm_kpi_app.handle_notification, init=rrm_kpi_app.handle_new_client)
   app_open_data.add_options("kpi", handler=rrm_kpi_open_data)
   app_open_data.run_app()
 
