@@ -698,7 +698,7 @@ class rrm_kpi_app(object):
                                  'help': 'Change enforced policy',
                                  'schema': [
                                    {'name': 'enb_id', 'type': 'number', 'choice': ['#ENBID'], 'help': 'Select eNB'},
-                                   {'name': 'slices', 'array': {'length': 3, 'range': [0,0,1,0.1] }}
+                                   {'name': 'slices', 'array': {'length': 3, 'range': [0,0,100,1] }}
                                  ]
                                }
                              })
