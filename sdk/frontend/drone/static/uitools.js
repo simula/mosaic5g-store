@@ -234,9 +234,11 @@ var uitools = (function () {
 	    var tmp = params;
 	    for (;;) {
 		var f = fds.shift();
-		var farray = f.endsWith('[]');
-		if (farray)
-		    f = f.substring(0, f.length-2);
+		// Allow index within [], but ignore it (needed if
+		// array elements contain radio button groups -- each
+		// array element must then have different name).
+		var farray = false;
+		f = f.replace(/\[\d*\]$/, function (x) { farray = true; return '';});
 
 		if (Array.isArray(tmp)) {
 		    var last = tmp[tmp.length-1];

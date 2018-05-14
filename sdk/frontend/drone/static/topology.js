@@ -194,7 +194,7 @@ function topology(sources) {
 
     function numberValue(btn) {
 	if (btn.value)
-	    return parseInt(btn.value, 10);
+	    return parseFloat(btn.value);
 	return undefined;
     }
 
@@ -219,6 +219,88 @@ function topology(sources) {
 	    }		
 	}
 	return list;
+    }
+
+    function buildInput(control, name, d) {
+	if (d.choice) {
+	    control
+		.selectAll("div.command")
+		.data(buildChoice(d.choice))
+		.enter()
+		.append("label")
+		.attr("class", "command")
+		.text(function (d) { return d === null ? 'None' : d;})
+		.append("input")
+		.attr("class", "button")
+		.attr("type", "radio")
+		.attr("name", name)
+		.attr("data-converter", d.type == 'number' ? 'numberValue' : undefined)
+		.attr("value", function (d) { return d || '';});
+	} else if (d.range) {
+	    control
+		.append("div")
+		.attr("class", "command")
+		.append("input")
+		.attr("class", "button")
+		.attr("type", "number")
+		.attr("name", name)
+		.attr("data-converter", 'numberValue')
+		.attr("value", d.range[0])
+		.attr("min", d.range[1])
+		.attr("max", d.range[2])
+		.attr("step", d.range[3]);
+	} else if (d.schema) {
+	    buildSchema(control
+			.append("div")
+			.attr("class", "application")
+			.node(), d.schema, name + '.');
+	} else if (d.array) {
+	    var array = control
+		    .append("div")
+		    .attr("class", "control")
+		    .style("flex-direction", "column")
+		    .style("flex-wrap", "nowrap");
+	    for (var i = 0; i < d.array.length; ++i) {
+		buildInput(array, name + '[' + i + ']', d.array);
+	    }
+	    // Add controls for adding and removing elements
+	    var mods = array.append("div");
+	    mods.append("input")
+		.attr("value", "Add element")
+		.attr("type", "button")
+		.on("click", function () {
+		    var p = this.parentNode;
+		    buildInput(array, name + '[' + d.array.length + ']', d.array);
+		    d.array.length += 1;
+		    p.parentNode.appendChild(p);
+		});
+	    mods.append("input")
+		.attr("value", "Remove element")
+		.attr("type", "button")
+		.on("click", function () {
+		    var p = this.parentNode;
+		    var s = p.previousSibling;
+		    if (s) {
+			s.parentNode.removeChild(s);
+			d.array.length -= 1;
+		    }
+		});
+	} else {
+	    control
+		.append("div")
+		.attr("class", "command")
+		.append("input")
+		.attr("type", "text")
+		.attr("name", name)
+		.attr("data-converter", d.type == 'number' ? 'numberValue' : undefined)
+		.attr("class", "button");
+	}
+	if (d.help) {
+	    control.append("div")
+		.attr("class", "tooltip bottom")
+		.call(uitools.add_tooltip_action)
+		.text(d.help);
+	}
     }
     
     function buildSchema(container, schema, prefix) {
@@ -248,60 +330,14 @@ function topology(sources) {
 			.append("div")
 			.attr("class", "name")
 			.text(d.name);
-		    if (d.choice) {
-			control
-			    .selectAll("div.command")
-			    .data(buildChoice(d.choice))
-			    .enter()
-			    .append("label")
-			    .attr("class", "command")
-			    .text(function (d) { return d === null ? 'None' : d;})
-			    .append("input")
-			    .attr("class", "button")
-			    .attr("type", "radio")
-			    .attr("name", name)
-			    .attr("data-converter", d.type == 'number' ? 'numberValue' : undefined)
-			    .attr("value", function (d) { return d || '';});
-		    } else if (d.range) {
-			control
-			    .append("div")
-			    .attr("class", "command")
-			    .append("input")
-			    .attr("class", "button")
-			    .attr("type", "number")
-			    .attr("name", name)
-			    .attr("data-converter", 'numberValue')
-			    .attr("value", d.range[0])
-			    .attr("min", d.range[1])
-			    .attr("max", d.range[21])
-			    .attr("step", d.range[3]);
-		    } else if (d.schema) {
-			buildSchema(control
-				    .append("div")
-				    .attr("class", "application")
-				    .node(), d.schema, name + '.');
-		    } else {
-			control
-			    .append("div")
-			    .attr("class", "command")
-			    .text(d)
-			    .append("input")
-			    .attr("type", "text")
-			    .attr("name", name)
-			    .attr("class", "button");
-		    }
-		    if (d.help) {
-			control.append("div")
-			    .attr("class", "tooltip bottom")
-			    .call(uitools.add_tooltip_action)
-			    .text(d.help);
-		    }
+		    buildInput(control, name, d);
 		}
 	    });
     }
 
     function buildCommand(src, method, schema) {
-	var popup = d3.select("#build_command");
+	var popup = d3.select("#build_command")
+		.classed("fixed", false);
 	var app = popup.select(".popup-content > .application")
 		.text("");
 	uitools.replace_text(popup.select(".popup-header").node(), src.name + "/" + method);

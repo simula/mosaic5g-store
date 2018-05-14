@@ -149,7 +149,7 @@ mainly used for hinting the graphical user interface (e.g. Remote Control App)
   - **type**: Type of the parameter (OPTIONAL). This is only needed,
     if the JSON encoded parameter value should be something else than
     a string. Currently, only one type keyword is supported: `"type":
-    "number"` requests that the input value is converted into integer.
+    "number"` requests that the input value is converted into number.
 	
   - **help**: Descrition of the parameter (OPTIONAL). This can be used
     as a tooltip for the parameter.
@@ -176,6 +176,18 @@ mainly used for hinting the graphical user interface (e.g. Remote Control App)
 		
   - **schema**: Defines a parameter as an object, the value must be
     an array of *parameter definitions*.
+
+  - **array**: Defines parameter as an array of values, the value must
+    be a dictionary, where following keywords are recognized:
+
+      - **length**: The (initial) length of the array.
+
+      - **type**: Type (OPTIONAL) of the element value (see above). This is
+	    ignored, if the array element itself is defined by **schema** or **array**.
+
+      - OPTIONAL keywords **choice**, **range**, **schema** or **array** as
+	    defined above, can be used to specify more complex values for the array
+		elements.
 
   If none of the above is present, then this *parameter definition*
   defines a simple text string input for the parameter value.
