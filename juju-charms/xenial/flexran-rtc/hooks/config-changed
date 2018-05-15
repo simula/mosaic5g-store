@@ -1,79 +1,61 @@
 #!/bin/bash
-################################################################################
+# Copyright 2016-2018 Eurecom and Mosaic5G Platforms Authors
+# Licensed to the Mosaic5G under one or more contributor license
+# agreements. See the NOTICE file distributed with this
+# work for additional information regarding copyright ownership.
+# The Mosaic5G licenses this file to You under the
+# Apache License, Version 2.0  (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# Copyright (c) 2016, EURECOM (www.eurecom.fr)
-# All rights reserved.
+#      http://www.apache.org/licenses/LICENSE-2.0
 #
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are met:
-#
-# 1. Redistributions of source code must retain the above copyright notice, this
-#    list of conditions and the following disclaimer.
-# 2. Redistributions in binary form must reproduce the above copyright notice,
-#    this list of conditions and the following disclaimer in the documentation
-#    and/or other materials provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and documentation are those
-# of the authors and should not be interpreted as representing official policies,
-# either expressed or implied, of the FreeBSD Project.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#-------------------------------------------------------------------------------
+# For more information about the Mosaic5G:
+#      contact@mosaic5g.io
 #
 ################################################################################
 # file config-change
-# brief manage the config changes of flexran-rtc service, and occurs everytime a new configuration value is updated (juju set)
+# brief manage the config changes of flexran service, and occurs everytime a new configuration value is updated (juju set)
 # author navid.nikaein@eurecom.fr
 
 set -eux
-
 source $CHARM_DIR/utils/common
-set_env_paths
+set_env
 
-if [ "$(config-get branch)" != "$(cat $CHARM_DIR/.branch)" ]; then
-    juju-log "branch name changed"
+status-set maintenance "Config-Changed hook"
+
+if [ "$(config-get snap)" != "$(cat $CHARM_DIR/.snap)" ]; then
+    juju-log "Snap channel changed"
     $CHARM_DIR/hooks/upgrade-charm
 fi
 
-if [ "$(config-get revision)" != "$(cat $CHARM_DIR/.revision)" ]; then
-    $CHARM_DIR/hooks/upgrade-charm
-    juju-log "revision changed"
-fi
-
-if [ "$(config-get kernel)" != "$(cat $CHARM_DIR/.kernel)" ]; then
-    $CHARM_DIR/hooks/upgrade-charm
-    juju-log "kernel changed"
-fi
-
-bind_if=`config-get bind_if`
-if [ "$bind_if" != "$(cat $CHARM_DIR/.bind_if)" ]; then
-    juju-log "changing bind if is not yet supported for RTC" 
+bind_addr=`config-get bind_addr`
+if [ "$bind_addr" != "$(cat $CHARM_DIR/.bind_addr)" ]; then
+    juju-log "Set the FlexRAN bind address to 0.0.0.0 ($bind_addr)"
+    echo "$bind_addr"      >  $CHARM_DIR/.bind_addr
 fi
 
 
-bind_port=`config-get bind_port`
-rest_port=`config-get rest_api_port`
+bind_port=`config-get bind_sbi_port`
 
 if [ "$bind_port" != "$(cat $CHARM_DIR/.bind_port)" ]; then
-    juju-log "changing the agent bind port number to $bind_port"
-    exec_args="-p $bind_port -n $rest_api" 
-    echo "$exec_args"  > $CHARM_DIR/.exec_args
-    cp $CHARM_DIR/.exec_args $mosaic_path
+    juju-log "changing the SBi bind port number to $bind_port"
+    flexran.conf sbi $bind_port
+    echo "$bind_port"      >  $CHARM_DIR/.bind_port
 fi
 
+rest_port=`config-get bind_nbi_port`
 if [ "$rest_port" != "$(cat $CHARM_DIR/.rest_port)" ]; then
-    juju-log "changing the REST bind port number to $rest_port"
-    exec_args="-p $bind_port -n $rest_api"
-    echo "$exec_args"  > $CHARM_DIR/.exec_args
-    cp $CHARM_DIR/.exec_args $mosaic_path
+    juju-log "changing the NBi bind port number to $rest_port"
+    flexran.conf nbi $rest_port
+    echo "$rest_port"      >  $CHARM_DIR/.rest_port
+    
 fi
 
 

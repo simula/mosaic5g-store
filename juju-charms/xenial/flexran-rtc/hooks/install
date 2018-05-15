@@ -1,32 +1,23 @@
 #!/bin/bash
-################################################################################
+# Copyright 2016-2018 Eurecom and Mosaic5G Platforms Authors
+# Licensed to the Mosaic5G under one or more contributor license
+# agreements. See the NOTICE file distributed with this
+# work for additional information regarding copyright ownership.
+# The Mosaic5G licenses this file to You under the
+# Apache License, Version 2.0  (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# Copyright (c) 2016, EURECOM (www.eurecom.fr)
-# All rights reserved.
+#      http://www.apache.org/licenses/LICENSE-2.0
 #
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are met:
-#
-# 1. Redistributions of source code must retain the above copyright notice, this
-#    list of conditions and the following disclaimer.
-# 2. Redistributions in binary form must reproduce the above copyright notice,
-#    this list of conditions and the following disclaimer in the documentation
-#    and/or other materials provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and documentation are those
-# of the authors and should not be interpreted as representing official policies,
-# either expressed or implied, of the FreeBSD Project.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#-------------------------------------------------------------------------------
+# For more information about the Mosaic5G:
+#      contact@mosaic5g.io
 #
 ################################################################################
 # file install hook
@@ -34,6 +25,16 @@
 # author  navid.nikaein@eurecom.fr
 
 install_packages(){
+     gitAlreadyInstalled=$(dpkg --get-selections snapd 2>/dev/null | grep -c 'install') || true
+    if [ ! $gitAlreadyInstalled -eq 1 ]; then # If git is NOT installed
+	apt-get install -y --force-yes snapd # Ensure necessary git dependency exist.
+    fi
+
+    gitAlreadyInstalled=$(dpkg --get-selections jq 2>/dev/null | grep -c 'install') || true
+    if [ ! $gitAlreadyInstalled -eq 1 ]; then # If git is NOT installed
+	apt-get install -y --force-yes jq # Ensure necessary git dependency exist.
+    fi
+
     gitAlreadyInstalled=$(dpkg --get-selections git 2>/dev/null | grep -c 'install') || true
     if [ ! $gitAlreadyInstalled -eq 1 ]; then # If git is NOT installed
 	apt-get install -y --force-yes git # Ensure necessary git dependency exist.
@@ -50,150 +51,71 @@ install_packages(){
     fi
 }
 
-create_netrc(){
-    echo "machine gitlab.eurecom.fr" > ~/.netrc
-    echo "login $user" >> ~/.netrc
-    echo "password $passwd" >> ~/.netrc
-}
-
 clone_repro(){
-    juju-log  "Fetching and installing the FLEXRAN RTC from the repository"
-    status-set maintenance "Fetching and installing the FLEXRAN RTC from the repository"
-
+    juju-log  "Fetching the Mosaic5G repository"
+    
     echo -n | openssl s_client -showcerts -connect gitlab.eurecom.fr:443 2>/dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' >> /etc/ssl/certs/ca-certificates.crt
 
     #everytime refresh the installation 
     if [ -d "$mosaic_path" ]; then  
-	cd $rtc_path 
-	git reset --hard HEAD 
-	git checkout $branch 
-	if [ "$revision" !=  "head" ]; then 
-	    git checkout $revision
-	fi 
-	cd -
+	cd $mosaic_path
+	git reset --hard HEAD
+	cd - 
     else
-	pushd . 
-	git clone https://gitlab.eurecom.fr/mosaic-5g/mosaic-5g.git $mosaic_path
-	cd $mosaic_path 
-	git submodule init
-	git submodule update controller
-	cd controller
-	git checkout $branch 
-	if [ "$revision" != "head" ]; then 
-	    git checkout $revision
-	fi 
-	popd 
+	git clone https://gitlab.eurecom.fr/mosaic5g/mosaic5g.git $mosaic_path
     fi
 }
 
-juju_install_kernel(){
-    status-set maintenance "Check the kernel and update if required"
-    juju-log "Check the kernel and update if required"
-
-    if [ "$machine_type"  == "lxc" -o "$machine_type" == "docker" ]; then
-	juju-log "Can't install the required kernel in $machine_type env. Proceed with the current kernel."
-    else  
-	check_current_kernel
-	if [[ $REQUIRED_KERNEL_IS_INSTALLED == false ]]; then
-	    if [ "$(cat $CHARM_DIR/.reboot)" != "reboot" ]; then  
-		juju-log "installing the required kernel and reboot"
-		status-set maintenance "installing the required kernel and rebooting"
-		install_required_kernel
-  		echo "reboot" > $CHARM_DIR/.reboot 
-		juju-reboot --now
-	    else 
-		juju-log "Can't install the required kernel. Proceed with the current kernel."
-	    fi 
-	fi
-    fi 
-}
-
-set_args(){
- 
-    if [ "$kernel" == "generic" ]; then 
-	build_args="$build_args -r"
+build_flexran(){
+    cd $mosaic_path
+    if [ "$snap" != "edge" ] || [ "snap" != "beta" ] ; then
+	juju-log "channel $snap is not supported, use edge"
+    else
+	juju-log "Installing and building the FlexRAN from snap"
     fi
-   
-    if [ -z $bind_port ] ; then 
-	exec_args="-p $bind_port"	
-    fi 
+    ./build_m5g -F
 
-    if [ -z $rest_port ] ; then
-        exec_args="$exec_args -n $rest_port"
-    fi
-
+ }
+init_flexran(){
+    flexran.stop || true
+    flexran.stop || true
+    flexran.init || true 
+    #flexran.conf sbi $bind_port
+    #flexran.conf nbi $rest_port
     
-    echo "$build_args"  > $CHARM_DIR/.build_args
-    cp $CHARM_DIR/.build_args $mosaic_path
-
-    echo "$exec_args"  > $CHARM_DIR/.exec_args
-    cp $CHARM_DIR/.exec_args $mosaic_path
-	
- 
-}
-
-
-build_flexran_rtc(){
-    juju-log "Installing and building the Flexran RTC"
-    status-set maintenance "Installing and building the Flexran RTC"
-    cd $rtc_path
-    export FLEXRAN_RTC_HOME=$rtc_path
-    export FLEXRAN_RTC_EXEC=$rtc_exec
-    ./tools/install_dependencies
-    ./build_flexran_rtc.sh $build_args
-    cd -
-}
-run_rtc(){
 # just a flag for start script to run the service 
     echo "yes" > $CHARM_DIR/.rtc_running_flag
 }
 
+status-set maintenance "Install hook"
 set -eux
 export DEBIAN_FRONTEND=noninteractive
 source $CHARM_DIR/utils/common
-set_env_paths
+set_env
+echo "no"  > $CHARM_DIR/.rtc_running_flag
 
-branch=`config-get branch`
-revision=`config-get revision`
-kernel=`config-get kernel`
-user=`config-get user_name`
-passwd=`config-get passwd`
-bind_if=`config-get bind_if`
-bind_port=`config-get bind_port`
-rest_port=`config-get rest_api_port`
+snap=`config-get snap`
+bind_add=`config-get bind_addr`
+bind_port=`config-get bind_sbi_port`
+rest_port=`config-get bind_nbi_port`
 
 
 open-port $bind_port/tcp
 open-port $rest_port/tcp
 
-echo "$branch" > $CHARM_DIR/.branch
-echo "$revision" > $CHARM_DIR/.revision
-echo "$kernel"      >  $CHARM_DIR/.kernel
-echo "$bind_if"      >  $CHARM_DIR/.bind_if
-echo "$bind_port"      >  $CHARM_DIR/.bind_port
-echo "$rest_port"      >  $CHARM_DIR/.rest_port
-# status var
-echo "no"  > $CHARM_DIR/.rtc_running_flag
+echo "$snap"           >  $CHARM_DIR/.snap
+echo ""      >  $CHARM_DIR/.bind_addr
+echo ""      >  $CHARM_DIR/.bind_port
+echo ""      >  $CHARM_DIR/.rest_port
 
-build_args=""
-exec_args=""
 
 install_packages
 machine_type=`virt-what`
+echo "$machine_type"   >  $CHARM_DIR/.machine_type
 
-create_netrc
 
 clone_repro
 
-juju_install_kernel
+build_flexran
 
-set_args
-
-build_flexran_rtc
-
-juju-log "Add rtc init script"
-cp $CHARM_DIR/files/rtc.service /etc/systemd/system
-
-run_rtc
-
-status-set blocked "Flexran RTC waiting to be run"
+init_flexran

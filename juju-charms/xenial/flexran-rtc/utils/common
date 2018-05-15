@@ -1,32 +1,23 @@
 #!/bin/bash
-################################################################################
+# Copyright 2016-2018 Eurecom and Mosaic5G Platforms Authors
+# Licensed to the Mosaic5G under one or more contributor license
+# agreements. See the NOTICE file distributed with this
+# work for additional information regarding copyright ownership.
+# The Mosaic5G licenses this file to You under the
+# Apache License, Version 2.0  (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# Copyright (c) 2016, EURECOM (www.eurecom.fr)
-# All rights reserved.
+#      http://www.apache.org/licenses/LICENSE-2.0
 #
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are met:
-#
-# 1. Redistributions of source code must retain the above copyright notice, this
-#    list of conditions and the following disclaimer.
-# 2. Redistributions in binary form must reproduce the above copyright notice,
-#    this list of conditions and the following disclaimer in the documentation
-#    and/or other materials provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and documentation are those
-# of the authors and should not be interpreted as representing official policies,
-# either expressed or implied, of the FreeBSD Project.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#-------------------------------------------------------------------------------
+# For more information about the Mosaic5G:
+#      contact@mosaic5g.io
 #
 ################################################################################
 # file common
@@ -34,7 +25,7 @@
 # author  navid.nikaein@eurecom.fr 
 
 
-set_env_paths(){
+set_env(){
 
 #paths in openairinterface-5G on Git
 
@@ -44,51 +35,23 @@ set_env_paths(){
     build_path=$mosaic_path
     tools_path=$mosaic_path/tools
     rtc_exec_name=rt_controller
-
+    
+    export PATH=$PATH:/snap/bin
 }
 
-
-install_required_kernel(){
-version=3.19
-if [ "$(cat $CHARM_DIR/.kernel)" == "lowlatency" ]; then 
-    wget -r -e robots=off --accept-regex "(.*lowlatency.*amd64)|(all).deb" http://kernel.ubuntu.com/~kernel-ppa/mainline/v${version}-vivid/
-else
-    wget -r -e robots=off --accept-regex "(.*generic.*amd64)|(all).deb" http://kernel.ubuntu.com/~kernel-ppa/mainline/v${version}-vivid/
-fi 
-dpkg -i kernel.ubuntu.com/*/*/*/*deb
-}
-
-check_current_kernel(){
-
-required_kern_release="3.19"
-required_kern_version=`echo $required_kern_release | cut -d '.' -f1`
-required_kern_major_revision=`echo $required_kern_release | cut -d '.' -f2`
-current_kern_release=`uname -r`
-current_kern_version=`echo $current_kern_release | cut -d '.' -f1`
-current_kern_major_revision=`echo $current_kern_release | cut -d '.' -f2`
-if [ "$current_kern_version" -gt "$required_kern_version" ]; then
-     REQUIRED_KERNEL_IS_INSTALLED="true"
-elif [ "$current_kern_version" -eq "$required_kern_version" ] && [ "$current_kern_major_revision" -ge "$required_kern_major_revision" ]; then
-     REQUIRED_KERNEL_IS_INSTALLED="true"
-else
-     REQUIRED_KERNEL_IS_INSTALLED="false"
-fi
-
-}
-
-check_rtc_process(){
+check_flexran_process(){
 
 #IS_RUNNING=`service rtc status`
 #if [[ $IS_RUNNING =~ .*running.* ]]; then
 #fi
 
-IS_ACTIVE=`systemctl is-active rtc.service`
+IS_ACTIVE=`systemctl is-active snap.flexran.daemon.service`
 
 if [ "$IS_ACTIVE" == "active" ]; then
-   juju-log "Flexran RTC is running" 
+   juju-log "Flexran service is running" 
    status=0
 else
-   juju-log "Flexran RTC is not running"
+   juju-log "Flexran service is not running"
    status=1
 fi
 
