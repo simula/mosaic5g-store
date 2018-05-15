@@ -13,16 +13,15 @@ Juju installation, and a successful bootstrap.
 
 Available ll-mec configuration options :
 
- * snap -  set the channel for the ll-mec snap 
+ * snap -  set the channel to install  the ll-mec snap 
 
  * bind_addr - set the addr of interface to which the LL-MEC is binded. Defaul is all interfaces. 
 
- * bind_sbi_port -  set the south-bound port number to OVS.
+ * bind_sbi_port -  set the south-bound port number towards user-plane function provided by OVS.
 
- * bind_nbi_port -  set the north-bound port number for REST API calls.
+ * bind_nbi_port -  set the north-bound port number for REST API calls towards software-development kit and the network control apps.
 
  * gw_mac_addr -  set the mac address of the gateway (where NAT is performed).
-
 
 
 # Contact Information
@@ -31,5 +30,5 @@ Available ll-mec configuration options :
  - [LL-MEC website](http://mosaic-5g.io/ll-mec/)
 
 ## MOSAIC-5G
-- [MOSIAC-5G website](mosaic-5g.io)
+- [MOSIAC-5G website](http://mosaic-5g.io/)
 - [MOSAIC-5G mailing list](contact@mosaic-5g.io)
