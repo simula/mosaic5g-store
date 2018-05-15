@@ -25,7 +25,7 @@
 # author  navid.nikaein@eurecom.fr 
 
 
-set_env_paths(){
+set_env(){
 
 #paths in openairinterface-5G on Git
     mosaic_path=/srv/mosaic5g
