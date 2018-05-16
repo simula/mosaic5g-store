@@ -27,7 +27,10 @@ To start the drone without tasks support (as simple web server), for example,
 cd sdk/frontend/drone
 python drone.py --port=8088
 ```
-
+... or allow connectons from any address
+```bash
+python drone.py --port=8088 --address=0
+```
 ... and with task support
 
 ```bash
