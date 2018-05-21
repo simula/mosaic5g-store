@@ -1,33 +1,27 @@
 #!/bin/bash
 
 revision=$1
-cd ..
-source /home/$USER/jox/joxenv
-cd -
+#cd ..
+#source /home/$USER/jox/joxenv
+#cd -
 #declare -a charms=("flexran-rtc" "oai-enb" "oai-mme" "oai-spgw" "oai-hss" "oai-rru" "oai-rru-snap")
 declare -a charms=("oai-hss" "oai-mme" "oai-spgw")
-declare -a charms=("oai-enb")
-declare -a series=("trusty" "xenial")
+declare -a charms=("flexran-rtc")
+declare -a series=("xenial")
 
 for s in "${series[@]}"
 do 
-    cd $JUJU_REPOSITORY/xenial  #$s
+    cd ./xenial  #$s
     echo "series: " $s
     for k in "${charms[@]}"
     do
 	if [ -d $k ] ; then 	
           cd $k
 	  echo "charm: " $k
-	  url=`/usr/bin/charm push . cs:~navid-nikaein/$s/$k | grep url | cut -f2 -d' '`
+	  url=`charm push . cs:~navid-nikaein/$s/$k | grep url | cut -f2 -d' '`
 	  echo "pushed url: $url"
-          if [ "$1" == "revision" ] ; then 
-		revision=`echo $url | awk '{split($0,a,"-"); print a[4]}'`
-          	echo "setting the $k revision to $revision"	
-	  	echo $revision > $JUJU_REPOSITORY/$s/$k/revision 
-	  fi 
-	  #/usr/bin/charm release $url
-	  /usr/bin/charm release $url
-	  /usr/bin/charm grant $url everyone
+	  charm release $url
+	  charm grant $url everyone
 	  cd ..
 	fi 
     done
