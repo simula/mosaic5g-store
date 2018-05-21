@@ -1,31 +1,23 @@
 options:
-   branch:
-     default: "various-l2-fixes-187"
+   snap:
+     default: "edge"
      description: |
-       branch indicates which installation you want to do. 
-     type: string
-   revision: 
-     default: "head"
-     description: get a specific revison from the openairinterface5G git repository. 
-     type: string
-   kernel: 
-     default: "lowlatency"
-     description: set the default kerenl, generic or lowlatency. 
+      snap indicates which channel to use for installation hook. 
      type: string
    node_function: 
      default: "eNodeB_3GPP"
      description: | 
-       set the function of this node. Available Options: eNodeB_3GPP (classical eNodeB function), eNodeB_IP (eNodeB Standalone), eNodeB_3GPP_BBU (eNodeB with NGFI IF5), NGFI_RCC_IF4p5 (NGFI radio cloud center).
+       set the function of this BS node. Available Options: eNodeB_3GPP (classical eNodeB function). Other options will be made available later: eNodeB_IP (eNodeB Standalone), eNodeB_3GPP_BBU (eNodeB with NGFI IF5), NGFI_RCC_IF4p5 (NGFI radio cloud center).
      type: string
    target_hardware:
      default: "usrp_b200"
      description: |
-       defines the target RF hardware. Available Options: usrp_b200, usrp_x310, lmsdr, blader. Setting this option will require different configuration file and will trigger different building process. 
+       defines the target RF hardware. Available Options: usrp_b200, usrp_x310. Other options will be made available later: lmsdr, blader. 
      type: string
-   config_file:
-     default: "default"
+   mme_ip_addr:
+     default: ""
      description: |
-       takes the default configuration file based on the target hardware. It defines the specific enb configuration file, see openairinterface5g/targets/PROJECTS/GENERIC-LTE-EPC/CONF.
+       if the MME IP address is provided, the BS node connects to MME without waiting for S1-C relation. Default is an empty string.
      type: string
    eth:
      default: "eth0"
@@ -102,12 +94,12 @@ options:
      description: |
        Setting the rx antenna gain.
      type: int
-   agent_active:
+   flexran_active:
      default: "no"
      description: |
-        activates the eNB agent to interface with the controller.
+        activates the eNB agent/runtime to interface with the FlexRAN controller.
      type: string
-   agent_if_name:
+   flexran_if_name:
      default: "eth0"
      description: |
         defines the network interface name to connect to the controller. 
@@ -142,10 +134,4 @@ options:
      description: |
         defines the tx i/q scheduling advance
      type: int
-   remote_monitoring:
-     default: "no"
-     description: |
-       Enable eNB debugging and monitoring framework for collecting and sending events in real-time to a remote monitoring app. This enable T and VCD tools.
-     type: string
-
 

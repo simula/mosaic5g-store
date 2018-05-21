@@ -30,6 +30,7 @@ set_env
 
 check_flexran_process || true
 if [ $status -eq 1 ]; then
+    echo "no"  > $CHARM_DIR/.rtc_running
     juju-log "RTC is not running"
     status-set blocked  "Not running"
     $CHARM_DIR/hooks/start

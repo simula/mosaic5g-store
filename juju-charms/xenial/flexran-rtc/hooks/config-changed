@@ -46,13 +46,18 @@ bind_port=`config-get bind_sbi_port`
 
 if [ "$bind_port" != "$(cat $CHARM_DIR/.bind_port)" ]; then
     juju-log "changing the SBi bind port number to $bind_port"
+    close-port $(cat $CHARM_DIR/.bind_port)/tcp || true
+    open-port $bind_port/tcp
     flexran.sbi-port $bind_port
     echo "$bind_port"      >  $CHARM_DIR/.bind_port
 fi
 
 rest_port=`config-get bind_nbi_port`
+
 if [ "$rest_port" != "$(cat $CHARM_DIR/.rest_port)" ]; then
     juju-log "changing the NBi bind port number to $rest_port"
+    close-port $(cat $CHARM_DIR/.rest_port)/tcp || true
+    open-port $rest_port/tcp
     flexran.nbi-port $rest_port
     echo "$rest_port"      >  $CHARM_DIR/.rest_port
     
@@ -67,5 +72,5 @@ if [ -n "$iface" ]; then
 
 fi
 
-#$CHARM_DIR/hooks/start
+$CHARM_DIR/hooks/start
 

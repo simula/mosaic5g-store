@@ -36,5 +36,3 @@ if [ $status -eq 1 ]; then
 else 
     status-set active "Running"
 fi
- 
-

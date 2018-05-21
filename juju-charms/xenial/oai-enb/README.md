@@ -10,20 +10,18 @@ developed by EURECOM. It is written in the C programming language.
 # Usage
 
 This charm is available in the Juju Charm Store, to deploy you'll need a working 
-Juju installation, and a successful bootstrap. This charm need to be deployed 
-with other charms to get a open LTE network made up of LTE base station and core
-network. MySQL charm should be related to OAI-HSS. The latter should be related
-to OAI-EPC charm that should be related to this charm.
-
+Juju installation, and a successful bootstrap. This charm may be deployed either
+in a standalone mode if the MME IP address is provided in the config file, or
+with other core network charms to bring up the 4G-5G service.
 
 Please refer to the
 [Juju Getting Started](https://juju.ubuntu.com/docs/getting-started.html)
 documentation before continuing.
 
-Using this charm together with your core network(OAI-EPC and OAI-HSS charms) forces you use manual provider,
+Using this charm together with your core network(OAI-MME, OAI-SPGW, and OAI-HSS charms) forces you use manual provider,
 local provider, your private openstack cloud or MAAS, because the OAI-ENB charm requires to be deployed on 
 a machine with a hosted software radio frontend interface(exmimo2 or usrp) to provide the radio coverage. 
-In general you need to use a machine where the following CPU flags are supported: ssse3, avx2,sse4.2,sse4.1.
+In general you need to use a machine where the following CPU flags are supported: ssse3, avx2, sse4.2, sse4.1.
 
 
 ## Local provider
@@ -280,15 +278,10 @@ Each option can be changed also at runtime by running:
 # Contact Information
 
 ## MOSAIC-5G
-- [MOSAIC-5G website]()
-- [More info]()
+- [MOSAIC-5G website](http://mosaic-5g.io)
+- [More info](contact@mosaic-5g.io)
 
 ## OpenairInterface
 
 - [OpenAirInterface website](http://www.openairinterface.org/)
 - [More info](contact@openairinterface.org)
-
-# TODOs
-
- * Double-check what exactly needs permissions. At the moment all runs under root.
- * Change upstart script in a way that if the machine is rebooted the oai-enb process is automatically restarted if it was running during the shutdown procedure.

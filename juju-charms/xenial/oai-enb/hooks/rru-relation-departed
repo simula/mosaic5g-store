@@ -36,7 +36,7 @@
 
 set -eux
 source $CHARM_DIR/utils/common
-set_env_paths
+set_env
 status-set maintenance "running rru-relation-departed relation"
 
 file_config=`cat $CHARM_DIR/.config_file`

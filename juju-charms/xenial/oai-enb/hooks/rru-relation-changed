@@ -35,7 +35,7 @@
 
 set -ex
 source $CHARM_DIR/utils/common
-set_env_paths
+set_env
 
 node_func=`config-get node_function`
 

@@ -99,9 +99,8 @@ bind_add=`config-get bind_addr`
 bind_port=`config-get bind_sbi_port`
 rest_port=`config-get bind_nbi_port`
 
-
-open-port $bind_port/tcp
-open-port $rest_port/tcp
+#open-port $bind_port/tcp
+#open-port $rest_port/tcp
 
 echo "$snap"           >  $CHARM_DIR/.snap
 echo ""      >  $CHARM_DIR/.bind_addr

@@ -1,32 +1,23 @@
 #!/bin/bash
-################################################################################
+# Copyright 2016-2018 Eurecom and Mosaic5G Platforms Authors
+# Licensed to the Mosaic5G under one or more contributor license
+# agreements. See the NOTICE file distributed with this
+# work for additional information regarding copyright ownership.
+# The Mosaic5G licenses this file to You under the
+# Apache License, Version 2.0  (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# Copyright (c) 2016, EURECOM (www.eurecom.fr)
-# All rights reserved.
+#      http://www.apache.org/licenses/LICENSE-2.0
 #
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are met:
-#
-# 1. Redistributions of source code must retain the above copyright notice, this
-#    list of conditions and the following disclaimer.
-# 2. Redistributions in binary form must reproduce the above copyright notice,
-#    this list of conditions and the following disclaimer in the documentation
-#    and/or other materials provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and documentation are those
-# of the authors and should not be interpreted as representing official policies,
-# either expressed or implied, of the FreeBSD Project.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#-------------------------------------------------------------------------------
+# For more information about the Mosaic5G:
+#      contact@mosaic5g.io
 #
 ################################################################################
 # file common
@@ -36,26 +27,30 @@
 #oai-enb-version="2.0"
 ubuntu_dist=$(lsb_release -si)$(lsb_release -sr)
 
-set_env_paths(){
+set_env(){
 
 #paths in openairinterface-5G on Git
+    mosaic_path=/srv/mosaic5g
+    export PATH=$PATH:/snap/bin
+    conf_file=/var/snap/oai-ran/current/enb.band7.tm1.50PRB.usrpb210.conf
+    
+    # not needed anymore, keeping these for a while
+    openair_path=$mosaic_path/oai-ran
+    build_path=$openair_path/cmake_targets
+    tools_path=$build_path/tools
+    conf_path=$openair_path/targets/PROJECTS/GENERIC-LTE-EPC/CONF
+    exec_path=$openair_path/targets/bin
+    oaieNB_exec_name=lte-softmodem.Rel10
 
-openair_path=/srv/openair5G
-build_path=$openair_path/cmake_targets
-tools_path=$build_path/tools
-conf_path=$openair_path/targets/PROJECTS/GENERIC-LTE-EPC/CONF
-exec_path=$openair_path/targets/bin
-oaieNB_exec_name=lte-softmodem.Rel10
-
- 
-config_file_sodera_path=/srv/openair5G/targets/ARCH/LMSSDR
-config_file_sodera_default=enb_sodera_highband_5MHz_rx19dB_txfull.ini
-config_file_sodera_5mhz_hb=enb_sodera_highband_5MHz_rx19dB_txfull.ini
-config_file_sodera_10mhz_hb=enb_sodera_highband_10MHz_rx19dB_txfull.ini
-config_file_sodera_5mhz_lb=enb_sodera_lowband_Lrx_5MHz_rx19dB_txfull.ini
-config_file_sodera_10mhz_lb=enb_sodera_lowband_Lrx_10MHz_rx19dB_txfull.ini
-config_file_sodera_5mhz_wb=enb_sodera_lowband_Wrx_5MHz_rx19dB_txfull.ini
-config_file_sodera_10mhz_wb=enb_sodera_lowband_Wrx_10MHz_rx19dB_txfull.ini
+    
+    config_file_sodera_path=/srv/openair5G/targets/ARCH/LMSSDR
+    config_file_sodera_default=enb_sodera_highband_5MHz_rx19dB_txfull.ini
+    config_file_sodera_5mhz_hb=enb_sodera_highband_5MHz_rx19dB_txfull.ini
+    config_file_sodera_10mhz_hb=enb_sodera_highband_10MHz_rx19dB_txfull.ini
+    config_file_sodera_5mhz_lb=enb_sodera_lowband_Lrx_5MHz_rx19dB_txfull.ini
+    config_file_sodera_10mhz_lb=enb_sodera_lowband_Lrx_10MHz_rx19dB_txfull.ini
+    config_file_sodera_5mhz_wb=enb_sodera_lowband_Wrx_5MHz_rx19dB_txfull.ini
+    config_file_sodera_10mhz_wb=enb_sodera_lowband_Wrx_10MHz_rx19dB_txfull.ini
 
 }
 
@@ -126,19 +121,12 @@ check_enb_process(){
 	
 #IS_RUNNING=`systemctl status enb.service`
 #if [[ $IS_RUNNING =~ .*running.* ]]; then
-#fi
-    if [[ $ubuntu_dist == *"14"* ]]; then 
-	IS_ACTIVE=`service oaieNB status`
-    else
-	IS_ACTIVE=`systemctl is-active enb.service`
-    fi 
+    #fi
 
+    IS_ACTIVE=`systemctl is-active snap.oai-ran.daemon.service`
 
     if [ "$IS_ACTIVE" == "active" ]; then
 	juju-log "OAI eNB is running"
-	status=0
-    elif [[ $IS_ACTIVE =~ .*running.* ]]; then
-	juju-log "OAI HSS is running"
 	status=0
     else
 	juju-log "OAI eNB is not running" 
@@ -147,35 +135,28 @@ check_enb_process(){
 
 }
 start_enb(){
-
-if [[ $ubuntu_dist == *"14"* ]]; then 
-    service oaieNB restart || service oaieNB start || true
-else
-    systemctl restart enb.service || true 
-fi 
-
+    oai-ran.start || true
 }
-
 stop_enb(){
-
-    if [[ $ubuntu_dist == *"14"* ]]; then 
-	service oaieNB stop || true
-    else
-	systemctl stop enb.service  || true 
-    fi 
-
+    oai-ran.stop || true
 }
+restart_enb(){
+    stop_enb
+    start_enb
+}
+
 start_enb_process(){
 
-    start_enb
-    check_enb_process || true
+    oai-ran.restart || true  
+    check_enb_process
     if [ $status -eq 1 ]; then
-       juju-log "Trouble with OAI ENB upstart file...try to upgrade the charm"
-       status-set blocked "Trouble with OAI ENB upstart file...try to upgrade the charm"
+	echo "no"  > $CHARM_DIR/.oairan_running
+        status-set blocked "Not Running, check the config file"
        exit 1
     else
+	echo "yes"  > $CHARM_DIR/.oairan_running
 	juju-log "Running OAI ENB"
-	status-set active "OAI ENB is running"
+	status-set active "Running"
     fi 
 }
 
@@ -183,10 +164,9 @@ start_enb_process(){
 
 add_mme_ip(){
 
-    set_env_paths
-    file_config=`cat $CHARM_DIR/.config_file`
+set_env    
 
-sed -r -n "1,/MME parameters/ p" $conf_path/$file_config > $CHARM_DIR/beginning
+sed -r -n "1,/MME parameters/ p" $conf_file > $CHARM_DIR/beginning
 
 if [ ! -f $CHARM_DIR/mme_ips ]; then
 
@@ -213,15 +193,15 @@ fi
 
 cat $CHARM_DIR/beginning > $CHARM_DIR/enb.conf
 cat $CHARM_DIR/mme_ips >> $CHARM_DIR/enb.conf
-sed -r -n "/NETWORK_INTERFACES/,$ p" $conf_path/$file_config >> $CHARM_DIR/enb.conf
+sed -r -n "/NETWORK_INTERFACES/,$ p" $conf_file >> $CHARM_DIR/enb.conf
 
-mv -f $CHARM_DIR/enb.conf $conf_path/$file_config
+mv -f $CHARM_DIR/enb.conf $conf_file
 rm -f $CHARM_DIR/beginning
 
 }
 
 remove_mme_ip(){
-    set_env_paths
+    set_env
     file_config=`cat $CHARM_DIR/.config_file`
     sed -r -i "/$1/,/preference/ d" $conf_path/$file_config
     sed -r -i "0,/ipv4[ \t]*=[ \t]*\"[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\";/ s/,(\{[ \t]*ipv4[ \t]*=[ \t]*\"[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\")/ \1/" $conf_path/$file_config
@@ -240,44 +220,27 @@ remove_mme_ip(){
 
 add_rtc_ip(){
 
-    set_env_paths
-    file_config=`cat $CHARM_DIR/.config_file`
+    set_env
+ 
+    sed -r -i "/FLEXRAN_ENABLED/ s/\".+\"/\"yes\"/" $conf_file
+    
+    sed -r -i "/FLEXRAN_INTERFACE_NAME/ s/\".+\"/\"$1\"/" $conf_file 
+    sed -r -i "/FLEXRAN_IPV4_ADDRESS/ s/\".+\"/\"$2\"/" $conf_file 
+    sed -r -i "/FLEXRAN_PORT/ s/\".+\"/\$3/" $conf_file 
+        
+}
+disable_rtc(){
 
-    sed -r -n "1,/Physical parameters/ p" $conf_path/$file_config > $CHARM_DIR/beginning
-
-    if [ ! -f $CHARM_DIR/rtc_ip ]; then
-
-	cat <<EOF > $CHARM_DIR/rtc_ip
-    NETWORK_CONTROLLER :
-    {
-        FLEXRAN_AGENT_INTERFACE_NAME            = "$1";
-        FLEXRAN_AGENT_IPV4_ADDRESS              = "$2/30";
-        FLEXRAN_AGENT_PORT                      = $3;
-        FLEXRAN_AGENT_CACHE                     = "/mnt/oai_agent_cache";
-    };
-
-EOF
-	
-	cat $CHARM_DIR/beginning > $CHARM_DIR/enb_rtc.conf
-	cat $CHARM_DIR/rtc_ip >> $CHARM_DIR/enb_rtc.conf
-	sed -r -n "/component_carriers/,$ p" $conf_path/$file_config >> $CHARM_DIR/enb_rtc.conf
-	
-	mv -f $CHARM_DIR/enb_rtc.conf $conf_path/$file_config
-	rm -f $CHARM_DIR/beginning
-    else
-	
-	sed -r -i "/FLEXRAN_AGENT_INTERFACE_NAME/ s/\".+\"/\"$1\"/" $conf_path/$config_file 
-	sed -r -i "/FLEXRAN_AGENT_IPV4_ADDRESS/ s/\".+\"/\"$2\"/" $conf_path/$config_file 
-	sed -r -i "/FLEXRAN_AGENT_PORT/ s/\".+\"/\$3/" $conf_path/$config_file 
-	
-    fi    
+    set_env
+    sed -r -i "/FLEXRAN_ENABLED/ s/\".+\"/\"no\"/" $conf_file
+        
 }
 
 # get from http://www.linuxjournal.com/content/validating-ip-address-bash-script
 validate_ip() {
 
-local  ip=$1
-local  stat=1
+    local  ip=$1
+    stat=1
 
 if [[ $ip =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
     OIFS=$IFS
