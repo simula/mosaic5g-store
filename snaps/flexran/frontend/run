@@ -62,8 +62,8 @@ case "$1" in
 	echo "  journal:        get the $SNAP_NAME logs"
 	echo ""
 	echo "  flexran:        run FLEXRAN as a process "
-	echo "  sbi port:       set the FLEXRAN SBI port  "
-	echo "  nbi port:       set the FLEXRAN NBI port"
+	echo "  sbi-port [port]:set the FLEXRAN SBI port  "
+	echo "  nbi-port [port]:set the FLEXRAN NBI port"
 	echo "  port            get the FLEXRAN SBI and NBI ports"
 	
 	echo "  help:           print this help"

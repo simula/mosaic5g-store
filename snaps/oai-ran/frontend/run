@@ -61,7 +61,7 @@ case "$1" in
 	echo "  journal:      get the $SNAP_NAME logs"
 	echo ""
 	echo "  init:         initialize $SNAP_NAME (after the 1st installation)"
-	echo "  oai-ran:      run $SNAP_NAME as a process"
+	echo "  oai-ran:      run $SNAP_NAME manually as a process"
 	echo "  debug:        debug the $SNAP_NAME with gdb"
 	echo "  set-conf:     set the $SNAP_NAME configuration file"
 	echo "  get-conf:     get the current $SNAP_NAME configuration file"

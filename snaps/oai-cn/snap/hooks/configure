@@ -1,0 +1,16 @@
+#!/bin/sh
+set -e 
+echo "executing post installation hook "
+
+#systemctl stop  snap.oai-cn.hssd.service
+#systemctl stop  snap.oai-cn.mmed.service
+#systemctl stop  snap.oai-cn.spgwd.service
+	
+#export PATH=$PATH:/snap/bin
+#oai-cn.hss-stop
+#oai-cn.mme-stop
+#oai-cn.spgw-stop
+
+#$SNAP/init hss
+#$SNAP/init mme
+#$SNAP/init spgw

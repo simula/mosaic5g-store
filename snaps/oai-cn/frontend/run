@@ -64,31 +64,47 @@ case "$1" in
 	exec $SNAP/gdb --data-directory=$SNAP_DATA  -n -x $SNAP_DATA/.gdb_$2
 	;;
     "start"  )
-	echo "starting $2"
-	[ -z "${2^^}_EXEC" ] || ( sudo snap start $2 )
+	#[ -z "${2^^}_EXEC" ] || ( snap start $SNAP_NAME.$3 )
+#	echo "snap start $SNAP_NAME.$2"
+	snap start $SNAP_NAME.$2
+	
 	;;
     "stop" )
-	sudo snap stop $SNAP_NAME
+#	echo "snap stop $SNAP_NAME.$2"
+	snap stop $SNAP_NAME.$2
 	;;
     "restart" )
-	sudo snap restart $SNAP_NAME
+	snap restart $SNAP_NAME.$2
 	;;
     "status" )
-	sudo systemctl status  snap.$SNAP_NAME.daemon.service
+#	echo "systemctl status  snap.$SNAP_NAME.$2.service"
+	systemctl status  snap.$SNAP_NAME.$2.service
 	;;
     "journal" )
-	sudo journalctl -u snap.$SNAP_NAME.daemon.service
+	journalctl -u snap.$SNAP_NAME.$2.service
 	;;
     "help" )
 	echo "Usage:   sudo  $SNAP_NAME.[options] args"
 	echo "Note:    need root priviliage"
 	echo "Options:"
-	echo "  hss:            run HSS "
+	echo "  hss-start:        start the $SNAP_NAME.hssd daemon"
+	echo "  hss-stop:         stop the $SNAP_NAME.hssd daemon"
+	echo "  hss-restart:      restart the $SNAP_NAME.hssd daemon"
+	echo "  hss-status:       get the $SNAP_NAME.hssd status"
+	echo "  hss-journal:      get the $SNAP_NAME.hssd logs"
+	echo ""
+	echo "  hss:            run HSS manually as a process"
 	echo "  hss-init:       initialize HSS (after the 1st installation)"
 	echo "  hss-conf-set:   set the HSS configuration file"
 	echo "  hss-conf-get:   get the current HSS configuration file (hss.conf)"
 	echo "  hss-conf-show:  show the path to the HSS configuration file (hss.conf)"
 	echo "  hss-conf-list:  list all the HSS configuration files (hss.conf, hss_fd)"
+	echo ""
+	echo "  mme-start:        start the $SNAP_NAME.mmed daemon"
+	echo "  mme-stop:         stop the $SNAP_NAME.mmed daemon"
+	echo "  mme-restart:      restart the $SNAP_NAME.mmed daemon"
+	echo "  mme-status:       get the $SNAP_NAME.mmed status"
+	echo "  mme-journal:      get the $SNAP_NAME.mmed logs"
 	echo ""
 	echo "  mme:            run MME"
 	echo "  mme-init:       initialize MME"
@@ -96,6 +112,12 @@ case "$1" in
 	echo "  mme-conf-get:   get the current MME configuration file (mme.conf)"
 	echo "  mme-conf-show:  show the path to the MME configuration file (mme.conf)"
 	echo "  mme-conf-list:  list all the SPGW configuration files (mme.conf, mme_fd)"
+	echo ""
+	echo "  spgw-start:        start the $SNAP_NAME.spgwd daemon"
+	echo "  spgw-stop:         stop the $SNAP_NAME.spgwd daemon"
+	echo "  spgw-restart:      restart the $SNAP_NAME.spgwd daemon"
+	echo "  spgw-status:       get the $SNAP_NAME.spgwd status"
+	echo "  spgw-journal:      get the $SNAP_NAME.spgwd logs"
 	echo ""
 	echo "  spgw:           run SPGW"
 	echo "  spgw-init:      initialize SPGW"
@@ -178,7 +200,14 @@ INSERT INTO mmeidentity (\`idmmeidentity\`, \`mmehost\`, \`mmerealm\`, \`UE-Reac
 EOF
 
 	fi
-	;;
+	 ;;
+     add-user-to-db )
+	 echo "Inserting a user into the oai_db database"
+	  #Inserting the mme in the database to let epc connect to hss
+	    $HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER oai_db << EOF 
+INSERT INTO users (\`idmmeidentity\`, \`mmehost\`, \`mmerealm\`, \`UE-Reachability\`) VALUES ('$primary_key', '$fqdn', '$REALM', 0);
+EOF
+	 ;;
     hss-certificate  )
 	
 	rm -rf ./demoCA

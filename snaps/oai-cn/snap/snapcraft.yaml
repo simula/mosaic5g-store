@@ -13,10 +13,55 @@ confinement: devmode
 apps:
   mme:
     command: run mme 
+  mmed:
+    command: run mme
+    daemon: simple
+    stop-command: run stop mmed
+    stop-timeout: 7s
+  mme-start:
+    command: run start mmed
+  mme-stop:
+    command: run stop mmed
+  mme-restart:
+    command: run restart mmed
+  mme-status:
+    command: run status mmed
+  mme-journal:
+    command: run journal mmed
   spgw:
     command: run spgw
+  spgwd:
+    command: run spgw
+    daemon: simple
+    stop-command: run stop spgwd
+    stop-timeout: 7s
+  spgw-start:
+    command: run start spgwd
+  spgw-stop:
+    command: run stop spgwd
+  spgw-restart:
+    command: run restart spgwd
+  spgw-status:
+    command: run status spgwd
+  spgw-journal:
+    command: run journal spgwd
   hss:
-    command: run hss  
+    command: run hss
+  hssd:
+    command: run hss
+    daemon: simple
+    stop-command: run stop hssd
+    stop-timeout: 7s
+  hss-start:
+    command: run start hssd
+  hss-stop:
+    command: run stop hssd
+  hss-restart:
+    command: run restart hssd
+  hss-status:
+    command: run status hssd
+  hss-journal:
+    command: run journal hssd
   hss-init:
     command: init hss 
   mme-init:
@@ -53,7 +98,7 @@ apps:
     command: conf ls-hss
 #hooks:
 #  install:
-#    plugs: [network]
+#    plugs: [home, network]
 #  configure:
 #    plugs: [home, network]
 parts:
