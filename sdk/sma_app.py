@@ -372,19 +372,24 @@ class sma_app(object):
         for i in range(len(self.changes)):
             if len(self.changes[i]) > 0:
                 enb_id = self.decisions[i]['eNB_index']
+                # Lukasz: the API changed, you need to double check this code 
+                cell_id = self.options[i]['eNB_id']
                 self.output['enb'].append({enb_id:{}})
                 for j in self.changes[i].keys():
+                    self.output['cell_id']=int(cell_id)
                     if j == 'freq_max':
-                        self.output['enb'][enb_id][enb_id]['dl_freq']=int(self.changes[i][j]-self.options[i]['bandwidth']/2.0)
-                        self.output['enb'][enb_id][enb_id]['ul_freq_offset']=int(self.options[i]['fdd_spacing'])
+                        self.output['enb'][enb_id][enb_id]['dlFreq']=int(self.changes[i][j]-self.options[i]['bandwidth']/2.0)
+                        self.output['enb'][enb_id][enb_id]['ulFreq']=int(self.options[i]['fdd_spacing'])+int(self.changes[i][j]-self.options[i]['bandwidth']/2.0)
+                        self.output['enb'][enb_id][enb_id]['eutraBand']=7
                     if j == 'bandwidth':
-                        self.output['enb'][enb_id][enb_id]['bandwidth']=self.translate_bandwidth(self.options[i]['bandwidth'])
-                    if j == 'frame_type':
-                        self.output['enb'][enb_id][enb_id]['frame_type']=self.parse_frame_type(self.options[i]['frame_type'])
-                        self.output['enb'][enb_id][enb_id]['ul_freq_offset']=int(self.options[i]['fdd_spacing'])
+                        self.output['enb'][enb_id][enb_id]['dlBandwidth']=self.translate_bandwidth(self.options[i]['bandwidth'])
+                        self.output['enb'][enb_id][enb_id]['ulBandwidth']=self.translate_bandwidth(self.options[i]['bandwidth'])
+                    #if j == 'frame_type':
+                    #    self.output['enb'][enb_id][enb_id]['frame_type']=self.parse_frame_type(self.options[i]['frame_type'])
+                    #    self.output['enb'][enb_id][enb_id]['ul_freq_offset']=int(self.options[i]['fdd_spacing'])
         
-        yaml.dump(self.output,file,default_flow_style=False)
-        self.log.info('\n' + yaml.dump(self.output)) 
+        #yaml.dump(self.output,file,default_flow_style=False)
+        #self.log.info('\n' + yaml.dump(self.output)) 
 
     def load_policy(self):
         self.rules = ss.get_rules()
@@ -432,7 +437,12 @@ class sma_app(object):
 	
 	# send the updated list when there is a changes
         if self.check_if_decisions_changed():
-            ss.apply_policy(self.output)
+            print 'output is '
+            print self.output['cell_id']
+            print self.output['enb'][0]
+            print self.output['enb'][0]
+            print self.output['enb'][0][0]
+            ss.apply_policy(enb=self.output['cell_id'], policy_data=self.output['enb'][0][0])
 	    sma_open_data.notify('get-list',self.open_data_all_options)
 	    #client.send({'get_current':json.dumps(self.next_decisions)})
 

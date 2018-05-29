@@ -77,7 +77,7 @@ class flexran_rest_api(object):
     # pf_all='inputs/multiple_data_samples_file.json'
     # pf_all = 'inputs/1eNB_2UEs_mobility_25PRB.json'
     #pf_all = 'inputs/test_20s.json'
-    pf_all = 'inputs/UEs2_25PRB_10M.json'
+    pf_all = 'inputs/all-new.json'
     # pf_all = 'inputs/Last.json'
     """!@brief Input data sets for MAC  status used for test"""
     pf_mac='inputs/mac_stats_2.json'
@@ -106,6 +106,7 @@ class flexran_rest_api(object):
     """!@brief RRM API endpoint with the policy as a payload """    
     rrm_policy='/rrm_config'  
 
+    conf='/conf'
 
     """!@brief full RAN status API endpoint (human-readable)  """    
     sm_hr_all='/stats_manager/all'
@@ -1634,6 +1635,7 @@ class ss_policy (object):
         # NB APIs endpoints
         self.rrm_api=flexran_rest_api.rrm
         self.rrm_policy_api=flexran_rest_api.rrm_policy
+        self.conf_api=flexran_rest_api.conf
         # stats manager data requeted by the endpoint
         # could be extended to have data per API endpoint
         self.policy_data = ''
@@ -1722,7 +1724,7 @@ class ss_policy (object):
 
     # apply policy with policy data 
     # TBD: apply policy from a file
-    def apply_policy(self, policy_data='',as_payload=True):
+    def apply_policy(self, enb=0, policy_data='',as_payload=True):
         """!@brief Apply the default or user-defined policy 
         
         @param policy_data: content of the policy file
@@ -1738,12 +1740,9 @@ class ss_policy (object):
         else:
             self.log.error('cannot find the policy data '  + pdata)
             return
-	
-        if as_payload == True :
-            url = self.url+self.rrm_policy_api
-        else: 
-            url = self.url+self.rrm_api+'/'+flexran_rest_api.pf_name
-        
+
+        url = self.url+self.conf_api+'/enb/'+str(enb)    
+    
         if self.op_mode == 'test' :
             self.log.info('POST ' + str(url))
             self.log.debug(self.dump_policy(policy_data=pdata))
