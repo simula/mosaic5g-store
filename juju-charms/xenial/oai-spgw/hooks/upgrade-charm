@@ -1,4 +1,3 @@
-#!/bin/bash
 # Copyright 2016-2018 Eurecom and Mosaic5G Platforms Authors
 # Licensed to the Mosaic5G under one or more contributor license
 # agreements. See the NOTICE file distributed with this
@@ -19,26 +18,15 @@
 # For more information about the Mosaic5G:
 #      contact@mosaic5g.io
 #
-################################################################################
-# file start 
-# brief start the oai-spgw service, this happens after install or config changed hooks
-# author navid.nikaein@eurecom.fr and  A. B. Molini
+# file upgrade-charm
+# brief called when each time a charm is upgraded after the new charm
+# contents have been unpacked
+# author  navid.nikaein@eurecom.fr 
+
+# Best practice suggests you execute the hooks/install and
+# hooks/config-changed to ensure all updates are processed
 
 set -eux
-source $CHARM_DIR/utils/common
-set_env
-
- 
-start_spgw
-sleep 2 
-check_spgw_process || true
-if [ $status -eq 1 ]; then
-    status-set blocked "Not Running, check the config file and logs"
-    juju-log "Troubles in running SPGW...try to upgrade the charm"
-    echo "no"  > $CHARM_DIR/.spgw_running
-    exit 1
-else
-    echo "yes" > $CHARM_DIR/.spgw_running
-    status-set active "Running"
-fi
-
+status-set maintenance "Upgrade-charm  hook"
+stop_spgw
+$CHARM_DIR/hooks/install

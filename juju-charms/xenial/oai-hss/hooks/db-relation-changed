@@ -1,9 +1,7 @@
 #!/bin/bash
 set -eux
-
 source $CHARM_DIR/utils/common
-
-status-set maintenance "Running db-relation-changed hook"
+status-set maintenance "db-relation-changed hook"
 
 database=`relation-get database`
 user=`relation-get user`
@@ -15,7 +13,7 @@ if [ -z "$database" ] ; then
    exit 0 # exit silently to safely interrupt the execution of the hook without error
 fi
 
-set_env_paths
+set_env
 
 #sed in /usr/local/etc/oai/hss.conf that is the actual input config file passed to
 #the final executable oai_hss
@@ -26,11 +24,11 @@ db_data_in_config_file $host $user $password $database
 if $(/usr/bin/mysql -u $user --password=$password -h $host $database -e "show tables;" | grep -q users); then
     echo "Database already there"
 else
-    /usr/bin/mysql -u $user --password=$password -h $host $database < $openair_path/src/oai_hss/db/oai_db.sql
+    /usr/bin/mysql -u $user --password=$password -h $host $database < $oai_db_sql
 fi
 
 #this can be start even if the EPC relation is not established 
-$CHARM_DIR/hooks/start
+$CHARM_DIR/hooks/start 
 
 
 for hss_id in $(relation-ids hss); do

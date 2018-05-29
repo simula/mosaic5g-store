@@ -20,36 +20,15 @@
 #      contact@mosaic5g.io
 #
 ################################################################################
-# file mme-relation-joined 
-# brief called when the enb-mme relation is created 
-# author navid.nikaein@eurecom.fr and A. B. Molini  
+# file upgrade-charm
+# brief called when each time a charm is upgraded after the new charm
+# contents have been unpacked
+# author  navid.nikaein@eurecom.fr 
+
+# Best practice suggests you execute the hooks/install and
+# hooks/config-changed to ensure all updates are processed
+
 set -eux
-source $CHARM_DIR/utils/common
-
-juju-log "Setting up relation settings for OAISIM charm"
-#relation-set TAC=`config-get gummei_tai_tac`
-
-#we choose the plmn when we deploy the mme and based on which
-#mme we link this oaisim, it will belong to a certain TA.
-relation-set MCC=`config-get gummei_tai_mcc`
-relation-set MNC=`config-get gummei_tai_mnc`
-relation-set trigger_restart=0
-
-mme_iface=`config-get eth`
-mme_public_ip=`get_eth_ip $mme_iface`
-
-get_ip_address $mme_public_ip
-status=$?
-if [ "$status" == "1" ] ; then
-    status-set error "nslookup failed for the mme host name ($mme_public_ip)"
-    relation-set mme_ip=$mme_public_ip
-else
-    relation-set mme_ip=$validated_mme_public_ip
-fi 
-
-
-relation-set mme_running=no
-#we say a priori that mme is not running just to force
-#enb to actually run only if the tac is in the tai list or 
-#after having verified that is so.
-
+status-set maintenance "Upgrade-charm  hook"
+stop_mme
+$CHARM_DIR/hooks/install

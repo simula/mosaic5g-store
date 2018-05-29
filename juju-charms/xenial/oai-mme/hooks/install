@@ -1,126 +1,73 @@
 #!/bin/bash
-################################################################################
+# Copyright 2016-2018 Eurecom and Mosaic5G Platforms Authors
+# Licensed to the Mosaic5G under one or more contributor license
+# agreements. See the NOTICE file distributed with this
+# work for additional information regarding copyright ownership.
+# The Mosaic5G licenses this file to You under the
+# Apache License, Version 2.0  (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# Copyright (c) 2016, EURECOM (www.eurecom.fr)
-# All rights reserved.
+#      http://www.apache.org/licenses/LICENSE-2.0
 #
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are met:
-#
-# 1. Redistributions of source code must retain the above copyright notice, this
-#    list of conditions and the following disclaimer.
-# 2. Redistributions in binary form must reproduce the above copyright notice,
-#    this list of conditions and the following disclaimer in the documentation
-#    and/or other materials provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and documentation are those
-# of the authors and should not be interpreted as representing official policies,
-# either expressed or implied, of the FreeBSD Project.
-#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#-------------------------------------------------------------------------------
+# For more information about the Mosaic5G:
+#      contact@mosaic5g.io
+# 
 ################################################################################
 # file install
 # brief install the oai-mme from the openairinterface git repository
 # author  navid.nikaein@eurecom.fr 
 
 install_packages(){
-    #status-set maintenance "Installing some dependencies"
-
+    
+    gitAlreadyInstalled=$(dpkg --get-selections snapd 2>/dev/null | grep -c 'install') || true
+    if [ ! $gitAlreadyInstalled -eq 1 ]; then # If git is NOT installed
+	apt-get install -y --force-yes snapd # Ensure necessary git dependency exist.
+    fi
+    
     gitAlreadyInstalled=$(dpkg --get-selections git 2>/dev/null | grep -c 'install') || true
     if [ ! $gitAlreadyInstalled -eq 1 ]; then # If git is NOT installed
        apt-get install -y git # Ensure necessary git dependency exist.
     fi
+
     atAlreadyInstalled=$(dpkg --get-selections at 2>/dev/null | grep -c 'install') || true
     if [ ! $atAlreadyInstalled -eq 1 ]; then 
        apt-get install -y at
     fi
+
+    mySQLClientInstalled=$(dpkg --get-selections mysql-client 2>/dev/null | grep -c 'install') || true
+    if [ ! $mySQLClientInstalled -eq 1 ]; then 
+	apt-get install -y --force-yes mysql-client
+    fi 
 
     #Mysql-server simply because we want resolveip tool
     PASSWORD="linux"
     echo "mysql-server mysql-server/root_password password $PASSWORD" | debconf-set-selections
     echo "mysql-server mysql-server/root_password_again password $PASSWORD" | debconf-set-selections
 
-    apt install -y mysql-client
-}
-
-update_sources_list(){
-    wget -O /tmp/country.json http://www.geoplugin.net/json.gp
-    country=`sed -n 's/\"geoplugin_countryName\"://gp' /tmp/country.json | sed -n 's/ //gp' | sed -n 's/,//gp' | sed -n 's/\"//gp'`
-
-    if [ "$country"x = "China"x ]; then
-        juju-log "China, get use source from Tsinghua University"
-        mv /etc/apt/sources.list /etc/apt/sources.list.bak
-        wget -P /etc/apt/ http://han.kuwan.space/oaicharms/sources.list
-        apt-get update
-    else
-        juju-log "proceed normally"
-    fi
-    
-}
-
-juju_install_kernel(){
-    #status-set maintenance "Check the kernel and update if required"
-    juju-log "Check the kernel and update if required"
-
-    #we don't either want the low latency kernel for MME
-    sed -i -r "s/(check_kernel_release_and_install_xtables_addons_oai[^()]+)/#\1/" $tools_path/build_helper
-
-    check_current_kernel
-
-    if [[ $REQUIRED_KERNEL_IS_INSTALLED == false ]]; then
-        # a way to avoid looping for lxc env.
-        if [ "$(cat $CHARM_DIR/.reboot)" != "reboot" ]; then  
-          echo "reboot" > $CHARM_DIR/.reboot 
-          juju-log "installing the required kernel and reboot"
-          status-set maintenance "installing the required kernel and rebooting"
-          install_required_kernel
-          juju-reboot --now
-        else 
-          juju-log "Can't install the kernel (probably in LXC), make sure that required kernel is installed (3.19)"
-        fi 
-        #if we reboot now, the install is blocked here and reschedule after the reboot
-        #and xtables will be installed
-    fi
 }
 
 clone_repo(){
-    status-set maintenance "Fetching OpenAir-CN/MME"
+
+    juju-log  "Fetching the Mosaic5G repository"
+    
     echo -n | openssl s_client -showcerts -connect gitlab.eurecom.fr:443 2>/dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' >> /etc/ssl/certs/ca-certificates.crt
 
-    if [ -d "$openair_path"  ]; then
-        juju-log "Updating the installation directory"
-        cd $openair_path 
-        git fetch --all 
+    #everytime refresh the installation 
+    if [ -d "$mosaic_path" ]; then  
+	cd $mosaic_path
 	git reset --hard HEAD
-        git checkout $branch
-        if [ "$revision" != "head" ]; then 
-            git checkout $revision
-        fi
-	cd -
+	cd - 
     else
-       #Save the current hosts file
-       cp -f /etc/hosts /home
-       git clone --branch $branch https://gitlab.eurecom.fr/oai/openair-cn.git $openair_path
-       cd $openair_path 
-       if [ "$revision" != "head" ]; then 
-           git checkout $revision
-       fi
-       cd -
+	git clone https://gitlab.eurecom.fr/mosaic5g/mosaic5g.git $mosaic_path
     fi
 
-    #We don't need phpmyadmin in the installation as it is provided by phpmyadmin charm
-    #sed -i "s/phpmyadmin/#phpmyadmin/" $tools_path/build_helper
-    sed -i '/phpmyadmin/d' $tools_path/build_helper
 }
 
 update_hostname(){
@@ -140,26 +87,24 @@ configure_hosts(){
 }
 
 build_mme(){
-  status-set maintenance "Building mme"
-  $build_run_scripts/build_mme -i -f
-  $build_run_scripts/build_mme
+    cd $mosaic_path
+    if [ "$snap" != "edge" ] || [ "snap" != "beta" ] ; then
+	juju-log "channel $snap is not supported, use edge"
+    else
+	juju-log "Installing and building the HSS from OAI-CN snap"
+    fi
+    ./build_m5g -C
+    
 }
 
-configure_mme(){
-  if [[ $ubuntu_dist == *"14"* ]]; then 
-      cp $CHARM_DIR/files/mme /etc/init/mme.conf
-  else 
-      cp $CHARM_DIR/files/mme.service /etc/systemd/system/
-  fi
-
-  # copy config templates
-  mkdir -p $mme_conf_path
-  cp $openair_path/etc/mme.conf $mme_conf_path/mme.conf
-  cp $openair_path/etc/mme_fd.conf $freediameter_conf_path/mme_fd.conf
-
-  # generate cert
-  fqdn=`hostname --fqdn`
-  $build_run_scripts/check_mme_s6a_certificate $freediameter_conf_path $fqdn
+init_mme(){
+    oai-cn.hss-stop || true
+    oai-cn.mme-stop || true
+    oai-cn.spgw-stop || true
+        
+    oai-cn.mme-init || true 
+    # just a flag for start script to run the service
+    #echo "yes" > $CHARM_DIR/.oaimme_running_flag
 }
 
 configure_network(){
@@ -182,37 +127,29 @@ configure_network(){
 
 set -eux
 
+status-set maintenance "Install hook"
 export DEBIAN_FRONTEND=noninteractive
 source $CHARM_DIR/utils/common
-
-update_sources_list
-set_env_paths
-
-status-set maintenance "Installing support packages and $mme_exec_name"
+set_env
+#echo "no"  > $CHARM_DIR/.oaimme_running_flag
 
 open-port 2152/udp
 open-port 2123/udp
+open-port 36412/tcp
 
-branch=`config-get branch`
-revision=`config-get revision`
-kernel=`config-get kernel`
-
-echo "$branch" > $CHARM_DIR/.branch
-echo "$revision" > $CHARM_DIR/.revision
-echo "$kernel"      >  $CHARM_DIR/.kernel
-
-status-set maintenance "Fetching and installing Openair4G"
+snap=`config-get snap`
+echo "$snap"           >  $CHARM_DIR/.snap
 
 update_hostname
-configure_network `config-get eth`
 
 install_packages
+
+configure_network `config-get eth`
+
 clone_repo
-juju_install_kernel
 
 configure_hosts
 
 build_mme
-configure_mme
 
-status-set blocked "Waiting for active connection with HSS to actually run MME...add hss relation"
+init_mme

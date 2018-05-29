@@ -24,5 +24,5 @@
 # brief called when each time a charm is upgraded after the new charm
 # contents have been unpacked
 # author  navid.nikaein@eurecom.fr
-status-set maintenance "Upgrade hook"
+status-set maintenance "Upgrade-charm hook"
 $CHARM_DIR/hooks/install  

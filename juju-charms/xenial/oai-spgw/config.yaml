@@ -1,12 +1,8 @@
 options:
-   branch:
-     default: "develop"
+   snap:
+     default: "edge"
      description: |
-       branch indicates which installation you want to do. If you want a stable installation, change this option to "master". 
-     type: string
-   revision: 
-     default: "head"   
-     description: get a specific revison from the openair-cn git repository. 
+      snap indicates which channel to use for installation hook. 
      type: string
    sgw-eth:
      default: "eth0"
