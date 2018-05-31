@@ -140,9 +140,12 @@ class client_handler(tornado.websocket.WebSocketHandler):
 
         # main decoding part
         message = tornado.escape.json_decode(message)
-        method = message.get('method')
-        id = message.get('id')
-	params = message.get('params')
+        if message is None: 
+            try:
+                method = message.get('method')
+                id = message.get('id')
+	        params = message.get('params')
+            
 	if params is None:
 	    params = {}
 

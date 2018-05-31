@@ -1752,7 +1752,7 @@ class ss_policy (object):
             print self.dump_policy(pdata)
             try :
 		# post data as binary
-            	req = requests.post(url, data=self.dump_policy(pdata),headers={'Content-Type': 'application/octet-stream'})
+            	req = requests.post(url, data=json.dumps(pdata),headers={'Content-Type': 'application/json'})
             	if req.status_code == 200:
             	    self.log.info('successfully applied the policy')
             	    self.status='connected'
