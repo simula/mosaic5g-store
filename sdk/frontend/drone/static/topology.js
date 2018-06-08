@@ -211,9 +211,25 @@ function topology(sources) {
 		    for (var k = 0; k < node.enb_list.length; ++k) {
 			var enb = node.enb_list[k];
 			// Extract the eNBId part only
-			list.push(enb.id.split('_')[1]);
+			list.push(enb.id.split('_').pop());
 		    }
 		}
+	    } else if (choice[i] == '#UEID') {
+		// Collect a list of known UEs
+		for (j = 0; j < LIST.length; ++j) {
+		    if (LIST[j].type != 'RTC') continue;
+		    node = LIST[j].node;
+		    if (!node || !node.enb_list) continue;
+		    for (k = 0; k < node.enb_list.length; ++k) {
+			enb = node.enb_list[k];
+			for (var rnti in enb.ue_list) {
+			    var ue = enb.ue_list[rnti];
+			    // Extract the UE Id part only
+			    list.push(ue.id.split('_').pop());
+			}
+		    }
+		}
+		
 	    } else {
 		list.push(choice[i]);
 	    }		
