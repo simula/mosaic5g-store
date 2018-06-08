@@ -447,7 +447,7 @@ class rrm_policy (object):
         if format == 'yaml' or format == 'YAML':
             yaml.dump(self.policy_data, stream)
         elif format == 'json' :
-            json.dump(self.policy_data, stream)
+            json.dumps(self.policy_data, stream)
         else :
             self.log.error('unsupported format')
             
@@ -879,7 +879,7 @@ class stats_manager(object):
     def __del__(self):
         if self.recording:
             with open(self.stats_data_recorded_file, 'w') as outfile:
-                json.dump(self.stats_data_recorded, outfile)
+                json.dumps(self.stats_data_recorded, outfile)
 
               
     def start_recorder(self):
@@ -896,7 +896,7 @@ class stats_manager(object):
             self.recording=False
             try:
                 with open(self.stats_data_recorded_file, 'w') as outfile:
-                    json.dump(self.stats_data_recorded, outfile)
+                    json.dumps(self.stats_data_recorded, outfile)
                     self.log.info('recorded file can be found at '+ self.stats_data_recorded_file)
             except:
                 self.log.error('cannot open the file ' + self.stats_data_recorded_file)

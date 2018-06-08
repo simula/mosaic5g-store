@@ -1,22 +1,4 @@
- - cell_id: 0
-   MVNO_group: 'groupA'
-
-
-#"lsa": false, "price": 0.5, "freq_min": 2667, "bandwidth": 6, "duration_lease": 90000, "operator": "play", "freq_max": 2673, "frame_type": "FDD", "min_lease_time": 100
-
-#"lsa": false, "price": 1.0, "freq_min": 2665, "bandwidth": 10, "duration_lease": 5000, "operator": "orange", "freq_max": 2675, "frame_type": "FDD", "min_lease_time": 100
-
-#"lsa": true, "price": 1.5, "freq_min": 2640, "bandwidth": 20, "duration_lease": 5000, "operator": "play", "freq_max": 2660, "frame_type": "FDD", "min_lease_time": 100
-
-#"lsa": true, "price": 0.23529411764705882, "freq_min": 2620, "bandwidth": 10, "duration_lease": 4250, "operator": "orange", "freq_max": 2630, "frame_type": "FDD", "min_lease_time": 85
-
-#"lsa": true, "price": 0.875, "freq_min": 2630, "bandwidth": 4, "duration_lease": 400, "operator": "play", "freq_max": 2634, "frame_type": "FDD",  "min_lease_time": 200
-
-# AAAA - cheapest    (50)
-
-# BBBB - wide bandwidth (100)
-
-# CCCC - high min_lease_time (6)
-
-# DDDD - high duration_lease (25)
-
+- MVNO_group: !!python/unicode 'groupC'
+  cell_id: 0
+- MVNO_group: groupA
+  cell_id: 234881024

@@ -336,8 +336,8 @@ class sma_app(object):
                 self.log.info('Change policy to eNB: ' + str(self.next_decisions[i]['eNB_index']) + \
                         ' MVNO_group: ' + str(self.next_decisions[i]['MVNO_group'])) 
                 for j in self.decisions[i].keys():
-                    if (self.decisions[i][j] != self.next_decisions[i][j]):
-                        a[i][j] = self.next_decisions[i][j]
+                    #if (self.decisions[i][j] != self.next_decisions[i][j]):
+                    a[i][j] = self.next_decisions[i][j]
                 self.decisions[i] = self.next_decisions[i]
 
         del self.changes
@@ -404,11 +404,16 @@ class sma_app(object):
                     if j == 'freq_max':
                         self.output['enb'][enb_id][enb_id]['dlFreq']=int(self.changes[i][j]-self.options[i]['bandwidth']/2.0)
                         self.output['enb'][enb_id][enb_id]['ulFreq']=int(self.options[i]['fdd_spacing'])+int(self.changes[i][j]-self.options[i]['bandwidth']/2.0)
-                        self.output['enb'][enb_id][enb_id]['eutraBand']=7
+                        if self.output['enb'][enb_id][enb_id]['dlFreq'] > 2600 :  
+                            self.output['enb'][enb_id][enb_id]['eutraBand']=7
+                        elif self.output['enb'][enb_id][enb_id]['dlFreq'] < 800 :
+                            self.output['enb'][enb_id][enb_id]['eutraBand']=13
                     if j == 'bandwidth':
                         self.output['enb'][enb_id][enb_id]['dlBandwidth']=self.translate_bandwidth(self.options[i]['bandwidth'])
                         self.output['enb'][enb_id][enb_id]['ulBandwidth']=self.translate_bandwidth(self.options[i]['bandwidth'])
-            
+        json.dumps(self.output)
+        self.log.info('\n' + json.dumps(self.output))
+
     def load_policy(self):
         self.rules = ss.get_rules()
         self.lsa_policy = ss.get_lsa_policy()
@@ -466,8 +471,6 @@ class sma_app(object):
         # if the decision is different
             # set istrubctions to rrm_app # ran shring
             # alternatively, do it manualy through sdk
-
-        print self.enb_conf[0]['cell_id']
 
     open_data_capabilities = {
                	'get-list':  { 'help': 'Get the current list'},

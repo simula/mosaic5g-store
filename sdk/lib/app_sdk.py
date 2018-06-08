@@ -137,17 +137,15 @@ class client_handler(tornado.websocket.WebSocketHandler):
 	# its possibly optional and due to specific app        
         self.log.info("app_handler: received message="+ str(message))
         self.log.info("app_handler: received on=" + str(self.uri))	
-
+        
         # main decoding part
         message = tornado.escape.json_decode(message)
-        if message is None: 
-            try:
-                method = message.get('method')
-                id = message.get('id')
-	        params = message.get('params')
-            
-	if params is None:
-	    params = {}
+        method = message.get('method')
+        id = message.get('id')
+        params = message.get('params')
+
+        if params is None:
+            params = {}
 
         if method is None:
             # The message is a reply (error/succes) to a command

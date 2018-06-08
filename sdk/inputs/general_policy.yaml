@@ -1,14 +1,14 @@
  - country: france
-   freq_min: 1 
-   freq_max: 3999
+   freq_min: 700 
+   freq_max: 800
    max_tx_power: 23
-   fdd_spacing: -120
+   fdd_spacing: 31
    frame_type: FDD
- - country: poland
-   freq_min: 2620
+ - country: france
+   freq_min: 2600
    freq_max: 2700
    max_tx_power: 21
-   fdd_spacing: 120
+   fdd_spacing: -120
    frame_type: FDD
  - country: poland
    freq_min: 800
