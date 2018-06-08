@@ -715,8 +715,8 @@ class rrm_kpi_app(object):
       'schema': [
         {'name': 'enb_id',   'type': 'number', 'choice': ['#ENBID'], 'help': 'Select eNB'},
         {'name': 'ue_id',    'type': 'number', 'choice': ['#UEID'],  'help': 'Select UE'},
-        {'name': 'dl_slice', 'type': 'number', 'choice': [1,2,3,4],  'help': 'Select DL Slice'},
-    {'name': 'ul_slice', 'type': 'number', 'choice': [1,2,3,4],  'help': 'Select UL Slice'}
+        {'name': 'dl_slice', 'type': 'number', 'choice': ['#DLSLICE'],  'help': 'Select DL Slice'},
+        {'name': 'ul_slice', 'type': 'number', 'choice': ['#ULSLICE'],  'help': 'Select UL Slice'}
       ]
     },
     'enable_graph':   {'help': 'Turn on graph.', 'group':'graph'},

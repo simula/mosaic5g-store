@@ -198,41 +198,57 @@ function topology(sources) {
 	return undefined;
     }
 
+    function forEachEnb(action) {
+	for (var j = 0; j < LIST.length; ++j) {
+	    if (LIST[j].type != 'RTC') continue;
+	    var node = LIST[j].node;
+	    if (!node || !node.enb_list) continue;
+	    for (var k = 0; k < node.enb_list.length; ++k) {
+		action(node.enb_list[k]);
+	    }
+	}
+    }
+
+    function collectSliceIds(list, type) {
+	forEachEnb(function (enb) {
+	    for (var i = 0; i < enb.config.cellConfig.length; ++i) {
+		var sliceConfig = enb.config.cellConfig[i].sliceConfig;
+		if (!sliceConfig) continue;
+		var slices = sliceConfig[type];
+		if (!slices) continue;
+		for (var j = 0; j < slices.length; ++j) {
+		    if (list.indexOf(slices[j].id) == -1)
+			list.push(slices[j].id);
+		}
+	    }
+	});
+    }
+
     function buildChoice(choice) {
 	// Expand substitutions within a choice list
 	var list = [];
 	for (var i = 0; i < choice.length; ++i) {
 	    if (choice[i] == '#ENBID') {
-		// Collect a list of known eNBs
-		for (var j = 0; j < LIST.length; ++j) {
-		    if (LIST[j].type != 'RTC') continue;
-		    var node = LIST[j].node;
-		    if (!node || !node.enb_list) continue;
-		    for (var k = 0; k < node.enb_list.length; ++k) {
-			var enb = node.enb_list[k];
-			// Extract the eNBId part only
-			list.push(enb.id.split('_').pop());
-		    }
-		}
+		forEachEnb(function(enb) {
+		    // Extract the eNBId part only
+		    list.push(enb.id.split('_').pop());
+		});
 	    } else if (choice[i] == '#UEID') {
 		// Collect a list of known UEs
-		for (j = 0; j < LIST.length; ++j) {
-		    if (LIST[j].type != 'RTC') continue;
-		    node = LIST[j].node;
-		    if (!node || !node.enb_list) continue;
-		    for (k = 0; k < node.enb_list.length; ++k) {
-			enb = node.enb_list[k];
-			for (var rnti in enb.ue_list) {
-			    var ue = enb.ue_list[rnti];
-			    // Extract the UE Id part only
-			    list.push(ue.id.split('_').pop());
-			}
+		forEachEnb(function (enb) {
+		    for (var rnti in enb.ue_list) {
+			var ue = enb.ue_list[rnti];
+			// Extract the UE Id part only
+			list.push(ue.id.split('_').pop());
 		    }
-		}
-		
+		});
+	    } else if (choice[i] == '#DLSLICE') {
+		collectSliceIds(list, 'dl');
+	    } else if (choice[i] == '#ULSLICE') {
+		collectSliceIds(list, 'ul');
 	    } else {
 		list.push(choice[i]);
-	    }		
+	    }
 	}
 	return list;
     }
@@ -597,7 +613,9 @@ function topology(sources) {
 	return GRAPH.node('eNB_' + enb_id, 'eNB ' + enb_id, INFO_ENB);
     }
     function get_ue_node(enb, ue_id, info) {
-	return GRAPH.node(enb.id + '_UE_'+ ue_id, ue_id, info);
+	var node = GRAPH.node(enb.id + '_UE_'+ ue_id, ue_id, info);
+	if (!node.config) node.config = {}; // Make sure node has '.config' member
+	return node;
     }
 
     var SOURCE_UPDATE = {
@@ -684,6 +702,7 @@ function topology(sources) {
 	"RTC": function (src) {
 	    var node = src.node;
 	    var data = node.config;
+	    var ue;
 	    if (!data) return;
 
 	    // Hide eNB's not present in the new eNB_config.
@@ -712,7 +731,9 @@ function topology(sources) {
 		    for (var j = 0; j < config.UE.ueConfig.length; ++j) {
 			var ueConfig = config.UE.ueConfig[j];
 			if (ueConfig.rnti !== undefined) {
-			    ue_list[ueConfig.rnti] = get_ue_node(enb, ueConfig.rnti, INFO_UE);
+			    ue = get_ue_node(enb, ueConfig.rnti, INFO_UE);
+			    ue.config.ueConfig = ueConfig;
+			    ue_list[ueConfig.rnti] = ue;
 			}
 		    }
 		}
@@ -720,7 +741,9 @@ function topology(sources) {
 		    for (j = 0; j < config.LC.lcUeConfig.length; ++j) {
 			ueConfig = config.LC.lcUeConfig[j];
 			if (ueConfig.rnti !== undefined) {
-			    ue_list[ueConfig.rnti] = get_ue_node(enb, ueConfig.rnti, INFO_LC_UE);
+			    ue = get_ue_node(enb, ueConfig.rnti, INFO_LC_UE);
+			    ue.config.lcUeConfig = ueConfig;
+			    ue_list[ueConfig.rnti] = ue;
 			}
 		    }
 		}
@@ -742,7 +765,7 @@ function topology(sources) {
 		for (var m = 0; m < data.mac_stats[i].ue_mac_stats.length; ++m) {
 		    var stats = data.mac_stats[i].ue_mac_stats[m];
 		    if (!stats) continue;
-		    var ue = enb.ue_list[stats.rnti];
+		    ue = enb.ue_list[stats.rnti];
 		    if (!ue) {
 			// mac_stats ghosts, UE's not shown by enb
 			// config -- for now just ignore (caused bad
@@ -753,7 +776,8 @@ function topology(sources) {
 			// enb.ue_list[stats.rnti] = ue;
 			continue;
 		    }
-		    ue.config = stats;
+		    ue.config.stats = stats;
+
 		    // The array 'l' below defines the information
 		    // set drawn at the end of the link from eNB
 		    // to UE. Each pushed string will show up on
@@ -1010,14 +1034,7 @@ function topology(sources) {
     }
 
     function node_presentation(nodes) {
-	nodes.append("text")
-	    .attr("class", "stats")
-	    .attr("dx", GRAPH.NODE.R)
-	    .attr("dy", -GRAPH.NODE.R);
-	// nodes.filter(function (d) { return d.info === INFO_APP;})
-	//     .append("circle")
-	//     .attr("r", GRAPH.NODE.R * 0.6);
-	nodes.filter(function (d) { return d.info === INFO_ENB;})
+	nodes //.filter(function (d) { return d.info === INFO_ENB;})
 	    .insert("circle", ":first-child")
 	    .attr("class", "config")
 	    .attr("r", GRAPH.NODE.R-8)
@@ -1035,6 +1052,10 @@ function topology(sources) {
 		    chart: timechart(g, 100, GRAPH.NODE.R*2, 100)
 		};
 	    });
+	nodes.append("text")
+	    .attr("class", "stats")
+	    .attr("dx", GRAPH.NODE.R)
+	    .attr("dy", -GRAPH.NODE.R);
     }
 
     function node_status_indicator(nodes) {
@@ -1050,30 +1071,48 @@ function topology(sources) {
 	// If node created with INFO_UE (and not INFO_LC_UE), then it
 	// represents a ghost UE (not present in LC.lcUeConfig)
 	nodes.classed("ghost", function (d) { return d.info === INFO_UE;});
-
-	var stats = nodes.filter(function (d) { return d.info === INFO_ENB;})
-		.each(function (d) {
-		    var waiting = false;
-		    var freq = d.config.cellConfig[0].dlFreq;
-		    if (d.sma &&
-			d.sma.option &&
-			d.sma.option[d.id] &&
-			d.sma.node &&
-			!d.sma.node.error &&
-			freq) {
-			var option = d.sma.option[d.id];
-			waiting = (freq < option.freq_min || freq > option.freq_max);
-			if (!waiting) {
-			    // "borrow" existing "vendor" field for GROUP
-			    d3.select(this)
-				.select(".vendor")
-				.text(option.MVNO_group);
-			}
+	nodes.each(function (d) {
+	    var waiting = false;
+	    if (d.info === INFO_ENB) {
+		var freq = d.config.cellConfig[0].dlFreq;
+		if (d.sma &&
+		    d.sma.option &&
+		    d.sma.option[d.id] &&
+		    d.sma.node &&
+		    !d.sma.node.error &&
+		    freq) {
+		    var option = d.sma.option[d.id];
+		    waiting = (freq < option.freq_min || freq > option.freq_max);
+		    if (!waiting) {
+			// "borrow" existing "vendor" field for GROUP
+			d3.select(this)
+			    .select(".vendor")
+			    .text(option.MVNO_group);
 		    }
-		    d3.select(this)
-			.select(".config")
-			.classed("waiting", waiting);
-		})
+		}
+	    } else if (d.info === INFO_LC_UE) {
+	    }
+	    d3.select(this)
+		.select(".config")
+		.classed("waiting", waiting);
+	});
+	var stats = nodes.filter(function (d) { return d.info === INFO_LC_UE;})
+		.select("text.stats")
+		.attr("y", -GRAPH.NODE.R)
+		.selectAll("tspan")
+		.data(['dlSliceId', 'ulSliceId']);
+	stats.enter()
+	    .append("tspan")
+	    .attr("x", GRAPH.NODE.R / 2)
+	    .attr("dx", 0)
+	    .attr("dy", "1em");
+	stats.merge(stats)
+	    .text(function (d) {
+		var config = this.parentNode.__data__.config.ueConfig;
+		return config ?  d + '=' + config[d] : '';
+	    });
+
+	stats = nodes.filter(function (d) { return d.info === INFO_ENB;})
 		.select("text.stats")
 		.selectAll("tspan")
 	// The following fields from cellConfig[0] will be show on
