@@ -751,8 +751,7 @@ class rrm_kpi_app(object):
       rrm_kpi_open_data.notify_others(message, client)
     elif method == 'slice' :
       # TODO
-      msg={'method': method,
-           'id' : id,
+      msg={'id' : id,
            'result' : [{'ue_id': 1234, 'dl_slice': 1, 'ul_slice': 2 },
                        {'ue_id': 5678, 'dl_slice': 2, 'ul_slice': 1 }
            ]
