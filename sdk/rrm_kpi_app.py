@@ -707,7 +707,7 @@ class rrm_kpi_app(object):
       'schema': [
         {'name': 'enb_id', 'type': 'number', 'choice': ['#ENBID'], 'help': 'Select eNB'},
         {'name': 'dl_slices', 'array': {'length': 1, 'schema': [{'name':'slice_id', 'type': 'number'}, {'name':'percentage', 'range': [0,0,100,1] }]}, 'help': 'Create DL Slice'},
-      {'name': 'ul_slices', 'array': {'length': 1, 'schema': [{'name':'slice_id', 'type': 'number'}, {'name':'percentage', 'range': [0,0,100,1] }]},'help': 'Create UL Slice'}
+      {'name': 'ul_slices', 'array': {'length': 1, 'schema': [{'name':'slice_id', 'type': 'number'}, {'name':'percentage', 'range': [0,0,100,1] },{'name':'first_rb', 'type': 'number'}]},'help': 'Create UL Slice'}
       ]
     },
     'slice': {
