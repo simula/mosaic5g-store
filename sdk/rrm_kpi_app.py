@@ -42,6 +42,7 @@ import os
 import pprint
 import sys
 from sys import *
+import tornado 
 
 from array import *
 from threading import Timer
@@ -136,6 +137,10 @@ class rrm_kpi_app(object):
     self.log_level  = log_level
     self.status     = 0
     self.op_mode    = op_mode
+    
+    self.open_data_all_options = []
+    self.graphs_enable = False
+    self.graphs_showing = []
 
     # RRM App local data
     self.policy_data = {}
@@ -672,38 +677,7 @@ class rrm_kpi_app(object):
       else:
         log.info('No UE is attached yet')
 
-  def handle_request(self, client, id, method, params, message):
-    #print type(json.dumps(rrm.read_policy()))
-    if method == 'enforce_policy':
-      #
-      ## Modify something based on params... (TBD)
-      #
-      client.send({
-        'result': rrm.read_policy(), # just something to return as result.
-        'id': id})
-    else:
-      client.send({
-        'error': {
-          'code': -32601,
-          'message': 'Method not found'},
-        'id': id})
-        
-  def handle_notification(self, client, method, params, message):
-    print message
-
-  def handle_new_client(self, client):
-    client.send_notification('capabilities',
-                             {
-                               'enforce_policy': {
-                                 'help': 'Change enforced policy',
-                                 'schema': [
-                                   {'name': 'enb_id', 'type': 'number', 'choice': ['#ENBID'], 'help': 'Select eNB'},
-                                   {'name': 'slices', 'array': {'length': 3, 'range': [0,0,100,1] }}
-                                 ]
-                               }
-                             })
-
-  def run(self, sm, rrm):
+  def run(self, sm, rrm, open_data):
     log.info('2. Reading the status of the underlying eNBs')
     sm.stats_manager('all')
 
@@ -725,9 +699,92 @@ class rrm_kpi_app(object):
     log.info('6. Check for new RRM Slice policy')
     rrm_kpi_app.enforce_policy(sm,rrm)
 
-    t = Timer(5, self.run,kwargs=dict(sm=sm,rrm=rrm))
-    t.start()
 
+  open_data_capabilities = {
+    'get-list':  { 'help': 'Get the current list'},
+    'enforce_policy': {
+      'help': 'Change enforced policy',
+      'schema': [
+        {'name': 'enb_id', 'type': 'number', 'choice': ['#ENBID'], 'help': 'Select eNB'},
+        {'name': 'dl_slices', 'array': {'length': 1, 'schema': [{'name':'slice_id', 'type': 'number'}, {'name':'percentage', 'range': [0,0,100,1] }]}, 'help': 'Create DL Slice'},
+      {'name': 'ul_slices', 'array': {'length': 1, 'schema': [{'name':'slice_id', 'type': 'number'}, {'name':'percentage', 'range': [0,0,100,1] }]},'help': 'Create UL Slice'}
+      ]
+    },
+    'slice': {
+      'help': 'associate a UE to Slice S',
+      'schema': [
+        {'name': 'enb_id',   'type': 'number', 'choice': ['#ENBID'], 'help': 'Select eNB'},
+        {'name': 'ue_id',    'type': 'number', 'choice': ['#UEID'],  'help': 'Select UE'},
+        {'name': 'dl_slice', 'type': 'number', 'choice': [1,2,3,4],  'help': 'Select DL Slice'},
+    {'name': 'ul_slice', 'type': 'number', 'choice': [1,2,3,4],  'help': 'Select UL Slice'}
+      ]
+    },
+    'enable_graph':   {'help': 'Turn on graph.', 'group':'graph'},
+    'disable_graph' : {'help' : 'Trun off graph.', 'group':'graph'},
+    'save_status' :   {'help' : 'Calls method to save current app status' }, # for testing only
+    'load_status' :   {'help' : 'Calls method to load current app status' } # for testing only 
+    
+  }
+
+  def handle_new_client(self, client):
+    client.send_notification('capabilities',
+                             rrm_kpi_app.open_data_capabilities)
+
+  def open_data_load_status(self, params):
+    pass
+  
+  def open_data_save_status(self):
+    pass
+  
+        
+  def handle_message(self, client, id, method, params, message):
+    #print type(json.dumps(rrm.read_policy()))
+    if method == 'get-list' or method == 'list':
+      client.send_result(id, self.open_data_all_options)
+    elif method == 'enforce_policy' or method == 'policy':
+      #
+      ## Modify something based on params... (TBD)
+      #
+      # TODO 
+      client.send({
+        'result': rrm.read_policy(), # just something to return as result.
+        'id': id})
+      rrm_kpi_open_data.notify_others(message, client)
+    elif method == 'slice' :
+      # TODO
+      client.send_result(id, 'Sliced eNB.')
+      rrm_kpi_open_data.notify_others(message, client)
+    elif method == 'enable_graph':
+      self.graphs_enable = True
+      client.send_result(id, 'Graphs turned on.')
+      rrm_kpi_open_data.notify_others(message, client)
+    elif  method == 'disable_graph':
+      self.graphs_enable = False
+      client.send_result(id, 'Graphs truned off.')
+      rrm_kpi_open_data.notify_others(message, client)
+    elif method == 'save_status':
+      rrm_kpi_open_data.save_status()
+    elif method == 'load_status':
+      rrm_kpi_open_data.load_status()
+    else:
+      client.send_error(id,-12345,'Method not found')
+      #client.send({
+      #  'error': {
+      #    'code': -32601,
+      #    'message': 'Method not found'},
+      #  'id': id})
+        
+  def handle_notification(self, client, method, params, message):
+    print message
+    if method == 'capabilities':
+      client.send_notification(method, self.open_data_capabilities)
+      client.send_notification('get-list', self.open_data_all_options)
+    elif method == 'enable_graph':
+      self.graphs_enable = True
+    elif method == 'disable_graph':
+      self.graphs_enable = False
+     
+   
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description='Process some integers.')
@@ -753,9 +810,15 @@ if __name__ == '__main__':
   parser.add_argument('--log',  metavar='[level]', action='store', type=str,
             required=False, default='info',
             help='set the log level: debug, info (default), warning, error, critical')
+  parser.add_argument('--period',  metavar='[option]', action='store', type=int,
+                      required=False, default=10, 
+                      help='set the period of the app: 1s (default)')
+ 
   parser.add_argument('--version', action='version', version='%(prog)s 1.0')
 
   args = parser.parse_args()
+  
+  rrm_kpi_app.period=args.period
 
   log=flexran_sdk.logger(log_level=args.log).init_logger()
 
@@ -765,16 +828,6 @@ if __name__ == '__main__':
                             port=args.port,
                             template=args.template,
                             op_mode=args.op_mode)
-
-  # open data additions 
-  app_open_data=app_sdk.app_builder(log=log,
-				    app=rrm_kpi_app.name,
-                                    address=args.app_url,
-                                    port=args.app_port)
-
-  rrm_kpi_open_data = app_sdk.app_handler(rrm_kpi_app.name, log=log, callback=rrm_kpi_app.handle_request, notification=rrm_kpi_app.handle_notification, init=rrm_kpi_app.handle_new_client)
-  app_open_data.add_options("kpi", handler=rrm_kpi_open_data)
-  app_open_data.run_app()
 
 
   rrm = flexran_sdk.rrm_policy(log=log,
@@ -787,10 +840,29 @@ if __name__ == '__main__':
                                  url=args.url,
                                  port=args.port,
                                  op_mode=args.op_mode)
-  
-  py3_flag = version_info[0] > 2
 
-  t = Timer(3, rrm_kpi_app.run,kwargs=dict(sm=sm,rrm=rrm))
-  t.start()
+  # open data additions 
+  app_open_data=app_sdk.app_builder(log=log,
+				    app=rrm_kpi_app.name,
+                                    address=args.app_url,
+                                    port=args.app_port)
+
+  rrm_kpi_open_data = app_sdk.app_handler(rrm_kpi_app.name,log=log,
+                                          callback=rrm_kpi_app.handle_message,
+                                          notification=rrm_kpi_app.handle_notification,
+                                          init=rrm_kpi_app.handle_new_client,
+                                          save=rrm_kpi_app.open_data_save_status,
+					  load=rrm_kpi_app.open_data_load_status)
+
+  app_open_data.add_options("kpi", handler=rrm_kpi_open_data)
+  app_open_data.run_app()
+
+  log.info('Starting periodic for ' + str(rrm_kpi_app.period) + ' seconds...')
+  
+  tornado.ioloop.PeriodicCallback(lambda: rrm_kpi_app.run(sm=sm,
+                                                          rrm=rrm,
+                                                          open_data=rrm_kpi_open_data),
+                                  rrm_kpi_app.period*1000).start()
+
   app_sdk.run_all_apps()
 
