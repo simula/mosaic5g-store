@@ -707,7 +707,7 @@ class rrm_kpi_app(object):
       'schema': [
         {'name': 'enb_id', 'type': 'number', 'choice': ['#ENBID'], 'help': 'Select eNB'},
         {'name': 'dl_slices', 'array': {'length': 1, 'schema': [{'name':'slice_id', 'type': 'number'}, {'name':'percentage', 'range': [0,0,100,1] }]}, 'help': 'Create DL Slice'},
-      {'name': 'ul_slices', 'array': {'length': 1, 'schema': [{'name':'slice_id', 'type': 'number'}, {'name':'percentage', 'range': [0,0,100,1] },{'name':'first_rb', 'type': 'number'}]},'help': 'Create UL Slice'}
+        {'name': 'ul_slices', 'array': {'length': 1, 'schema': [{'name':'slice_id', 'type': 'number'}, {'name':'percentage', 'range': [0,0,100,1] },{'name':'first_rb', 'type': 'number'}]},'help': 'Create UL Slice'}
       ]
     },
     'slice': {
@@ -723,7 +723,6 @@ class rrm_kpi_app(object):
     'disable_graph' : {'help' : 'Trun off graph.', 'group':'graph'},
     'save_status' :   {'help' : 'Calls method to save current app status' }, # for testing only
     'load_status' :   {'help' : 'Calls method to load current app status' } # for testing only 
-    
   }
 
   def handle_new_client(self, client):
@@ -739,7 +738,7 @@ class rrm_kpi_app(object):
         
   def handle_message(self, client, id, method, params, message):
     #print type(json.dumps(rrm.read_policy()))
-    if method == 'get-list' or method == 'list':
+    if method == 'get-list' or method == 'list' or method == 'capabilities':
       client.send_result(id, self.open_data_all_options)
     elif method == 'enforce_policy' or method == 'policy':
       #
@@ -752,8 +751,16 @@ class rrm_kpi_app(object):
       rrm_kpi_open_data.notify_others(message, client)
     elif method == 'slice' :
       # TODO
-      client.send_result(id, 'Sliced eNB.')
-      rrm_kpi_open_data.notify_others(message, client)
+      msg={'method': method,
+           'id' : id,
+           'result' : [{'ue_id': 1234, 'dl_slice': 1, 'ul_slice': 2 },
+                       {'ue_id': 5678, 'dl_slice': 2, 'ul_slice': 1 }
+           ]
+      }
+      #client.send_result(id, 'Sliced eNB.')
+      client.send_results(msg)
+      #rrm_kpi_open_data.notify_others(json.dumps(msg), client)
+
     elif method == 'enable_graph':
       self.graphs_enable = True
       client.send_result(id, 'Graphs turned on.')
@@ -778,7 +785,7 @@ class rrm_kpi_app(object):
     print message
     if method == 'capabilities':
       client.send_notification(method, self.open_data_capabilities)
-      client.send_notification('get-list', self.open_data_all_options)
+#      client.send_notification('get-list', self.open_data_all_options)
     elif method == 'enable_graph':
       self.graphs_enable = True
     elif method == 'disable_graph':
