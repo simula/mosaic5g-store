@@ -469,6 +469,54 @@ class rrm_policy (object):
 	    self.status='unknown'
         return self.status 
 
+    def delete_slice(self, enb=-1, slice=0, policy=''):
+        """!@brief Delet a slice and its associated policy . 
+        
+        @param enb: eNB ID 
+        @param slice: slice id 
+        @param policy_data: content of the policy file of type str
+        @return: The status of the request as str
+        """
+        self.status='False'
+        if policy == '' :
+            self.status='url'
+            url = self.url+self.enb_slice_api+'/enb/'+str(enb)+'/slice/'+str(slice)
+        if self.is_json(policy) == True:
+            self.status='payload'
+            url = self.url+self.enb_slice_api+'/enb/'+str(enb)
+        else:
+            self.log.warn('mal-formated policy file' + json.dumps(policy))
+            return  self.status
+        
+        
+        if self.op_mode == 'test' :
+            self.log.info('DELETE ' + str(url))
+            if  self.status=='payload' : 
+                print 'PAYLOAD' + json.dumps(policy)
+            self.status='connected'
+            
+        elif self.op_mode == 'sdk' :
+            try :
+		# post data as binary
+                if  self.status=='payload' : 
+            	    req = requests.delete(url, data=json.dumps(policy),headers={'Content-Type': 'application/octet-stream'})
+		else:
+                    req = requests.delete(url)
+                    
+            	if req.status_code == 200:
+            	    self.log.info('successfully applied the policy')
+            	    self.status='connected'
+            	else :
+            	    self.status='disconnected'
+            	    self.log.error('Request error code : ' + req.status_code)
+            except :
+                self.log.error('Failed to apply the policy ' )
+            
+        else :
+            self.log.warn('Unknown operation mode ' + op_mode )
+	    self.status='unknown'
+        return self.status 
+    
     def dump_policy(self, policy_data='', format='yaml'):
         """!@brief return the content of the policy given the requested format
         
