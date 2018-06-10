@@ -267,7 +267,21 @@ function topology(sources) {
 		.attr("type", "radio")
 		.attr("name", name)
 		.attr("data-converter", d.type == 'number' ? 'numberValue' : undefined)
-		.attr("value", function (d) { return d || '';});
+		.attr("value", function (d) { return d;});
+        } else if (d.checkbox) {
+	    control
+		.selectAll("div.command")
+		.data(buildChoice(d.checkbox))
+		.enter()
+		.append("label")
+		.attr("class", "command")
+		.text(function (d) { return d === null ? 'None' : d;})
+		.append("input")
+		.attr("class", "button")
+		.attr("type", "checkbox")
+		.attr("name", name)
+		.attr("data-converter", d.type == 'number' ? 'numberValue' : undefined)
+		.attr("value", function (d) { return d;});
 	} else if (d.range) {
 	    control
 		.append("div")
@@ -613,7 +627,7 @@ function topology(sources) {
 	return GRAPH.node('eNB_' + enb_id, 'eNB ' + enb_id, INFO_ENB);
     }
     function get_ue_node(enb, ue_id, info) {
-	var node = GRAPH.node(enb.id + '_UE_'+ ue_id, ue_id, info);
+	var node = GRAPH.node(enb.id + '_UE_'+ ue_id, 'RNTI ' + ue_id, info);
 	if (!node.config) node.config = {}; // Make sure node has '.config' member
 	return node;
     }
@@ -1041,7 +1055,7 @@ function topology(sources) {
 	    .attr("cx", "-2px");
 	nodes.filter(function (d) { return d.info === INFO_LC_UE;})
 	    .append("g")
-	    .attr("transform", "translate("+(GRAPH.NODE.R/2)+','+(-GRAPH.NODE.R)+')')
+	    .attr("transform", "translate("+(GRAPH.NODE.R)+','+(-GRAPH.NODE.R)+')')
 	    .attr("class", "timechart")
 	    .each(function (d) {
 		var g = d3.select(this);
@@ -1098,12 +1112,12 @@ function topology(sources) {
 	});
 	var stats = nodes.filter(function (d) { return d.info === INFO_LC_UE;})
 		.select("text.stats")
-		.attr("y", -GRAPH.NODE.R)
+		.attr("y", +GRAPH.NODE.R+8)
 		.selectAll("tspan")
-		.data(['dlSliceId', 'ulSliceId']);
+		.data(['imsi', 'dlSliceId', 'ulSliceId']);
 	stats.enter()
 	    .append("tspan")
-	    .attr("x", GRAPH.NODE.R / 2)
+	    .attr("x", GRAPH.NODE.R)
 	    .attr("dx", 0)
 	    .attr("dy", "1em");
 	stats.merge(stats)
