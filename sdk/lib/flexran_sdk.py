@@ -291,7 +291,7 @@ class rrm_policy (object):
 
     def is_json(self, json_obj):
         try:
-            json_object = json.load(json_obj)
+            json_object = json.loads(json_obj)
         except ValueError, e:
             return False
         return True

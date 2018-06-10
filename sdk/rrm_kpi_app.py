@@ -43,6 +43,7 @@ import pprint
 import sys
 from sys import *
 import tornado 
+import numpy
 
 from array import *
 from threading import Timer
@@ -719,6 +720,14 @@ class rrm_kpi_app(object):
         {'name': 'ue_id',    'type': 'number', 'choice': ['#UEID'],  'help': 'Select UE'},
         {'name': 'dl_slice', 'type': 'number', 'choice': ['#DLSLICE'],  'help': 'Select DL Slice'},
         {'name': 'ul_slice', 'type': 'number', 'choice': ['#ULSLICE'],  'help': 'Select UL Slice'}
+      ],
+    },
+    'delete slices': {
+      'help': 'remove existing slices',
+      'schema': [
+        {'name': 'enb_id',   'type': 'number', 'choice': ['#ENBID'], 'help': 'Select eNB'},
+        {'name': 'dl_slice', 'type': 'number', 'checkbox': ['#DLSLICE'], 'help': 'Select DL Slice'},
+        {'name': 'ul_slice', 'type': 'number', 'checkbox': ['#ULSLICE'], 'help': 'Select UL Slice'}
       ]
     }
     #'enable_graph':   {'help': 'Turn on graph.', 'group':'graph'},
@@ -743,18 +752,22 @@ class rrm_kpi_app(object):
     if method == 'get-list' or method == 'list' or method == 'capabilities':
       client.send_result(id, self.open_data_all_options)
     elif method == 'update-slices' :
-      #policy = json.dumps({})
-      enb_id=-1
+      if 'enb_id' in params :
+        enb_id = params['enb_id']
+      else:
+        enb_id = -1
       policy = {}
-      if  len(params['ul_slice']) > 0 :
-        policy['ul'] = []
-        for i in range(0, len(params['ul_slice'])):
-          policy['ul'].append(params['ul_slice'][i])
+      if 'ul_slice' in params:
+        if  len(params['ul_slice']) > 0 :
+          policy['ul'] = []
+          for i in range(0, len(params['ul_slice'])):
+            policy['ul'].append(params['ul_slice'][i])
 
-      if  len(params['dl_slice']) > 0 :
-        policy['dl'] = []
-        for i in range(0, len(params['dl_slice'])):
-          policy['dl'].append(params['dl_slice'][i])
+      if 'dl_slice' in params:
+        if  len(params['dl_slice']) > 0 :
+          policy['dl'] = []
+          for i in range(0, len(params['dl_slice'])):
+            policy['dl'].append(params['dl_slice'][i])
 
       if 'enb_id' in params :
         enb_id=params['enb_id']
@@ -762,36 +775,62 @@ class rrm_kpi_app(object):
       if 'intersliceShareActive' in params :
         policy['intersliceShareActive']=params['intersliceShareActive']
      
-      rrm.apply_policy(enb=enb_id,policy=json.dumps(policy))
+      print json.dumps(policy)
+      rrm.rrm_apply_policy(enb=enb_id,policy=policy)
       client.send({
         'result': policy, # just something to return as result.
         'id': id})
       rrm_kpi_open_data.notify_others(message, client)
     elif method == 'ue-slices' :
-      enb_id=-1
-      ueConfig = []
-      #{"method":"slice","params":{"enb_id":234881024,"ue_id":15383,"dl_slice":3,"ul_slice":3},"id":"slice"}
-      if params :
-        
-        if 'enb_id' in params :
-          enb_id=params['enb_id']
-          del params['enb_id']
-        if 'dl_slice' in params :
-          if params['dl_slice'] == None or params['dl_slice'] == 'null' :
-            del params['dl_slice']
-        if 'ul_slice' in params : 
-          if params['ul_slice'] == None or params['ul_slice'] == 'null' :
-            del params['ul_slice'] 
-
-        if 'ul_slice' not in params and 'dl_slice' not in params:
-          return
-        
-        ueConfig.append(params) 
-        rrm.associate_ues_slices(enb=enb_id, policy=ueConfig)
-        client.send_result(id, ueConfig)
-        rrm_kpi_open_data.notify_others(message, client)
+      if params == None:
+        return
+      if 'enb_id' in params :
+        enb_id = params['enb_id']
       else:
-          client.send_result(id, 'empty params')
+        enb_id = -1
+      ueConfig = {}
+      ueConfig['ueConfig'] = []
+      #{"method":"slice","params":{"enb_id":234881024,"ue_id":15383,"dl_slice":3,"ul_slice":3},"id":"slice"}
+        
+      newConf = {}
+      if 'ue_id' not in params or params['ue_id'] == None:
+        return
+      newConf['rnti'] = params['ue_id']
+      if 'dl_slice' in params and params['dl_slice'] != None:
+        newConf['dlSliceId'] = params['dl_slice']
+      if 'ul_slice' in params and params['ul_slice'] != None:
+        newConf['ulSliceId'] = params['ul_slice']
+      ueConfig['ueConfig'].append(newConf)
+      print json.dumps(ueConfig)
+      rrm.associate_ues_slices(enb=enb_id, policy=ueConfig)
+      client.send_result(id, ueConfig)
+      rrm_kpi_open_data.notify_others(message, client)
+
+    elif method == 'delete slices':
+      delPolicy = {}
+
+      if 'dl_slice' in params:
+        delPolicy['dl'] = []
+        if numpy.isscalar(params['dl_slice']):
+          delPolicy['dl'].append({'id': params['dl_slice'], 'percentage': 0})
+        else:
+          for i in range(0, len(params['dl_slice'])):
+            delPolicy['dl'].append({'id': params['dl_slice'][i], 'percentage': 0})
+
+      if 'ul_slice' in params:
+        delPolicy['ul'] = []
+        if numpy.isscalar(params['ul_slice']):
+          delPolicy['ul'].append({'id': params['ul_slice'], 'percentage': 0})
+        else:
+          for i in range(0, len(params['ul_slice'])):
+            delPolicy['ul'].append({'id': params['ul_slice'][i], 'percentage': 0})
+
+      if 'enb_id' in params :
+        enb_id = params['enb_id']
+      else:
+        enb_id = -1
+      print json.dumps(delPolicy)
+      rrm.delete_slice(enb=enb_id, policy=delPolicy)
 
     elif method == 'enable_graph':
       self.graphs_enable = True
