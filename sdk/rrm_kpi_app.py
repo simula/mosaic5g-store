@@ -134,6 +134,7 @@ class rrm_kpi_app(object):
 
     self.template   = template
     self.url        = url+port
+    self.log        = log
     self.log_level  = log_level
     self.status     = 0
     self.op_mode    = op_mode
@@ -174,12 +175,12 @@ class rrm_kpi_app(object):
     for enb in range(0, sm.get_num_enb()) :
       rrm_kpi_app.maxmcs_dl[enb] = {}
       for sid in range(0, rrm.get_input_slice_nums(enb) ):  # get_input_slice_nums and get_num_slices
-        rrm_kpi_app.maxmcs_dl[enb][sid] = rrm.get_slice_maxmcs(sid=sid, dir='DL')
+        rrm_kpi_app.maxmcs_dl[enb][sid] = 28 #rrm.get_slice_maxmcs(sid=sid, dir='DL')
 
     for enb in range(0, sm.get_num_enb()) :
       rrm_kpi_app.maxmcs_ul[enb] = {}
       for sid in range(0, rrm.get_input_slice_nums(enb) ):
-        rrm_kpi_app.maxmcs_ul[enb][sid] = rrm.get_slice_maxmcs(sid=sid, dir='UL')
+        rrm_kpi_app.maxmcs_ul[enb][sid] = 16 # rrm.get_slice_maxmcs(sid=sid, dir='UL')
 
 
   def get_policy_mcs(self, rrm, enb, ue, dir):
@@ -258,7 +259,7 @@ class rrm_kpi_app(object):
           rrm_kpi_app.lc_ue_ultbs[enb,ue,lc] = rrm_app_vars.tbs_table[ul_itbs][rrm_kpi_app.lc_ue_ulrb[enb,ue,lc]]
           while rrm_app_vars.bsr_table[rrm_kpi_app.lc_ue_bsr[enb,ue,lc]] > rrm_kpi_app.lc_ue_ultbs[enb,ue,lc] :
             if rrm_kpi_app.lc_ue_ulrb[enb,ue,lc] > rrm_kpi_app.enb_available_ulrb[enb] :
-              log.info('no available ulrb')
+              self.log.info('no available ulrb')
               break
             rrm_kpi_app.lc_ue_ulrb[enb,ue,lc]+=2 # f(bandwidth)
             rrm_kpi_app.lc_ue_ultbs[enb,ue,lc]=rrm_app_vars.tbs_table[ul_itbs][rrm_kpi_app.lc_ue_ulrb[enb,ue,lc]]
@@ -273,7 +274,7 @@ class rrm_kpi_app(object):
           rrm_kpi_app.lc_ue_dltbs[enb,ue,lc] = rrm_app_vars.tbs_table[dl_itbs][rrm_kpi_app.lc_ue_dlrb[enb,ue,lc]]
           while rrm_kpi_app.lc_ue_report[enb, ue, lc]['txQueueSize'] > rrm_kpi_app.lc_ue_dltbs[enb,ue,lc] :
             if rrm_kpi_app.lc_ue_dlrb[enb,ue,lc] > rrm_kpi_app.enb_available_dlrb[enb] :
-              log.info('no available dlrb')
+              self.log.info('no available dlrb')
               break
             rrm_kpi_app.lc_ue_dlrb[enb,ue,lc] += 2 # f(bandwidth)
             rrm_kpi_app.lc_ue_dltbs[enb,ue,lc] = rrm_app_vars.tbs_table[dl_itbs][rrm_kpi_app.lc_ue_dlrb[enb,ue,lc]]
@@ -286,13 +287,13 @@ class rrm_kpi_app(object):
         rrm_kpi_app.ue_ultbs[enb,ue] = rrm_app_vars.tbs_table[ul_itbs][rrm_kpi_app.ue_ulrb[enb,ue]]
         rrm_kpi_app.ue_dltbs[enb,ue] = rrm_app_vars.tbs_table[dl_itbs][rrm_kpi_app.ue_dlrb[enb,ue]]
 
-        log.info( 'eNB ' + str(enb) + ' UE ' + str(ue) + ' SFN ' + str(rrm_kpi_app.enb_sfn[enb,ue]) +
+        self.log.info( 'eNB ' + str(enb) + ' UE ' + str(ue) + ' SFN ' + str(rrm_kpi_app.enb_sfn[enb,ue]) +
               ' DL TBS ' + str(rrm_kpi_app.ue_dltbs[enb,ue]) +
               ' ue_dlrb ' + str(rrm_kpi_app.ue_dlrb[enb,ue]) +
               ' ue_dlmcs ' + str(rrm_kpi_app.ue_dlmcs[enb,ue]) +
               ' --> expected DL throughput ' +  str(float(rrm_kpi_app.ue_dltbs[enb,ue]/1000.0)) + ' Mbps')
 
-        log.info( 'eNB ' + str(enb) + ' UE ' + str(ue) + ' SFN ' + str(rrm_kpi_app.enb_sfn[enb,ue]) +
+        self.log.info( 'eNB ' + str(enb) + ' UE ' + str(ue) + ' SFN ' + str(rrm_kpi_app.enb_sfn[enb,ue]) +
               ' UL TBS ' + str(rrm_kpi_app.ue_ultbs[enb,ue])   +
               ' ue_ulrb ' + str(rrm_kpi_app.ue_ulrb[enb,ue])   +
               ' ue_ulmcs ' + str(rrm_kpi_app.ue_ulmcs[enb,ue]) +
@@ -305,7 +306,7 @@ class rrm_kpi_app(object):
       rrm_kpi_app.enb_available_ulrb[enb]= rrm_kpi_app.enb_ulrb[enb]
       rrm_kpi_app.enb_available_dlrb[enb]= rrm_kpi_app.enb_dlrb[enb]
 
-      log.info('Available RB : UL ' + str(rrm_kpi_app.enb_available_ulrb[enb]) + ', DL ' + str(rrm_kpi_app.enb_available_dlrb[enb]) )
+      self.log.info('Available RB : UL ' + str(rrm_kpi_app.enb_available_ulrb[enb]) + ', DL ' + str(rrm_kpi_app.enb_available_dlrb[enb]) )
 
       for ue in range(0, sm.get_num_ue(enb=enb)) :
 
@@ -366,7 +367,7 @@ class rrm_kpi_app(object):
               while rrm_app_vars.bsr_table[rrm_kpi_app.lc_ue_bsr[enb,ue,lc]] > rrm_kpi_app.lc_ue_ultbs[enb,ue,lc] and slice_ul_tbs / 1000 < rrm_kpi_app.reserved_rate_ul[enb][sid] :
 
                 if ul_addtionnal_rb + 2 > rrm_kpi_app.enb_available_ulrb[enb] or rrm_kpi_app.enb_available_ulrb[enb] == 0 :
-                  log.info('no available ulrb')
+                  self.log.info('no available ulrb')
                   break
 
                 # Update slice TBS (first remove old value for this LC), increment nb of RBs, update TBS (LC and slice)
@@ -406,7 +407,7 @@ class rrm_kpi_app(object):
               while rrm_kpi_app.lc_ue_report[enb, ue, lc]['txQueueSize'] > rrm_kpi_app.lc_ue_dltbs[enb,ue,lc] and slice_dl_tbs / 1000 < rrm_kpi_app.reserved_rate_dl[enb][sid] :
 
                 if dl_additionnal_rb + 2 > rrm_kpi_app.enb_available_dlrb[enb] or rrm_kpi_app.enb_available_dlrb[enb] == 0 :
-                  log.info('no available dlrb')
+                  self.log.info('no available dlrb')
                   break
 
                 # Update slice TBS (first remove old value for this LC), increment nb of RBs, update TBS (LC and slice)
@@ -420,7 +421,7 @@ class rrm_kpi_app(object):
               rrm_kpi_app.ue_dlrb[enb,ue]         += dl_additionnal_rb
 
 
-        log.info( 'slice ' + str(sid) + ' --> expected DL/UL throughput ' +  str(float(slice_dl_tbs/1000.0)) + 'Mbps/' + str(float(slice_ul_tbs/1000.0)) + 'Mbps')
+        self.log.info( 'slice ' + str(sid) + ' --> expected DL/UL throughput ' +  str(float(slice_dl_tbs/1000.0)) + 'Mbps/' + str(float(slice_ul_tbs/1000.0)) + 'Mbps')
 
 
   def allocate_rb_priority (self, sm):
@@ -449,7 +450,7 @@ class rrm_kpi_app(object):
             while rrm_app_vars.bsr_table[rrm_kpi_app.lc_ue_bsr[enb,ue,lc]] > rrm_kpi_app.lc_ue_ultbs[enb,ue,lc] :
 
               if ul_addtionnal_rb + 2 > rrm_kpi_app.enb_available_ulrb[enb] or rrm_kpi_app.enb_available_ulrb[enb] == 0 :
-                log.info('no available ulrb')
+                self.log.info('no available ulrb')
                 break
 
               # Increment nb of RBs, update TBS for LC
@@ -483,7 +484,7 @@ class rrm_kpi_app(object):
             while rrm_kpi_app.lc_ue_report[enb, ue, lc]['txQueueSize'] > rrm_kpi_app.lc_ue_dltbs[enb,ue,lc] :
 
               if dl_additionnal_rb + 2 > rrm_kpi_app.enb_available_dlrb[enb] or rrm_kpi_app.enb_available_dlrb[enb] == 0 :
-                log.info('no available dlrb')
+                self.log.info('no available dlrb')
                 break
 
               # Increment nb of RBs, update TBS for LC
@@ -513,7 +514,7 @@ class rrm_kpi_app(object):
           while rrm_app_vars.bsr_table[rrm_kpi_app.lc_ue_bsr[enb,ue,lc]] > rrm_kpi_app.lc_ue_ultbs[enb,ue,lc] :
 
             if ul_addtionnal_rb + 2 > rrm_kpi_app.enb_available_ulrb[enb] or rrm_kpi_app.enb_available_ulrb[enb] == 0 :
-              log.info('no available ulrb')
+              self.log.info('no available ulrb')
               break
 
             # Increment nb of RBs, update TBS
@@ -534,7 +535,7 @@ class rrm_kpi_app(object):
           while rrm_kpi_app.lc_ue_report[enb, ue, lc]['txQueueSize'] > rrm_kpi_app.lc_ue_dltbs[enb,ue,lc] :
 
             if dl_additionnal_rb + 2 > rrm_kpi_app.enb_available_dlrb[enb] or rrm_kpi_app.enb_available_dlrb[enb] == 0 :
-              log.info('no available dlrb')
+              self.log.info('no available dlrb')
               break
 
             # Increment nb of RBs, update TBS
@@ -550,13 +551,13 @@ class rrm_kpi_app(object):
         rrm_kpi_app.ue_ultbs[enb,ue] = rrm_app_vars.tbs_table[ul_itbs][rrm_kpi_app.ue_ulrb[enb,ue]]
         rrm_kpi_app.ue_dltbs[enb,ue] = rrm_app_vars.tbs_table[dl_itbs][rrm_kpi_app.ue_dlrb[enb,ue]]
 
-        log.info( 'eNB ' + str(enb) + ' UE ' + str(ue) + ' SFN ' + str(rrm_kpi_app.enb_sfn[enb,ue]) +
+        self.log.info( 'eNB ' + str(enb) + ' UE ' + str(ue) + ' SFN ' + str(rrm_kpi_app.enb_sfn[enb,ue]) +
               ' DL TBS ' + str(rrm_kpi_app.ue_dltbs[enb,ue]) +
               ' ue_dlrb ' + str(rrm_kpi_app.ue_dlrb[enb,ue]) +
               ' ue_dlmcs ' + str(rrm_kpi_app.ue_dlmcs[enb,ue]) +
               ' --> expected DL throughput ' +  str(float(rrm_kpi_app.ue_dltbs[enb,ue]/1000.0)) + ' Mbps')
 
-        log.info( 'eNB ' + str(enb) + ' UE ' + str(ue) + ' SFN ' + str(rrm_kpi_app.enb_sfn[enb,ue]) +
+        self.log.info( 'eNB ' + str(enb) + ' UE ' + str(ue) + ' SFN ' + str(rrm_kpi_app.enb_sfn[enb,ue]) +
               ' UL TBS ' + str(rrm_kpi_app.ue_ultbs[enb,ue])   +
               ' ue_ulrb ' + str(rrm_kpi_app.ue_ulrb[enb,ue])   +
               ' ue_ulmcs ' + str(rrm_kpi_app.ue_ulmcs[enb,ue]) +
@@ -610,7 +611,7 @@ class rrm_kpi_app(object):
           rrm_kpi_app.slice_dlrb_share[enb,sid]= 1.0
 
 
-        log.info( 'S1: eNB ' + str(enb) + ' Slice ' + str(sid) + ' SFN ' + str(rrm_kpi_app.enb_sfn[enb,0]) +
+        self.log.info( 'S1: eNB ' + str(enb) + ' Slice ' + str(sid) + ' SFN ' + str(rrm_kpi_app.enb_sfn[enb,0]) +
               ' slice_ulrb_share: ' + str(rrm_kpi_app.slice_ulrb_share[enb,sid]) +
               ' slice_dlrb_share: ' + str(rrm_kpi_app.slice_dlrb_share[enb,sid]) )
 
@@ -648,11 +649,11 @@ class rrm_kpi_app(object):
           rrm_kpi_app.enb_dlrb_share[enb]+=extra_dl
 
 
-        log.debug( 'S2: eNB ' + str(enb) + ' Slice ' + str(sid) + ' SFN ' + str(rrm_kpi_app.enb_sfn[enb,0]) +
+        self.log.debug( 'S2: eNB ' + str(enb) + ' Slice ' + str(sid) + ' SFN ' + str(rrm_kpi_app.enb_sfn[enb,0]) +
               ' slice_ulrb_share: ' + str(rrm_kpi_app.slice_ulrb_share_r1[enb,sid]) + '->' + str(rrm_kpi_app.slice_ulrb_share[enb,sid]) +
               ' slice_dlrb_share: ' + str(rrm_kpi_app.slice_dlrb_share_r1[enb,sid]) + '->' +    str(rrm_kpi_app.slice_dlrb_share[enb,sid]) )
 
-        log.info( 'eNB ' + str(enb) + ' Slice ' + str(sid) + ' SFN ' + str(rrm_kpi_app.enb_sfn[enb,0]) +
+        self.log.info( 'eNB ' + str(enb) + ' Slice ' + str(sid) + ' SFN ' + str(rrm_kpi_app.enb_sfn[enb,0]) +
             ' ulrb_share: ' + str(rrm_kpi_app.enb_ulrb_share_r1[enb]) + '->' + str(rrm_kpi_app.enb_ulrb_share[enb]) +
             ' dlrb_share: ' + str(rrm_kpi_app.enb_dlrb_share_r1[enb]) + '->' + str(rrm_kpi_app.enb_dlrb_share[enb])      )
 
@@ -672,57 +673,58 @@ class rrm_kpi_app(object):
       if sm.get_num_ue(enb) > 0 :
         if rrm.apply_policy() == 'connected' :
           rrm_kpi_app.pf=rrm.save_policy(time=rrm_kpi_app.enb_sfn[enb,0])
-          log.info('_____________eNB' + str(enb)+' enforced policy______________')
+          self.log.info('_____________eNB' + str(enb)+' enforced policy______________')
           print rrm.dump_policy()
       else:
-        log.info('No UE is attached yet')
+        self.log.info('No UE is attached yet')
 
   def run(self, sm, rrm, open_data):
-    log.info('2. Reading the status of the underlying eNBs')
+    self.log.info('2. Reading the status of the underlying eNBs')
     sm.stats_manager('all')
 
-    log.info('3. Gather statistics')
+    #self.log.info('3. Gather statistics')
     rrm.read_template(self.template)
     rrm_kpi_app.get_statistics(sm)
-    rrm_kpi_app.get_policy_maxmcs(rrm,sm)
-    rrm_kpi_app.get_policy_reserved_rate(rrm,sm)
+    #rrm_kpi_app.get_policy_maxmcs(rrm,sm)
+    #rrm_kpi_app.get_policy_reserved_rate(rrm,sm)
     
-    rrm.set_num_slices(n=int(rrm.get_input_slice_nums(0)), dir='DL')
-    rrm.set_num_slices(n=int(rrm.get_input_slice_nums(0)), dir='UL')
+    #rrm.set_num_slices(n=int(rrm.get_input_slice_nums(0)), dir='DL')
+    #rrm.set_num_slices(n=int(rrm.get_input_slice_nums(0)), dir='UL')
 
-    log.info('4. Calculate the expected performance')
-    rrm_kpi_app.calculate_exp_kpi_perf(sm, rrm)
+    #self.log.info('4. Calculate the expected performance')
+    #rrm_kpi_app.calculate_exp_kpi_perf(sm, rrm)
 
-    log.info('5. Determine RB share per slice')
-    rrm_kpi_app.determine_rb_share(sm,rrm)
+    #self.log.info('5. Determine RB share per slice')
+    #rrm_kpi_app.determine_rb_share(sm,rrm)
 
-    log.info('6. Check for new RRM Slice policy')
-    rrm_kpi_app.enforce_policy(sm,rrm)
+    #self.log.info('6. Check for new RRM Slice policy')
+    #rrm_kpi_app.enforce_policy(sm,rrm)
 
 
   open_data_capabilities = {
     'get-list':  { 'help': 'Get the current list'},
-    'enforce_policy': {
-      'help': 'Change enforced policy',
+    'update-slices': {
+      'help': 'Create a slice given a policy',
       'schema': [
         {'name': 'enb_id', 'type': 'number', 'choice': ['#ENBID'], 'help': 'Select eNB'},
-        {'name': 'dl_slices', 'array': {'length': 1, 'schema': [{'name':'slice_id', 'type': 'number'}, {'name':'percentage', 'range': [0,0,100,1] }]}, 'help': 'Create DL Slice'},
-        {'name': 'ul_slices', 'array': {'length': 1, 'schema': [{'name':'slice_id', 'type': 'number'}, {'name':'percentage', 'range': [0,0,100,1] },{'name':'first_rb', 'type': 'number'}]},'help': 'Create UL Slice'}
+        {'name': 'dl_slice', 'array': {'length': 1, 'schema': [{'name':'id', 'type': 'number'}, {'name':'percentage', 'range': [0,0,100,1] }]}, 'help': 'Create DL Slice'},
+        {'name': 'ul_slice', 'array': {'length': 1, 'schema': [{'name':'id', 'type': 'number'}, {'name':'percentage', 'range': [0,0,100,1] },{'name':'firstRb', 'type': 'number'}]},'help': 'Create UL Slice'},
+        {'name': 'intersliceShareActive', 'type': 'boolean', 'choice': ['True', 'False'], 'help': 'Enable Resource Sharing'}
       ]
     },
-    'slice': {
-      'help': 'associate a UE to Slice S',
+    'ue-slices': {
+      'help': 'Associate a UE to a slice in DL and UL',
       'schema': [
         {'name': 'enb_id',   'type': 'number', 'choice': ['#ENBID'], 'help': 'Select eNB'},
         {'name': 'ue_id',    'type': 'number', 'choice': ['#UEID'],  'help': 'Select UE'},
         {'name': 'dl_slice', 'type': 'number', 'choice': ['#DLSLICE'],  'help': 'Select DL Slice'},
         {'name': 'ul_slice', 'type': 'number', 'choice': ['#ULSLICE'],  'help': 'Select UL Slice'}
       ]
-    },
-    'enable_graph':   {'help': 'Turn on graph.', 'group':'graph'},
-    'disable_graph' : {'help' : 'Trun off graph.', 'group':'graph'},
-    'save_status' :   {'help' : 'Calls method to save current app status' }, # for testing only
-    'load_status' :   {'help' : 'Calls method to load current app status' } # for testing only 
+    }
+    #'enable_graph':   {'help': 'Turn on graph.', 'group':'graph'},
+    #'disable_graph' : {'help' : 'Trun off graph.', 'group':'graph'},
+    #'save_status' :   {'help' : 'Calls method to save current app status' }, # for testing only
+    #'load_status' :   {'help' : 'Calls method to load current app status' } # for testing only 
   }
 
   def handle_new_client(self, client):
@@ -740,25 +742,56 @@ class rrm_kpi_app(object):
     #print type(json.dumps(rrm.read_policy()))
     if method == 'get-list' or method == 'list' or method == 'capabilities':
       client.send_result(id, self.open_data_all_options)
-    elif method == 'enforce_policy' or method == 'policy':
-      #
-      ## Modify something based on params... (TBD)
-      #
-      # TODO 
+    elif method == 'update-slices' :
+      #policy = json.dumps({})
+      enb_id=-1
+      policy = {}
+      if  len(params['ul_slice']) > 0 :
+        policy['ul'] = []
+        for i in range(0, len(params['ul_slice'])):
+          policy['ul'].append(params['ul_slice'][i])
+
+      if  len(params['dl_slice']) > 0 :
+        policy['dl'] = []
+        for i in range(0, len(params['dl_slice'])):
+          policy['dl'].append(params['dl_slice'][i])
+
+      if 'enb_id' in params :
+        enb_id=params['enb_id']
+
+      if 'intersliceShareActive' in params :
+        policy['intersliceShareActive']=params['intersliceShareActive']
+     
+      rrm.apply_policy(enb=enb_id,policy=json.dumps(policy))
       client.send({
-        'result': rrm.read_policy(), # just something to return as result.
+        'result': policy, # just something to return as result.
         'id': id})
       rrm_kpi_open_data.notify_others(message, client)
-    elif method == 'slice' :
-      # TODO
-      msg={'id' : id,
-           'result' : [{'ue_id': 1234, 'dl_slice': 1, 'ul_slice': 2 },
-                       {'ue_id': 5678, 'dl_slice': 2, 'ul_slice': 1 }
-           ]
-      }
-      #client.send_result(id, 'Sliced eNB.')
-      client.send_results(msg)
-      #rrm_kpi_open_data.notify_others(json.dumps(msg), client)
+    elif method == 'ue-slices' :
+      enb_id=-1
+      ueConfig = []
+      #{"method":"slice","params":{"enb_id":234881024,"ue_id":15383,"dl_slice":3,"ul_slice":3},"id":"slice"}
+      if params :
+        
+        if 'enb_id' in params :
+          enb_id=params['enb_id']
+          del params['enb_id']
+        if 'dl_slice' in params :
+          if params['dl_slice'] == None or params['dl_slice'] == 'null' :
+            del params['dl_slice']
+        if 'ul_slice' in params : 
+          if params['ul_slice'] == None or params['ul_slice'] == 'null' :
+            del params['ul_slice'] 
+
+        if 'ul_slice' not in params and 'dl_slice' not in params:
+          return
+        
+        ueConfig.append(params) 
+        rrm.associate_ues_slices(enb=enb_id, policy=ueConfig)
+        client.send_result(id, ueConfig)
+        rrm_kpi_open_data.notify_others(message, client)
+      else:
+          client.send_result(id, 'empty params')
 
     elif method == 'enable_graph':
       self.graphs_enable = True
@@ -840,7 +873,7 @@ if __name__ == '__main__':
                                url=args.url,
                                port=args.port,
                                op_mode=args.op_mode)
-  policy=rrm.read_policy()
+  #policy=rrm.read_policy()
 
   sm = flexran_sdk.stats_manager(log=log,
                                  url=args.url,
