@@ -279,7 +279,7 @@ function topology(sources) {
 		.append("input")
 		.attr("class", "button")
 		.attr("type", "checkbox")
-		.attr("name", name)
+		.attr("name", name+"[]")
 		.attr("data-converter", d.type == 'number' ? 'numberValue' : undefined)
 		.attr("value", function (d) { return d;});
 	} else if (d.range) {
