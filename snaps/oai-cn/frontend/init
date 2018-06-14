@@ -15,6 +15,8 @@ case "$1" in
 	echo "set-hss $CONF_DIR/hss.conf"
 	$SNAP/conf set-hss $CONF_DIR/hss.conf
 	
+	$SNAP/run hss-certificate
+	
 	# a copy for the user: with sudo, the user is root
 	echo "copying the config file to $SNAP_USER_DATA"
 	cp $CONF_DIR/hss.conf $SNAP_USER_DATA
@@ -32,7 +34,6 @@ case "$1" in
 	fi
 
 	$SNAP/run import-db
-	$SNAP/run hss-certificate
 	$SNAP/run hss-add-mme
 	echo ""
 	echo "HSS is initialized"
@@ -48,6 +49,8 @@ case "$1" in
 	# set the mme.conf
 	$SNAP/conf set-mme $CONF_DIR/mme.conf
 
+	$SNAP/run mme-certificate
+	
 	# a copy for the user
 	cp $CONF_DIR/mme.conf $SNAP_USER_DATA
 	cp $CONF_DIR/mme_fd.conf $SNAP_USER_DATA
@@ -58,7 +61,6 @@ case "$1" in
 	    echo 127.0.0.1 `hostname`.$REALM `hostname` hss >> /etc/hosts
 	    echo 127.0.0.1 `hostname`.$REALM `hostname` mme >> /etc/hosts
 	fi
-	$SNAP/run mme-certificate
 	echo ""
 	echo "MME is initialized"
 	echo "Now, it is the time to configure the mme.conf and mme_fd.conf"
