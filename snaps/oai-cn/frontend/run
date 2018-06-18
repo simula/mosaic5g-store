@@ -48,6 +48,10 @@ HSS_CONFIG=${HSS_CONF_FILE2:-$HSS_CONF_FILE}
 MYSQL_SERVER=`cat $HSS_CONFIG | grep  MYSQL_server  | cut -f2 -d'"'`
 MYSQL_USER=`cat $HSS_CONFIG | grep  MYSQL_user  | cut -f2 -d'"'`
 MYSQL_PW=`cat $HSS_CONFIG | grep  MYSQL_pass  | cut -f2 -d'"'`
+USER_KEY=8BAF473F2F8FD09487CCCBD7097C6862
+SQN=000000000021
+OPC=`cat $HSS_CONFIG | grep  -m1 OPERATOR_key  | cut -f2 -d'"'`
+
 HSS_EXEC_ARGS=" -c $HSS_CONFIG "
 
 
@@ -93,12 +97,17 @@ case "$1" in
 	echo "  hss-status:       get the $SNAP_NAME.hssd status"
 	echo "  hss-journal:      get the $SNAP_NAME.hssd logs"
 	echo ""
-	echo "  hss:            run HSS manually as a process"
-	echo "  hss-init:       initialize HSS (after the 1st installation)"
-	echo "  hss-conf-set:   set the HSS configuration file"
-	echo "  hss-conf-get:   get the current HSS configuration file (hss.conf)"
-	echo "  hss-conf-show:  show the path to the HSS configuration file (hss.conf)"
-	echo "  hss-conf-list:  list all the HSS configuration files (hss.conf, hss_fd)"
+	echo "  hss:              run HSS manually as a process"
+	echo "  hss-init:         initialize HSS (after the 1st installation)"
+	echo "  hss-conf-set:     set the HSS configuration file"
+	echo "  hss-conf-get:     get the current HSS configuration file (hss.conf)"
+	echo "  hss-conf-show:    show the path to the HSS configuration file (hss.conf)"
+	echo "  hss-conf-list:    list all the HSS configuration files (hss.conf, hss_fd)"
+	echo "  hss-add-user:     IMSI [USER_KEY] [SQN] [MMEIDENTITY]  Add a user to HSS DB (operator key is taken from hss.conf, default user key, sqn, and mmeid will be taken if not provided)"
+	echo "  hss-dump-users:   dump the current user base"
+	echo "  hss-add-mme:      [MME_FQDN]  Add a MME identified by its FQDN (default is the local FQDN)"
+	echo "  hss-dump-mmeid:   dump the current authenticated mme hosts"
+	echo "  hss-reset-db:     reset the oai_db to its initial values"
 	echo ""
 	echo "  mme-start:        start the $SNAP_NAME.mmed daemon"
 	echo "  mme-stop:         stop the $SNAP_NAME.mmed daemon"
@@ -106,28 +115,30 @@ case "$1" in
 	echo "  mme-status:       get the $SNAP_NAME.mmed status"
 	echo "  mme-journal:      get the $SNAP_NAME.mmed logs"
 	echo ""
-	echo "  mme:            run MME"
-	echo "  mme-init:       initialize MME"
-	echo "  mme-conf-set:   set the MME configuration file"
-	echo "  mme-conf-get:   get the current MME configuration file (mme.conf)"
-	echo "  mme-conf-show:  show the path to the MME configuration file (mme.conf)"
-	echo "  mme-conf-list:  list all the SPGW configuration files (mme.conf, mme_fd)"
+	echo "  mme:              run MME"
+	echo "  mme-init:         initialize MME"
+	echo "  mme-conf-set:     set the MME configuration file"
+	echo "  mme-conf-get:     get the current MME configuration file (mme.conf)"
+	echo "  mme-conf-show:    show the path to the MME configuration file (mme.conf)"
+	echo "  mme-conf-list:    list all the SPGW configuration files (mme.conf, mme_fd)"
 	echo ""
-	echo "  spgw-start:        start the $SNAP_NAME.spgwd daemon"
-	echo "  spgw-stop:         stop the $SNAP_NAME.spgwd daemon"
-	echo "  spgw-restart:      restart the $SNAP_NAME.spgwd daemon"
-	echo "  spgw-status:       get the $SNAP_NAME.spgwd status"
-	echo "  spgw-journal:      get the $SNAP_NAME.spgwd logs"
+	echo "  spgw-start:       start the $SNAP_NAME.spgwd daemon"
+	echo "  spgw-stop:        stop the $SNAP_NAME.spgwd daemon"
+	echo "  spgw-restart:     restart the $SNAP_NAME.spgwd daemon"
+	echo "  spgw-status:      get the $SNAP_NAME.spgwd status"
+	echo "  spgw-journal:     get the $SNAP_NAME.spgwd logs"
 	echo ""
-	echo "  spgw:           run SPGW"
-	echo "  spgw-init:      initialize SPGW"
-	echo "  spgw-init:      initialize SPGW"
-	echo "  spgw-conf-set:  set the SPGW configuration file"
-	echo "  spgw-conf-get:  get the current SPGW configuration file (spgw.conf)"
-	echo "  spgw-conf-show: show the path to the SPGW configuration file (spgw.conf)"
-	echo "  spgw-conf-list: list all the SPGW configuration files (spgw.conf)"
-	echo "  help:           print this help"
-	echo "  Example: sudo oai-cn.hss-init; sudo oai-cn.hss;" 
+	echo "  spgw:            run SPGW"
+	echo "  spgw-init:       initialize SPGW"
+	echo "  spgw-init:       initialize SPGW"
+	echo "  spgw-conf-set:   set the SPGW configuration file"
+	echo "  spgw-conf-get:   get the current SPGW configuration file (spgw.conf)"
+	echo "  spgw-conf-show:  show the path to the SPGW configuration file (spgw.conf)"
+	echo "  spgw-conf-list:  list all the SPGW configuration files (spgw.conf)"
+	echo "  help:            print this help"
+	echo "  Example:         sudo oai-cn.hss-init; sudo oai-cn.hss;"
+	echo "                   oai-cn.hss-add-user 208950000000010; oai-cn.hss-dump-users; "
+	
 	;;
     mme )
 	if [ -n "$LD_LIBRARY_PATH" ]; then
@@ -164,7 +175,7 @@ case "$1" in
 	$HSS_EXEC  `echo $HSS_EXEC_ARGS`  "$@" $*
         ;;
     
-    import-db )
+    import-db | hss-reset-db )
 	echo "using: MYSQL_SERVER=$MYSQL_SERVER, MYSQL_USER=$MYSQL_USER, MYSQL_PASS=$MYSQL_PW"
 	
 	HSS_DB_Q1="DROP DATABASE IF EXISTS oai_db;"
@@ -178,13 +189,16 @@ case "$1" in
 	    echo "failed to import HSS DB"
 	    rm -rf $SNAP_DATA/hss_db_import.sh
 	else
-	    echo "imported the HSS DB to mysql"
+	    echo "Successfully Imported the OAI HSS DB to mysql"
 	    echo "$HSS_DB_IMPORT" > $SNAP_DATA/hss_db_import.sh
 	fi
 	;;
-     hss-add-mme)
-	 fqdn=`hostname --fqdn`
-	 echo "Found MME FQDN: $fqdn"
+     hss-add-mme )
+	 if [ $# -ge 2 ] ; then 
+	     fqdn=$2
+	 else
+	     fqdn=`hostname --fqdn`
+	 fi
 	 if [ -z "$($HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h  $MYSQL_SERVER oai_db -e "select mmehost from mmeidentity where mmehost='$fqdn'";)" ]; then
 
 	    #count how many in order to compute the right primary key
@@ -193,19 +207,68 @@ case "$1" in
 
 	    primary_key=$((primary_key + 1))
 
-	    echo "Inserting the MME info in the mmeidentity table of oai_db database"
+	    echo "$primary_key"  > $SNAP_USER_DATA/.mmeidentity
+	    
+	    echo "Inserting MME FQDN=$fqdn, REALM=$REALM, and idmmeidentity=$primary_key in the mmeidentity table of oai_db database"
+	    
 	    #Inserting the mme in the database to let epc connect to hss
 	    $HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER oai_db << EOF 
 INSERT INTO mmeidentity (\`idmmeidentity\`, \`mmehost\`, \`mmerealm\`, \`UE-Reachability\`) VALUES ('$primary_key', '$fqdn', '$REALM', 0);
 EOF
-
+	 else
+	     echo "The requested FQDN $fqdn is already provisioned"
 	fi
 	 ;;
-     add-user-to-db )
-	 echo "Inserting a user into the oai_db database"
-	  #Inserting the mme in the database to let epc connect to hss
-	    $HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER oai_db << EOF 
-INSERT INTO users (\`idmmeidentity\`, \`mmehost\`, \`mmerealm\`, \`UE-Reachability\`) VALUES ('$primary_key', '$fqdn', '$REALM', 0);
+
+     hss-dump-mmeid )
+	 #echo "idmmeidentity | mmehost  | mmerealm | UE-Reachability "
+	 $HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER oai_db << EOF 
+SELECT idmmeidentity,mmehost,mmerealm,\`UE-Reachability\` FROM  mmeidentity;
+EOF
+	 ;;
+
+     hss-dump-users )
+	 echo "imsi | mmeidentity_idmmeidentity | hex(users.key) | sqn | hex(rand) | hex(OPc)"
+	 $HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER oai_db << EOF 
+SELECT imsi,mmeidentity_idmmeidentity,hex(users.key),sqn,hex(rand),hex(OPc) FROM users;
+EOF
+
+	 ;;
+     hss-add-user )
+
+	 if [ $# -ge 2 ] ; then 
+	     IMSI=$2
+	 else
+	     echo "IMSI is missing"
+	     exit 0
+  	 fi
+	 if [ $# -ge 3 ] ; then
+	     USER_KEY=$3
+	 fi
+	 if [ $# -ge 4 ] ; then 
+	     SQN=$4
+	 fi
+	 if [ $# -ge 5 ] ; then
+	     mmeidentity_idmmeidentity=$5
+	 else
+	     mmeidentity_idmmeidentity=$(`cat $SNAP_USER_DATA/.mmeidentity`)
+	 fi
+	 	     
+	 msisdn=33638050036
+	 imei=35609204079536
+	 rau_tau_timer=120
+	 ue_ambr_ul=50000000
+	 ue_ambr_dl=100000000
+	 access_restriction=47
+	 mme_cap=0
+	 urrp_mme=1
+	 rand=33353336363633303332333633313634
+
+	 echo "Inserting a user with IMSI=$2, USER-KEY=$USER_KEY, SQN=$SQN, OPC=$OPC, MMEIdentity=$mmeidentity_idmmeidentity into the oai_db database"
+
+	 #Inserting the mme in the database to let epc connect to hss
+	 $HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER oai_db << EOF 
+INSERT INTO users (imsi,msisdn,imei,imei_sv,ms_ps_status,rau_tau_timer,ue_ambr_ul,ue_ambr_dl,access_restriction,mme_cap,mmeidentity_idmmeidentity,users.key,\`RFSP-Index\`,urrp_mme,sqn,rand,OPc) VALUES ($IMSI,$msisdn,$imei,NULL,"PURGED",$rau_tau_timer,$ue_ambr_ul,$ue_ambr_dl,$access_restriction,$mme_cap,$mmeidentity_idmmeidentity,unhex("$USER_KEY"),1,$urrp_mme,$SQN,unhex("$rand"),unhex("$OPC"));
 EOF
 	 ;;
     hss-certificate  )
