@@ -34,5 +34,4 @@ MYSQL_PW="linux"  # Database server password
 #mysql -h 127.0.0.1 -u root --password=linux -e "CREATE DATABASE IF NOT EXISTS oai_db;"
 #mysql -h 127.0.0.1 -u root -plinux oai_db < /snap/oai-cn/current/hss/oai_db.sql 
 
-
-REALM="openair4G.eur"
+#REALM="openair4G.eur"

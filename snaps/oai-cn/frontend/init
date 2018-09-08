@@ -28,6 +28,9 @@ case "$1" in
 
 	if [ -z "$(grep -o "`hostname`.$REALM" /etc/hosts)" ]; then
 	    cp /etc/hosts /etc/hosts.orig
+	    REALM=`cat $HSS_FD_CONF_FILE | grep  "Realm "  | cut -f2 -d'"'`
+	    echo "RELAM = $REALM"
+
 	    #echo 127.0.0.1 localhost > /etc/hosts
 	    echo 127.0.0.1 `hostname`.$REALM `hostname` hss >> /etc/hosts
 	    echo 127.0.0.1 `hostname`.$REALM `hostname` mme >> /etc/hosts
