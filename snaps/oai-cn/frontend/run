@@ -45,9 +45,13 @@ SPGW_CONFIG=${SPGW_CONF_FILE2:-$SPGW_CONF_FILE}
 SPGW_EXEC_ARGS=" -c $SPGW_CONFIG "
 
 HSS_CONFIG=${HSS_CONF_FILE2:-$HSS_CONF_FILE}
+HSS_FD_CONF_FILE2=$(basename $HSS_CONFIG)/hss_fd.conf
+HSS_FD_CONFIG=${HSS_FD_CONF_FILE2:-$HSS_FD_CONF_FILE}
 MYSQL_SERVER=`cat $HSS_CONFIG | grep  MYSQL_server  | cut -f2 -d'"'`
 MYSQL_USER=`cat $HSS_CONFIG | grep  MYSQL_user  | cut -f2 -d'"'`
 MYSQL_PW=`cat $HSS_CONFIG | grep  MYSQL_pass  | cut -f2 -d'"'`
+REALM=`cat $HSS_FD_CONFIG | grep  "Realm "  | cut -f2 -d'"'`
+echo "RELAM = $REALM"
 USER_KEY=8BAF473F2F8FD09487CCCBD7097C6862
 SQN=000000000021
 OPC=`cat $HSS_CONFIG | grep  -m1 OPERATOR_key  | cut -f2 -d'"'`
