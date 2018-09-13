@@ -25,15 +25,20 @@ case "$1" in
 
 	# this part needs sudo privilage 
   	service mysql restart
-
+	REALM=`cat $HSS_FD_CONF_FILE | grep  "Realm "  | cut -f2 -d'"'`
+	
 	if [ -z "$(grep -o "`hostname`.$REALM" /etc/hosts)" ]; then
-	    cp /etc/hosts /etc/hosts.orig
-	    REALM=`cat $HSS_FD_CONF_FILE | grep  "Realm "  | cut -f2 -d'"'`
-	    echo "RELAM = $REALM"
-
+	    cp /etc/hosts /etc/hosts.$REALM.bkup
 	    #echo 127.0.0.1 localhost > /etc/hosts
-	    echo 127.0.0.1 `hostname`.$REALM `hostname` hss >> /etc/hosts
-	    echo 127.0.0.1 `hostname`.$REALM `hostname` mme >> /etc/hosts
+	    #echo 127.0.0.1 `hostname`.$REALM `hostname` hss >> /etc/hosts
+	    #echo 127.0.0.1 `hostname`.$REALM `hostname` mme >> /etc/hosts
+	    echo "Adding 127.0.0.1" `hostname`.$REALM `hostname` "hss to /etc/hosts"
+	    sed -i '/hss/d' /etc/hosts
+	    sed -i "1i127.0.0.1 `hostname`.$REALM `hostname` hss" /etc/hosts
+	    
+	    echo "Adding 127.0.0.1" `hostname`.$REALM `hostname` "mme to /etc/hosts"
+	    sed -i '/mme/d' /etc/hosts
+	    sed -i "1i127.0.0.1 `hostname`.$REALM `hostname` mme" /etc/hosts
 	fi
 
 	$SNAP/run import-db

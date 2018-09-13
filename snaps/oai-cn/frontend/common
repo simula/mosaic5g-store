@@ -22,6 +22,8 @@ HSS_DIR="$SNAP/hss"
 HSS_CONF_FILE="$CONF_DIR/hss.conf"
 HSS_FD_CONF_FILE="$CONF_DIR/hss_fd.conf"
 HSS_ACL_CONF_FILE="$CONF_DIR/acl.conf"
+echo "$HSS_ACL_CONF_FILE"
+
 HSS_EXEC="$HSS_DIR/oai_hss"
 HSS_DB="$HSS_DIR/oai_db.sql"
 MYSQL_SERVER="127.0.0.1"     # HSS S6a bind address
