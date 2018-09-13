@@ -251,7 +251,7 @@ EOF
 	 if [ $# -ge 5 ] ; then
 	     mmeidentity_idmmeidentity=$5
 	 else
-	     mmeidentity_idmmeidentity=$(`cat $SNAP_USER_DATA/.mmeidentity`)
+	     mmeidentity_idmmeidentity=`cat $SNAP_USER_DATA/.mmeidentity`
 	 fi
 	 	     
 	 msisdn=33638050036

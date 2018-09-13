@@ -7,3 +7,8 @@ CONF_DIR="$SNAP_DATA"
 RAN_DIR="$SNAP/enb"
 RAN_CONF_FILE="$CONF_DIR/enb.band7.tm1.50PRB.usrpb210.conf"
 RAN_EXEC="$RAN_DIR/$SNAP_NAME"
+
+
+ENB_EMU_DIR="$SNAP/enb-emu"
+ENB_EMU_CONF_FILE="$CONF_DIR/rcc.band7.tm1.if4p5.50PRB.lo.conf"
+ENB_EMU_EXEC="$RAN_DIR/enb-emu"

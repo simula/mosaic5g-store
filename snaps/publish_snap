@@ -5,15 +5,15 @@ read -p "what is the version of the snap you want to publish (e.g. 1.2)? " versi
 #version=$1
 echo "version is $version"
 
-declare -a snaps=("oai-ran")
+declare -a snaps=("flexran")
 declare -a channels=("edge,beta")
 
 for s in "${channels[@]}"
 do
-    echo "channels: " $s
     for k in "${snaps[@]}"
     do
-        if [ -d $k ] ; then
+    echo "Release Snap $k to channels: $s"
+    if [ -d $k ] ; then
           cd $k
           snap=$k"_"$version"_multi.snap"
           echo "snapcraft push $snap --release $s"

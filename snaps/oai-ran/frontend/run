@@ -70,7 +70,13 @@ case "$1" in
 	echo ""
 	echo "  help:    print this help"
 	;;
-    *)
+
+    "enb-emu")
+	echo "$ENB_EMU_EXEC  $ENB_EMU_EXEC_ARGS $@"
+	$ENB_EMU_EXEC  `echo $ENB_EMU_EXEC_ARGS` "$@"
+	
+	;;
+	*)
 	echo "$RAN_EXEC  $RAN_EXEC_ARGS $@"
 	$RAN_EXEC  `echo $RAN_EXEC_ARGS` "$@"
 	;;

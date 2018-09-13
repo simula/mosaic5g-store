@@ -1,5 +1,5 @@
 name: flexran
-version: '1.1' 
+version: '1.2' 
 summary: FlexRAN SD-RAN platfrrom
 description: |
    FlexRAN is a software-defined radio access network platform licensed under Apache License V2.0. It is one of the projects of Mosaic5G inititive.
@@ -38,7 +38,9 @@ apps:
     command: run help
   debug:
     command: run gdb
-  
+#hooks:
+#  configure:
+#    plugs: [home, network]
 parts:
   gdb:
     plugin: nil
@@ -90,7 +92,7 @@ parts:
     after: [ pistache, protobuf]
     plugin: cmake
     source: https://gitlab.eurecom.fr/flexran/flexran-rtc.git
-    source-branch: develop-uplink
+    source-branch: develop
     build-packages: [build-essential, ]
     stage-packages:
       - libboost-all-dev

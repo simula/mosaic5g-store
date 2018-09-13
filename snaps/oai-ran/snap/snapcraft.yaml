@@ -13,6 +13,8 @@ confinement: devmode
 apps:
   oai-ran:
     command: run
+  enb-emu:
+    command: run enb-emu  
   init:
     command: init
   daemon:
@@ -85,6 +87,33 @@ parts:
       enb/libcoding.so: usr/lib/libcoding.so
       enb/libparams_libconfig.so: usr/lib/libparams_libconfig.so
       enb/lte-softmodem.Rel14: enb/oai-ran
+  enb-emu:
+    plugin: cmake
+    source: https://gitlab.eurecom.fr/oai/openairinterface5g.git
+    source-branch: develop 
+    build-packages: [build-essential, ]
+    build: |
+      cd cmake_targets
+      ./build_oai -I -w None 
+      ./build_oai --eNB -t ETHERNET -c -C 
+    install: |
+      mkdir -p $SNAPCRAFT_PART_INSTALL/enb-emu
+      cp  targets/bin/* $SNAPCRAFT_PART_INSTALL/enb-emu
+      cp targets/PROJECTS/GENERIC-LTE-EPC/CONF/* $SNAPCRAFT_PART_INSTALL/enb-emu
+      cp cmake_targets/snap_environment.sh $SNAPCRAFT_PART_INSTALL/enb-emu
+    stage:
+      - enb-emu/*
+      - usr/lib/*
+      - lib/*
+    prime:
+      - enb-emu/*
+      - usr/lib/*
+      - lib/*
+    organize:
+      enb-emu/liboai_eth_transpro.so.Rel14: usr/lib/liboai_transpro.so
+      enb-emu/libcoding.so: usr/lib/libcoding.so
+      enb-emu/libparams_libconfig.so: usr/lib/libparams_libconfig.so
+      enb-emu/lte-softmodem.Rel14: enb-emu/oai-ran-emu
   frontend:
     plugin: dump
     source: frontend
