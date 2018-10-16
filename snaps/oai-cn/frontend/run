@@ -71,28 +71,38 @@ case "$1" in
 	exec $SNAP/gdb --data-directory=$SNAP_DATA  -n -x $SNAP_DATA/.gdb_$2
 	;;
     
-    "start-all")
+     "start-all")
 
-        snap start $SNAP_NAME.hssd
-        sleep 1
-	snap start $SNAP_NAME.mmed
-        sleep 1
-	snap start $SNAP_NAME.spgwd
+         snap start $SNAP_NAME
+	 
         ;;
+     
       "stop-all")
 
-        snap stop $SNAP_NAME.hssd
-        snap stop $SNAP_NAME.mmed
-        snap stop $SNAP_NAME.spgwd
+        snap stop $SNAP_NAME
+	#snap stop $SNAP_NAME.hssd
+        #snap stop $SNAP_NAME.mmed
+        #snap stop $SNAP_NAME.spgwd
+        ;;
+
+      "restart-all")
+
+          snap restart $SNAP_NAME
+	  
         ;;
 
      "status-all")
 
-	systemctl status  snap.$SNAP_NAME.hssd.service  || true
-	systemctl status  snap.$SNAP_NAME.mmed.service  || true 
-	systemctl status  snap.$SNAP_NAME.spgwd.service || true 
-       ;;
-    "start"  )
+	# systemctl status  --lines 0 snap.$SNAP_NAME.hssd.service  || true
+	# systemctl status  --lines 0 snap.$SNAP_NAME.mmed.service  || true 
+	# systemctl status  --lines 0 snap.$SNAP_NAME.spgwd.service || true
+
+	 
+         snap services $SNAP_NAME
+	 
+	 ;;
+
+     "start"  )
 	#[ -z "${2^^}_EXEC" ] || ( snap start $SNAP_NAME.$3 )
 #	echo "snap start $SNAP_NAME.$2"
 	snap start $SNAP_NAME.$2
@@ -108,6 +118,7 @@ case "$1" in
     "status" )
 #	echo "systemctl status  snap.$SNAP_NAME.$2.service"
 	systemctl status  snap.$SNAP_NAME.$2.service
+	#snap services $SNAP_NAME.$2
 	;;
     "journal" )
 	journalctl -u snap.$SNAP_NAME.$2.service

@@ -1,5 +1,5 @@
 name: oai-cn
-version: '1.2' 
+version: '1.3' 
 summary: OpenAirInterface CN entity with LL-MEC Agent
 description: |
     OAI-CN is the openairinterface-based CN with LL-MEC agent allowing to connect a 4G-comptaible BS and UEs to the core network. It is one of the projects of Mosaic5G inititive.
@@ -11,12 +11,16 @@ architectures:
 confinement: devmode
 
 apps:
+  test-all:
+    command : test all
   start-all:
     command: run start-all
   stop-all:
     command: run stop-all
   status-all:
     command: run status-all
+  restart-all:
+    command: run restart-all
   mme:
     command: run mme 
   mmed:
