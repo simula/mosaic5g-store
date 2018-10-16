@@ -51,7 +51,6 @@ MYSQL_SERVER=`cat $HSS_CONFIG | grep  MYSQL_server  | cut -f2 -d'"'`
 MYSQL_USER=`cat $HSS_CONFIG | grep  MYSQL_user  | cut -f2 -d'"'`
 MYSQL_PW=`cat $HSS_CONFIG | grep  MYSQL_pass  | cut -f2 -d'"'`
 REALM=`cat $HSS_FD_CONFIG | grep  "Realm "  | cut -f2 -d'"'`
-echo "RELAM = $REALM"
 USER_KEY=8BAF473F2F8FD09487CCCBD7097C6862
 SQN=000000000021
 OPC=`cat $HSS_CONFIG | grep  -m1 OPERATOR_key  | cut -f2 -d'"'`
@@ -71,6 +70,28 @@ case "$1" in
 	cat $SNAP_DATA/.gdb_$2
 	exec $SNAP/gdb --data-directory=$SNAP_DATA  -n -x $SNAP_DATA/.gdb_$2
 	;;
+    
+    "start-all")
+
+        snap start $SNAP_NAME.hssd
+        sleep 1
+	snap start $SNAP_NAME.mmed
+        sleep 1
+	snap start $SNAP_NAME.spgwd
+        ;;
+      "stop-all")
+
+        snap stop $SNAP_NAME.hssd
+        snap stop $SNAP_NAME.mmed
+        snap stop $SNAP_NAME.spgwd
+        ;;
+
+     "status-all")
+
+	systemctl status  snap.$SNAP_NAME.hssd.service  || true
+	systemctl status  snap.$SNAP_NAME.mmed.service  || true 
+	systemctl status  snap.$SNAP_NAME.spgwd.service || true 
+       ;;
     "start"  )
 	#[ -z "${2^^}_EXEC" ] || ( snap start $SNAP_NAME.$3 )
 #	echo "snap start $SNAP_NAME.$2"
@@ -139,6 +160,11 @@ case "$1" in
 	echo "  spgw-conf-get:   get the current SPGW configuration file (spgw.conf)"
 	echo "  spgw-conf-show:  show the path to the SPGW configuration file (spgw.conf)"
 	echo "  spgw-conf-list:  list all the SPGW configuration files (spgw.conf)"
+	echo ""
+	echo "  status           status of all services"          
+	echo "  stop             stop all services"          
+	echo "  start            start of all services"          
+	echo ""
 	echo "  help:            print this help"
 	echo "  Example:         sudo oai-cn.hss-init; sudo oai-cn.hss;"
 	echo "                   oai-cn.hss-add-user 208950000000010; oai-cn.hss-dump-users; "
@@ -272,11 +298,14 @@ EOF
 
 	 #Inserting the mme in the database to let epc connect to hss
 	 $HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER oai_db << EOF 
-INSERT INTO users (imsi,msisdn,imei,imei_sv,ms_ps_status,rau_tau_timer,ue_ambr_ul,ue_ambr_dl,access_restriction,mme_cap,mmeidentity_idmmeidentity,users.key,\`RFSP-Index\`,urrp_mme,sqn,rand,OPc) VALUES ($IMSI,$msisdn,$imei,NULL,"PURGED",$rau_tau_timer,$ue_ambr_ul,$ue_ambr_dl,$access_restriction,$mme_cap,$mmeidentity_idmmeidentity,unhex("$USER_KEY"),1,$urrp_mme,$SQN,unhex("$rand"),unhex("$OPC"));
+INSERT INTO users
+(imsi,msisdn,imei,imei_sv,ms_ps_status,rau_tau_timer,ue_ambr_ul,ue_ambr_dl,access_restriction,mme_cap,mmeidentity_idmmeidentity,users.key,\`RFSP-Index\`,urrp_mme,sqn,rand,OPc)
+VALUES
+($IMSI,$msisdn,$imei,NULL,"PURGED",$rau_tau_timer,$ue_ambr_ul,$ue_ambr_dl,$access_restriction,$mme_cap,$mmeidentity_idmmeidentity,unhex("$USER_KEY"),1,$urrp_mme,$SQN,unhex("$rand"),unhex("$OPC"));
 EOF
 	 ;;
     hss-certificate  )
-	
+	cd /tmp
 	rm -rf ./demoCA
 	mkdir ./demoCA
 	echo 01 > ./demoCA/serial
@@ -293,10 +322,11 @@ EOF
 	openssl ca -cert hss.cacert.pem -keyfile hss.cakey.pem -in hss.csr.pem -out hss.cert.pem -outdir . -batch
 	mkdir -p $CONF_DIR/
 	mv hss.cakey.pem hss.cert.pem hss.cacert.pem hss.key.pem $CONF_DIR
+	cd -
 	;;
 
     mme-certificate  )
-
+	cd /tmp
 	rm -rf ./demoCA
 	mkdir ./demoCA
 	echo 01 > ./demoCA/serial
@@ -314,6 +344,7 @@ EOF
 	openssl ca -cert mme.cacert.pem -keyfile mme.cakey.pem -in mme.csr.pem -out mme.cert.pem -outdir . -batch
 	mkdir -p $CONF_DIR/
 	mv mme.cakey.pem mme.cert.pem mme.cacert.pem mme.key.pem  $CONF_DIR
+	cd - 
 	;;
     
     * )

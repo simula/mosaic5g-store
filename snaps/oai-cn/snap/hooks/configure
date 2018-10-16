@@ -1,16 +1,24 @@
 #!/bin/sh
 set -e 
-echo "executing post installation hook "
+echo "Configure hook "
+if [ -n "$LD_LIBRARY_PATH" ]; then
+    LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$SNAP/lib:$SNAP/usr/lib:$SNAP/usr/local/lib:$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
+else
+    LD_LIBRARY_PATH=$SNAP/lib:$SNAP/usr/lib:$SNAP/usr/local/lib:$SNAP/usr/local/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu
+fi
+export LD_LIBRARY_PATH
 
-#systemctl stop  snap.oai-cn.hssd.service
-#systemctl stop  snap.oai-cn.mmed.service
-#systemctl stop  snap.oai-cn.spgwd.service
-	
-#export PATH=$PATH:/snap/bin
-#oai-cn.hss-stop
-#oai-cn.mme-stop
-#oai-cn.spgw-stop
+$SNAP/init hss
 
-#$SNAP/init hss
-#$SNAP/init mme
-#$SNAP/init spgw
+
+$SNAP/init mme
+
+
+$SNAP/init spgw
+
+
+snapctl stop --disable ${SNAP_NAME}.hssd  2>&1  || true
+snapctl stop --disable ${SNAP_NAME}.mmed  2>&1  || true
+snapctl stop --disable ${SNAP_NAME}.spgwd 2>&1  || true
+
+

@@ -11,6 +11,12 @@ architectures:
 confinement: devmode
 
 apps:
+  start-all:
+    command: run start-all
+  stop-all:
+    command: run stop-all
+  status-all:
+    command: run status-all
   mme:
     command: run mme 
   mmed:
@@ -106,11 +112,12 @@ apps:
     command: run hss-add-mme
   hss-dump-mmeid:
     command: run hss-dump-mmeid
-#hooks:
-#  install:
-#    plugs: [home, network]
-#  configure:
-#    plugs: [home, network]
+hooks:
+  install:
+    plugs: [home, network]
+  configure:
+    plugs: [home, network]
+    
 parts:
   gdb:
     plugin: nil
