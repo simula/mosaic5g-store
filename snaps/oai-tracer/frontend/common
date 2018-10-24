@@ -1,0 +1,9 @@
+#!/bin/sh
+export DEBIAN_FRONTEND=noninteractive
+set -e
+
+CONF_DIR="$SNAP_DATA"
+
+T_DIR="$SNAP/T"
+T_CONF_FILE="$CONF_DIR/T_messages.txt"
+T_EXEC="$T_DIR/tracer/enb_tracer"

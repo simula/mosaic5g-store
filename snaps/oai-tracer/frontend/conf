@@ -1,0 +1,65 @@
+#!/bin/sh
+
+. $SNAP/common
+
+case "$1" in
+    "set" )
+	CONFIG_FILE=$2
+	if [ -f $(dirname $(readlink -f $0))/$CONFIG_FILE ]; then
+	    CONFIG_FILE=$(dirname $(readlink -f $0))/$CONFIG_FILE
+	    echo "Setting the default config file to: $CONFIG_FILE"
+	else
+	    # may be absolute path 
+	    if [ -f "$CONFIG_FILE" ]; then
+		# $CONFIG_FILE already exist in the $SNAP_DATA
+		if [ -f $SNAP_DATA/$(basename $CONFIG_FILE) ] ; then 
+		    echo "Reset the config file to: $SNAP_DATA/$(basename $CONFIG_FILE)"
+		else 
+		    #echo "$SNAP_DATA/$CONFIG_FILE"
+		    cp $CONFIG_FILE $SNAP_DATA/
+		    echo "Adding and setting a new config file : $SNAP_DATA/$(basename $CONFIG_FILE)"
+		fi
+		CONFIG_FILE=$SNAP_DATA/$(basename $CONFIG_FILE)
+	    else
+		echo "Config file <$CONFIG_FILE> not found in $SNAP/current directory"
+		echo "Reset to default config file: $T_CONF_FILE"
+		CONFIG_FILE=$T_CONF_FILE
+	    fi
+	fi
+	echo "T_CONF_FILE2=$CONFIG_FILE" > $SNAP_DATA/config.sh
+	echo "T_CONF_FILE2=$CONFIG_FILE"  > $SNAP_USER_DATA/config.sh
+	;;
+    
+    
+    "ls" )
+	if [ -r $SNAP_DATA/config.sh ]; then
+	    . $SNAP_DATA/config.sh
+	fi
+	
+	# default config file is (unless set in above config)
+	T_CONFIG=${T_CONF_FILE2:-$T_CONF_FILE}
+	ls $(dirname $T_CONFIG)/*
+	;;
+
+     "echo" | "cat" )
+	
+	if [ -r $SNAP_DATA/config.sh ]; then
+	    . $SNAP_DATA/config.sh
+	fi
+	
+	# default config file is (unless set in above config)
+	T_CONFIG=${T_CONF_FILE2:-$T_CONF_FILE}
+	# echo (get), cat (show)
+        `echo $1 | cut -d"-" -f1` $T_CONFIG
+	;;
+     *)
+	 echo "unknown command $1"
+	 
+	;;
+esac
+
+#cat >$SNAP_USER_DATA/config.sh <<EOF
+#CONFIG=$CONFIG_FILE
+#EOF
+    
+
