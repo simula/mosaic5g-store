@@ -1,0 +1,58 @@
+#!/bin/sh
+
+. $SNAP/common
+
+echo "Test Snap Service $1"
+
+waiting_time=2
+case "$1" in
+
+    "all" )
+	$SNAP/run status-all
+	sleep $waiting_time 
+	$SNAP/run start cudud
+	$SNAP/run start rrud
+	sleep $waiting_time 
+	$SNAP/run status-all
+	sleep $waiting_time 
+	$SNAP/run stop-all
+	sleep $waiting_time
+	$SNAP/run start enbd
+	sleep $waiting_time 
+	$SNAP/run status-all
+	sleep $waiting_time
+	$SNAP/run start uesimd
+	sleep $waiting_time 
+	$SNAP/run status-all
+	sleep $waiting_time 
+	$SNAP/run stop-all
+	sleep $waiting_time 
+
+	$SNAP/conf ls-enb
+	$SNAP/conf ls-cudu
+	$SNAP/conf ls-rru
+	
+	
+	;;
+
+    "enbd" | "cudud" | "rrud" | "uesim" )
+	$SNAP/run status $1 
+	sleep $waiting_time 
+	$SNAP/run start $1
+	sleep $waiting_time 
+	$SNAP/run status $1
+	sleep $waiting_time 
+	$SNAP/run stop $1
+	sleep $waiting_time
+	$SNAP/run status $1 
+	sleep $waiting_time 
+
+	;;
+    * )
+	echo "Unknown command: $1"
+	;;
+    
+esac
+
+	
+

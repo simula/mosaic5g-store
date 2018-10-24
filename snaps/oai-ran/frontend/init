@@ -2,14 +2,29 @@
 
 . $SNAP/common
 
-if [ ! -f $CONF_DIR/enb.band7.tm1.50PRB.usrpb210.conf ] ; then
+if [ ! -f $CONF_DIR/rru.conf ] ; then
+    cp $SNAP/etc/* $CONF_DIR
+else
+    #overwriting 
     cp $SNAP/etc/* $CONF_DIR
 fi
+
 # set the conf
 #echo "set conf to  $CONF_DIR/enb.band7.tm1.50PRB.usrpb210.conf"
-$SNAP/conf set $CONF_DIR/enb.band7.tm1.50PRB.usrpb210.conf
+$SNAP/conf set-enb $CONF_DIR/enb.band7.tm1.50PRB.usrpb210.conf
+$SNAP/conf get-enb 
 
-# a copy for the user
-cp $CONF_DIR/enb.band7.tm1.50PRB.usrpb210.conf $SNAP_USER_DATA
+$SNAP/conf set-cudu $CONF_DIR/rcc.band7.tm1.if4p5.50PRB.conf
+$SNAP/conf get-cudu
+
+$SNAP/conf set-rru $CONF_DIR/rru.conf
+$SNAP/conf get-rru 
+
+$SNAP/conf set-uesim $CONF_DIR/rru.oaisim.conf
+$SNAP/conf get-uesim 
+
+# a copy all the config files for the user
+cp $CONF_DIR/* $SNAP_USER_DATA
 
 echo "OAI_RAN init: done "
+echo "Now, configure the enb, cudu, rru, or uesim conf file (mainly the NETWORK_INTERFACES)"
