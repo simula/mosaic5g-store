@@ -4,11 +4,22 @@ set -e
 
 CONF_DIR="$SNAP_DATA"
 
-RAN_DIR="$SNAP/enb"
-RAN_CONF_FILE="$CONF_DIR/enb.band7.tm1.50PRB.usrpb210.conf"
-RAN_EXEC="$RAN_DIR/$SNAP_NAME"
+ENB_DIR="$SNAP/enb"
+ENB_CONF_FILE="$CONF_DIR/enb.band7.tm1.50PRB.usrpb210.conf"
+ENB_EXEC="$ENB_DIR/$SNAP_NAME"
 
 
-ENB_EMU_DIR="$SNAP/enb-emu"
-ENB_EMU_CONF_FILE="$CONF_DIR/rcc.band7.tm1.if4p5.50PRB.lo.conf"
-ENB_EMU_EXEC="$RAN_DIR/enb-emu"
+CUDU_DIR="$SNAP/cudu"
+CUDU_CONF_FILE="$CONF_DIR/rcc.band7.tm1.if4p5.50PRB.conf"
+CUDU_EXEC="$CUDU_DIR/$SNAP_NAME"
+
+#use the same dir as cudu, but keep variables separated
+RRU_DIR="$SNAP/cudu"
+RRU_CONF_FILE="$CONF_DIR/rru.conf"
+RRU_EXEC="$CUDU_DIR/$SNAP_NAME"
+
+
+UESIM_DIR="$SNAP/uesim"
+UESIM_CONF_FILE="$CONF_DIR/rru.oaisim.conf"
+UESIM_EXEC="$UESIM_DIR/$SNAP_NAME"
+
