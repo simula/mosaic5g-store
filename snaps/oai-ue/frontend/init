@@ -1,0 +1,29 @@
+#!/bin/sh
+
+. $SNAP/common
+
+if [ ! -f $CONF_DIR/ue.band7.25PRB.usrp210.conf ] ; then
+    cp $SNAP/etc/* $CONF_DIR
+    cp $SNAP/etc/.ue_emm.nvram0 $CONF_DIR
+    cp $SNAP/etc/.ue.nvram0 $CONF_DIR
+    cp $SNAP/etc/.usim.nvram0 $CONF_DIR
+    
+fi
+
+# set the conf
+$SNAP/conf set $CONF_DIR/UE_config.xml
+
+$SNAP/conf set-cmd $CONF_DIR/ue.band7.25PRB.usrp210.conf
+
+$SNAP/conf set-usim $CONF_DIR/ue_sim_default.conf
+
+# a copy for the user
+cp $CONF_DIR/ue.band7.25PRB.usrp210.conf $SNAP_USER_DATA
+cp $CONF_DIR/UE_config.xml               $SNAP_USER_DATA
+cp $CONF_DIR/ue_sim_default.conf         $SNAP_USER_DATA
+
+cd $CONF_DIR
+./init_nas_s1 UE
+cd -
+
+echo "OAI_RAN init: done "

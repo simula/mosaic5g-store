@@ -1,0 +1,135 @@
+#!/bin/sh
+
+. $SNAP/common
+
+export UHD_IMAGES_DIR=$SNAP/uhd_images
+
+if [ ! -e $UE_EXEC ]; then
+    echo "Cannot find $UE_EXEC executable"
+    exit 127
+fi
+
+if [ ! -e $USIM_MULTI_EXEC ]; then
+    echo "Cannot find $USIM_MULTI_EXEC executable"
+    exit 127
+fi
+
+if [ ! -e $USIM_EXEC ]; then
+    echo "Cannot find $USIM_EXEC executable"
+    exit 127
+fi
+
+
+if [ ! -e $NVRAM_EXEC ]; then
+    echo "Cannot find $NVRAM_EXEC executable"
+    exit 127
+fi
+
+
+if [ -r $SNAP_DATA/config_ue.sh ]; then
+    . $SNAP_DATA/config_ue.sh
+fi
+
+if [ -r $SNAP_DATA/config_cmd.sh ]; then
+    . $SNAP_DATA/config_cmd.sh
+fi
+
+if [ -r $SNAP_DATA/config_usim.sh ]; then
+    . $SNAP_DATA/config_usim.sh
+fi
+
+
+UE_CONFIG=${UE_CONF_FILE2:-$UE_CONF_FILE}
+
+UE_CMD=${UE_CMD_FILE2:-$UE_CMD_FILE}
+UE_EXEC_ARGS=`cat $UE_CMD`
+
+UE_USIM=${UE_USIM_CONF_FILE2:-$UE_USIM_CONF_FILE}
+UE_USIM_EXEC_ARGS=" -c $UE_USIM -o $CONF_DIR"
+
+case "$1" in
+    "gdb" )
+	echo "Running $SNAP_NAME with the gdb"
+	touch      $SNAP_DATA/.gdb_$SNAP_NAME
+	chmod 777  $SNAP_DATA/.gdb_$SNAP_NAME
+	echo "file $UE_EXEC"        > $SNAP_DATA/.gdb_$SNAP_NAME
+	echo "set args $UE_EXEC_ARGS" >> $SNAP_DATA/.gdb_$SNAP_NAME
+	echo "run"                     >> $SNAP_DATA/.gdb_$SNAP_NAME
+	cat $SNAP_DATA/.gdb_$SNAP_NAME
+	exec $SNAP/gdb --data-directory=$SNAP_DATA  -n -x $SNAP_DATA/.gdb_$SNAP_NAME
+	;;
+    "info" )
+	snap info $SNAP_NAME
+	;; 
+    "start"  )
+	snap start $SNAP_NAME
+	;;
+    "stop" )
+	snap stop $SNAP_NAME
+	;;
+    "restart" )
+	snap restart $SNAP_NAME
+	;;
+    "status" )
+	snap services $SNAP_NAME
+	#systemctl status  snap.$SNAP_NAME.daemon.service
+	;;
+    "journal" )
+	journalctl -u snap.$SNAP_NAME.daemon.service
+	;;
+    "help" )
+	echo "Usage:          sudo  $SNAP_NAME or $SNAP_NAME.[options] args"
+	echo "Note:           root priviliage required"
+	echo "Options:"
+	echo "  start:        start the $SNAP_NAME daemon"
+	echo "  stop:         stop the $SNAP_NAME daemon"
+	echo "  restart:      restart the $SNAP_NAME daemon"
+	echo "  status:       get the $SNAP_NAME status"
+	echo "  journal:      get the $SNAP_NAME logs"
+	echo ""
+	echo "  init:         initialize $SNAP_NAME (after the 1st installation)"
+	echo "  oai-ue:       run $SNAP_NAME manually as a process. Run with option -h for available execution options."
+	echo "  usim-gen:     generate usim data file for single or multi UEs"
+	echo "  usim-print:   print the usim configure data file"
+	echo "  nvram-print:  print the nvram data file"
+	echo "  debug:        debug the $SNAP_NAME with gdb"
+	echo "  conf-set:     set the $SNAP_NAME configuration file"
+	echo "  conf-get:     get the current $SNAP_NAME configuration file"
+	echo "  conf-show:    show the path to the $SNAP_NAME configuration file"
+	echo "  conf-list:    list the $SNAP_NAME configuration files"
+	echo "  cmd-set:      set the $SNAP_NAME configuration file"
+	echo "  cmd-get:      get the current $SNAP_NAME configuration file"
+	echo "  cmd-show:     show the path to the current $SNAP_NAME configuration file"
+	echo "  cmd-list:     list the $SNAP_NAME configuration files"
+	echo "  usim-set:     set the USIM configuration file"
+	echo "  usim-get:     get the current USIM  configuration file"
+	echo "  usim-show:    show the current USIM configuration file"
+	echo "  usim-list:    list the USIM configuration files"
+	echo ""
+	echo "  help:         print this help"
+	;;
+
+    "usim-gen")
+	shift 
+	echo "$USIM_MULTI_EXEC $UE_USIM_EXEC_ARGS $@"
+	#export USIM_DIR="$CONF_DIR"
+	$USIM_MULTI_EXEC $UE_USIM_EXEC_ARGS "$@"
+	;;
+    "usim-print")
+	shift
+	echo "$USIM_EXEC -p $@"
+	export USIM_DIR="$CONF_DIR"
+	$USIM_EXEC -p "$@"
+	;;
+    "nvram-print")
+	shift 
+	echo "$NVRAM_EXEC -p $@"
+	export NVRAM_DIR="$CONF_DIR"
+	$NVRAM_EXEC -p "$@"
+	;;
+    *)
+	echo "$UE_EXEC  $UE_EXEC_ARGS $@"
+	export LD_LIBRARY_PATH=$SNAP/usr/lib/lapack:$LD_LIBRARY_PATH
+	$UE_EXEC  $UE_EXEC_ARGS "$@"
+	;;
+esac
