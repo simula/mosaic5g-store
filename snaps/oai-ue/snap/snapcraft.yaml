@@ -1,0 +1,124 @@
+name: oai-ue
+version: '1.0' 
+summary: OpenAirInterface UE entity 
+description: |
+    OAI UE is the openairinterface-based UE that allows you to connect any commercial eNB. 
+grade: stable
+type: app
+architectures:
+  - amd64
+  - i386
+confinement: devmode
+
+apps:
+  test:
+    command: test all
+  info:
+    command: run info
+  oai-ue:
+    command: run
+  usim-gen:
+    command: run usim-gen
+  usim-print:
+    command: run usim-print
+  nvram-print:
+    command: run nvram-print
+  init:
+    command: init
+  ued:
+    command: run
+    daemon: simple
+    stop-command: run stop
+    stop-timeout: 7s
+  start:
+    command: run start 
+  stop:
+    command: run stop
+  restart:
+    command: run restart
+  status:
+    command: run status
+  journal:
+    command: run journal
+  help:
+    command: run help
+  debug:
+    command: run gdb
+  conf-set:
+    command: conf set
+  conf-get:
+    command: conf echo
+  conf-show:
+    command: conf cat
+  conf-list:
+    command: conf ls
+  cmd-set:
+    command: conf set-cmd
+  cmd-get:
+    command: conf echo-cmd
+  cmd-show:
+    command: conf cat-cmd
+  cmd-list:
+    command: conf ls-cmd
+  usim-set:
+    command: conf set-usim
+  usim-get:
+    command: conf echo-usim
+  usim-show:
+    command: conf cat-usim
+  usim-list:
+    command: conf ls-usim
+hooks:
+  install:
+    plugs: [home, network]
+  configure:
+    plugs: [home, network]
+
+parts:
+  gdb:
+    plugin: nil
+    override-build: |
+      sudo apt install gdb -y
+      mkdir $SNAPCRAFT_PART_INSTALL/share 
+      cp -r /usr/share/gdb $SNAPCRAFT_PART_INSTALL/share
+      cp /usr/bin/gdb* $SNAPCRAFT_PART_INSTALL
+    prime:
+      - gdb*
+      - share/*
+
+  oai-ue:
+    plugin: cmake
+    source: https://gitlab.eurecom.fr/oai/openairinterface5g.git
+    source-branch: develop
+    build-packages: [build-essential, ]
+    override-build: |
+      cd cmake_targets
+      ./build_oai -I -w USRP --uhd-images-dir ../common/uhd_images
+      ./build_oai --UE -w USRP -c -C 
+      cd -   
+      mkdir -p $SNAPCRAFT_PART_INSTALL/ue
+      cp  targets/bin/* $SNAPCRAFT_PART_INSTALL/ue
+      cp -r common/uhd_images $SNAPCRAFT_PART_INSTALL/ 
+      cp targets/PROJECTS/GENERIC-LTE-EPC/CONF/* $SNAPCRAFT_PART_INSTALL/ue
+      cp cmake_targets/snap_environment.sh $SNAPCRAFT_PART_INSTALL/ue
+    stage:
+      - ue/*
+      - usr/lib/*
+      - lib/*
+      - uhd_images/*
+    prime:
+      - ue/*
+      - usr/lib/*
+      - lib/*
+      - uhd_images/*
+    organize:
+      ue/liboai_usrpdevif.so.Rel14: usr/lib/liboai_device.so
+      ue/libcoding.so: usr/lib/libcoding.so
+      ue/libparams_libconfig.so: usr/lib/libparams_libconfig.so
+      #ue/lte-uesoftmodem.Rel14: ue/oai-ue
+      #usr/lib/lapack/liblapack.so.3: usr/lib/liblapack.so.3 
+
+  
+  frontend:
+    plugin: dump
+    source: frontend
