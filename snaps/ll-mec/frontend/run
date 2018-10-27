@@ -34,7 +34,9 @@ case "$1" in
 	cat $SNAP_DATA/.gdb_$SNAP_NAME
 	exec $SNAP/gdb --data-directory=$SNAP_DATA  -n -x $SNAP_DATA/.gdb_$SNAP_NAME
 	;;
-    
+    "info" )
+	snap info $SNAP_NAME
+	;;
     "start"  )
 	snap start $SNAP_NAME
 	;;
@@ -45,7 +47,8 @@ case "$1" in
 	snap restart $SNAP_NAME
 	;;
     "status" )
-	systemctl status  snap.$SNAP_NAME.daemon.service
+	snap services $SNAP_NAME
+	#systemctl status  snap.$SNAP_NAME.daemon.service
 	;;
     "journal" )
 	journalctl -u snap.$SNAP_NAME.daemon.service
@@ -54,6 +57,7 @@ case "$1" in
 	echo "Usage:            sudo $SNAP_NAME or $SNAP_NAME.[options]"
 	echo "Note:             root priviliage required"
 	echo "Options:"
+	echo "  info:           Get the $SNAP_NAME information"
 	echo "  debug:          debug the $SNAP_NAME with gdb"
 	echo "  start:          start the $SNAP_NAME daemon"
 	echo "  stop:           stop the $SNAP_NAME daemon"
