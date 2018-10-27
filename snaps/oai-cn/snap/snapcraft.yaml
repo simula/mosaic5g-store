@@ -13,6 +13,8 @@ confinement: devmode
 apps:
   test-all:
     command : test all
+  info:
+    command: run info
   start-all:
     command: run start-all
   stop-all:

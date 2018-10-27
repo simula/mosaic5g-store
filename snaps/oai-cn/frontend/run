@@ -53,7 +53,8 @@ MYSQL_PW=`cat $HSS_CONFIG | grep  MYSQL_pass  | cut -f2 -d'"'`
 REALM=`cat $HSS_FD_CONFIG | grep  "Realm "  | cut -f2 -d'"'`
 USER_KEY=8BAF473F2F8FD09487CCCBD7097C6862
 SQN=000000000021
-OPC=`cat $HSS_CONFIG | grep  -m1 OPERATOR_key  | cut -f2 -d'"'`
+OP=`cat $HSS_CONFIG | grep  -m1 OPERATOR_key  | cut -f2 -d'"'`
+OPC="8E27B6AF0E692E750F32667A3B14605D"
 
 HSS_EXEC_ARGS=" -c $HSS_CONFIG "
 
@@ -71,37 +72,33 @@ case "$1" in
 	exec $SNAP/gdb --data-directory=$SNAP_DATA  -n -x $SNAP_DATA/.gdb_$2
 	;;
     
-     "start-all")
-
+    "info" )
+	snap info $SNAP_NAME
+	;; 
+    
+    "start-all")
          snap start $SNAP_NAME
-	 
         ;;
-     
+    
       "stop-all")
-
-        snap stop $SNAP_NAME
-	#snap stop $SNAP_NAME.hssd
-        #snap stop $SNAP_NAME.mmed
-        #snap stop $SNAP_NAME.spgwd
-        ;;
-
+          snap stop $SNAP_NAME
+	  #snap stop $SNAP_NAME.hssd
+          #snap stop $SNAP_NAME.mmed
+          #snap stop $SNAP_NAME.spgwd
+          ;;
+      
       "restart-all")
-
           snap restart $SNAP_NAME
+          ;;
+      
+      "status-all")
+	  # systemctl status  --lines 0 snap.$SNAP_NAME.hssd.service  || true
+	  # systemctl status  --lines 0 snap.$SNAP_NAME.mmed.service  || true 
+	  # systemctl status  --lines 0 snap.$SNAP_NAME.spgwd.service || true
+	  snap services $SNAP_NAME
 	  
-        ;;
-
-     "status-all")
-
-	# systemctl status  --lines 0 snap.$SNAP_NAME.hssd.service  || true
-	# systemctl status  --lines 0 snap.$SNAP_NAME.mmed.service  || true 
-	# systemctl status  --lines 0 snap.$SNAP_NAME.spgwd.service || true
-
-	 
-         snap services $SNAP_NAME
-	 
-	 ;;
-
+	  ;;
+      
      "start"  )
 	#[ -z "${2^^}_EXEC" ] || ( snap start $SNAP_NAME.$3 )
 #	echo "snap start $SNAP_NAME.$2"
@@ -294,7 +291,10 @@ EOF
 	 else
 	     mmeidentity_idmmeidentity=`cat $SNAP_USER_DATA/.mmeidentity`
 	 fi
-	 	     
+	 if [ $# -ge 6 ] ; then
+	     OPC=$6
+	 fi
+	 
 	 msisdn=33638050036
 	 imei=35609204079536
 	 rau_tau_timer=120
