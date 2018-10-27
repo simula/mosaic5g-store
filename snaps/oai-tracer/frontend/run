@@ -25,7 +25,7 @@ case "$1" in
 	echo "oai-tracer.info          get the info for this snap"            
 	echo "oai-tracer.init          initialize $SNAP_NAME (after the 1st installation)"
 	echo ""
-	echo "oai-tracer               run $SNAP_NAME manually"
+	echo "oai-tracer               run $SNAP_NAME manually. Run with option -h for available execution options."
 	echo "oai-tracer.conf-get      get the current $SNAP_NAME.[X] configuration file"
 	echo "oai-tracer.conf-list     list the $SNAP_NAME.[x] configuration files"
 	echo "oai-tracer.conf-set      set the $SNAP_NAME.[x] configuration file"
