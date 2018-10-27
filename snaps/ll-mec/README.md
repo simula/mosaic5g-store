@@ -4,7 +4,7 @@ Build with LL-MEC `snapcraft` from the source file.
 
 # Installation
 
-To use on an Ubuntu 16.04 or later system (14.04 should work too but untested),
+To use on an Ubuntu 16.04 or later system ,
 install stable updates and make sure snaps are working:
 ```shell
 snap version
@@ -19,9 +19,9 @@ sudo snap install --devmode ll-mec*.snap
 
 LL-MEC config file operation: set, get, show commands:
 ```shell
-ll-mec.set-conf  llmec_config.jsom
-ll-mec.get-conf
-ll-mec.show-conf
+ll-mec.conf-set  llmec_config.jsom
+ll-mec.conf-get
+ll-mec.conf-show
 ```
 Note that you need to manually configure the parameters within the config file.
 

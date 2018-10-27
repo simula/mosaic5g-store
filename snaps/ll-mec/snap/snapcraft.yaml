@@ -1,5 +1,5 @@
 name: ll-mec
-version: '1.2' 
+version: '1.3' 
 summary: Low Latency MEC platform
 description: |
    LL-MEC is a Low Latency Multi-access Edge Computing platform licensed under Apache License V2.0. It is one of the projects of Mosaic5G inititive.
@@ -14,6 +14,8 @@ confinement: devmode
 apps:
   ll-mec:
     command: run
+  info:
+    command: run info
   init:
     command: init
   daemon:
@@ -35,17 +37,22 @@ apps:
     command: run help
   debug:
     command: run gdb
-  set-conf:
+  conf-set:
     command: conf set
-  get-conf:
+  conf-get:
     command: conf echo
-  show-conf:
+  conf-show:
     command: conf cat
   
+hooks:
+  install:
+    plugs: [home, network]
+  configure:
+    plugs: [home, network]
 parts:
   gdb:
     plugin: nil
-    install: |
+    override-build: |
       sudo apt install gdb -y
       mkdir $SNAPCRAFT_PART_INSTALL/share 
       cp -r /usr/share/gdb $SNAPCRAFT_PART_INSTALL/share
@@ -57,13 +64,13 @@ parts:
   pistache:
     plugin: cmake
     source:  https://github.com/oktal/pistache.git
-    build: |
+    override-build: |
       mkdir -p build
       cd build
       cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ..
       make
       sudo make install
-    install: |
+      cd -
       mkdir -p $SNAPCRAFT_PART_INSTALL/lib
       cp /usr/local/lib/libpistache.a $SNAPCRAFT_PART_INSTALL/lib
     prime:
@@ -77,9 +84,8 @@ parts:
     stage-packages:
       - libssl1.0.0 
       - libevent-2.0-5 
-    build: |
+    override-build: |
       ./build_ll-mec.sh
-    install: |
       #mkdir -p $SNAPCRAFT_PART_INSTALL/bin
       cp ./llmec_config.json $SNAPCRAFT_PART_INSTALL
       cp ./ll-mec $SNAPCRAFT_PART_INSTALL
