@@ -20,13 +20,13 @@ apps:
     command: run help
   oai-tracer:
     command: run 
-  tracer-list:
+  list:
     command: conf ls
-  tracer-conf-set:
+  conf-set:
     command: conf set
-  tracer-conf-get:
+  conf-get:
     command: conf echo
-  tracer-conf-show:
+  conf-show:
     command: conf cat    
 hooks:
   install:
