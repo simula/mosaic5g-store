@@ -97,7 +97,7 @@ case "$1" in
 	cp $CONF_DIR/spgw.conf $SNAP_USER_DATA
 	echo""
 	echo "SPGW is initialized"
-	echo "Now, configure the mme.conf file (mainly the NETWORK_INTERFACES and P-GW sections)"
+	echo "Now, configure the spgw.conf file (mainly the NETWORK_INTERFACES and P-GW sections)"
 	;;
     * )
 	echo "Unknown command: $1"
