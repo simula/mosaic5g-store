@@ -151,7 +151,7 @@ case "$1" in
 	$ENB_EXEC  `echo $ENB_EXEC_ARGS` "$@"
 	;;
      * )
-	echo "unknow run command"
+	echo "unknow run command $1"
 	;;
 
 esac
