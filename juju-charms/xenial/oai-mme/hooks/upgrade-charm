@@ -29,6 +29,6 @@
 # hooks/config-changed to ensure all updates are processed
 
 set -eux
-status-set maintenance "Upgrade-charm  hook"
+status-set maintenance "Upgrade-charm hook"
 stop_mme
 $CHARM_DIR/hooks/install

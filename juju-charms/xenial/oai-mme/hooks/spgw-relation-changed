@@ -12,3 +12,4 @@ echo "$spgw_running" > $CHARM_DIR/.spgw_running
 #echo "$spgw_s11_ipv4/24" > $CHARM_DIR/.spgw_s11_ipv4
 echo "$spgw_s11_ipv4" > $CHARM_DIR/.spgw_s11_ipv4
 ./hooks/config-changed
+

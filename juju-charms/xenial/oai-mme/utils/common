@@ -56,14 +56,17 @@ check_mme_process(){
     fi
 }
 start_mme(){
-    oai-cn.mme-start
+    #oai-cn.mme-start
+    snap start oai-cn.mmed
 }
 
 stop_mme(){
-    oai-cn.mme-stop
+    #oai-cn.mme-stop
+    snap stop oai-cn.mmed
 }
 restart_mme(){
-    oai-cn.mme-restart
+    #oai-cn.mme-restart
+    snap restart oai-cn.mmed
 }
 check_mme_connection(){
 

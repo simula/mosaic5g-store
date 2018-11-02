@@ -35,4 +35,6 @@ juju-log "Removing the OAI-CN MME snap "
 snap remove oai-cn 
 
 juju-log "Cleaning up the mosaic-5g installation directory..."
-rm -rf $mosaic_path
+if [ -d $mosaic_path ] ; then 
+    rm -rf $mosaic_path
+fi 
