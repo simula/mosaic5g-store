@@ -31,7 +31,7 @@
 set -eux
 status-set maintenance "Upgrade-charm  hook"
 stop_hss 
-$CHARM_DIR/hooks/install #Re-run install 
+$CHARM_DIR/hooks/install 
 
 if [ -z "$(relation-ids db)" ]; then
    juju-log "HSS is built, but is waiting for active connection to gather the last info"
