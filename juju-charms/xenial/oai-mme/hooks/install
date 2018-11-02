@@ -87,22 +87,31 @@ configure_hosts(){
 }
 
 build_mme(){
-    cd $mosaic_path
-    if [ "$snap" != "edge" ] || [ "snap" != "beta" ] ; then
-	juju-log "channel $snap is not supported, use edge"
-    else
-	juju-log "Installing and building the HSS from OAI-CN snap"
+    if [ ! -d $mosaic_path ] ; then 
+	mkdir $mosaic_path
     fi
-    ./build_m5g -C
+    
+    if [ "$snap" == "edge" ] || [ "$snap" == "beta" ] ; then
+	juju-log "Installing and building the HSS from OAI-CN snap"
+    else
+	juju-log "channel $snap is not supported, use edge or beta"
+	snap="edge"
+    fi
+
+     if [ -z "$(snap list oai-cn)" ] ; then
+        op="install"
+    else
+        op="refresh"
+    fi
+    sudo snap $op oai-cn --channel=$snap --devmode
     
 }
 
 init_mme(){
-    oai-cn.hss-stop || true
-    oai-cn.mme-stop || true
-    oai-cn.spgw-stop || true
-        
-    oai-cn.mme-init || true 
+    oai-cn.stop-all || true
+
+    # this is performed by the snap itself in configure hook
+    #oai-cn.mme-init || true 
     # just a flag for start script to run the service
     #echo "yes" > $CHARM_DIR/.oaimme_running_flag
 }
@@ -146,7 +155,7 @@ install_packages
 
 configure_network `config-get eth`
 
-clone_repo
+#clone_repo
 
 configure_hosts
 
