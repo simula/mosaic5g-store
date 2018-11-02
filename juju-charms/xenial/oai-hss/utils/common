@@ -72,14 +72,17 @@ check_hss_process(){
 }
 
 start_hss(){
-    oai-cn.hss-start
+    #oai-cn.hss-start
+    snap start oai-cn.hssd
 }
 
 stop_hss(){
-    oai-cn.hss-stop || true 
+    #oai-cn.hss-stop || true 
+    snap stop oai-cn.hssd
 }
 restart_hss(){
-    oai-cn.hss-restart
+    #oai-cn.hss-restart
+    snap restart oai-cn.hssd
 }
 
 check_hss_connection_to_db(){
