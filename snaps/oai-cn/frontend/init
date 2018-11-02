@@ -24,7 +24,7 @@ case "$1" in
 	cp $CONF_DIR/acl.conf $SNAP_USER_DATA
 
 	# this part needs sudo privilage 
-  	service mysql restart
+  	#service mysql restart || true 
 	REALM=`cat $HSS_FD_CONF_FILE | grep  "Realm "  | cut -f2 -d'"'`
 	
 	if [ -z "$(grep -o "`hostname`.$REALM" /etc/hosts)" ]; then
@@ -41,8 +41,8 @@ case "$1" in
 	    sed -i "1i127.0.0.1 `hostname`.$REALM `hostname` mme" /etc/hosts
 	fi
 
-	$SNAP/run import-db
-	$SNAP/run hss-add-mme
+	$SNAP/run import-db || true 
+	$SNAP/run hss-add-mme || true 
 	echo ""
 	echo "HSS is initialized"
 	echo "Now, it is the time to configure the hss_fd.conf"

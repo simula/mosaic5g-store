@@ -8,6 +8,10 @@ else
 fi
 export LD_LIBRARY_PATH
 
+snapctl stop --disable ${SNAP_NAME}.hssd  2>&1  || true
+snapctl stop --disable ${SNAP_NAME}.mmed  2>&1  || true
+snapctl stop --disable ${SNAP_NAME}.spgwd 2>&1  || true
+
 $SNAP/init hss
 
 
@@ -16,9 +20,5 @@ $SNAP/init mme
 
 $SNAP/init spgw
 
-
-snapctl stop --disable ${SNAP_NAME}.hssd  2>&1  || true
-snapctl stop --disable ${SNAP_NAME}.mmed  2>&1  || true
-snapctl stop --disable ${SNAP_NAME}.spgwd 2>&1  || true
 
 
