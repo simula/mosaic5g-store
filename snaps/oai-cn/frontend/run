@@ -59,6 +59,16 @@ OPC="8E27B6AF0E692E750F32667A3B14605D"
 HSS_EXEC_ARGS=" -c $HSS_CONFIG "
 
 
+check_mysql_service(){
+
+    if [ -z "$($HSS_DIR/mysql -u $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER -e status;)" ] ; then
+	echo "HSS DB can not be initialized. Check if the mysql servie is running and that the credentials are correct in hss.conf."
+	return 1
+    else
+	return 0
+    fi
+    
+}
 
 case "$1" in
     "gdb" )
@@ -140,6 +150,7 @@ case "$1" in
 	echo "  hss-dump-users:   dump the current user base"
 	echo "  hss-add-mme:      [MME_FQDN]  Add a MME identified by its FQDN (default is the local FQDN)"
 	echo "  hss-dump-mmeid:   dump the current authenticated mme hosts"
+	echo "  hss-init-db:      init the oai_db to its initial values"
 	echo "  hss-reset-db:     reset the oai_db to its initial values"
 	echo ""
 	echo "  mme-start:        start the $SNAP_NAME.mmed daemon"
@@ -178,7 +189,7 @@ case "$1" in
 	echo "                   oai-cn.hss-add-user 208950000000010; oai-cn.hss-dump-users; "
 	
 	;;
-    mme )
+    "mme" )
 	if [ -n "$LD_LIBRARY_PATH" ]; then
 	    LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$SNAP/lib:$SNAP/usr/lib:$SNAP/usr/local/lib:$SNAP/usr/local/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
 	else
@@ -189,7 +200,7 @@ case "$1" in
 	echo "$MME_EXEC  $MME_EXEC_ARGS"
 	$MME_EXEC  `echo $MME_EXEC_ARGS` "$@"
 	;;
-    spgw )
+    "spgw" )
 	if [ -n "$LD_LIBRARY_PATH" ]; then
 	    LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$SNAP/lib:$SNAP/usr/lib:$SNAP/usr/local/lib:$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
 	else
@@ -201,7 +212,7 @@ case "$1" in
 	$SPGW_EXEC  `echo $SPGW_EXEC_ARGS` "$@"
         ;;
 
-    hss )
+    "hss" )
 	if [ -n "$LD_LIBRARY_PATH" ]; then
 	    LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$SNAP/lib:$SNAP/usr/lib:$SNAP/usr/local/lib:$SNAP/usr/local/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
 	else
@@ -213,16 +224,21 @@ case "$1" in
 	$HSS_EXEC  `echo $HSS_EXEC_ARGS`  "$@" $*
         ;;
     
-    import-db | hss-reset-db )
-	echo "using: MYSQL_SERVER=$MYSQL_SERVER, MYSQL_USER=$MYSQL_USER, MYSQL_PASS=$MYSQL_PW"
+    "import-db" | "hss-reset-db" )
+
+	check_mysql_service
+	if [ $? -gt 0 ] ; then
+	    return 1
+	fi
+	    
+	echo "using: MYSQL_SERVER=$MYSQL_SERVER, MYSQL_USER=$MYSQL_USER, MYSQL_PASS=$MYSQL_PW"    HSS_DB_Q1="DROP DATABASE IF EXISTS oai_db;"
 	
-	HSS_DB_Q1="DROP DATABASE IF EXISTS oai_db;"
 	HSS_DB_Q2="CREATE DATABASE IF NOT EXISTS oai_db;"
 	
 	$HSS_DIR/mysql --force -h $MYSQL_SERVER -u $MYSQL_USER --password=$MYSQL_PW -e "${HSS_DB_Q1}"
 	$HSS_DIR/mysql -h  $MYSQL_SERVER -u  $MYSQL_USER --password=$MYSQL_PW -e "${HSS_DB_Q2}"
 	$HSS_DIR/mysql -h  $MYSQL_SERVER -u  $MYSQL_USER -p$MYSQL_PW oai_db < $HSS_DB 
-
+	
 	if [ $? -gt 0 ] ; then
 	    echo "failed to import HSS DB"
 	    rm -rf $SNAP_DATA/hss_db_import.sh
@@ -230,19 +246,26 @@ case "$1" in
 	    echo "Successfully Imported the OAI HSS DB to mysql"
 	    echo "$HSS_DB_IMPORT" > $SNAP_DATA/hss_db_import.sh
 	fi
+       
 	;;
-     hss-add-mme )
-	 if [ $# -ge 2 ] ; then 
-	     fqdn=$2
-	 else
-	     fqdn=`hostname --fqdn`
-	 fi
-	 if [ -z "$($HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h  $MYSQL_SERVER oai_db -e "select mmehost from mmeidentity where mmehost='$fqdn'";)" ]; then
-
+    "hss-add-mme" )
+	check_mysql_service
+	if [ $? -gt 0 ] ; then
+	    return 1
+	fi
+	    
+	if [ $# -ge 2 ] ; then 
+	    fqdn=$2
+	else
+	    fqdn=`hostname --fqdn`
+	fi
+	
+	if [ -z "$($HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h  $MYSQL_SERVER oai_db -e "select mmehost from mmeidentity where mmehost='$fqdn'";)" ]; then
+	    
 	    #count how many in order to compute the right primary key
 	    
 	    primary_key=`$HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER oai_db -e "select max(idmmeidentity) from mmeidentity;" | egrep [0-9]+`
-
+	    
 	    primary_key=$((primary_key + 1))
 
 	    echo "$primary_key"  > $SNAP_USER_DATA/.mmeidentity
@@ -258,22 +281,37 @@ EOF
 	fi
 	 ;;
 
-     hss-dump-mmeid )
+     "hss-dump-mmeid" )
+	 check_mysql_service
+	 if [ $? -gt 0 ] ; then
+	     return 1
+	 fi
+	
 	 #echo "idmmeidentity | mmehost  | mmerealm | UE-Reachability "
 	 $HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER oai_db << EOF 
 SELECT idmmeidentity,mmehost,mmerealm,\`UE-Reachability\` FROM  mmeidentity;
 EOF
 	 ;;
 
-     hss-dump-users )
+     "hss-dump-users" )
+	 check_mysql_service
+	 if [ $? -gt 0 ] ; then
+	     return 1
+	 fi
+
 	 echo "imsi | mmeidentity_idmmeidentity | hex(users.key) | sqn | hex(rand) | hex(OPc)"
 	 $HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER oai_db << EOF 
 SELECT imsi,mmeidentity_idmmeidentity,hex(users.key),sqn,hex(rand),hex(OPc) FROM users;
 EOF
 
 	 ;;
-     hss-add-user )
+     "hss-add-user" )
+	 check_mysql_service
+	 if [ $? -gt 0 ] ; then
+	     return 1
+	 fi
 
+	 
 	 if [ $# -ge 2 ] ; then 
 	     IMSI=$2
 	 else
@@ -315,7 +353,7 @@ VALUES
 ($IMSI,$msisdn,$imei,NULL,"PURGED",$rau_tau_timer,$ue_ambr_ul,$ue_ambr_dl,$access_restriction,$mme_cap,$mmeidentity_idmmeidentity,unhex("$USER_KEY"),1,$urrp_mme,$SQN,unhex("$rand"),unhex("$OPC"));
 EOF
 	 ;;
-    hss-certificate  )
+    "hss-certificate"  )
 	cd /tmp
 	rm -rf ./demoCA
 	mkdir ./demoCA
@@ -336,7 +374,7 @@ EOF
 	cd -
 	;;
 
-    mme-certificate  )
+    "mme-certificate"  )
 	cd /tmp
 	rm -rf ./demoCA
 	mkdir ./demoCA
@@ -363,3 +401,5 @@ EOF
        ;;
 
 esac
+
+
