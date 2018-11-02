@@ -57,15 +57,18 @@ check_spgw_process(){
 }
 
 start_spgw(){
-    oai-cn.spgw-start
+    #oai-cn.spgw-start
+    snap start oai-cn.spgwd
 }
 
 stop_spgw(){
-    oai-cn.spgw-stop
+    #oai-cn.spgw-stop
+    snap stop oai-cn.spgwd
 }
 
 restart_spgw(){
-    oai-cn.spgw-restart
+    #oai-cn.spgw-restart
+    snap restart oai-cn.spgwd
 }
 check_spgw_connection(){
 
