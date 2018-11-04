@@ -7,7 +7,11 @@ if [ ! -f $CONF_DIR/ue.band7.25PRB.usrp210.conf ] ; then
     cp $SNAP/etc/.ue_emm.nvram0 $CONF_DIR
     cp $SNAP/etc/.ue.nvram0 $CONF_DIR
     cp $SNAP/etc/.usim.nvram0 $CONF_DIR
-    
+fi
+
+if [ ! -f $UE_IP_CONF/makefile ]  ; then
+    cp -r $SNAP/ue_ip $CONF_DIR        
+    cp -r $SNAP/ue_ip $SNAP_USER_DATA        
 fi
 
 # set the conf
@@ -22,8 +26,9 @@ cp $CONF_DIR/ue.band7.25PRB.usrp210.conf $SNAP_USER_DATA
 cp $CONF_DIR/UE_config.xml               $SNAP_USER_DATA
 cp $CONF_DIR/ue_sim_default.conf         $SNAP_USER_DATA
 
-cd $CONF_DIR
-./init_nas_s1 UE
-cd -
+#$SNAP/run oip
 
-echo "OAI_RAN init: done "
+echo "OAI-UE init: done"
+
+
+

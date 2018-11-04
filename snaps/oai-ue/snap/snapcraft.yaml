@@ -1,8 +1,8 @@
 name: oai-ue
-version: '1.0' 
+version: '1.1' 
 summary: OpenAirInterface UE entity 
 description: |
-    OAI UE is the openairinterface-based UE that allows you to connect any commercial eNB. 
+    OAI UE is the openairinterface-based UE that allows you to connect to any commercial eNB. 
 grade: stable
 type: app
 architectures:
@@ -25,6 +25,8 @@ apps:
     command: run nvram-print
   init:
     command: init
+  oip:
+    command: run oip
   ued:
     command: run
     daemon: simple
@@ -73,6 +75,8 @@ hooks:
     plugs: [home, network]
   configure:
     plugs: [home, network]
+  remove:
+    plugs: [home, network]
 
 parts:
   gdb:
@@ -86,6 +90,29 @@ parts:
       - gdb*
       - share/*
 
+  tools:
+    plugin: nil
+    #stage-packages:
+    #  - libgcc-5-dev
+    #  - libgcc1
+    #  - libisl-dev
+    #  - make
+    #  - gcc
+    #  - g++
+    #  - build-essential
+    override-build: |
+      sudo apt install make gcc g++ build-essential -y
+      mkdir $SNAPCRAFT_PART_INSTALL/tools 
+      cp /usr/bin/make $SNAPCRAFT_PART_INSTALL/tools
+      cp /usr/bin/gcc $SNAPCRAFT_PART_INSTALL/tools
+      cp /usr/bin/g++ $SNAPCRAFT_PART_INSTALL/tools
+      cp /usr/bin/cc $SNAPCRAFT_PART_INSTALL/tools
+
+    prime:
+      - tools/
+      - usr/lib/*
+      - lib/*
+      
   oai-ue:
     plugin: cmake
     source: https://gitlab.eurecom.fr/oai/openairinterface5g.git

@@ -21,17 +21,17 @@
 # */
 
 ################################################################################
-# file init_nas_s1
+# file oip
 # brief loads the ue_ip module and sets up IP for the UE
 # you may want to edit it to fit your settings (replace oip0 by oipX for
 # instance)
-# author Florian Kaltenberger
+# author Florian Kaltenberger and Navid Nikaein
 #
 #######################################
 
 LTEIF=oip1
 
-load_module() {
+remove_module() {
   mod_name=${1##*/}
   mod_name=${mod_name%.*}
   if awk "/$mod_name/ {found=1 ;exit} END {if (found!=1) exit 1}" /proc/modules
@@ -39,28 +39,49 @@ load_module() {
       echo "module $mod_name already loaded: I remove it first"
       sudo rmmod $mod_name
   fi
-  echo loading $mod_name
-  sudo insmod $1
+  #echo loading $mod_name
+  #sudo insmod $1
 }
 
-load_module $SNAP/ue/ue_ip.ko
+#remove_module $2 || true 
+rmmod ue_ip 2>&1 || true 
 
-if [ "$1" = "UE" ]; then
-  echo "bring up $LTEIF interface for UE"
-  ifconfig $LTEIF up
-fi
-
-ip route flush cache
-sleep 1
-sysctl -w net.ipv4.conf.all.log_martians=1
-echo "Disabling reverse path filtering"
-sysctl -w net.ipv4.conf.all.rp_filter=0
-ip route flush cache
-
-# Check table 200 lte in /etc/iproute2/rt_tables
-fgrep lte /etc/iproute2/rt_tables  > /dev/null 
-if [ $? -ne 0 ]; then
-    echo "200 lte " >> /etc/iproute2/rt_tables
-fi
-ip rule add fwmark 1 table lte
-ip route add default dev $LTEIF table lte
+case "$1" in
+    
+    "add" )
+	shift
+	insmod $1 > insmod.log  2>&1
+	if [ $? -eq 0 ]; then
+	    rm -f /var/snap/oai-ue/current/ue_ip/ue_ip_$(uname -r | cut -d '.' -f1,2)*
+	    cp $1 /var/snap/oai-ue/current/ue_ip/ue_ip_$(uname -r | cut -d '-' -f1,2).ko
+	    cp $1 /lib/modules/$(uname -r)
+	    depmod -a
+	    echo "modinfo ue_ip: "
+	    modinfo ue_ip 
+	    
+	    echo "bring up $LTEIF interface for UE"
+	    ifconfig $LTEIF up
+	    
+	    ip route flush cache
+	    sleep 1
+	    sysctl -w net.ipv4.conf.all.log_martians=1
+	    echo "Disabling reverse path filtering"
+	    sysctl -w net.ipv4.conf.all.rp_filter=0
+	    ip route flush cache
+	    
+	    # Check table 200 lte in /etc/iproute2/rt_tables
+	    fgrep lte /etc/iproute2/rt_tables  > /dev/null 
+	    if [ $? -ne 0 ]; then
+		echo "200 lte " >> /etc/iproute2/rt_tables
+	    fi
+	    ip rule add fwmark 1 table lte
+	    ip route add default dev $LTEIF table lte
+	else
+	    echo "Failed to insert the module $1 with err code $?"
+	fi
+	
+	;;
+    *)
+	echo "not supported operation"
+esac
+	  
