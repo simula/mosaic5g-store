@@ -88,6 +88,7 @@ case "$1" in
 	echo "  journal:      get the $SNAP_NAME logs"
 	echo ""
 	echo "  init:         initialize $SNAP_NAME (after the 1st installation)"
+	echo "  oip:          bring up the $SNAP_NAME UE IP address"
 	echo "  oai-ue:       run $SNAP_NAME manually as a process. Run with option -h for available execution options."
 	echo "  usim-gen:     generate usim data file for single or multi UEs"
 	echo "  usim-print:   print the usim configure data file"
@@ -109,6 +110,33 @@ case "$1" in
 	echo "  help:         print this help"
 	;;
 
+    "oip" )
+	shift
+	kern=`uname -r`
+	kern_version=`echo $kern | cut -d '.' -f1`
+	kern_major_revision=`echo $kern | cut -d '.' -f2`
+	#echo $kern_version.$kern_major_revision
+	if [ $kern_version -eq 4 ] && [ $kern_major_revision -ge 9 ] && [ $kern_major_revision -le 15 ]; then
+	    if [ -f $UE_IP_DIR/ue_ip_$kern_version.$kern_major_revision*.ko ] ; then  
+		mv  $UE_IP_DIR/ue_ip_$kern_version.$kern_major_revision*.ko  $UE_IP_DIR/ue_ip.ko
+		$UE_IP_DIR/oip add $UE_IP_DIR/ue_ip.ko || true
+ 		
+		if [ -z "$(lsmod | grep ue_ip)" ] ; then 
+		    echo "Can't install the ue_ip kernel module."
+		    echo "Build manually as follows: cd $SNAP_USER_DATA/ue_ip; make; ./oip add ./ue_ip.ko;"
+		else
+		    echo "OAI UE IP interface initialization done"
+		fi
+	    else
+		echo "OAI IP module is not supported for this kernel version $kern"
+		echo "Build manually as follows: cd $SNAP_USER_DATA/ue_ip; make; ./oip add ./ue_ip.ko ;"
+	    fi    
+	else
+	    echo "OAI IP module is not supported for this kernel version $kern"
+	    echo "Build manually as follows: cd $SNAP_USER_DATA/ue_ip; make; ./oip UE ue_ip.ko;"
+		
+	fi
+	;;
     "usim-gen")
 	shift 
 	echo "$USIM_MULTI_EXEC $UE_USIM_EXEC_ARGS $@"

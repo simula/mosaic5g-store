@@ -5,14 +5,16 @@ set -e
 CONF_DIR="$SNAP_DATA"
 
 UE_DIR="$SNAP/ue"
-UE_CONF_FILE="$CONF_DIR/UE_config.xml"
-UE_CMD_FILE="$CONF_DIR/ue.band7.25PRB.usrp210.conf"
-UE_USIM_CONF_FILE="$CONF_DIR/ue_sim_default.conf"
-
-
 UE_EXEC="$UE_DIR/lte-uesoftmodem.Rel14"
 USIM_EXEC="$UE_DIR/usim"
 USIM_MULTI_EXEC="$UE_DIR/conf2uedata"
 NVRAM_EXEC="$UE_DIR/nvram"
 
+UE_CONF_FILE="$CONF_DIR/UE_config.xml"
+UE_CMD_FILE="$CONF_DIR/ue.band7.25PRB.usrp210.conf"
+UE_USIM_CONF_FILE="$CONF_DIR/ue_sim_default.conf"
 
+UE_IP_DIR="$CONF_DIR/ue_ip"
+
+MAKE_DIR="$SNAP"
+MAKE_EXEC="$MAKE_DIR/make"
