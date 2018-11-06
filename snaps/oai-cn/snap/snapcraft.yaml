@@ -110,6 +110,8 @@ apps:
     command: conf ls-hss
   hss-add-user:
     command: run hss-add-user
+  hss-remove-user:
+    command: run hss-remove-user
   hss-dump-users:
     command: run hss-dump-users
   hss-reset-db:

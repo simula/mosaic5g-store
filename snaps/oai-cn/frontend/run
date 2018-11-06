@@ -124,8 +124,8 @@ case "$1" in
 	;;
     "status" )
 #	echo "systemctl status  snap.$SNAP_NAME.$2.service"
-	systemctl status  snap.$SNAP_NAME.$2.service
-	#snap services $SNAP_NAME.$2
+	#systemctl status  snap.$SNAP_NAME.$2.service
+	snap services $SNAP_NAME.$2
 	;;
     "journal" )
 	journalctl -u snap.$SNAP_NAME.$2.service
@@ -150,7 +150,6 @@ case "$1" in
 	echo "  hss-dump-users:   dump the current user base"
 	echo "  hss-add-mme:      [MME_FQDN]  Add a MME identified by its FQDN (default is the local FQDN)"
 	echo "  hss-dump-mmeid:   dump the current authenticated mme hosts"
-	echo "  hss-init-db:      init the oai_db to its initial values"
 	echo "  hss-reset-db:     reset the oai_db to its initial values"
 	echo ""
 	echo "  mme-start:        start the $SNAP_NAME.mmed daemon"
@@ -292,7 +291,7 @@ EOF
 SELECT idmmeidentity,mmehost,mmerealm,\`UE-Reachability\` FROM  mmeidentity;
 EOF
 	 ;;
-
+  
      "hss-dump-users" )
 	 check_mysql_service
 	 if [ $? -gt 0 ] ; then
@@ -303,8 +302,29 @@ EOF
 	 $HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER oai_db << EOF 
 SELECT imsi,mmeidentity_idmmeidentity,hex(users.key),sqn,hex(rand),hex(OPc) FROM users;
 EOF
-
 	 ;;
+
+     "hss-remove-user" )
+	 check_mysql_service
+	 if [ $? -gt 0 ] ; then
+	     return 1
+	 fi
+	 
+	 if [ $# -ge 2 ] ; then 
+	     IMSI=$2
+	 else
+	     echo "IMSI is missing"
+	     exit 0
+  	 fi
+
+	 echo "Removing the user with IMSI=$2 from the oai_db database"
+	 #$HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER oai_db -e "delete from users where imsi='$IMSI';")
+	 $HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER oai_db <<EOF
+DELETE FROM users WHERE imsi=$IMSI;
+ 
+EOF
+	 ;;
+															   										;;
      "hss-add-user" )
 	 check_mysql_service
 	 if [ $? -gt 0 ] ; then
