@@ -87,7 +87,13 @@ case "$1" in
 	;; 
     
     "start-all")
-         snap start $SNAP_NAME
+        #snap start $SNAP_NAME
+	snap start $SNAP_NAME.hssd
+	sleep 3
+	snap start $SNAP_NAME.mmed
+	sleep 3
+	snap start $SNAP_NAME.spgwd
+	
         ;;
     
       "stop-all")
