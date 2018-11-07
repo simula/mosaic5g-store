@@ -1,11 +1,14 @@
 #!/bin/bash
 
-snapcraft login
+# $1 -->  <email>:           The login.ubuntu.com email to login as
+if [ "$1" == "" ] ; then 
+ snapcraft login $1
+fi
 #version=$1
 
 
 declare -a snaps=("oai-cn" "oai-ran" "oai-ue" "oai-tracer" "flexran" "ll-mec")
-declare -a snaps=("oai-cn")
+declare -a snaps=("oai-ue")
 declare -a channels=("edge,beta")
 
 for s in "${channels[@]}"

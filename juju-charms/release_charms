@@ -6,7 +6,7 @@ revision=$1
 #cd -
 #declare -a charms=("flexran-rtc" "oai-enb" "oai-mme" "oai-spgw" "oai-hss" "oai-rru" "oai-rru-snap")
 declare -a charms=("oai-hss" "oai-mme" "oai-spgw")
-declare -a charms=("flexran-rtc")
+#declare -a charms=("oai-hss")
 declare -a series=("xenial")
 
 for s in "${series[@]}"
@@ -20,7 +20,7 @@ do
 	  echo "charm: " $k
 	  url=`charm push . cs:~navid-nikaein/$s/$k | grep url | cut -f2 -d' '`
 	  echo "pushed url: $url"
-	  charm release $url
+	  charm publish $url
 	  charm grant $url everyone
 	  cd ..
 	fi 
