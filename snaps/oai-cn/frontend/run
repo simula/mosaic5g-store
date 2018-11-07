@@ -150,6 +150,7 @@ case "$1" in
 	echo "  hss-dump-users:   dump the current user base"
 	echo "  hss-add-mme:      [MME_FQDN]  Add a MME identified by its FQDN (default is the local FQDN)"
 	echo "  hss-dump-mmeid:   dump the current authenticated mme hosts"
+	echo "  hss-init-db:      init the oai_db to its initial values"
 	echo "  hss-reset-db:     reset the oai_db to its initial values"
 	echo ""
 	echo "  mme-start:        start the $SNAP_NAME.mmed daemon"
@@ -324,7 +325,7 @@ DELETE FROM users WHERE imsi=$IMSI;
  
 EOF
 	 ;;
-															   										;;
+
      "hss-add-user" )
 	 check_mysql_service
 	 if [ $? -gt 0 ] ; then
