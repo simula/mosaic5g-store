@@ -152,11 +152,11 @@ case "$1" in
 	echo "  hss-conf-get:     get the current HSS configuration file (hss.conf)"
 	echo "  hss-conf-show:    show the path to the HSS configuration file (hss.conf)"
 	echo "  hss-conf-list:    list all the HSS configuration files (hss.conf, hss_fd)"
-	echo "  hss-add-user:     IMSI [USER_KEY] [SQN] [MMEIDENTITY]  Add a user to HSS DB (operator key is taken from hss.conf, default user key, sqn, and mmeid will be taken if not provided)"
+	echo "  hss-add-user:     IMSI [USER_KEY] [SQN] [MMEIDENTITY] [OPC]  Add a user to HSS DB (operator key is taken from hss.conf, default user key, sqn, and mmeid will be taken if not provided)"
+	echo "  hss-remove-user:  IMSI Remove a user identified by its IMSI from HSS DB"
 	echo "  hss-dump-users:   dump the current user base"
 	echo "  hss-add-mme:      [MME_FQDN]  Add a MME identified by its FQDN (default is the local FQDN)"
 	echo "  hss-dump-mmeid:   dump the current authenticated mme hosts"
-	echo "  hss-init-db:      init the oai_db to its initial values"
 	echo "  hss-reset-db:     reset the oai_db to its initial values"
 	echo ""
 	echo "  mme-start:        start the $SNAP_NAME.mmed daemon"
@@ -254,6 +254,29 @@ case "$1" in
 	fi
        
 	;;
+
+    "hss-remove-mme" )
+	 check_mysql_service
+	 if [ $? -gt 0 ] ; then
+	     return 1
+	 fi
+	 
+	 if [ $# -ge 2 ] ; then 
+	     mmeid=$2
+	 else
+	     echo "MMEID is missing"
+	     exit 0
+  fi
+
+	 echo "Removing the user with IMSI=$2 from the oai_db database"
+	 #$HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER oai_db -e "delete from users where imsi='$IMSI';")
+	 $HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER oai_db <<EOF
+DELETE FROM mmeidentity WHERE idmmeidentity=$mmeid;
+ 
+EOF
+	 ;;
+
+
     "hss-add-mme" )
 	check_mysql_service
 	if [ $? -gt 0 ] ; then
@@ -354,8 +377,12 @@ EOF
 	 if [ $# -ge 5 ] ; then
 	     mmeidentity_idmmeidentity=$5
 	 else
-	     mmeidentity_idmmeidentity=`cat $SNAP_USER_DATA/.mmeidentity`
-	 fi
+	   if [ -f $SNAP_USER_DATA/.mmeidentity ] ; then  
+        mmeidentity_idmmeidentity=`cat $SNAP_USER_DATA/.mmeidentity`
+	   else
+        mmeidentity_idmmeidentity=`$HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER oai_db -e "select max(idmmeidentity) from mmeidentity;" | egrep [0-9]+`
+     fi
+   fi
 	 if [ $# -ge 6 ] ; then
 	     OPC=$6
 	 fi

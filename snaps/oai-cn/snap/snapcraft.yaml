@@ -116,6 +116,8 @@ apps:
     command: run hss-dump-users
   hss-reset-db:
     command: run hss-reset-db
+  hss-remove-mme:
+    command: run hss-remove-mme
   hss-add-mme:
     command: run hss-add-mme
   hss-dump-mmeid:
