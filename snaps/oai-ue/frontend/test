@@ -8,19 +8,28 @@ waiting_time1=1
 waiting_time2=2
 
 case "$1" in
-    "ue" |  "all" )
+     "all" )
 	
-	$SNAP/run status
+	$SNAP/run status  ued
 	sleep $waiting_time1 
-	$SNAP/run start
+	$SNAP/run start ued 
 	sleep $waiting_time1
-	$SNAP/run status
+	$SNAP/run status ued
 	sleep $waiting_time1
-	$SNAP/run stop
+	$SNAP/run stop ued
 	sleep $waiting_time1
-	$SNAP/run status
+	$SNAP/run status ued 
 	sleep $waiting_time1
 
+	sleep $waiting_time
+	$SNAP/run start uesimd
+	sleep $waiting_time
+	$SNAP/run status uesimd
+	sleep $waiting_time
+	$SNAP/run stop uesimd
+	sleep $waiting_time
+	$SNAP/run status uesimd
+		
 	echo "get usim info"
 	$SNAP/run  usim-print
 	sleep $waiting_time2 
@@ -38,7 +47,8 @@ case "$1" in
 	sleep $waiting_time2
 	
 	
-
+	"ue" | "uesim" )
+		   
 	;;
 	
     * )

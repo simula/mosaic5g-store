@@ -3,7 +3,7 @@
 . $SNAP/common
 
 case "$1" in
-    "set" )
+    "set-ue" )
 	CONFIG_FILE=$2
 	if [ -f $(dirname $(readlink -f $0))/$CONFIG_FILE ]; then
 	    CONFIG_FILE=$(dirname $(readlink -f $0))/$CONFIG_FILE
@@ -30,7 +30,7 @@ case "$1" in
 	echo "UE_CONF_FILE2=$CONFIG_FILE"  > $SNAP_USER_DATA/config_ue.sh
 	;;
     
-    "set-cmd" )
+    "set-ue-cmd" )
 	CONFIG_FILE=$2
 	if [ -f $(dirname $(readlink -f $0))/$CONFIG_FILE ]; then
 	    CONFIG_FILE=$(dirname $(readlink -f $0))/$CONFIG_FILE
@@ -53,11 +53,38 @@ case "$1" in
 		CONFIG_FILE=$UE_CMD_FILE
 	    fi
 	fi
-	echo "UE_CMD_FILE2=$CONFIG_FILE" > $SNAP_DATA/config_cmd.sh
-	echo "UE_CMD_FILE2=$CONFIG_FILE"  > $SNAP_USER_DATA/config_cmd.sh
+	echo "UE_CMD_FILE2=$CONFIG_FILE" > $SNAP_DATA/config_ue_cmd.sh
+	echo "UE_CMD_FILE2=$CONFIG_FILE"  > $SNAP_USER_DATA/config_ue_cmd.sh
 	;;
 
-    "set-usim" )
+  "set-uesim-cmd" )
+	CONFIG_FILE=$2
+	if [ -f $(dirname $(readlink -f $0))/$CONFIG_FILE ]; then
+	    CONFIG_FILE=$(dirname $(readlink -f $0))/$CONFIG_FILE
+	    echo "Setting the default config file to: $CONFIG_FILE"
+	else
+	    # may be absolute path 
+	    if [ -f "$CONFIG_FILE" ]; then
+		# $CONFIG_FILE already exist in the $SNAP_DATA
+		if [ -f $SNAP_DATA/$(basename $CONFIG_FILE) ] ; then 
+		    echo "Reset the config file to: $SNAP_DATA/$(basename $CONFIG_FILE)"
+		else 
+		    #echo "$SNAP_DATA/$CONFIG_FILE"
+		    cp $CONFIG_FILE $SNAP_DATA/
+		    echo "Adding and setting a new config file : $SNAP_DATA/$(basename $CONFIG_FILE)"
+		fi
+		CONFIG_FILE=$SNAP_DATA/$(basename $CONFIG_FILE)
+	    else
+		echo "Config file <$CONFIG_FILE> not found in $SNAP/current directory"
+		echo "Reset to default config file: $UESIM_CMD_FILE"
+		CONFIG_FILE=$UESIM_CMD_FILE
+	    fi
+	fi
+	echo "UESIM_CMD_FILE2=$CONFIG_FILE" >  $SNAP_DATA/config_uesim_cmd.sh
+	echo "UESIM_CMD_FILE2=$CONFIG_FILE"  > $SNAP_USER_DATA/config_uesim_cmd.sh
+	;;
+
+ "set-usim" )
 	CONFIG_FILE=$2
 	if [ -f $(dirname $(readlink -f $0))/$CONFIG_FILE ]; then
 	    CONFIG_FILE=$(dirname $(readlink -f $0))/$CONFIG_FILE
@@ -84,7 +111,34 @@ case "$1" in
 	echo "UE_USIM_CONF_FILE2=$CONFIG_FILE"  > $SNAP_USER_DATA/config_usim.sh
 	;;
 
-    "ls" )
+    "set-uesim" )
+	CONFIG_FILE=$2
+	if [ -f $(dirname $(readlink -f $0))/$CONFIG_FILE ]; then
+	    CONFIG_FILE=$(dirname $(readlink -f $0))/$CONFIG_FILE
+	    echo "Setting the default config file to: $CONFIG_FILE"
+	else
+	    # may be absolute path 
+	    if [ -f "$CONFIG_FILE" ]; then
+		# $CONFIG_FILE already exist in the $SNAP_DATA
+		if [ -f $SNAP_DATA/$(basename $CONFIG_FILE) ] ; then 
+		    echo "Reset the config file to: $SNAP_DATA/$(basename $CONFIG_FILE)"
+		else 
+		    #echo "$SNAP_DATA/$CONFIG_FILE"
+		    cp $CONFIG_FILE $SNAP_DATA/
+		    echo "Adding and setting a new config file : $SNAP_DATA/$(basename $CONFIG_FILE)"
+		fi
+		CONFIG_FILE=$SNAP_DATA/$(basename $CONFIG_FILE)
+	    else
+		echo "Config file <$CONFIG_FILE> not found in $SNAP/current directory"
+		echo "Reset to default config file: $USIM_CONF_FILE"
+		CONFIG_FILE=$UESIM_CONF_FILE
+	    fi
+	fi
+	echo "UESIM_CONF_FILE2=$CONFIG_FILE" > $SNAP_DATA/config_uesim.sh
+	echo "UESIM_CONF_FILE2=$CONFIG_FILE"  > $SNAP_USER_DATA/config_uesim.sh
+	;;
+
+    "ls-ue" )
 	if [ -r $SNAP_DATA/config_ue.sh ]; then
 	    . $SNAP_DATA/config_ue.sh
 	fi
@@ -94,7 +148,7 @@ case "$1" in
 	
 	;;
     
-    "echo" | "cat" )
+    "echo-ue" | "cat-ue" )
 	
 	if [ -r $SNAP_DATA/config_ue.sh ]; then
 	    . $SNAP_DATA/config_ue.sh
@@ -103,28 +157,49 @@ case "$1" in
 	# default config file is (unless set in above config)
 	UE_CONFIG=${UE_CONF_FILE2:-$UE_CONF_FILE}
 	# echo (get), cat (show)
-	$1 $UE_CONFIG
+	`echo $1 | cut -d"-" -f1` $UE_CONFIG
 	;;
 
-    "ls-cmd" )
-	if [ -r $SNAP_DATA/config_cmd.sh ]; then
-	    . $SNAP_DATA/config_cmd.sh
+    "ls-ue-cmd" )
+	if [ -r $SNAP_DATA/config_ue_cmd.sh ]; then
+	    . $SNAP_DATA/config_ue_cmd.sh
 	fi
 	UE_CMD=${UE_CMD_FILE2:-$UE_CMD_FILE}
 
 	ls $(dirname $UE_CMD)/ue*conf
 	;;
 
-    "echo-cmd" | "cat-cmd" )
+    "echo-ue-cmd" | "cat-ue-cmd" )
 	
-	if [ -r $SNAP_DATA/config_cmd.sh ]; then
-	    . $SNAP_DATA/config_cmd.sh
+	if [ -r $SNAP_DATA/config_ue_cmd.sh ]; then
+	    . $SNAP_DATA/config_ue_cmd.sh
 	fi
 	
 	# default config file is (unless set in above config)
 	UE_CMD=${UE_CMD_FILE2:-$UE_CMD_FILE}
 	# echo (get), cat (show)
         `echo $1 | cut -d"-" -f1` $UE_CMD
+	;;
+
+    "ls-uesim-cmd" )
+	if [ -r $SNAP_DATA/config_uesim_cmd.sh ]; then
+	    . $SNAP_DATA/config_uesim_cmd.sh
+	fi
+	UESIM_CMD=${UESIM_CMD_FILE2:-$UESIM_CMD_FILE}
+
+	ls $(dirname $UESIM_CMD)/uesim*conf
+	;;
+
+    "echo-uesim-cmd" | "cat-uesim-cmd" )
+	
+	if [ -r $SNAP_DATA/config_uesim_cmd.sh ]; then
+	    . $SNAP_DATA/config_uesim_cmd.sh
+	fi
+	
+	# default config file is (unless set in above config)
+	UESIM_CMD=${UESIM_CMD_FILE2:-$UESIM_CMD_FILE}
+	# echo (get), cat (show)
+        `echo $1 | cut -d"-" -f1` $UESIM_CMD
 	;;
 
     "ls-usim" )
@@ -146,6 +221,28 @@ case "$1" in
 	UE_USIM=${UE_USIM_CONF_FILE2:-$UE_USIM_CONF_FILE}
 	# echo (get), cat (show)
         `echo $1 | cut -d"-" -f1` $UE_USIM
+	;;
+
+     "ls-uesim" )
+	if [ -r $SNAP_DATA/config_uesim.sh ]; then
+	    . $SNAP_DATA/config_uesim.sh
+	fi
+	
+	# default config file is (unless set in above config)
+	UESIM_CONFIG=${UESIM_CONF_FILE2:-$UESIM_CONF_FILE}
+	ls $(dirname $UESIM_CONFIG)/rru.oaisim*.conf
+	;;
+
+     "echo-uesim" | "cat-uesim" )
+	
+	if [ -r $SNAP_DATA/config_uesim.sh ]; then
+	    . $SNAP_DATA/config_uesim.sh
+	fi
+	
+	# default config file is (unless set in above config)
+	UESIM_CONFIG=${UESIM_CONF_FILE2:-$UESIM_CONF_FILE}
+	# echo (get), cat (show)
+        `echo $1 | cut -d"-" -f1` $UESIM_CONFIG
 	;;
     *)
 	echo "unknown command $1"
