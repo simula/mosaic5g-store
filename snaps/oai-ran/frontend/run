@@ -18,11 +18,7 @@ if [ ! -e $RRU_EXEC ]; then
     echo "Cannot find $RRU_EXEC executable"
     exit 127
 fi		   	   
-
-if [ ! -e $UESIM_EXEC ]; then
-    echo "Cannot find $UESIM_EXEC executable"
-    exit 127
-fi		   	   
+   	   
 
 
 if [ -r $SNAP_DATA/config_enb.sh ]; then
@@ -37,9 +33,6 @@ if [ -r $SNAP_DATA/config_rru.sh ]; then
     . $SNAP_DATA/config_rru.sh
 fi
 
-if [ -r $SNAP_DATA/config_uesim.sh ]; then
-    . $SNAP_DATA/config_uesim.sh
-fi
 
 ENB_CONFIG=${ENB_CONF_FILE2:-$ENB_CONF_FILE}
 ENB_EXEC_ARGS=" -O $ENB_CONFIG"
@@ -50,8 +43,6 @@ CUDU_EXEC_ARGS=" -O $CUDU_CONFIG"
 RRU_CONFIG=${RRU_CONF_FILE2:-$RRU_CONF_FILE}
 RRU_EXEC_ARGS=" -O $RRU_CONFIG"
 
-UESIM_CONFIG=${UESIM_CONF_FILE2:-$UESIM_CONF_FILE}
-UESIM_EXEC_ARGS=" -O $UESIM_CONFIG"
 
 case "$1" in
     "gdb-enb" )
@@ -103,7 +94,7 @@ case "$1" in
 	;;
     "help" )
 	echo "Usage:                    sudo $SNAP_NAME.[x] args"
-	echo "                          App [x] is enb, cudu, rru, and uesim"
+	echo "                          App [x] is enb, cudu, and rru"
 	echo "Note:                     root priviliage required"
 	echo "Options:"
 	echo "oai-ran.info              get the info for this snap"            
@@ -139,12 +130,6 @@ case "$1" in
 	$RRU_EXEC  `echo $RRU_EXEC_ARGS` "$@"
 	;;
     
-    "uesim")
-	shift 
-	echo "$UESIM_EXEC  $UESIM_EXEC_ARGS  --siml1 1 -r 50  $@"
-	$UESIM_EXEC  `echo $UESIM_EXEC_ARGS` --siml1 1 -r 50 "$@"
-	
-	;;
     "enb")
 	shift 
 	echo "$ENB_EXEC  $ENB_EXEC_ARGS $@"

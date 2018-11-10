@@ -2,7 +2,7 @@ name: oai-ran
 version: '1.3' 
 summary: OpenAirInterface RAN entity with FlexRAN Agent/Runtime 
 description: |
-    OAI RAN is the openairinterface-based RAN with different deployment flavor (eNB,C-RAN, CU,DU, UESIM) with FlexRAN agent/runtime allowing to connect any commercial UEs with the band of your choice. It is one of the projects of Mosaic5G inititive.
+    OAI RAN is the openairinterface-based RAN with different deployment flavor (eNB,C-RAN, CU,DU, RRU) with FlexRAN agent/runtime allowing to connect any commercial UEs with the band of your choice. It is one of the projects of Mosaic5G inititive.
 grade: stable
 type: app
 architectures:
@@ -25,8 +25,6 @@ apps:
     command: run cudu
   rru:
     command: run rru
-  uesim:
-    command: run uesim
   init:
     command: init
   enbd:
@@ -43,11 +41,6 @@ apps:
     command: run rru
     daemon: simple
     stop-command: run stop rrud
-    stop-timeout: 7s
-  uesimd:
-    command: run uesim
-    daemon: simple
-    stop-command: run stop uesimd
     stop-timeout: 7s
   enb-start:
     command: run start enbd
@@ -79,16 +72,6 @@ apps:
     command: run status rrud
   rru-journal:
     command: run journal rrud
-  uesim-start:
-    command: run start uesimd
-  uesim-stop:
-    command: run stop uesimd
-  uesim-restart:
-    command: run restart uesimd 
-  uesim-status:
-    command: run status uesimd
-  uesim-journal:
-    command: run journal uesimd
   help:
     command: run help
   enb-debug:
@@ -119,14 +102,6 @@ apps:
     command: conf cat-rru
   rru-conf-list:
     command: conf ls-rru
-  uesim-conf-set:
-    command: conf set-uesim
-  uesim-conf-get:
-    command: conf echo-uesim
-  uesim-conf-show:
-    command: conf cat-uesim
-  uesim-conf-list:
-    command: conf ls-uesim
 hooks:
   install:
     plugs: [home, network]
@@ -203,31 +178,6 @@ parts:
     organize:
       cudu/liboai_eth_transpro.so.Rel14: usr/lib/liboai_transpro.so
       cudu/lte-softmodem.Rel14: cudu/oai-ran
-
-  uesim:
-    plugin: cmake
-    source: https://gitlab.eurecom.fr/oai/openairinterface5g.git
-    source-branch: develop
-    build-packages: [build-essential, ]
-    override-build: |
-      cd cmake_targets
-      ./build_oai -I 
-      ./build_oai --eNB -t ETHERNET -c -C 
-      cd -
-      mkdir -p $SNAPCRAFT_PART_INSTALL/uesim
-      cp  targets/bin/* $SNAPCRAFT_PART_INSTALL/uesim
-      cp targets/PROJECTS/GENERIC-LTE-EPC/CONF/* $SNAPCRAFT_PART_INSTALL/uesim
-      cp cmake_targets/snap_environment.sh $SNAPCRAFT_PART_INSTALL/uesim
-    stage:
-      - uesim/*
-      - usr/lib/*
-      - lib/*
-    prime:
-      - uesim/*
-      - usr/lib/*
-      - lib/*
-    organize:
-      uesim/lte-softmodem.Rel14: uesim/oai-ran
 
   frontend:
     plugin: dump

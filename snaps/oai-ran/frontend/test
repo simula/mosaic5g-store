@@ -20,8 +20,7 @@ case "$1" in
 	$SNAP/run start enbd
 	sleep $waiting_time 
 	$SNAP/run status-all
-	sleep $waiting_time
-	$SNAP/run start uesimd
+
 	sleep $waiting_time 
 	$SNAP/run status-all
 	sleep $waiting_time 
@@ -35,7 +34,7 @@ case "$1" in
 	
 	;;
 
-    "enbd" | "cudud" | "rrud" | "uesim" )
+    "enbd" | "cudud" | "rrud" )
 	$SNAP/run status $1 
 	sleep $waiting_time 
 	$SNAP/run start $1

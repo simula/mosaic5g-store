@@ -20,11 +20,9 @@ $SNAP/conf get-cudu
 $SNAP/conf set-rru $CONF_DIR/rru.conf
 $SNAP/conf get-rru 
 
-$SNAP/conf set-uesim $CONF_DIR/rru.oaisim.conf
-$SNAP/conf get-uesim 
 
 # a copy all the config files for the user
 cp $CONF_DIR/* $SNAP_USER_DATA
 
 echo "OAI_RAN init: done "
-echo "Now, configure the enb, cudu, rru, or uesim conf file (mainly the NETWORK_INTERFACES)"
+echo "Now, configure the enb, cudu, or rru conf file (mainly the NETWORK_INTERFACES)"
