@@ -101,7 +101,7 @@ case "$1" in
 	
 	# default config file is (unless set in above config)
 	SPGW_CONFIG=${SPGW_CONF_FILE2:-$SPGW_CONF_FILE}
-	ls $(dirname $SPGW_CONF)/spgw*.conf
+	ls $(dirname $SPGW_CONFIG)/spgw*.conf
 	;;
      "ls-hss" )
         if [ -r $SNAP_DATA/config_hss.sh ]; then
