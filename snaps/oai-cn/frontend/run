@@ -1,8 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 
 . $SNAP/common
-
-
 
 if [ ! -e $MME_EXEC ]; then
     echo "Cannot find $MME_EXEC executable"
@@ -72,69 +70,93 @@ check_mysql_service(){
 
 case "$1" in
     "gdb" )
+	if [ -z "$2" ] ; then
+	    echo "Name of the service to debug is missing. Possible values are : mme, hss, and spgw"
+	    exit 0
+	fi
+	if [ "$2" != "mme" -a "$2" != "spgw" -a "$2" != "hss" ] ; then
+	     echo "Unknown servie name $2. Possible values are : mme, hss, and spgw"
+	     exit 0
+	fi
 	echo "Running $2 with the gdb"
 	touch      $SNAP_DATA/.gdb_$2
 	chmod 777  $SNAP_DATA/.gdb_$2
-	echo "file ${2^^}_EXEC"        > $SNAP_DATA/.gdb_$2
-	echo "set args ${2^^}_EXEC_ARGS" >> $SNAP_DATA/.gdb_$2
-	echo "run"                     >> $SNAP_DATA/.gdb_$2
+	app=${2^^}"_EXEC"   # refer to http://mywiki.wooledge.org/BashFAQ/006
+	app_args=${2^^}"_EXEC_ARGS"
+	echo "file ${!app}"              > $SNAP_DATA/.gdb_$2
+	echo "set args  ${!app_args}"    >> $SNAP_DATA/.gdb_$2
+	echo "run"                       >> $SNAP_DATA/.gdb_$2
 	cat $SNAP_DATA/.gdb_$2
 	exec $SNAP/gdb --data-directory=$SNAP_DATA  -n -x $SNAP_DATA/.gdb_$2
 	;;
-    
     "info" )
-	snap info $SNAP_NAME
+	shift 
+	snap info $SNAP_NAME "$@"
 	;; 
     
     "start-all")
+	shift
         #snap start $SNAP_NAME
-	snap start $SNAP_NAME.hssd
+	snap start $SNAP_NAME.hssd "$@"
 	sleep 3
-	snap start $SNAP_NAME.mmed
+	snap start $SNAP_NAME.mmed "$@"
 	sleep 3
-	snap start $SNAP_NAME.spgwd
+	snap start $SNAP_NAME.spgwd "$@"
 	
         ;;
     
-      "stop-all")
-          snap stop $SNAP_NAME
-	  #snap stop $SNAP_NAME.hssd
-          #snap stop $SNAP_NAME.mmed
-          #snap stop $SNAP_NAME.spgwd
-          ;;
+    "stop-all")
+	shift 
+        snap stop $SNAP_NAME "$@"
+	#snap stop $SNAP_NAME.hssd
+        #snap stop $SNAP_NAME.mmed
+        #snap stop $SNAP_NAME.spgwd
+        ;;
+    
+    "restart-all")
+	shift 
+	snap restart $SNAP_NAME "$@"
+        ;;
+    
+    "status-all")
+	shift 
+	# systemctl status  --lines 0 snap.$SNAP_NAME.hssd.service  || true
+	# systemctl status  --lines 0 snap.$SNAP_NAME.mmed.service  || true 
+	# systemctl status  --lines 0 snap.$SNAP_NAME.spgwd.service || true
+	snap services $SNAP_NAME  "$@"
+	
+	;;
       
-      "restart-all")
-          snap restart $SNAP_NAME
-          ;;
-      
-      "status-all")
-	  # systemctl status  --lines 0 snap.$SNAP_NAME.hssd.service  || true
-	  # systemctl status  --lines 0 snap.$SNAP_NAME.mmed.service  || true 
-	  # systemctl status  --lines 0 snap.$SNAP_NAME.spgwd.service || true
-	  snap services $SNAP_NAME
-	  
-	  ;;
-      
-     "start"  )
+    "start"  )
 	#[ -z "${2^^}_EXEC" ] || ( snap start $SNAP_NAME.$3 )
-#	echo "snap start $SNAP_NAME.$2"
-	snap start $SNAP_NAME.$2
+	#	echo "snap start $SNAP_NAME.$2"
+	daemon=$2
+	shift 2
+	snap start $SNAP_NAME.$daemon  "$@"
 	
 	;;
     "stop" )
-#	echo "snap stop $SNAP_NAME.$2"
-	snap stop $SNAP_NAME.$2
+	#	echo "snap stop $SNAP_NAME.$2"
+	daemon=$2
+	shift 2
+	snap stop $SNAP_NAME.$daemon  "$@"
 	;;
     "restart" )
-	snap restart $SNAP_NAME.$2
+	daemon=$2
+	shift 2
+	snap restart $SNAP_NAME.$daemon  "$@"
 	;;
     "status" )
 #	echo "systemctl status  snap.$SNAP_NAME.$2.service"
 	#systemctl status  snap.$SNAP_NAME.$2.service
-	snap services $SNAP_NAME.$2
+	daemon=$2
+	shift 2
+	snap services $SNAP_NAME.$daemon "$@" 
 	;;
     "journal" )
-	journalctl -u snap.$SNAP_NAME.$2.service
+	daemon=$2
+	shift 2
+	journalctl -u snap.$SNAP_NAME.$daemon.service "$@"
 	;;
     "help" )
 	echo "Usage:   sudo  $SNAP_NAME.[options] args"
@@ -186,9 +208,10 @@ case "$1" in
 	echo "  spgw-conf-show:  show the path to the SPGW configuration file (spgw.conf)"
 	echo "  spgw-conf-list:  list all the SPGW configuration files (spgw.conf)"
 	echo ""
-	echo "  status           status of all services"          
-	echo "  stop             stop all services"          
-	echo "  start            start of all services"          
+	echo "  status-al        status of all services"          
+	echo "  stop-all         stop all services"          
+	echo "  start-all        start of all services"          
+	echo "  debug            [x] debug service x, where x is mme, hss, or spgw"          
 	echo ""
 	echo "  help:            print this help"
 	echo "  Example:         sudo oai-cn.hss-init; sudo oai-cn.hss;"
@@ -202,7 +225,7 @@ case "$1" in
 	    LD_LIBRARY_PATH=$SNAP/lib:$SNAP/usr/lib:$SNAP/usr/local/lib:$SNAP/usr/local/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu
 	fi
 	export LD_LIBRARY_PATH
-	
+	shift 
 	echo "$MME_EXEC  $MME_EXEC_ARGS"
 	$MME_EXEC  `echo $MME_EXEC_ARGS` "$@"
 	;;
@@ -213,7 +236,7 @@ case "$1" in
 	    LD_LIBRARY_PATH=$SNAP/lib:$SNAP/usr/lib:$SNAP/usr/local/lib:$SNAP/usr/local/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu
 	fi
 	export LD_LIBRARY_PATH
-	
+	shift 
         echo "$SPGW_EXEC  $SPGW_EXEC_ARGS" 
 	$SPGW_EXEC  `echo $SPGW_EXEC_ARGS` "$@"
         ;;
@@ -225,7 +248,7 @@ case "$1" in
 	    LD_LIBRARY_PATH=$SNAP/lib:$SNAP/usr/lib:$SNAP/usr/local/lib:$SNAP/usr/local/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu
 	fi
 	export LD_LIBRARY_PATH
-	
+	shift
         echo "$HSS_EXEC  $HSS_EXEC_ARGS"
 	$HSS_EXEC  `echo $HSS_EXEC_ARGS`  "$@" $*
         ;;
