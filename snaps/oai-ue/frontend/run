@@ -76,23 +76,34 @@ case "$1" in
 	exec $SNAP/gdb --data-directory=$SNAP_DATA  -n -x $SNAP_DATA/.gdb_$SNAP_NAME
 	;;
     "info" )
-	snap info $SNAP_NAME
+	shift
+	snap info $SNAP_NAME "$@"
 	;; 
     "start"  )
-	snap start $SNAP_NAME.$2
+	daemon=$2
+	shift 2
+	snap start $SNAP_NAME.$daemon  "$@"
 	;;
     "stop" )
-	snap stop $SNAP_NAME.$2
+	daemon=$2
+	shift 2
+	snap stop $SNAP_NAME.$daemon  "$@"
 	;;
     "restart" )
-	snap restart $SNAP_NAME.$2
+	daemon=$2
+	shift 2
+	snap restart $SNAP_NAME.$daemon  "$@"
 	;;
     "status" )
-	snap services $SNAP_NAME.$2
+	daemon=$2
+	shift 2
+	snap services $SNAP_NAME.$daemon "$@"
 	#systemctl status  snap.$SNAP_NAME.daemon.service
 	;;
     "journal" )
-	journalctl -u snap.$SNAP_NAME.daemon.service
+	daemon=$2
+	shift 2
+	journalctl -u snap.$SNAP_NAME.$daemon.service "$@"
 	;;
     "help" )
 	echo "Usage:                sudo  $SNAP_NAME or $SNAP_NAME.[x] args"
@@ -187,7 +198,7 @@ case "$1" in
 	$UESIM_EXEC  $UESIM_EXEC_ARGS "$@"
 	;;
     "ue" )
-	echo "$UE_EXEC  $UE_EXEC_ARGS $@"
+	shift
 	export LD_LIBRARY_PATH=$SNAP/usr/lib/lapack:$LD_LIBRARY_PATH
 	export USIM_DIR="$CONF_DIR"
 	export NVRAM_DIR="$CONF_DIR"
@@ -195,11 +206,11 @@ case "$1" in
 	#ln -s $CONF_DIR/.ue_emm.nvram0  .ue_emm.nvram0
 	#ln -s $CONF_DIR/.ue.nvram0      .ue.nvram0
 	#ln -s $CONF_DIR/.usim.nvram0    .usim.nvram0
-	
+	echo "$UE_EXEC  $UE_EXEC_ARGS $@"
 	$UE_EXEC  $UE_EXEC_ARGS "$@"
 	;;
 
     * )
-	echo "unknow run command $1"
+	echo "unknow run command $@"
 	;;
 esac

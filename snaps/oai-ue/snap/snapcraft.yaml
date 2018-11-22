@@ -15,7 +15,7 @@ apps:
     command: test all
   info:
     command: run info
-  oai-ue:
+  ue:
     command: run ue
   uesim:
     command: run uesim

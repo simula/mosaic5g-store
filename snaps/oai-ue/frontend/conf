@@ -166,7 +166,7 @@ case "$1" in
 	fi
 	UE_CMD=${UE_CMD_FILE2:-$UE_CMD_FILE}
 
-	ls $(dirname $UE_CMD)/ue*conf
+	ls $(dirname $UE_CMD)/ue.*cmd
 	;;
 
     "echo-ue-cmd" | "cat-ue-cmd" )
@@ -187,7 +187,7 @@ case "$1" in
 	fi
 	UESIM_CMD=${UESIM_CMD_FILE2:-$UESIM_CMD_FILE}
 
-	ls $(dirname $UESIM_CMD)/uesim*conf
+	ls $(dirname $UESIM_CMD)/uesim*cmd
 	;;
 
     "echo-uesim-cmd" | "cat-uesim-cmd" )
@@ -208,7 +208,7 @@ case "$1" in
 	fi
 	UE_USIM=${UE_USIM_CONF_FILE2:-$UE_USIM_CONF_FILE}
 
-	ls $(dirname $UE_USIM)/ue_sim*
+	ls $(dirname $UE_USIM)/usim*
 	;;
 
     "echo-usim" | "cat-usim" )
@@ -230,7 +230,7 @@ case "$1" in
 	
 	# default config file is (unless set in above config)
 	UESIM_CONFIG=${UESIM_CONF_FILE2:-$UESIM_CONF_FILE}
-	ls $(dirname $UESIM_CONFIG)/rru.oaisim*.conf
+	ls $(dirname $UESIM_CONFIG)/uesim*conf
 	;;
 
      "echo-uesim" | "cat-uesim" )
