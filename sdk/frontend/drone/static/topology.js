@@ -149,14 +149,14 @@ function topology(sources) {
 	    var freq_min = list[i].options[0].freq_min;
 	    var freq_max = list[i].options[0].freq_max;
 	    var bandwidth = list[i].options[0].bandwidth;
-	    var eNB_id = list[i].options[0].eNB_id;
-	    if (!eNB_id) {
+	    var bs_id = list[i].options[0].eNB_id;
+	    if (!bs_id) {
 		// Just a testing fallback
 		if (LIST[0].type == 'RTC' && LIST[0].node) {
-		    eNB_id = LIST[0].node.config.eNB_config[i].eNB.eNBId;
+		    bs_id = LIST[0].node.config.eNB_config[i].bs_id;
 		}
 	    }
-	    var cell = GRAPH.find('eNB_' + eNB_id);
+	    var cell = GRAPH.find('BS_' + bs_id);
 	    if (cell) {
 		// Record last setting for each controlled eNB cell
 		src.option[cell.id] = list[i].options[0];
@@ -622,9 +622,9 @@ function topology(sources) {
 	    .filter(function (d) { return cap && d == cap.group;});
     }
 
-    function get_enb_node(enb_id) {
+    function get_enb_node(bs_id) {
 	// Create or find existing eNB node
-	return GRAPH.node('eNB_' + enb_id, 'eNB ' + enb_id, INFO_ENB);
+	return GRAPH.node('BS_' + bs_id, 'BS ' + bs_id, INFO_ENB);
     }
     function get_ue_node(enb, ue_id, info) {
 	var node = GRAPH.node(enb.id + '_UE_'+ ue_id, 'RNTI ' + ue_id, info);
@@ -731,7 +731,7 @@ function topology(sources) {
 	    node.enb_list = [];
 	    for (i = 0; i < data.eNB_config.length; ++i) {
 		var config = data.eNB_config[i];
-		enb = get_enb_node(config.eNB.eNBId);
+		enb = get_enb_node(config.bs_id);
 		node.enb_list.push(enb);
 
 		GRAPH.relation(enb, node, 'rtc', {},undefined,GRAPH.MARKER.END|GRAPH.MARKER.START);
@@ -775,7 +775,7 @@ function topology(sources) {
 		    show_config(enb.config);
 	    }
 	    for (i = 0; i < data.mac_stats.length; ++i) {
-		enb = get_enb_node(data.mac_stats[i].eNBId);
+		enb = get_enb_node(data.mac_stats[i].bs_id);
 		for (var m = 0; m < data.mac_stats[i].ue_mac_stats.length; ++m) {
 		    var stats = data.mac_stats[i].ue_mac_stats[m];
 		    if (!stats) continue;
