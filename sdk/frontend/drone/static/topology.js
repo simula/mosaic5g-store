@@ -736,6 +736,7 @@ function topology(sources) {
 
 		GRAPH.relation(enb, node, 'rtc', {},undefined,GRAPH.MARKER.END|GRAPH.MARKER.START);
 		enb.config = {
+                    agentInfo: config.agent_info,
 		    cellConfig: config.eNB.cellConfig,
 		    ueConfig: config.UE.ueConfig,
 		    lcUeConfig: config.LC.lcUeConfig
