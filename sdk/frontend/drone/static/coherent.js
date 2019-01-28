@@ -245,10 +245,10 @@ uitools.callbacks(
 	    // Expand element height to the bottom of page (experimental)
 	    var rect = elem.getBoundingClientRect();
 	    var h = window.innerHeight;
-	    // Ad hoc: -30 for potential borders and margins -- not a
+	    // Ad hoc: -10 for potential borders and margins -- not a
 	    // stable solution
 	    // console.log("innerHeight="+h+" rect=",rect);
-	    var vh = Math.max(200, (h - rect.top) - 30);
+	    var vh = Math.max(200, (h - rect.top) - 10);
 	    d3.select(elem).style("height", vh + "px");
 	}
 	function openTaskTab(elem, params) {
