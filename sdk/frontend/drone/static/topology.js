@@ -1132,7 +1132,7 @@ function topology(sources) {
 		.selectAll("tspan")
 	// The following fields from cellConfig[0] will be show on
 	// right of the eNB icon. Generated below...
-		.data(['cellId', 'dlFreq', 'ulFreq', 'eutraBand', 'dlPdschPower', 'ulPuschPower', 'dlBandwidth', 'ulBandwidth']);
+		.data(['eutraBand', 'dlFreq', 'ulFreq', 'dlBandwidth', 'plmnId', 'agents']);
 	stats.enter()
 	    .append("tspan")
 	    .attr("x", GRAPH.NODE.R+5)
@@ -1143,7 +1143,19 @@ function topology(sources) {
 		var config = this.parentNode.__data__.config;
 		// ...add/update the above defined cellConfig[0].xxx
 		// fields in graph.
-		return d + '=' + config.cellConfig[0][d];
+                if (d == 'plmnId') {
+                  var ps = config.cellConfig[0].plmnId;
+                  var plmns = [];
+                  for (var p in ps) plmns.push(ps[p].mcc * 10 ** ps[p].mncLength + ps[p].mnc);
+                  return d + "=" + plmns;
+                } else if (d == 'agents') {
+                  var as = config.agentInfo;
+                  var agents = [];
+                  for (var a in as) agents.push(as[a].agent_id);
+                  return d + "=" + agents;
+                } else {
+                  return d + "=" + config.cellConfig[0][d];
+                }
 	    });
     }
 
