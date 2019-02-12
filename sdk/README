@@ -19,3 +19,47 @@ Usage:
   python test_app --log debug
   python rrm_app --op-mode test
   python --url 192.168.12.178 --port 9999
+
+
+------------------------------
+For RAN Adapter
+sdk
+├── lib: contains the SDK for the FlexRAN following Rest API: status manager, control delegation, rrm policy enforcement, rrc trigger events
+│   ├── flexran_sdk.py
+│   └── logger.py
+│
+├── ran_adapter.py: RAN Adapter 
+├── ran_adapter_client.py: Example of a RAN adapter client used for testing
+├── input: Example json/yaml output files used for testing
+│   ├── ran_adapter.yaml: Yaml file defining interface of the RAN Adapter
+│   ├── cpsr.json
+│   └── cpsr_update.json
+│
+├── api: logic function of the Ran Adapter
+│   ├── __init__.py
+│   └── ran_adapter_api.py: logic of Ran Adapter
+│
+└── cpsr: Example CPSR used for testing
+    ├── cpsr.py: Example of CPSR service
+    ├── input: Example json/yaml output files used for testing
+    │    ├── cpsr.yaml: Yaml file defining interface of the CPSR
+    │    ├── cpsrRegistrationData.json
+    │    └── cpsrUpdateData.json
+    └── api: Example json/yaml output files used for testing
+        ├── __init__.py
+        └── cpsr-api.py: logic of CPSR function
+
+
+Help:
+  python ran_adapter -h
+Usage:
+ - lauch CPSR:
+   $cd cpsr
+   $python cpsr.py 
+  
+ - lauch ran_adapter:
+   $python ran_adapter.py --op-mode test --log info --cpsr-url http://localhost:9191/slicenet/ctrlplane/cpsr_cps/v1/cps-instances/1
+  
+ - lauch ran_adapter_client
+   $python ran_adapter_client.py
+

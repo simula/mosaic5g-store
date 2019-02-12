@@ -1,0 +1,395 @@
+openapi: 3.0.0
+
+info:
+  description: This is a sample cpsr server for slicenet control plane
+  version: 1.0.0
+  title: CPSR
+  contact:
+    email: giacomo.borlizzi@ericsson.com
+
+servers:
+  - url: 'http://localhost:8080/slicenet/ctrlplane'
+
+paths:
+  /cpsr_cps/v1/cps-instances/{cpsInstanceId}:
+    put:
+      summary: Register a new CPS Instance
+      operationId: api.cpsr_api.RegisterCPSInstance
+      tags:
+        - CPS Instance ID (Document)
+      parameters:
+        - name: cpsInstanceId
+          in: path
+          required: true
+          description: Unique ID of the CPS Instance to register
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CPSProfile'
+        required: true
+      responses:
+        '200':
+          description: OK (Profile Replacement)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CPSProfile'
+        '201':
+          description: Expected response to a valid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CPSRegistrationData'
+        '400':
+          description: Bad request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '500':
+          description: Internal Server Error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        default:
+          description: Unexpected error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+    patch:
+      summary: Update CPS Instance profile
+      operationId: api.cpsr_api.UpdateCPSInstance
+      tags:
+        - CPS Instance ID (Document)
+      parameters:
+        - name: cpsInstanceId
+          in: path
+          required: true
+          description: Unique ID of the CPS Instance to update
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json-patch+json:
+            schema:
+              $ref: '#/components/schemas/PatchDocument'
+        required: true
+      responses:
+        '200':
+          description: Expected response to a valid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CPSProfile'
+        default:
+          description: Unexpected error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+components:
+  schemas:
+    
+    CPSType:
+      type: string
+      enum:
+      - BKH_ADAPTER
+      - COR_ADAPTER
+      - MEC_ADAPTER
+      - RAN_ADAPTER
+      - WAN_ADAPTER
+      - DPP_ADAPTER
+      - CNF_CP
+      - FGE_CP
+      - ICP_CP
+      - ID_CP
+      - PP_CP
+      - QOE_CP
+      - QOS_CP
+      
+    Uri:
+      properties:
+        uri:
+          type: string
+      
+    CPSStatus:
+      type: string
+      enum:
+      - REGISTERED
+      - SUSPENDED
+
+    ProblemDetails:
+      type: object
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+        cause:
+          type: string
+        invalidParams:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvalidParam'
+
+    InvalidParam:
+      type: object
+      required:
+        - param
+      properties:
+        param:
+          type: string
+        reason:
+          type: string
+
+    CPSProfile:
+      type: object
+      required:
+        - cpsInstanceId
+        - cpsType
+        - cpsStatus
+      properties:
+        cpsInstanceId:
+          type: string
+          format: uuid
+        cpsType:
+          $ref: '#/components/schemas/CPSType'
+        cpsStatus:
+          $ref: '#/components/schemas/CPSStatus'
+        slicenetId:
+          type: string
+          format: uuid
+        fqdn:
+          type: string
+        ipv4Addresses:
+          type: array
+          items:
+            type: string
+            format: ipv4
+        ipv6Addresses:
+          type: array
+          items:
+            type: string
+            format: ipv6
+        ipv6Prefixes:
+          type: array
+          items:
+            type: string
+            format: ipv6
+        capacity:
+          type: integer
+        load:
+          type: integer
+        cpsServices:
+          type: array
+          items:
+            $ref: '#/components/schemas/CPSService'
+            
+    CPSService:
+      type: object
+      required:
+        - serviceInstanceId
+        - serviceName
+        - version
+        - schema
+      properties:
+        serviceInstanceId:
+          type: string
+          format: uuid
+        serviceName:
+          type: string
+        version:
+          type: string
+        schema:
+          type: string
+        slicenetId:
+          type: string
+          format: uuid
+        fqdn:
+          type: string
+        ipEndPoints:
+          type: array
+          items:
+            $ref: '#/components/schemas/IpEndPoint'
+        apiPrefix:
+          type: string
+        defaultNotificationSubscriptions:
+          type: array
+          items:
+            $ref: '#/components/schemas/DefaultNotificationSubscription'
+        allowedCPSTypes:
+          type: array
+          items:
+            $ref: '#/components/schemas/CPSType'
+        allowedSlices:
+          type: array
+          items:
+            type: string
+            format: uuid
+        capacity:
+          type: integer
+        load:
+          type: integer
+
+    CPSRegistrationData:
+      type: object
+      required:
+        - heartBeatTimer
+        - cpSProfile
+      properties:
+        heartBeatTimer:
+          type: integer
+        cpSProfile:
+          $ref: '#/components/schemas/CPSProfile'
+
+    IpEndPoint:
+      type: object
+      properties:
+        ipv4Address:
+          type: string
+          format: ipv4 
+        ipv6Address:
+          type: string
+          format: ipv6 
+        ipv6Prefix:
+          type: string
+          format: ipv6 
+        transport:
+          type: string
+        port:
+          type: integer  
+    
+    PatchDocument:
+      type: array
+      items:
+        $ref: '#/components/schemas/PatchItem'
+
+    PatchItem:
+      type: object
+      required:
+        - op
+        - path
+      properties:
+        op:
+          type: string
+          enum:
+            - add
+            - remove
+            - replace
+            - move
+            - copy
+            - test
+        path:
+          type: string
+        value:
+          nullable: true
+        from:
+          type: string
+    
+    DefaultNotificationSubscription:
+      type: array
+      items:
+        type: string
+
+    SearchResult:
+      type: object
+      required:
+        - validityPeriod
+      properties:
+        validityPeriod:
+          type: integer
+        cpsInstances:
+          type: array
+          items:
+            $ref: '#/components/schemas/CPSProfileDisc'
+        
+    CPSProfileDisc:
+      type: object
+      required:
+        - cpsInstanceId
+        - cpsType
+      properties:
+        cpsInstanceId:
+          type: string
+          format: uuid
+        cpsType:
+          $ref: '#/components/schemas/CPSType'
+        slicenetId:
+          type: string
+          format: uuid
+        fqdn:
+          type: string
+        ipv4Addresses:
+          type: array
+          items:
+            type: string
+            format: ipv4
+        ipv6Addresses:
+          type: array
+          items:
+            type: string
+            format: ipv6
+        ipv6Prefixes:
+          type: array
+          items:
+            type: string
+            format: ipv6
+        capacity:
+          type: integer
+        load:
+          type: integer
+        priority:
+          type: integer
+        cpsServices:
+          type: array
+          items:
+            $ref: '#/components/schemas/CPSServiceDisc'            
+
+    CPSServiceDisc:
+      type: object
+      required:
+        - serviceInstanceId
+        - serviceName
+        - version
+        - schema
+      properties:
+        serviceInstanceId:
+          type: string
+          format: uuid
+        serviceName:
+          type: string
+        version:
+          type: string
+        schema:
+          type: string
+        fqdn:
+          type: string
+        ipEndPoints:
+          type: array
+          items:
+            $ref: '#/components/schemas/IpEndPoint'
+        apiPrefix:
+          type: string
+        defaultNotificationSubscriptions:
+          type: array
+          items:
+            $ref: '#/components/schemas/DefaultNotificationSubscription'
+        capacity:
+          type: integer
+        load:
+          type: integer
+        priority:
+          type: integer

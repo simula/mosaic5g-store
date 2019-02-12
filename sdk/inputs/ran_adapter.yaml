@@ -1,0 +1,81 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: RAN Adapter Service
+  description: An example for RAN Adapter
+servers:
+  - url: http://localhost:9090/slicenet/ctrlplane/
+  
+paths:             
+  '/ranadapter/v1/ranadapter-instance/{sliceId}/set_qos_on_ran':
+
+    put:
+      summary: set QOS Constraints on RAN Adapter
+      description: To set QoS contraints to the corresponding network slice in the access network.
+      tags:
+        - Set QoS Constrants on RAN
+      operationId: api.ran_adapter_api.put_QoSOnRAN
+      parameters:
+        - name: sliceId
+          in: path
+          description: ID of the slice associated to RanAdapter
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:            
+              $ref: '#/components/schemas/RanAdapterConstraints'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+          
+    post:
+      summary: Add QOS Constraints on RAN Adapter
+      description: To add QoS contraints to the corresponding network slice in the access network.
+      tags:
+        - Add QoS Constrants on RAN
+      operationId: api.ran_adapter_api.post_QoSOnRAN
+      parameters:
+        - name: sliceId
+          in: path
+          description: ID of the slice associated to RanAdapter
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        description: slice to add to the system
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RanAdapterConstraints"
+      responses:
+        '201':
+          description: Added
+        '400':
+          description: Bad Request
+        '500':
+          description: Internal Server Error
+
+
+components:
+  schemas:
+    RanAdapterConstraints:
+        type: object
+        properties:
+          bandIncDir:
+            type: string
+          bandIncVal:
+            type: string
+          bandUnitScale:
+            type: string
+        example:
+            bandIncDir: ul
+            bandIncVal: "10"
+            bandUnitScale: "10" 
+            

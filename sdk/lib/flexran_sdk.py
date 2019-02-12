@@ -40,7 +40,7 @@ import os
 import pprint
 import yaml
 
-from logger import *
+from lib.logger import *
 
 from enum import Enum
 
@@ -77,7 +77,7 @@ class flexran_rest_api(object):
     # pf_all='inputs/multiple_data_samples_file.json'
     # pf_all = 'inputs/1eNB_2UEs_mobility_25PRB.json'
     #pf_all = 'inputs/test_20s.json'
-    pf_all = 'inputs/all-new.json'
+    pf_all = 'inputs/all_1.json'
     # pf_all = 'inputs/Last.json'
     """!@brief Input data sets for MAC  status used for test"""
     pf_mac='inputs/mac_stats_2.json'
@@ -292,7 +292,7 @@ class rrm_policy (object):
     def is_json(self, json_obj):
         try:
             json_object = json.loads(json_obj)
-        except ValueError, e:
+        except ValueError as e:
             return False
         return True
 
@@ -336,7 +336,7 @@ class rrm_policy (object):
             with open(pfile) as data_file:
                 self.policy_data = yaml.load(data_file)
                 self.log.debug(yaml.dump(self.policy_data, default_flow_style=False))
-        except yaml.YAMLError, exc:
+        except yaml.YAMLError as exc:
             self.log.error('error in policy file'  + pfile + str(exc) )
 	    return	
 
@@ -367,7 +367,7 @@ class rrm_policy (object):
             with open(tfile) as data_file:
                 self.template_data = yaml.load(data_file)
                 self.log.debug(yaml.dump(self.template_data, default_flow_style=False))
-        except yaml.YAMLError, exc:
+        except yaml.YAMLError as exc:
             self.log.error('error in policy file'  + tfile + str(exc) )
             return
 
@@ -397,7 +397,7 @@ class rrm_policy (object):
         if self.op_mode == 'test' :
             self.log.info('POST ' + str(url))
             if  self.status=='payload' : 
-                print 'PAYLOAD' + json.dumps(policy)
+                print ('PAYLOAD',  json.dumps(policy))
             self.status='connected'
             
         elif self.op_mode == 'sdk' :
@@ -445,7 +445,7 @@ class rrm_policy (object):
         if self.op_mode == 'test' :
             self.log.info('POST ' + str(url))
             if  self.status=='payload' : 
-                print 'PAYLOAD' + json.dumps(policy)
+                print ('PAYLOAD',  json.dumps(policy))
             self.status='connected'
             
         elif self.op_mode == 'sdk' :
@@ -494,7 +494,7 @@ class rrm_policy (object):
         if self.op_mode == 'test' :
             self.log.info('DELETE ' + str(url))
             if  self.status=='payload' : 
-                print 'PAYLOAD' + json.dumps(policy)
+                print ('PAYLOAD', json.dumps(policy))
             self.status='connected'
             
         elif self.op_mode == 'sdk' :
@@ -541,8 +541,7 @@ class rrm_policy (object):
         """!@brief Dump the policy in the ymal format
         
         """
-
-        print self.dump_policy()
+        print (self.dump_policy())
 
     def save_policy(self, basedir='./outputs', basefn='policy', time=0, format='yaml'):
         """!@brief Save the applied policy in a user-defined path and format

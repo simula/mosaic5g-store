@@ -1,0 +1,39 @@
+{
+  "heartbeatTimer": 10.0,
+  
+  "cpsServices": [
+    {
+      "version": "v1.0",
+      "fqdn": null,
+      "schema": "http",
+      "apiPrefix": "/slicenet/ctrlplane",
+      "serviceInstanceId": "343a924e-6494-4927-860b-d45692c95c2d",
+      "ipEndPoints": [
+        {
+          "port": 9090,
+          "ipv4Address": "127.0.0.1",
+          "transport": "tcp",
+          "ipv6Prefix": null,
+          "ipv6Address": null
+        }
+      ],
+      "defaultNotificationSubscriptions": null,
+      "serviceName": "RanAdapter",
+      "slicenetId": "6415064d-0554-4875-ad0e-bced2c218480",
+      "allowedCPSTypes": null,
+      "capacity": null,
+      "allowedSlices": null,
+      "load": null
+    }
+  ],
+  "cpsInstanceId": "d0224776-8b0a-4caa-a72f-37b715618918",
+  "cpsType": "RAN_ADAPTER",
+  "cpsStatus": "REGISTERED",
+  "slicenetId": "6415064d-0554-4875-ad0e-bced2c218480",
+  "load": null,
+  "fqdn": null,
+  "capacity": null,
+  "ipv4Addresses": null,
+  "ipv6Addresses": null,
+  "ipv6Prefixes": null
+}
