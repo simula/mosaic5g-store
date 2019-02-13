@@ -12,7 +12,7 @@ import urllib
 body = {
   "bandIncDir": "dl",
   "bandIncVal": "10",
-  "bandUnitScale": "1000"
+  "bandUnitScale": "MB"
 }
 
 class ranAdapter_client(object):

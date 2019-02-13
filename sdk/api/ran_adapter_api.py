@@ -367,8 +367,10 @@ def put_QoSOnRAN(sliceId, body):
         @param sliceId: Id of the slice instance
         @param body: body of "PUT" message 
     """
+    
+    post_QoSOnRAN(sliceId, body)
     #TODO   
-    return NoContent, 400
+    #return NoContent, 400
 
 def post_QoSOnRAN(sliceId, body):
     """!@brief Add QoS contraints to the corresponding network slice in the access network
@@ -381,8 +383,7 @@ def post_QoSOnRAN(sliceId, body):
     """
     try:
         direction = body['bandIncDir']  
-        bandIncVal = float(body['bandIncVal'])
-        bandUnitScale = float(body['bandUnitScale'])
+        band_inc_val = float(body['bandIncVal'])        
     except (ValueError, KeyError):
         return NoContent, 400    
         
@@ -392,7 +393,13 @@ def post_QoSOnRAN(sliceId, body):
         dir = 'ul'
     else : #Unknown directions        
         return NoContent, 400    
-
+    
+    band_unit_scale = body['bandUnitScale']
+    if (band_unit_scale == 'MB' or band_unit_scale == 'mb'):
+        unit_scale = 1000
+    if (band_unit_scale == 'KB' or band_unit_scale == 'kb'):
+        unit_scale = 1      
+    
     """
     Step 1: collect the necessary information by relying on FlexRAN
     """                
@@ -562,7 +569,7 @@ def post_QoSOnRAN(sliceId, body):
         for slice in range(0, rrm.get_num_slices(dir='dl')):
             slice_dl_tbs = 0.0
             sid = slice            
-            adapter.new_rate_dl[enb][sid] = adapter.current_rate_dl[enb][sid] +  float(bandIncVal) * float(bandUnitScale)
+            adapter.new_rate_dl[enb][sid] = adapter.current_rate_dl[enb][sid] +  float(band_inc_val) * float(unit_scale)
             log.info('Expected Bitrate DL (enb,sid): (' + str(enb) + ', ' + str(sid) + ') ' + str(adapter.new_rate_dl[enb][sid]))
             #calculate the required RB for DL
             dl_itbs = rrm_app_vars.mcs_to_itbs[rrm.get_slice_maxmcs(sid=sid, dir='DL')]
@@ -582,14 +589,14 @@ def post_QoSOnRAN(sliceId, body):
             
             log.info('New DL RB (enb,sid): (' + str(enb) + ', ' + str(sid) + ') ' + str(expected_dlrb))
             log.info('New DL bitrate (enb,sid): (' + str(enb) + ', ' + str(sid) + ') ' + str(slice_dl_tbs))
-            adapter.percentage_dl[enb][sid] = float(expected_dlrb*1.0/adapter.enb_dlrb[enb])
+            adapter.percentage_dl[enb][sid] = float(expected_dlrb)/float(adapter.enb_dlrb[enb])
             log.info('Percentage to be set (enb,sid): (' + str(enb) + ', ' + str(sid) + ') ' + str(adapter.percentage_dl[enb][sid]))           
         
         # Loop on slices to caculate the new bitrate for UL   
         for slice in range(0, rrm.get_num_slices(dir='ul')):
             slice_ul_tbs = 0.0
             sid = slice            
-            adapter.new_rate_ul[enb][sid] = adapter.current_rate_ul[enb][sid] +  float(bandIncVal) * float(bandUnitScale)
+            adapter.new_rate_ul[enb][sid] = adapter.current_rate_ul[enb][sid] +  float(band_inc_val) * float(unit_scale)
             log.info('Expected Bitrate UL (enb,sid): (' + str(enb) + ', ' + str(sid) + ') ' + str(adapter.new_rate_ul[enb][sid]))
             #calculate the required RB for UL
             ul_itbs = rrm_app_vars.mcs_to_itbs[rrm.get_slice_maxmcs(sid=sid, dir='UL')]
@@ -609,7 +616,7 @@ def post_QoSOnRAN(sliceId, body):
             
             log.info('New UL RB (enb,sid): (' + str(enb) + ', ' + str(sid) + ') ' + str(expected_ulrb))
             log.info('New UL bitrate (enb,sid): (' + str(enb) + ', ' + str(sid) + ') ' + str(slice_ul_tbs))
-            adapter.percentage_ul[enb][sid] = float(expected_ulrb*1.0/adapter.enb_ulrb[enb])
+            adapter.percentage_ul[enb][sid] = float(expected_ulrb)/float(adapter.enb_ulrb[enb])
             log.info('Percentage to be set (enb,sid): (' + str(enb) + ', ' + str(sid) + ') ' + str(adapter.percentage_ul[enb][sid]))  
     
     """
