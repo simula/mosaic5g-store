@@ -11,7 +11,7 @@ import urllib
 
 body = {
   "bandIncDir": "dl",
-  "bandIncVal": "10",
+  "bandIncVal": "-10",
   "bandUnitScale": "MB"
 }
 

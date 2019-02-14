@@ -407,7 +407,6 @@ class rrm_policy (object):
                     req = requests.post(url, data=json.dumps(policy),headers={'Content-Type': 'application/json'})
                 else:
                     req = requests.post(url)
-                    self.log.info('[rrm_apply_policy] URL: ', url)
                     
                 if req.status_code == 200:
                     self.log.info('successfully applied the policy')
@@ -1755,7 +1754,17 @@ class stats_manager(object):
             self.log.warning('unknown direction ' + dir + 'set to DL')
             return self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['sliceConfig']['dl'][sid]['maxmcs']
 
-
+    def get_slice_config(self, enb=0, cc=0, sid=0, dir='dl'):
+        """!@brief Get configuration of a particular slice
+        
+        """
+        if dir == 'dl' or dir == 'DL' :
+            return self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['sliceConfig']['dl'][sid]
+        elif dir == 'ul' or dir == 'UL' :
+            return self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['sliceConfig']['ul'][sid]
+        else :
+            self.log.warning('unknown direction ' + dir + 'set to DL')
+            return self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['sliceConfig']['dl'][sid]
 
 class ss_policy (object):
     """!@brief Spectrum sharing class

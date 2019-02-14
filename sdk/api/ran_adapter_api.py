@@ -320,7 +320,26 @@ def get_ue_mcs(enb, ue, dir='dl'):
     #    self.log.error('Unknown direction ' + dir)
     #    return
 
-
+def update_slice_info(sid, percentage, dir='dl'):
+    """!@brief update_slice_info update the slice info into a json file
+    """
+        
+    #read JSON file
+    with open('./inputs/slice_config.json', "+r") as data_file:
+        data = json.load(data_file)
+        data_file.close()
+        
+    #Update the data, for example
+    data[dir]["id"] = sid
+    data[dir]["percentage"] = percentage             
+          
+    #write the update information to the file
+    with open('./inputs/slice_config.json', "w") as data_file:
+        #json.dump(data,data_file)
+        data_file.write(json.dumps(data))
+        data_file.close()
+        
+        
 def initialize_variables(rrm,sm):
     """!@brief initialize_variables Initialize the parameters based on collected information from FlexRAN 
         @param rrm: Radio resource management policy (rrm_policy, FlexRAN sdk) 
@@ -469,8 +488,8 @@ def post_QoSOnRAN(sliceId, body):
             slice_dl_tbs = 0
             dl_itbs = rrm_app_vars.mcs_to_itbs[sm.get_slice_maxmcs(sid=sid, dir='dl')]            
             adapter.max_rate_dl[enb] = rrm_app_vars.tbs_table[dl_itbs][adapter.enb_dlrb[enb]]
-            adapter.current_rate_dl[enb][sid] = adapter.max_rate_dl[enb] * sm.get_slice_percentage(sid=sid, dir='dl')            
-            adapter.current_slice_dlrb[enb][sid] =  int (adapter.enb_dlrb[enb] * sm.get_slice_percentage(sid=sid, dir='dl'))           
+            adapter.current_rate_dl[enb][sid] = adapter.max_rate_dl[enb] * sm.get_slice_percentage(sid=sid, dir='dl')/100.0            
+            adapter.current_slice_dlrb[enb][sid] =  int (adapter.enb_dlrb[enb] * sm.get_slice_percentage(sid=sid, dir='dl')/100.0)           
                     
             log.info('Max Rate DL (enb): (' + str(enb) + ') ' + str(adapter.max_rate_dl[enb]))
             log.info('Current Rate DL (enb,sid, percentage): (' + str(enb) + ', ' + str(sid) + ', '+ str(sm.get_slice_percentage(sid=sid, dir='dl'))+') ' + str(adapter.current_rate_dl[enb][sid]))
@@ -483,8 +502,8 @@ def post_QoSOnRAN(sliceId, body):
             ul_itbs = rrm_app_vars.mcs_to_itbs[sm.get_slice_maxmcs(sid=sid, dir='ul')]            
             adapter.max_rate_ul[enb] = rrm_app_vars.tbs_table[ul_itbs][adapter.enb_ulrb[enb]]
             #should verify the value of rrm.get_slice_rb(sid=sid, dir='ul') 
-            adapter.current_rate_ul[enb][sid] = adapter.max_rate_ul[enb] * sm.get_slice_percentage(sid=sid, dir='ul')            
-            adapter.current_slice_ulrb[enb][sid] =  int (adapter.enb_ulrb[enb] * sm.get_slice_percentage(sid=sid, dir='ul'))           
+            adapter.current_rate_ul[enb][sid] = adapter.max_rate_ul[enb] * sm.get_slice_percentage(sid=sid, dir='ul')/100.0            
+            adapter.current_slice_ulrb[enb][sid] =  int (adapter.enb_ulrb[enb] * sm.get_slice_percentage(sid=sid, dir='ul')/100.0)           
                     
             log.info('Max Rate UL (enb): (' + str(enb) + ') ' + str(adapter.max_rate_ul[enb]))
             log.info('Current Rate UL (enb,sid, percentage): (' + str(enb) + ', ' + str(sid) + ', '+ str(sm.get_slice_percentage(sid=sid, dir='ul'))+') ' + str(adapter.current_rate_ul[enb][sid]))
@@ -555,7 +574,7 @@ def post_QoSOnRAN(sliceId, body):
             allocated_dlrb[enb][slice] = 0
             for sid in range(0, sm.get_num_slices(dir='dl')):
                 if (sid != slice):
-                    allocated_dlrb[enb][slice] += int (adapter.enb_dlrb[enb] * sm.get_slice_percentage(sid=sid, dir='dl'))
+                    allocated_dlrb[enb][slice] += int (adapter.enb_dlrb[enb] * sm.get_slice_percentage(sid=sid, dir='dl')/100.0)
                 
             adapter.slice_availabe_dlrb[enb][slice] =  adapter.enb_dlrb[enb] - allocated_dlrb[enb][slice]
             log.info('number of DL Slices: ' + str(sm.get_num_slices(dir='dl')))
@@ -566,7 +585,7 @@ def post_QoSOnRAN(sliceId, body):
             allocated_ulrb[enb][slice] = 0
             for sid in range(0, sm.get_num_slices(dir='ul')):
                 if (sid != slice):
-                    allocated_ulrb[enb][slice] += int (adapter.enb_ulrb[enb] * sm.get_slice_percentage(sid=sid, dir='ul'))
+                    allocated_ulrb[enb][slice] += int (adapter.enb_ulrb[enb] * sm.get_slice_percentage(sid=sid, dir='ul')/100.0)
                 
             adapter.slice_availabe_ulrb[enb][slice] =  adapter.enb_ulrb[enb] - allocated_ulrb[enb][slice]
             log.info('number of UL Slices: ' + str(sm.get_num_slices(dir='ul')))
@@ -602,7 +621,9 @@ def post_QoSOnRAN(sliceId, body):
             
             log.info('New DL RB (enb,sid): (' + str(enb) + ', ' + str(sid) + ') ' + str(expected_dlrb))
             log.info('New DL bitrate (enb,sid): (' + str(enb) + ', ' + str(sid) + ') ' + str(slice_dl_tbs))
-            adapter.percentage_dl[enb][sid] = float(expected_dlrb)/float(adapter.enb_dlrb[enb])
+            #Percentage should be a int value -> futher process, for now just get int from float 
+            #it would be better if we get value of int (float +1)-> however should check if total percentage >100
+            adapter.percentage_dl[enb][sid] = int (float(expected_dlrb)/float(adapter.enb_dlrb[enb])*100.0)            
             log.info('Percentage to be set (enb,sid): (' + str(enb) + ', ' + str(sid) + ') ' + str(adapter.percentage_dl[enb][sid]))           
         
         # Loop on slices to caculate the new bitrate for UL   
@@ -629,24 +650,47 @@ def post_QoSOnRAN(sliceId, body):
             
             log.info('New UL RB (enb,sid): (' + str(enb) + ', ' + str(sid) + ') ' + str(expected_ulrb))
             log.info('New UL bitrate (enb,sid): (' + str(enb) + ', ' + str(sid) + ') ' + str(slice_ul_tbs))
-            adapter.percentage_ul[enb][sid] = float(expected_ulrb)/float(adapter.enb_ulrb[enb])
+            adapter.percentage_ul[enb][sid] = int (float(expected_ulrb)/float(adapter.enb_ulrb[enb]) *100.0)
             log.info('Percentage to be set (enb,sid): (' + str(enb) + ', ' + str(sid) + ') ' + str(adapter.percentage_ul[enb][sid]))  
     
     """
     Step 3: set new bitrate value to FlexRAN
-    """           
-
-    #rrm.dump_policy()
+    """         
+    
     for enb in range(0, sm.get_num_enb()) :
         for slice in range(0, sm.get_num_slices(dir=dir)):
             if (slice == slice_id): 
-                log.info('set_slice_percentage')                
-                #rrm.set_slice_rb(slice_id, adapter.percentage_dl[enb][slice_id], dir=dir) #TTN should be verified
-    #rrm.dump_policy()
-    #rrm.save_policy()
-    #status = rrm.rrm_apply_policy()
+                log.info('set_slice_percentage')
+                #read a JSON template file               
+                with open('./inputs/slice_config.json', "r") as data_file:
+                    slice_config = json.load(data_file)
+                    data_file.close()
+                #get the current status and update to the template information accordingly                
+                data_dl  = sm.get_slice_config(sid=slice_id, dir='dl')
+                data_ul  = sm.get_slice_config(sid=slice_id, dir='ul')       
+                                
+                slice_config["ul"][slice_id]["id"] = data_ul["id"]
+                slice_config["ul"][slice_id]["percentage"] = data_ul["percentage"]
+                slice_config["ul"][slice_id]["maxmcs"] = data_ul["maxmcs"]
+                
+                slice_config["dl"][slice_id]["id"] = data_dl["id"]
+                slice_config["dl"][slice_id]["percentage"] = data_dl["percentage"]
+                slice_config["dl"][slice_id]["maxmcs"] = data_dl["maxmcs"]
+                
+                if (dir == 'dl'):
+                    slice_config["dl"][slice_id]["percentage"] = adapter.percentage_dl[enb][slice_id] 
+                if (dir == 'ul'):
+                    slice_config["ul"][slice_id]["percentage"] = adapter.percentage_ul[enb][slice_id]
+                
+                log.info("Slice Configuration will be pushed to FlexRAN ")
+                log.info (slice_config)
+                #apply to FlexRAN
+                status = rrm.rrm_apply_policy(slice=slice_id, policy=slice_config)
+                
+    #verify the information from FlexRAN
+    #log.info('rb percentage for slice (slice=' + str(slice_id) + ', dir=dl): ' +  str(sm.get_slice_percentage(slice_id, dir='dl')))      
+    #log.info('rb percentage for slice (slice=' + str(slice_id) + ', dir=ul): '+  str(sm.get_slice_percentage(slice_id, dir='ul')))  
     log.info('rb percentage for slice (slice=' + str(slice_id) + ', dir=' + str(dir)+ '): ' +  str(sm.get_slice_percentage(slice_id, dir='dl')))        
-    
     if (status == 'connected'):
         return NoContent, 201
     else:
