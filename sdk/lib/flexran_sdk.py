@@ -407,6 +407,7 @@ class rrm_policy (object):
                     req = requests.post(url, data=json.dumps(policy),headers={'Content-Type': 'application/json'})
                 else:
                     req = requests.post(url)
+                    self.log.info('[rrm_apply_policy] URL: ', url)
                     
                 if req.status_code == 200:
                     self.log.info('successfully applied the policy')
@@ -591,7 +592,7 @@ class rrm_policy (object):
             
         self.log.debug('Setting the number of ' + dir + ' slices from '+ str(self.policy_data['mac'][index][key_sched]['parameters'][key_slice]) + ' to ' + str(n) )
         self.policy_data['mac'][index][key_sched]['parameters'][key_slice]=n
-
+    
     def get_num_slices(self, dir='dl'):
         """!@brief Get the current number of RAN slices for a  direction
         
@@ -612,6 +613,7 @@ class rrm_policy (object):
         
 
         return  self.policy_data['mac'][index][key_sched]['parameters'][key_slice]
+        
        
     def set_slice_rb(self, sid, rb, dir='dl'):
         """!@brief Set the resource block share for a slice in a direction. 
@@ -1715,6 +1717,43 @@ class stats_manager(object):
         else :
             self.log.warning('unknown direction ' + dir + 'set to DL')
             return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['macSdusDl'][0]['lcid']
+
+    #TTN, new functions supporting slice
+    def get_num_slices(self, enb=0, cc=0, dir='dl'):
+        """!@brief Get the number of connected eNB to this controller 
+        
+        """
+        if dir == 'dl' or dir == 'DL' :
+            return len(self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['sliceConfig']['dl'])
+        elif dir == 'ul' or dir == 'UL' :
+            return len(self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['sliceConfig']['ul'])
+        else :
+            self.log.warning('unknown direction ' + dir + 'set to DL')
+            return len(self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['sliceConfig']['dl'])
+
+    def get_slice_percentage(self, enb=0, cc=0, sid=0, dir='dl'):
+        """!@brief Get the current percentage share for a slice 
+        
+        """
+        if dir == 'dl' or dir == 'DL' :
+            return self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['sliceConfig']['dl'][sid]['percentage']
+        elif dir == 'ul' or dir == 'UL' :
+            return self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['sliceConfig']['ul'][sid]['percentage']
+        else :
+            self.log.warning('unknown direction ' + dir + 'set to DL')
+            return self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['sliceConfig']['dl'][sid]['percentage']
+
+    def get_slice_maxmcs(self, enb=0, cc=0, sid=0, dir='dl'):
+        """!@brief Get the number of max MCS for a slice 
+        
+        """
+        if dir == 'dl' or dir == 'DL' :
+            return self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['sliceConfig']['dl'][sid]['maxmcs']
+        elif dir == 'ul' or dir == 'UL' :
+            return self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['sliceConfig']['ul'][sid]['maxmcs']
+        else :
+            self.log.warning('unknown direction ' + dir + 'set to DL')
+            return self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['sliceConfig']['dl'][sid]['maxmcs']
 
 
 

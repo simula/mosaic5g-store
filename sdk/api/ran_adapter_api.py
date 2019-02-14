@@ -291,9 +291,8 @@ def get_policy_maxmcs(rrm,sm) :
             adapter.maxmcs_ul[enb][sid] = rrm.get_slice_maxmcs(sid=sid, dir='UL')
             
             
-def get_policy_mcs(rrm, enb, ue, dir):
+def get_policy_mcs(enb, ue, dir):
     """!@brief get_policy_mcs Get the value of MCS 
-        @param rrm: Radio resource management policy (rrm_policy, FlexRAN sdk) 
         @param enb: index of eNB
         @param ue: index of UE
         @param dir: defines downlink or uplink direction         
@@ -306,6 +305,21 @@ def get_policy_mcs(rrm, enb, ue, dir):
     #else :
     #    self.log.error('Unknown direction ' + dir)
     #    return
+
+def get_ue_mcs(enb, ue, dir='dl'):
+    """!@brief get_ue_mcs Get the value of MCS 
+        @param enb: index of eNB
+        @param ue: index of UE
+        @param dir: defines downlink or uplink direction         
+    """
+    if dir == 'dl' or dir == "DL":
+        return rrm_app_vars.cqi_to_mcs[adapter.ue_dlwcqi[enb,ue] ]
+    elif dir == 'ul' or dir == "UL": #TTN should be verified for UL
+        return 8 # f(ue_phr[enb,ue])
+    #else :
+    #    self.log.error('Unknown direction ' + dir)
+    #    return
+
 
 def initialize_variables(rrm,sm):
     """!@brief initialize_variables Initialize the parameters based on collected information from FlexRAN 
@@ -346,13 +360,15 @@ def initialize_variables(rrm,sm):
         elif (adapter.enb_ulrb[enb] == 50):
             adapter.min_ulrb[enb] = 3
         elif (adapter.enb_ulrb[enb] == 100):
-             adapter.min_ulrb[enb] = 4         
+             adapter.min_ulrb[enb] = 4  
+
+ 
         
         for ue in range(0, sm.get_num_ue(enb=enb)) :
             # Initialization of MCS (Dl = conversion DL wideband CQI -> MCS, UL : fixed value) and number of RBs
-            adapter.ue_dlmcs[enb,ue] = get_policy_mcs(rrm, enb, ue, "DL")
+            adapter.ue_dlmcs[enb,ue] = get_ue_mcs( enb, ue, "DL")
             #adapter.ue_dlmcs[enb,ue] = rrm_app_vars.cqi_to_mcs[adapter.ue_dlwcqi[enb,ue]]
-            adapter.ue_ulmcs[enb,ue] = get_policy_mcs(rrm, enb, ue, "UL")
+            adapter.ue_ulmcs[enb,ue] = get_ue_mcs(enb, ue, "UL")
             adapter.ue_ulrb[enb,ue]  = 0
             adapter.ue_dlrb[enb,ue]  = 0
             # skip the control channels, SRB1 and SRB2, start at index 2
@@ -426,77 +442,73 @@ def post_QoSOnRAN(sliceId, body):
     if (slice_id < 0):
         print("SliceId is not valid")
         return NoContent, 400
-    elif (slice_id > rrm.get_num_slices(dir='dl') and dir=='dl'):
+    elif (slice_id > sm.get_num_slices(dir='dl') and dir=='dl'):
         print("SliceId is not valid")
         return NoContent, 400
-    elif (slice_id > rrm.get_num_slices(dir='ul') and dir=='ul'):
+    elif (slice_id > sm.get_num_slices(dir='ul') and dir=='ul'):
         print("SliceId is not valid")
         return NoContent, 400   
     
     """
     Step 2: Caculate current bitrate based on N_RB, SliceID
     """ 
-    log.info('num dl slices: ' + str(rrm.get_num_slices(dir='dl')))
-    log.info('rb percentage for slice (slice=' + str(slice_id) + ', dir=dl): ' +  str(rrm.get_slice_rb(slice_id, dir='dl')))      
-    log.info('num ul slices: ' + str(rrm.get_num_slices(dir='ul')))
-    log.info('rb percentage for slice (slice=' + str(slice_id) + ', dir=ul): '+  str(rrm.get_slice_rb(slice_id, dir='ul')))  
+    log.info('num dl slices: ' + str(sm.get_num_slices(dir='dl')))
+    log.info('rb percentage for slice (slice=' + str(slice_id) + ', dir=dl): ' +  str(sm.get_slice_percentage(slice_id, dir='dl')))      
+    log.info('num ul slices: ' + str(sm.get_num_slices(dir='ul')))
+    log.info('rb percentage for slice (slice=' + str(slice_id) + ', dir=ul): '+  str(sm.get_slice_percentage(slice_id, dir='ul')))  
     for enb in range(0, sm.get_num_enb()) :
         log.info('num dl RB: ' + str(adapter.enb_dlrb[enb]))
         log.info('num ul RB: ' + str(adapter.enb_ulrb[enb])) 
 
+    
     #Caculate current bitrate based on N_RB  
     for enb in range(0, sm.get_num_enb()) :
         # Loop on slices to calculate the current bit rate, for DL first
-        for slice in range(0, rrm.get_num_slices(dir='dl')):
+        for slice in range(0, sm.get_num_slices(dir='dl')):
             sid = slice
             slice_dl_tbs = 0
-            dl_itbs = rrm_app_vars.mcs_to_itbs[rrm.get_slice_maxmcs(sid=sid, dir='dl')]            
+            dl_itbs = rrm_app_vars.mcs_to_itbs[sm.get_slice_maxmcs(sid=sid, dir='dl')]            
             adapter.max_rate_dl[enb] = rrm_app_vars.tbs_table[dl_itbs][adapter.enb_dlrb[enb]]
-            #should verify the value of rrm.get_slice_rb(sid=sid, dir='dl') 
-            adapter.current_rate_dl[enb][sid] = adapter.max_rate_dl[enb] * rrm.get_slice_rb(sid=sid, dir='dl')            
-            adapter.current_slice_dlrb[enb][sid] =  int (adapter.enb_dlrb[enb] * rrm.get_slice_rb(sid=sid, dir='dl'))           
+            adapter.current_rate_dl[enb][sid] = adapter.max_rate_dl[enb] * sm.get_slice_percentage(sid=sid, dir='dl')            
+            adapter.current_slice_dlrb[enb][sid] =  int (adapter.enb_dlrb[enb] * sm.get_slice_percentage(sid=sid, dir='dl'))           
                     
             log.info('Max Rate DL (enb): (' + str(enb) + ') ' + str(adapter.max_rate_dl[enb]))
-            log.info('Current Rate DL (enb,sid, percentage): (' + str(enb) + ', ' + str(sid) + ', '+ str(rrm.get_slice_rb(sid=sid, dir='dl'))+') ' + str(adapter.current_rate_dl[enb][sid]))
+            log.info('Current Rate DL (enb,sid, percentage): (' + str(enb) + ', ' + str(sid) + ', '+ str(sm.get_slice_percentage(sid=sid, dir='dl'))+') ' + str(adapter.current_rate_dl[enb][sid]))
             log.info('Current slice RB DL  (enb,sid): (' + str(enb) + ', ' + str(sid) + ') ' + str(adapter.current_slice_dlrb[enb][sid]))
         
         # Loop on slices to calculate the current bit rate, for UL                                 
-        for slice in range(0, rrm.get_num_slices(dir='ul')):
+        for slice in range(0, sm.get_num_slices(dir='ul')):
             sid = slice
             slice_ul_tbs = 0
-            ul_itbs = rrm_app_vars.mcs_to_itbs[rrm.get_slice_maxmcs(sid=sid, dir='ul')]            
+            ul_itbs = rrm_app_vars.mcs_to_itbs[sm.get_slice_maxmcs(sid=sid, dir='ul')]            
             adapter.max_rate_ul[enb] = rrm_app_vars.tbs_table[ul_itbs][adapter.enb_ulrb[enb]]
             #should verify the value of rrm.get_slice_rb(sid=sid, dir='ul') 
-            adapter.current_rate_ul[enb][sid] = adapter.max_rate_ul[enb] * rrm.get_slice_rb(sid=sid, dir='ul')            
-            adapter.current_slice_ulrb[enb][sid] =  int (adapter.enb_ulrb[enb] * rrm.get_slice_rb(sid=sid, dir='ul'))           
+            adapter.current_rate_ul[enb][sid] = adapter.max_rate_ul[enb] * sm.get_slice_percentage(sid=sid, dir='ul')            
+            adapter.current_slice_ulrb[enb][sid] =  int (adapter.enb_ulrb[enb] * sm.get_slice_percentage(sid=sid, dir='ul'))           
                     
             log.info('Max Rate UL (enb): (' + str(enb) + ') ' + str(adapter.max_rate_ul[enb]))
-            log.info('Current Rate UL (enb,sid, percentage): (' + str(enb) + ', ' + str(sid) + ', '+ str(rrm.get_slice_rb(sid=sid, dir='ul'))+') ' + str(adapter.current_rate_ul[enb][sid]))
+            log.info('Current Rate UL (enb,sid, percentage): (' + str(enb) + ', ' + str(sid) + ', '+ str(sm.get_slice_percentage(sid=sid, dir='ul'))+') ' + str(adapter.current_rate_ul[enb][sid]))
             log.info('Current slice RB UL  (enb,sid): (' + str(enb) + ', ' + str(sid) + ') ' + str(adapter.current_slice_ulrb[enb][sid]))
             
                        
-    '''
-    check with Navid/Robert
-    based on connected UE
-    '''
-    '''        
+    '''    
     for enb in range(0, sm.get_num_enb()) :
         # Loop on slices 
-        for slice in range(0, rrm.get_num_slices(dir='dl')):
-            sid = slice #adapter.slices_priority_dl[slice][0]
+        for slice in range(0, sm.get_num_slices(dir='dl')):
+            sid = slice 
             slice_dl_tbs = 0
 
             # Loop on UEs connected to the current eNodeB and in the current slice
-            ue_in_slice = (ue for ue in range(0, sm.get_num_ue(enb=enb)) if ue % rrm.get_num_slices(dir='dl') == sid)
+            ue_in_slice = (ue for ue in range(0, sm.get_num_ue(enb=enb)) if ue % sm.get_num_slices(dir='dl') == sid)
             for ue in ue_in_slice :
                 # skip the control channels, SRB1 and SRB2, start at index 2
                 for lc in range(2, sm.get_num_ue_lc(enb=enb,ue=ue)) :
 
                     # Make sure that slices with reserved rate get what they need, DL
                     #if rrm_kpi_app.reserved_rate_dl[enb][sid] > slice_dl_tbs / 1000 :
-    '''              
+                    """             
                     #test new way to calculate
-    '''
+    
                     #calculate the required RB for DL
                     dl_itbs = rrm_app_vars.mcs_to_itbs[adapter.ue_dlmcs[enb,ue]]
                     adapter.ue_dlrb[enb,ue]=0
@@ -514,8 +526,9 @@ def post_QoSOnRAN(sliceId, body):
                     adapter.enb_available_dlrb[enb]-=adapter.ue_dlrb[enb,ue]
                     print "THINH adapter.ue_dlrb[enb,ue]: ", adapter.ue_dlrb[enb,ue]
                     #end test
-    '''
-    '''                                    
+                    """
+    
+                                        
                     dl_itbs                         = rrm_app_vars.mcs_to_itbs[adapter.ue_dlmcs[enb,ue]]
                     adapter.lc_ue_dltbs[enb,ue,lc]  = rrm_app_vars.tbs_table[dl_itbs][adapter.lc_ue_dlrb[enb,ue,lc]]
                     adapter.max_rate_dl = {}
@@ -538,25 +551,25 @@ def post_QoSOnRAN(sliceId, body):
         allocated_dlrb[enb] = {}
         allocated_ulrb[enb] = {}
         #for DL
-        for slice in range(0, rrm.get_num_slices(dir='dl')):
+        for slice in range(0, sm.get_num_slices(dir='dl')):
             allocated_dlrb[enb][slice] = 0
-            for sid in range(0, rrm.get_num_slices(dir='dl')):
+            for sid in range(0, sm.get_num_slices(dir='dl')):
                 if (sid != slice):
-                    allocated_dlrb[enb][slice] += int (adapter.enb_dlrb[enb] * rrm.get_slice_rb(sid=sid, dir='dl'))
+                    allocated_dlrb[enb][slice] += int (adapter.enb_dlrb[enb] * sm.get_slice_percentage(sid=sid, dir='dl'))
                 
             adapter.slice_availabe_dlrb[enb][slice] =  adapter.enb_dlrb[enb] - allocated_dlrb[enb][slice]
-            log.info('number of DL Slices: ' + str(rrm.get_num_slices(dir='dl')))
+            log.info('number of DL Slices: ' + str(sm.get_num_slices(dir='dl')))
             log.info('Available DL RB for  (enb): (' + str(enb) + ') ' + str(adapter.enb_dlrb[enb]))
             log.info('Available DL RB for  (enb,sid): (' + str(enb) + ', ' + str(slice) + ') ' + str(adapter.slice_availabe_dlrb[enb][slice]))
         #for UL
-        for slice in range(0, rrm.get_num_slices(dir='ul')):
+        for slice in range(0, sm.get_num_slices(dir='ul')):
             allocated_ulrb[enb][slice] = 0
-            for sid in range(0, rrm.get_num_slices(dir='ul')):
+            for sid in range(0, sm.get_num_slices(dir='ul')):
                 if (sid != slice):
-                    allocated_ulrb[enb][slice] += int (adapter.enb_ulrb[enb] * rrm.get_slice_rb(sid=sid, dir='ul'))
+                    allocated_ulrb[enb][slice] += int (adapter.enb_ulrb[enb] * sm.get_slice_percentage(sid=sid, dir='ul'))
                 
             adapter.slice_availabe_ulrb[enb][slice] =  adapter.enb_ulrb[enb] - allocated_ulrb[enb][slice]
-            log.info('number of UL Slices: ' + str(rrm.get_num_slices(dir='ul')))
+            log.info('number of UL Slices: ' + str(sm.get_num_slices(dir='ul')))
             log.info('Available UL RB for  (enb): (' + str(enb) + ') ' + str(adapter.enb_ulrb[enb]))
             log.info('Available UL RB for  (enb,sid): (' + str(enb) + ', ' + str(slice) + ') ' + str(adapter.slice_availabe_ulrb[enb][slice]))                            
     
@@ -566,13 +579,13 @@ def post_QoSOnRAN(sliceId, body):
     
     for enb in range(0, sm.get_num_enb()) :
         # Loop on slices to caculate the new bitrate for DL
-        for slice in range(0, rrm.get_num_slices(dir='dl')):
+        for slice in range(0, sm.get_num_slices(dir='dl')):
             slice_dl_tbs = 0.0
             sid = slice            
             adapter.new_rate_dl[enb][sid] = adapter.current_rate_dl[enb][sid] +  float(band_inc_val) * float(unit_scale)
             log.info('Expected Bitrate DL (enb,sid): (' + str(enb) + ', ' + str(sid) + ') ' + str(adapter.new_rate_dl[enb][sid]))
             #calculate the required RB for DL
-            dl_itbs = rrm_app_vars.mcs_to_itbs[rrm.get_slice_maxmcs(sid=sid, dir='DL')]
+            dl_itbs = rrm_app_vars.mcs_to_itbs[sm.get_slice_maxmcs(sid=sid, dir='DL')]
             expected_dlrb = 0
              
             while slice_dl_tbs  < adapter.new_rate_dl[enb][sid] :
@@ -593,13 +606,13 @@ def post_QoSOnRAN(sliceId, body):
             log.info('Percentage to be set (enb,sid): (' + str(enb) + ', ' + str(sid) + ') ' + str(adapter.percentage_dl[enb][sid]))           
         
         # Loop on slices to caculate the new bitrate for UL   
-        for slice in range(0, rrm.get_num_slices(dir='ul')):
+        for slice in range(0, sm.get_num_slices(dir='ul')):
             slice_ul_tbs = 0.0
             sid = slice            
             adapter.new_rate_ul[enb][sid] = adapter.current_rate_ul[enb][sid] +  float(band_inc_val) * float(unit_scale)
             log.info('Expected Bitrate UL (enb,sid): (' + str(enb) + ', ' + str(sid) + ') ' + str(adapter.new_rate_ul[enb][sid]))
             #calculate the required RB for UL
-            ul_itbs = rrm_app_vars.mcs_to_itbs[rrm.get_slice_maxmcs(sid=sid, dir='UL')]
+            ul_itbs = rrm_app_vars.mcs_to_itbs[sm.get_slice_maxmcs(sid=sid, dir='UL')]
             expected_ulrb = 0
              
             while slice_ul_tbs  < adapter.new_rate_ul[enb][sid] :
@@ -625,13 +638,14 @@ def post_QoSOnRAN(sliceId, body):
 
     #rrm.dump_policy()
     for enb in range(0, sm.get_num_enb()) :
-        for slice in range(0, rrm.get_num_slices(dir=dir)):
-            if (slice == slice_id):                
-                rrm.set_slice_rb(slice_id, adapter.percentage_dl[enb][slice_id], dir=dir)
-    rrm.dump_policy()
-    rrm.save_policy()
-    status = rrm.rrm_apply_policy()
-    log.info('rb percentage for slice (slice=' + str(slice_id) + ', dir=' + str(dir)+ '): ' +  str(rrm.get_slice_rb(slice_id, dir='dl')))        
+        for slice in range(0, sm.get_num_slices(dir=dir)):
+            if (slice == slice_id): 
+                log.info('set_slice_percentage')                
+                #rrm.set_slice_rb(slice_id, adapter.percentage_dl[enb][slice_id], dir=dir) #TTN should be verified
+    #rrm.dump_policy()
+    #rrm.save_policy()
+    #status = rrm.rrm_apply_policy()
+    log.info('rb percentage for slice (slice=' + str(slice_id) + ', dir=' + str(dir)+ '): ' +  str(sm.get_slice_percentage(slice_id, dir='dl')))        
     
     if (status == 'connected'):
         return NoContent, 201
