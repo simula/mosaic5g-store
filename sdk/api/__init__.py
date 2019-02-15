@@ -1,4 +1,5 @@
 import api.ran_adapter_api 
 
 api.ran_adapter_api.init()
-api.ran_adapter_api.register()
+#for the moment, send registration immediately afer initialization process
+api.ran_adapter_api.cpsr_register()
