@@ -70,6 +70,11 @@ components:
         properties:
           bandIncDir:
             type: string
+            enum:
+               - UL
+               - DL
+               - ul
+               - dl
           bandIncVal:
             type: string
           bandUnitScale:
@@ -77,6 +82,8 @@ components:
             enum:
                - MB
                - KB
+               - mb
+               - kb
         example:
             bandIncDir: ul
             bandIncVal: "10"
