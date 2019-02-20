@@ -42,6 +42,7 @@ class ranAdapter_client(object):
         status = 0                
         #self.set_qos_parameters(bandIncDir='ul', bandIncVal='10')        
         jsondata = json.dumps(self.qos_parameters)
+        print("slice ID ", sid)
         print ('QoS parameters: ', str(jsondata))            
         #print(jsondata)        
         jsondataasbytes = jsondata.encode('utf-8')   # needs to be bytes
@@ -74,7 +75,7 @@ if __name__ == '__main__':
     
     #reduce percentage of slice 0 to 50%
     reduce_slice_percentage='{"intrasliceShareActive":false,"intersliceShareActive":false,"dl":[{"id":0,"percentage":50}]}'
-    cmd_reduce= 'curl -X POST http://localhost:9999/slice/enb/-1 --data ' + reduce_slice_percentage
+    cmd_reduce= 'curl -X POST http://localhost:9999/slice/enb/-1 --data ' + reduce_slice_percentage #192.168.12.45
     print(cmd_reduce)
     return_code = subprocess.call(cmd_reduce, shell=True)
     
@@ -97,7 +98,6 @@ if __name__ == '__main__':
     time.sleep(5)    
     ranAdapter_client.set_qos_parameters(bandIncDir='dl', bandIncVal='-10')    
     ranAdapter_client.set_QoSOnRAN(sid=0, method='POST')
-    #set QoS on RAN: decrease 10MB for DL (slice 1)
     #set QoS on RAN: decrease 10MB for DL (slice 1)
     time.sleep(5)
     ranAdapter_client.set_qos_parameters(bandIncDir='dl', bandIncVal='-10') 

@@ -1,8 +1,8 @@
 {
-  "cpsInstanceId": "d0224776-8b0a-4caa-a72f-37b715618917",
+  "cpsInstanceId": "7b99a84e-34e8-11e9-b210-d663bd873d93",
   "cpsType": "RAN_ADAPTER",
   "cpsStatus": "REGISTERED",
-  "slicenetId": "6415064d-0554-4875-ad0e-bced2c218479",
+  "slicenetId": "984be0c4-34e8-11e9-b210-d663bd873d93",
   "fqdn": "",
   "ipv4Addresses": [
     "127.0.0.1"
@@ -13,11 +13,11 @@
   "load": 0,
   "cpsServices": [
     {
-      "serviceInstanceId": "343a924e-6494-4927-860b-d45692c95c2c",
+      "serviceInstanceId": "7b99a84e-34e8-11e9-b210-d663bd873d93",
       "serviceName": "qos",
       "version": "v1",
       "schema": "http",
-      "slicenetId": "6415064d-0554-4875-ad0e-bced2c218479",
+      "slicenetId": "984be0c4-34e8-11e9-b210-d663bd873d93",
       "fqdn": "",
       "ipEndPoints": [
         {

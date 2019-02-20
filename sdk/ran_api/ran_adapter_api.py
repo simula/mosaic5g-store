@@ -581,24 +581,7 @@ def post_QoSOnRAN(sliceId, body):
         for slice in range(0, sm.get_num_slices(dir=dir)):
             if (slice == slice_id): 
                 adapter.log.info('Send command to FlexRAN to set slice configuration')
-                """
-                #read a JSON template file               
-                with open('./inputs/slice_config.json', "r") as data_file:
-                    slice_config = json.load(data_file)
-                    data_file.close()
-                #get the current status and update to the template information accordingly                
-                data_dl  = sm.get_slice_config(sid=slice_id, dir='dl')
-                data_ul  = sm.get_slice_config(sid=slice_id, dir='ul')       
-                                
-                slice_config["ul"][slice_id]["id"] = data_ul["id"]
-                slice_config["ul"][slice_id]["percentage"] = data_ul["percentage"]
-                slice_config["ul"][slice_id]["maxmcs"] = data_ul["maxmcs"]
-                
-                slice_config["dl"][slice_id]["id"] = data_dl["id"]
-                slice_config["dl"][slice_id]["percentage"] = data_dl["percentage"]
-                slice_config["dl"][slice_id]["maxmcs"] = data_dl["maxmcs"]
-                """
-                
+                              
                 if (dir == 'dl'):
                     data_dl  = sm.get_slice_config(sid=slice_id, dir='dl')
                     slice_config_dl['dl'][0]['percentage'] = adapter.percentage_dl[enb][slice_id]

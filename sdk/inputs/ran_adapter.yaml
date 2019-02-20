@@ -14,7 +14,7 @@ paths:
       description: To set QoS contraints to the corresponding network slice in the access network.
       tags:
         - Set QoS Constrants on RAN
-      operationId: api.ran_adapter_api.put_QoSOnRAN
+      operationId: ran_api.ran_adapter_api.put_QoSOnRAN
       parameters:
         - name: sliceId
           in: path
@@ -39,7 +39,7 @@ paths:
       description: To add QoS contraints to the corresponding network slice in the access network.
       tags:
         - Add QoS Constrants on RAN
-      operationId: api.ran_adapter_api.post_QoSOnRAN
+      operationId: ran_api.ran_adapter_api.post_QoSOnRAN
       parameters:
         - name: sliceId
           in: path
