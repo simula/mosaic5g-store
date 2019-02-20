@@ -1,6 +1,6 @@
  - operator: 'orange'
-   freq_min: [499, 2620]
-   freq_max: [520, 2630]
+   freq_min: [746, 2665]
+   freq_max: [756, 2675]
    power_mask: [[-60,-40,-30,-50],[-60,-40,-30,-50]]
    min_lease_time: [90, 85]
    max_time_to_leave: [100, 258]

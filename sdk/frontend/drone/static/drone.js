@@ -58,10 +58,11 @@ var drone = (function () {
     };
 
     Drone.prototype.send = function(msg, task) {
-	if (this.open) {
+	if (this.ws && this.open) {
 	    this.ws.send(JSON.stringify(msg));
 	} else if (this.ws && this.ws.readyState == WebSocket.CONNECTING) {
 	    task.message({error: "Websocket not ready -- still connecting", status: 'error'});
+	    this.ws.close(undefined, "closed due stalled connect");
 	} else {
 	    if (this.ws) this.ws.close(); // just in case.
 	    task.message({error: "Websocket not open - trying reconnect", status: 'error'});

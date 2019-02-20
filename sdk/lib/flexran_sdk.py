@@ -77,7 +77,7 @@ class flexran_rest_api(object):
     # pf_all='inputs/multiple_data_samples_file.json'
     # pf_all = 'inputs/1eNB_2UEs_mobility_25PRB.json'
     #pf_all = 'inputs/test_20s.json'
-    pf_all = 'inputs/UEs2_25PRB_10M.json'
+    pf_all = 'inputs/all-new.json'
     # pf_all = 'inputs/Last.json'
     """!@brief Input data sets for MAC  status used for test"""
     pf_mac='inputs/mac_stats_2.json'
@@ -87,7 +87,6 @@ class flexran_rest_api(object):
     # relateive to flexran apps
     pf_name='enb_scheduling_policy.yaml'
     pf_yaml='inputs/'+pf_name
-    pf_json='{"mac": [{"dl_scheduler": {"parameters": {"n_active_slices": 1,"slice_percentage": [1,0.4,0,0],"slice_maxmcs": [28,28,28,28 ]}}}]}'
 
     # slices templates
     tf_name='template.yaml'
@@ -105,7 +104,13 @@ class flexran_rest_api(object):
     rrm='/rrm'  
     """!@brief RRM API endpoint with the policy as a payload """    
     rrm_policy='/rrm_config'  
-
+    """!@brief Slice creation, update, and delete endpoints """ 
+    enb_slice='/slice'
+    """!@brief Associate a UE to a slice endpoints """ 
+    ue_slice='/ue_slice_assoc'
+   
+    """!@brief eNB reconfiguration endpoints """ 
+    enb_conf='/conf'
 
     """!@brief full RAN status API endpoint (human-readable)  """    
     sm_hr_all='/stats_manager/all'
@@ -183,7 +188,7 @@ class rrc_trigger_meas(object):
                     self.status='connected'
                 else :
                     self.status='disconnected'
-                self.log.error('Request error code : ' + req.status_code)
+                self.log.error('Request error code : ' + str(req.status_code))
             except :
                 self.log.error('Failed to send the RRC trigger measurement to the agent' )
 
@@ -245,7 +250,7 @@ class control_delegate(object):
                     self.status='connected'
                 else :
                     self.status='disconnected'
-                self.log.error('Request error code : ' + req.status_code)
+                    self.log.error('Request error code : ' + str(req.status_code))
             except :
                 self.log.error('Failed to delegate the DL schedling to the agent' )
 
@@ -267,6 +272,8 @@ class rrm_policy (object):
         self.op_mode = op_mode
         self.log = log
         # NB APIs endpoints
+        self.enb_slice_api=flexran_rest_api.enb_slice
+        self.ue_slice_api=flexran_rest_api.ue_slice
         self.rrm_api=flexran_rest_api.rrm
         self.rrm_policy_api=flexran_rest_api.rrm_policy
         # stats manager data requeted by the endpoint
@@ -277,10 +284,18 @@ class rrm_policy (object):
         # location must be reletaive to app and not SDK
         # To do: create env vars 
         self.pf_yaml=flexran_rest_api.pf_yaml
-        self.pf_json=flexran_rest_api.pf_json
+        #self.pf_json=flexran_rest_api.pf_json
+
         self.tf_yaml=flexran_rest_api.tf_yaml
 
-                
+
+    def is_json(self, json_obj):
+        try:
+            json_object = json.loads(json_obj)
+        except ValueError, e:
+            return False
+        return True
+
     # read the policy file     
     def read_policy(self, pf=''):
         """
@@ -360,46 +375,45 @@ class rrm_policy (object):
 
     # apply policy with policy data 
     # TBD: apply policy from a file
-    def apply_policy(self, policy_data='',as_payload=True):
+    def rrm_apply_policy(self, enb=-1, slice=0, policy=''):
         """!@brief Apply and send the default or user-defined policy as parameter to FlexRAN-RTC. 
         
         @param policy_data: content of the policy file of type str
         @param as_payload: embed the applied policy as a payload
         @return: The status of the request as str
         """
-
-        self.status=''
-
-        if policy_data != '' :
-            pdata=policy_data
-        elif self.policy_data != '' :
-            pdata=self.policy_data 
+        self.status='False'
+        if policy == '' :
+            self.status='url'
+            url = self.url+self.enb_slice_api+'/enb/'+str(enb)+'/slice/'+str(slice)
+        #if self.is_json(policy) == True:
         else:
-            self.log.error('cannot find the policy data '  + pdata)
-            return
-	
-        if as_payload == True :
-            url = self.url+self.rrm_policy_api
-        else: 
-            url = self.url+self.rrm_api+'/'+flexran_rest_api.pf_name
+            self.status='payload'
+            url = self.url+self.enb_slice_api+'/enb/'+str(enb)
+        #else:
+            #self.log.warn('mal-formated policy file' + json.dumps(policy))
+            #return  self.status
         
         if self.op_mode == 'test' :
             self.log.info('POST ' + str(url))
-            self.log.debug(self.dump_policy(policy_data=pdata))
+            if  self.status=='payload' : 
+                print 'PAYLOAD' + json.dumps(policy)
             self.status='connected'
             
         elif self.op_mode == 'sdk' :
-            print self.dump_policy(pdata)
             try :
 		# post data as binary
-            	req = requests.post(url, data=self.dump_policy(pdata),headers={'Content-Type': 'application/octet-stream'})
-		
-            	if req.status_code == 200:
-            	    self.log.info('successfully applied the policy')
-            	    self.status='connected'
-            	else :
-            	    self.status='disconnected'
-            	    self.log.error('Request error code : ' + req.status_code)
+                if  self.status=='payload' : 
+                    req = requests.post(url, data=json.dumps(policy),headers={'Content-Type': 'application/json'})
+                else:
+                    req = requests.post(url)
+                    
+                if req.status_code == 200:
+                    self.log.info('successfully applied the policy')
+                    self.status='connected'
+                else :
+                    self.status='disconnected'
+                    self.log.error('Request error code : ' + str(req.status_code))
             except :
                 self.log.error('Failed to apply the policy ' )
             
@@ -408,15 +422,115 @@ class rrm_policy (object):
 	    self.status='unknown'
         return self.status 
 
-    def dump_policy(self, policy_data=''):
-        """!@brief return the content of the policy in ymal format
+    def associate_ues_slices(self, enb=-1, ue_rnti=0, slice=0, policy=''):
+        """!@brief Associate UEs to slices FlexRAN-RTC. 
+        
+        @param policy_data: content of the policy file of type str
+        @param as_payload: embed the applied policy as a payload
+        @return: The status of the request as str
+        """
+        self.status='False'
+        if policy == '' :  # short version 
+            self.status='url'
+            url = self.url+self.ue_slice_api+'/enb/'+str(enb)+'/ue/'+str(ue_rnti)+'/slice/'+str(slice)
+        #if self.is_json(policy) == True:
+        else:
+            self.status='payload'
+            url = self.url+self.ue_slice_api+'/enb/'+str(enb)
+        #else:
+            #self.log.warn('mal-formated policy file' + json.dumps(policy))
+            #return  self.status
+        
+        
+        if self.op_mode == 'test' :
+            self.log.info('POST ' + str(url))
+            if  self.status=='payload' : 
+                print 'PAYLOAD' + json.dumps(policy)
+            self.status='connected'
+            
+        elif self.op_mode == 'sdk' :
+            try :
+		# post data as binary
+                if  self.status=='payload' : 
+            	    req = requests.post(url, data=json.dumps(policy),headers={'Content-Type': 'application/json'})
+		else:
+                    req = requests.post(url)
+                    
+            	if req.status_code == 200:
+            	    self.log.info('successfully associated UEs to Slices')
+            	    self.status='connected'
+            	else :
+            	    self.status='disconnected'
+            	    self.log.error('Request error code : ' + str(req.status_code))
+            except :
+                self.log.error('Failed to associate UEs to Slices ' )
+            
+        else :
+            self.log.warn('Unknown operation mode ' + op_mode )
+	    self.status='unknown'
+        return self.status 
+
+    def delete_slice(self, enb=-1, slice=0, policy=''):
+        """!@brief Delet a slice and its associated policy . 
+        
+        @param enb: eNB ID 
+        @param slice: slice id 
+        @param policy_data: content of the policy file of type str
+        @return: The status of the request as str
+        """
+        self.status='False'
+        if policy == '' :
+            self.status='url'
+            url = self.url+self.enb_slice_api+'/enb/'+str(enb)+'/slice/'+str(slice)
+        else:
+        #if self.is_json(policy) == True:
+            self.status='payload'
+            url = self.url+self.enb_slice_api+'/enb/'+str(enb)
+        #else:
+            #self.log.warn('mal-formated policy file' + json.dumps(policy))
+            #return  self.status
+        
+        
+        if self.op_mode == 'test' :
+            self.log.info('DELETE ' + str(url))
+            if  self.status=='payload' : 
+                print 'PAYLOAD' + json.dumps(policy)
+            self.status='connected'
+            
+        elif self.op_mode == 'sdk' :
+            try :
+		# post data as binary
+                if  self.status=='payload' : 
+            	    req = requests.delete(url, data=json.dumps(policy),headers={'Content-Type': 'application/json'})
+		else:
+                    req = requests.delete(url)
+                    
+            	if req.status_code == 200:
+            	    self.log.info('successfully applied the policy')
+            	    self.status='connected'
+            	else :
+            	    self.status='disconnected'
+            	    self.log.error('Request error code : ' + str(req.status_code))
+            except :
+                self.log.error('Failed to apply the policy ' )
+            
+        else :
+            self.log.warn('Unknown operation mode ' + op_mode )
+	    self.status='unknown'
+        return self.status 
+    
+    def dump_policy(self, policy_data='', format='yaml'):
+        """!@brief return the content of the policy given the requested format
         
         @param policy_data: content of the policy file
         @return: The policy data in YAML format
         """
         
         if policy_data != '' :
-            return yaml.dump(policy_data, default_flow_style=False, default_style='"')
+            if format == 'yaml':
+                return yaml.dump(policy_data, default_flow_style=False, default_style='"')
+            elif format == 'json' :
+                return json.dumps(policy_data)
         elif self.policy_data != '' :
             return yaml.dump(self.policy_data, default_flow_style=False, default_style='"')
         else:
@@ -446,7 +560,7 @@ class rrm_policy (object):
         if format == 'yaml' or format == 'YAML':
             yaml.dump(self.policy_data, stream)
         elif format == 'json' :
-            json.dump(self.policy_data, stream)
+            json.dumps(self.policy_data, stream)
         else :
             self.log.error('unsupported format')
             
@@ -878,7 +992,7 @@ class stats_manager(object):
     def __del__(self):
         if self.recording:
             with open(self.stats_data_recorded_file, 'w') as outfile:
-                json.dump(self.stats_data_recorded, outfile)
+                json.dumps(self.stats_data_recorded, outfile)
 
               
     def start_recorder(self):
@@ -895,7 +1009,7 @@ class stats_manager(object):
             self.recording=False
             try:
                 with open(self.stats_data_recorded_file, 'w') as outfile:
-                    json.dump(self.stats_data_recorded, outfile)
+                    json.dumps(self.stats_data_recorded, outfile)
                     self.log.info('recorded file can be found at '+ self.stats_data_recorded_file)
             except:
                 self.log.error('cannot open the file ' + self.stats_data_recorded_file)
@@ -956,7 +1070,7 @@ class stats_manager(object):
                         self.stats_data_recorded_log.append(self.stats_data)
                 else :
                     self.status='disconnected'
-                    self.log.error('Request error code : ' + req.status_code)
+                    self.log.error('Request error code : ' + str(req.status_code))
             except :
                 self.log.error('Request url ' + url + ' failed')
             
@@ -989,6 +1103,7 @@ class stats_manager(object):
         """!@brief Get the number of connected eNB to this controller 
         
         """
+        
         return len(self.stats_data['eNB_config'])
 
     def get_ue_config(self,enb=0,ue=0):
@@ -1634,6 +1749,7 @@ class ss_policy (object):
         # NB APIs endpoints
         self.rrm_api=flexran_rest_api.rrm
         self.rrm_policy_api=flexran_rest_api.rrm_policy
+        self.conf_api=flexran_rest_api.enb_conf
         # stats manager data requeted by the endpoint
         # could be extended to have data per API endpoint
         self.policy_data = ''
@@ -1722,7 +1838,7 @@ class ss_policy (object):
 
     # apply policy with policy data 
     # TBD: apply policy from a file
-    def apply_policy(self, policy_data='',as_payload=True):
+    def apply_policy(self, enb=0, policy_data='',as_payload=True):
         """!@brief Apply the default or user-defined policy 
         
         @param policy_data: content of the policy file
@@ -1738,28 +1854,24 @@ class ss_policy (object):
         else:
             self.log.error('cannot find the policy data '  + pdata)
             return
-	
-        if as_payload == True :
-            url = self.url+self.rrm_policy_api
-        else: 
-            url = self.url+self.rrm_api+'/'+flexran_rest_api.pf_name
-        
+
+        url = self.url+self.conf_api+'/enb/'+str(enb)    
+    
         if self.op_mode == 'test' :
             self.log.info('POST ' + str(url))
             self.log.debug(self.dump_policy(policy_data=pdata))
             self.status='connected'
             
         elif self.op_mode == 'sdk' :
-            print self.dump_policy(pdata)
             try :
 		# post data as binary
-            	req = requests.post(url, data=self.dump_policy(pdata),headers={'Content-Type': 'application/octet-stream'})
+            	req = requests.post(url, data=json.dumps(pdata),headers={'Content-Type': 'application/json'})
             	if req.status_code == 200:
             	    self.log.info('successfully applied the policy')
             	    self.status='connected'
             	else :
             	    self.status='disconnected'
-            	    self.log.error('Request error code : ' + req.status_code)
+            	    self.log.error('Request error code : ' + str(req.status_code))
             except :
                 self.log.error('Failed to apply the policy ' )
             

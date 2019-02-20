@@ -59,6 +59,7 @@ class sma_app(object):
     decisions = []
     next_decisions = []
     changes = []
+    enb_conf = []
     output = []
     graphs = []
     period=1
@@ -264,14 +265,18 @@ class sma_app(object):
         self.next_decisions = []
 	self.open_data_all_options = []
         for bs in range(sm.get_num_enb()):
-           cell_id = sm.get_enb_id(bs)
-	   mvno_group = None
-   	   for i in self.enb_assign:
-	       if i['cell_id'] == cell_id:
-	           mvno_group = i['MVNO_group']
-		   break
-	   found_rule = False
-           if mvno_group is not None:
+            cell_id = sm.get_enb_id(bs)
+	    mvno_group = None
+   	    for i in self.enb_assign:
+	        if i['cell_id'] == cell_id:
+	            mvno_group = i['MVNO_group']
+		    break
+            found_rule = False
+            
+            if mvno_group is None:
+                ss.set_enb_assign(cell_id, 'groupA')
+	        self.log.info('cell id ' + str(cell_id) + ' is assigned to groupA (default)')	
+            else :               
 	       for rule_index in range(len(self.rules)):
 	           if self.rules[rule_index]['MVNO_group'] == mvno_group:
 			found_rule = True
@@ -303,8 +308,6 @@ class sma_app(object):
 			break
 	       if not found_rule:
 	           self.log.info('not found mvno group named ' +str(mvno_group)+ ' for cell id ' +str(cell_id))
-           else:
-	       self.log.info('cell id ' + str(cell_id) + ' do not have any mvno group assigned')	
 
         self.log.debug('Next decisions: ')
         self.log.debug(yaml.dump(self.next_decisions))
@@ -333,8 +336,8 @@ class sma_app(object):
                 self.log.info('Change policy to eNB: ' + str(self.next_decisions[i]['eNB_index']) + \
                         ' MVNO_group: ' + str(self.next_decisions[i]['MVNO_group'])) 
                 for j in self.decisions[i].keys():
-                    if (self.decisions[i][j] != self.next_decisions[i][j]):
-                        a[i][j] = self.next_decisions[i][j]
+                    #if (self.decisions[i][j] != self.next_decisions[i][j]):
+                    a[i][j] = self.next_decisions[i][j]
                 self.decisions[i] = self.next_decisions[i]
 
         del self.changes
@@ -364,11 +367,12 @@ class sma_app(object):
         else:
             return int(-1)
 
+        
     def generate_output(self):
         file = open('outputs/output_policy.yaml','w')
         self.output = {'enb': []};
 
-
+        
         for i in range(len(self.changes)):
             if len(self.changes[i]) > 0:
                 enb_id = self.decisions[i]['eNB_index']
@@ -382,9 +386,33 @@ class sma_app(object):
                     if j == 'frame_type':
                         self.output['enb'][enb_id][enb_id]['frame_type']=self.parse_frame_type(self.options[i]['frame_type'])
                         self.output['enb'][enb_id][enb_id]['ul_freq_offset']=int(self.options[i]['fdd_spacing'])
-        
+
         yaml.dump(self.output,file,default_flow_style=False)
-        self.log.info('\n' + yaml.dump(self.output)) 
+        self.log.info('\n' + yaml.dump(self.output))
+
+    def generate_conf(self):
+        file = open('outputs/output_policy.json','w')
+        self.output = {'enb': []};
+
+        for i in range(len(self.changes)):
+            if len(self.changes[i]) > 0:
+                enb_id = self.decisions[i]['eNB_index']
+                cell_id = self.options[i]['eNB_id']
+                self.output['enb'].append({enb_id:{}})
+                self.output['cell_id']=int(cell_id)
+                for j in self.changes[i].keys():
+                    if j == 'freq_max':
+                        self.output['enb'][enb_id][enb_id]['dlFreq']=int(self.changes[i][j]-self.options[i]['bandwidth']/2.0)
+                        self.output['enb'][enb_id][enb_id]['ulFreq']=int(self.options[i]['fdd_spacing'])+int(self.changes[i][j]-self.options[i]['bandwidth']/2.0)
+                        if self.output['enb'][enb_id][enb_id]['dlFreq'] > 2600 :  
+                            self.output['enb'][enb_id][enb_id]['eutraBand']=7
+                        elif self.output['enb'][enb_id][enb_id]['dlFreq'] < 800 :
+                            self.output['enb'][enb_id][enb_id]['eutraBand']=13
+                    if j == 'bandwidth':
+                        self.output['enb'][enb_id][enb_id]['dlBandwidth']=self.translate_bandwidth(self.options[i]['bandwidth'])
+                        self.output['enb'][enb_id][enb_id]['ulBandwidth']=self.translate_bandwidth(self.options[i]['bandwidth'])
+        json.dumps(self.output)
+        self.log.info('\n' + json.dumps(self.output))
 
     def load_policy(self):
         self.rules = ss.get_rules()
@@ -428,12 +456,14 @@ class sma_app(object):
         # apply spectrum sharing policy
         self.check_changes_policy()
 
-        self.generate_output()
+        #self.generate_output()
+        self.generate_conf()
 	
 	# send the updated list when there is a changes
-        if self.check_if_decisions_changed():
-            ss.apply_policy(self.output)
-	    sma_open_data.notify('get-list',self.open_data_all_options)
+        if self.check_if_decisions_changed():          
+            ss.apply_policy(enb=self.output['cell_id'], policy_data=self.output['enb'][0][0])
+            self.enb_conf.append(self.output)
+            sma_open_data.notify('get-list',self.open_data_all_options)
 	    #client.send({'get_current':json.dumps(self.next_decisions)})
 
         # short time scale
@@ -484,14 +514,14 @@ class sma_app(object):
 	    self.graphs_enable = False
 
     def open_data_on_message(self, client, id, method, params, message):
-        if method == 'get-list':
+        if method == 'get-list' or method == 'list':
             client.send_result(id, self.open_data_all_options)
         elif method == 'set_rule_group_A':
-            ss.set_enb_assign(0, 'groupA')
+            ss.set_enb_assign(self.enb_conf[0]['cell_id'], 'groupA')
             client.send_result(id, 'Rules switched to group A')
 	    sma_open_data.notify_others(message, client)
         elif method == 'set_rule_group_B':
-            ss.set_enb_assign(0,'groupB')
+            ss.set_enb_assign(self.enb_conf[0]['cell_id'],'groupB')
             client.send_result(id, 'Rules switched to group B')
 	    sma_open_data.notify_others(message, client)
 	elif method == 'set_rule':

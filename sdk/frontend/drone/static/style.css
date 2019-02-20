@@ -97,7 +97,7 @@ td {
     border-style: outset;
     border-radius: 0.4em;
     padding: 4px;
-    min-height: 40px;
+    min-height: 20px;
     flex: 1 0 auto;
     display: flex;
     justify-content: center;

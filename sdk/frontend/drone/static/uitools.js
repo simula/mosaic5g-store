@@ -469,7 +469,8 @@ var uitools = (function () {
 	    // If the target popup element has 'data-prepare', execute
 	    // it before the popup as preparation stage.
 	    params.popup = action;
-	    params.value = popup.attr("data-value");
+	    if (params.value === undefined)
+		params.value = popup.attr("data-value");
 	    var prepare = popup.attr("data-prepare");
 	    if (prepare) {
 		call(prepare,
@@ -482,7 +483,11 @@ var uitools = (function () {
 	    }
 
 	    // Set focus to first input element (if any)
-	    popup.select("input:not([type=hidden])").each(function () { this.focus();});
+
+	    // Note: Use selectAll instead of "popup.select(..)",
+	    // which would overwrite __data__ of the selected input
+	    // element.
+	    popup.selectAll("input:not([type=hidden])").node().focus();
 
 	    // Call resize hook if specified
 	    call_resize(popup.node());
@@ -914,7 +919,8 @@ var uitools = (function () {
 		.on("click", tab_select)
 		.each(function(d, i) {
 		    // Move the tooltip into tabsbar, if defined
-		    var tip = d3.select(d).select('.tab > .tooltip').node();
+		    // var tip = d3.select(d).select('.tab > .tooltip').node();
+		    var tip = select(d, '.tab > .tooltip').node();
 		    if (tip) {
 			this.appendChild(tip);
 		    }
@@ -1158,7 +1164,7 @@ var uitools = (function () {
 			}
 		    });
 		} else {
-		    menu = d3.select(target).select(".popup-menu");
+		    menu = select(target, ".popup-menu");
 		}
 		var prepare = menu.attr("data-prepare");
 		if (prepare)
@@ -1180,7 +1186,7 @@ var uitools = (function () {
     }
 
     function _tooltip_position() {
-	var tip = d3.select(this).select(".tooltip").node();
+	var tip = select(this, ".tooltip").node();
 	var box = getPosition(this);
 	var top = 0;
 	var left = this.offsetWidth; // 'right' placement is the default
@@ -1228,6 +1234,18 @@ var uitools = (function () {
 	elem.appendChild(node);
     }
 
+    function select(elem, selector) {
+	// Construct d3 selection containing descendant element of
+	// elem which matches the selector without causing __data__
+	// being overwritten, e.g.
+	//
+	//  d3.select(elem).select(selector) will overwrite
+	//  __data__ of selected item with data of elem,
+	// if it has such.
+	//
+	return d3.select(elem.querySelector(selector));
+    }
+
     // Override default submit for any form with "data-submit" 
     d3.selectAll("form[data-submit]").on("submit", submit_popup);
 
@@ -1261,6 +1279,7 @@ var uitools = (function () {
 		}
 	    }
 	},
+	select: select,
 	open_popup: open_popup,
 	close_popup: close_popup,
 	context_popup: context_popup,
