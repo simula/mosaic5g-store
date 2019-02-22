@@ -1,6 +1,6 @@
 [
     {
-    "op": "update",
+    "op": "replace",
 	"path": "",
 	"value": null,
 	"from": "RAN Adapter"

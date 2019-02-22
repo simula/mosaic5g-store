@@ -26,8 +26,10 @@ paths:
         required: true
         content:
           application/json:
-            schema:            
-              $ref: '#/components/schemas/RanAdapterConstraints'
+            schema:
+               type: array
+               items:            
+                  $ref: '#/components/schemas/RanAdapterConstraints'
       responses:
         '200':
           description: OK
@@ -53,7 +55,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/RanAdapterConstraints"
+              type: array
+              items:
+                $ref: "#/components/schemas/RanAdapterConstraints"
       responses:
         '201':
           description: Added

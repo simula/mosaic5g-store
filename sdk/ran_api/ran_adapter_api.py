@@ -195,6 +195,15 @@ def cpsr_update():
         #update the information if necessary
         #update_instance_info()    
         t = Timer(adapter.heartbeat_timer, cpsr_update,()).start()
+    if (status == 400): #resend   
+        #print(res_body)
+        adapter.log.info("[CPSR_Update] Status: " + str(status))
+        adapter.log.info("[CPSR_Update] Send update afer " + str(adapter.heartbeat_timer) + ' seconds')
+        jsondata = json.loads(res_body)              
+        #update the information if necessary
+        #update_instance_info()    
+        t = Timer(adapter.heartbeat_timer, cpsr_update,()).start()
+        
     #if there's no information
     elif (status == 404): 
         cpsr_register()       
@@ -213,9 +222,6 @@ def init():
     parser.add_argument('--port', metavar='[option]', action='store', type=str,
                         required=False, default='9999', 
                         help='set the FlexRAN RTC port: 9999 (default)')
-    parser.add_argument('--app-port', metavar='[option]', action='store', type=int,
-                        required=False, default=8080, 
-                        help='set the App port to open data: 8080 (default)')
     parser.add_argument('--op-mode', metavar='[option]', action='store', type=str,
                         required=False, default='sdk', 
                         help='Set the app operation mode either with FlexRAN or with the test json files: test, sdk(default)')
@@ -369,25 +375,66 @@ def post_QoSOnRAN(sliceId, body):
     """
     Step 0: get information from the request and verify the input
     """
-    try:
-        direction = body['bandIncDir']  
-        band_inc_val = float(body['bandIncVal'])        
-    except (ValueError, KeyError):
-        return NoContent, 400    
+    num_request = len(body)
+    if (num_request > 2):
+        return NoContent, 400
+    
+    dir = {}
+    unit_scale = {}
+    band_inc_val = {}
+    band_unit_scale = {}
+    unit_scale_ul = 1
+    unit_scale_dl = 1
+    band_inc_val_dl = 0.0
+    band_inc_val_ul = 0.0   
+    
+    for req in range (0, num_request):
+        try:
+            direction = body[req]['bandIncDir']  
+        except (ValueError, KeyError):
+            print ('Bad request!')
+            return NoContent, 400  
+        if  direction == 'dl' or direction == 'DL':
+            dir[req] = 'dl'
+        elif direction == 'ul' or direction == 'UL':
+            dir[req] = 'ul'                            
+ 
+    if num_request == 2:
+        if dir[0] == dir[1]:
+            print('Bad request!')
+            return NoContent, 400
         
-    if direction == 'dl' or direction == 'DL':
-        dir = 'dl'
-    elif direction == 'ul' or direction == 'UL':
-        dir = 'ul'
-    else : #Unknown directions        
-        return NoContent, 400    
-    
-    band_unit_scale = body['bandUnitScale']
-    if (band_unit_scale == 'MB' or band_unit_scale == 'mb'):
-        unit_scale = 1000
-    if (band_unit_scale == 'KB' or band_unit_scale == 'kb'):
-        unit_scale = 1      
-    
+    for req in range (0, num_request):
+        if  dir[req] == 'dl':
+            try:
+                band_inc_val_dl = float(body[req]['bandIncVal'])    
+                band_unit_scale_dl = body[req]['bandUnitScale']
+            except (ValueError, KeyError):
+                return NoContent, 400
+            
+            if (band_unit_scale_dl == 'MB' or band_unit_scale_dl == 'mb'):
+                unit_scale_dl = 1000
+            if (band_unit_scale_dl == 'KB' or band_unit_scale_dl == 'kb'):
+                unit_scale_dl = 1
+            print('Received QoS parameters for slice '  + str (sliceId) + ', direction dl, bandIncVal ' + str(band_inc_val_dl) + ', bandUnitScale ' + str(band_unit_scale_dl))
+              
+        elif dir[req] == 'ul':
+            try:
+                band_inc_val_ul = float(body[req]['bandIncVal'])  
+                band_unit_scale_ul = body[req]['bandUnitScale']
+            except (ValueError, KeyError):
+                return NoContent, 400     
+            if (band_unit_scale_ul == 'MB' or band_unit_scale_ul == 'mb'):
+                unit_scale_ul = 1000
+            if (band_unit_scale_ul == 'KB' or band_unit_scale_ul == 'kb'):
+                unit_scale_ul = 1
+            print('Received QoS parameters for slice '  + str (sliceId) + ', direction ul, bandIncVal ' + str(band_inc_val_ul) + ', bandUnitScale ' + str(band_unit_scale_ul))
+  
+    if num_request == 2:
+        if dir[0] == dir[1]:
+            return NoContent, 400
+        
+  
     """
     Step 1: collect the necessary information by relying on FlexRAN
     """                
@@ -415,27 +462,23 @@ def post_QoSOnRAN(sliceId, body):
     if (slice_id < 0):
         adapter.log.info('SliceId is not valid')
         return NoContent, 400
-    elif (slice_id > sm.get_num_slices(dir='dl') and dir=='dl'):
-        adapter.log.info('SliceId is not valid')
-        return NoContent, 400
-    elif (slice_id > sm.get_num_slices(dir='ul') and dir=='ul'):
-        adapter.log.info('SliceId is not valid')
-        return NoContent, 400   
-    
+    for req in range(0, num_request):
+        if not sm.check_slice_id(sid=slice_id, dir=dir[req]):
+            print ('slice '+ str(slice_id)+ ' is not exist! (dir=' + str(dir[req]) + ')' )
+            return NoContent, 400       
+   
     #print log
-    adapter.log.info('Received QoS parameters for slice '  + str (sliceId) + ', direction ' + str(dir) + ', bandIncVal ' + str(band_inc_val) + ', bandUnitScale ' + str(band_unit_scale))
-    
-         
     adapter.log.info('Number DL slices: ' + str(sm.get_num_slices(dir='dl')))
-    for slice in range(0, sm.get_num_slices(dir='dl')):
+    for slice in sm.get_slice_ids(dir='dl'):
         adapter.log.info('RB percentage for slice (slice=' + str(slice) + ', dir=dl): ' +  str(sm.get_slice_percentage(sid=slice, dir='dl')))      
     adapter.log.info('Number UL slices: ' + str(sm.get_num_slices(dir='ul')))
-    for slice in range(0, sm.get_num_slices(dir='ul')):
+    for slice in sm.get_slice_ids(dir='ul'):
         adapter.log.info('RB percentage for slice (slice=' + str(slice) + ', dir=ul): '+  str(sm.get_slice_percentage(sid=slice, dir='ul')))  
     for enb in range(0, sm.get_num_enb()) :
         adapter.log.info('Number DL RB: ' + str(adapter.enb_dlrb[enb]))
         adapter.log.info('Number UL RB: ' + str(adapter.enb_ulrb[enb]))           
-      
+    
+    
     """
     Step 2: Caculate current bitrate based on N_RB, SliceID
     """ 
@@ -443,20 +486,20 @@ def post_QoSOnRAN(sliceId, body):
     #Caculate current bitrate based on N_RB  
     for enb in range(0, sm.get_num_enb()) :
         # Loop on slices to calculate the current bit rate, for DL first
-        for slice in range(0, sm.get_num_slices(dir='dl')):
+        for slice in sm.get_slice_ids(dir='dl'):
             sid = slice
             slice_dl_tbs = 0
             dl_itbs = rrm_app_vars.mcs_to_itbs[sm.get_slice_maxmcs(sid=sid, dir='dl')]            
             adapter.max_rate_dl[enb] = rrm_app_vars.tbs_table[dl_itbs][adapter.enb_dlrb[enb]]
             adapter.current_rate_dl[enb][sid] = adapter.max_rate_dl[enb] * sm.get_slice_percentage(sid=sid, dir='dl')/100.0            
-            adapter.current_slice_dlrb[enb][sid] =  int (adapter.enb_dlrb[enb] * sm.get_slice_percentage(sid=sid, dir='dl')/100.0)           
-                    
+            adapter.current_slice_dlrb[enb][sid] =  int (adapter.enb_dlrb[enb] * sm.get_slice_percentage(sid=sid, dir='dl')/100.0)         
+                 
             adapter.log.debug('Max Rate DL (enb): (' + str(enb) + ') ' + str(adapter.max_rate_dl[enb]))
             adapter.log.debug('Current Rate DL (enb,sid, percentage): (' + str(enb) + ', ' + str(sid) + ', '+ str(sm.get_slice_percentage(sid=sid, dir='dl'))+') ' + str(adapter.current_rate_dl[enb][sid]))
             adapter.log.debug('Current slice RB DL (enb,sid): (' + str(enb) + ', ' + str(sid) + ') ' + str(adapter.current_slice_dlrb[enb][sid]))
         
         # Loop on slices to calculate the current bit rate, for UL                                 
-        for slice in range(0, sm.get_num_slices(dir='ul')):
+        for slice in sm.get_slice_ids(dir='ul'):
             sid = slice
             slice_ul_tbs = 0
             ul_itbs = rrm_app_vars.mcs_to_itbs[sm.get_slice_maxmcs(sid=sid, dir='ul')]            
@@ -478,9 +521,9 @@ def post_QoSOnRAN(sliceId, body):
         allocated_dlrb[enb] = {}
         allocated_ulrb[enb] = {}
         #for DL
-        for slice in range(0, sm.get_num_slices(dir='dl')):
+        for slice in sm.get_slice_ids(dir='dl'):
             allocated_dlrb[enb][slice] = 0
-            for sid in range(0, sm.get_num_slices(dir='dl')):
+            for sid in sm.get_slice_ids(dir='dl'):
                 if (sid != slice):
                     allocated_dlrb[enb][slice] += int (adapter.enb_dlrb[enb] * sm.get_slice_percentage(sid=sid, dir='dl')/100.0)
                 
@@ -489,9 +532,9 @@ def post_QoSOnRAN(sliceId, body):
             adapter.log.debug('Available DL RB for (enb): (' + str(enb) + ') ' + str(adapter.enb_dlrb[enb]))
             adapter.log.debug('Available DL RB for (enb,sid): (' + str(enb) + ', ' + str(slice) + ') ' + str(adapter.slice_availabe_dlrb[enb][slice]))
         #for UL
-        for slice in range(0, sm.get_num_slices(dir='ul')):
+        for slice in sm.get_slice_ids(dir='ul'):
             allocated_ulrb[enb][slice] = 0
-            for sid in range(0, sm.get_num_slices(dir='ul')):
+            for sid in sm.get_slice_ids(dir='ul'):
                 if (sid != slice):
                     allocated_ulrb[enb][slice] += int (adapter.enb_ulrb[enb] * sm.get_slice_percentage(sid=sid, dir='ul')/100.0)
                 
@@ -500,22 +543,22 @@ def post_QoSOnRAN(sliceId, body):
             adapter.log.debug('Available UL RB for (enb): (' + str(enb) + ') ' + str(adapter.enb_ulrb[enb]))
             adapter.log.debug('Available UL RB for (enb,sid): (' + str(enb) + ', ' + str(slice) + ') ' + str(adapter.slice_availabe_ulrb[enb][slice]))                            
     
-    '''
+    """
     Step 2: Caculate the new value
           New_bitrate = current_bitrate + band_inc_val * unit_scale
           Adjust/calibrate the new_bitrate to make sure that the corresponding number of RB is not less than a minimum RB 
           and not greater than RB available for this slice 
-    '''
+    """
     
     for enb in range(0, sm.get_num_enb()) :
         # Loop on slices to caculate the new bitrate for DL
-        for slice in range(0, sm.get_num_slices(dir='dl')):
+        for slice in sm.get_slice_ids(dir='dl'):
             slice_dl_tbs = 0.0
             sid = slice            
-            adapter.new_rate_dl[enb][sid] = adapter.current_rate_dl[enb][sid] +  float(band_inc_val) * float(unit_scale)
+            adapter.new_rate_dl[enb][sid] = adapter.current_rate_dl[enb][sid] +  float(band_inc_val_dl) * float(unit_scale_dl)
             adapter.log.debug('Expected Bitrate DL (enb,sid): (' + str(enb) + ', ' + str(sid) + ') ' + str(adapter.new_rate_dl[enb][sid]))
             #calculate the required RB for DL
-            dl_itbs = rrm_app_vars.mcs_to_itbs[sm.get_slice_maxmcs(sid=sid, dir='DL')]
+            dl_itbs = rrm_app_vars.mcs_to_itbs[sm.get_slice_maxmcs(sid=sid, dir='dl')]
             expected_dlrb = 0
              
             while slice_dl_tbs  < adapter.new_rate_dl[enb][sid] :
@@ -540,13 +583,13 @@ def post_QoSOnRAN(sliceId, body):
             adapter.log.debug('DL Percentage to be set (enb,sid): (' + str(enb) + ', ' + str(sid) + ') ' + str(adapter.percentage_dl[enb][sid]))           
         
         # Loop on slices to caculate the new bitrate for UL   
-        for slice in range(0, sm.get_num_slices(dir='ul')):
+        for slice in sm.get_slice_ids(dir='ul'):
             slice_ul_tbs = 0.0
             sid = slice            
-            adapter.new_rate_ul[enb][sid] = adapter.current_rate_ul[enb][sid] +  float(band_inc_val) * float(unit_scale)
+            adapter.new_rate_ul[enb][sid] = adapter.current_rate_ul[enb][sid] +  float(band_inc_val_ul) * float(unit_scale_ul)
             adapter.log.debug('Expected Bitrate UL (enb,sid): (' + str(enb) + ', ' + str(sid) + ') ' + str(adapter.new_rate_ul[enb][sid]))
             #calculate the required RB for UL
-            ul_itbs = rrm_app_vars.mcs_to_itbs[sm.get_slice_maxmcs(sid=sid, dir='UL')]
+            ul_itbs = rrm_app_vars.mcs_to_itbs[sm.get_slice_maxmcs(sid=sid, dir='ul')]
             expected_ulrb = 0
              
             while slice_ul_tbs  < adapter.new_rate_ul[enb][sid] :
@@ -575,43 +618,61 @@ def post_QoSOnRAN(sliceId, body):
     """         
     
     slice_config_dl={"intrasliceShareActive":"false","intersliceShareActive":"false","dl":[{"id":0,"percentage":100, "maxmcs":28}]}
-    slice_config_ul={"intrasliceShareActive":"false","intersliceShareActive":"false","ul":[{"id":0,"percentage":100, "maxmcs":28}]}
+    slice_config_ul={"intrasliceShareActive":"false","intersliceShareActive":"false","ul":[{"id":0,"percentage":100, "maxmcs":20}]}
+    slice_config={"intrasliceShareActive":"false","intersliceShareActive":"false","ul":[{"id":0,"percentage":100, "maxmcs":20}], "dl":[{"id":0,"percentage":100, "maxmcs":28}] }
     
     for enb in range(0, sm.get_num_enb()) :
-        for slice in range(0, sm.get_num_slices(dir=dir)):
-            if (slice == slice_id): 
-                adapter.log.info('Send command to FlexRAN to set slice configuration')
-                              
-                if (dir == 'dl'):
-                    data_dl  = sm.get_slice_config(sid=slice_id, dir='dl')
-                    slice_config_dl['dl'][0]['percentage'] = adapter.percentage_dl[enb][slice_id]
-                    slice_config_dl['dl'][0]['id'] = slice_id
-                    slice_config_dl['dl'][0]['maxmcs'] = data_dl["maxmcs"]
-                    #slice_config["dl"][slice_id]["percentage"] = adapter.percentage_dl[enb][slice_id]
-                    adapter.log.info("Slice Configuration for DL: " + str(adapter.percentage_dl[enb][slice_id]))
-                    adapter.log.info("Slice Configuration will be pushed to FlexRAN: \n" + str(slice_config_dl))
-                    status = rrm.rrm_apply_policy(slice=slice_id, policy=slice_config_dl)
+        if (num_request == 1):        
+            adapter.log.info('Send command to FlexRAN to set slice configuration')                            
+            if (dir[0] == 'dl'):
+                data_dl  = sm.get_slice_config(sid=slice_id, dir='dl')
+                slice_config_dl['dl'][0]['percentage'] = adapter.percentage_dl[enb][slice_id]
+                slice_config_dl['dl'][0]['id'] = slice_id
+                slice_config_dl['dl'][0]['maxmcs'] = data_dl["maxmcs"]
+                #slice_config["dl"][slice_id]["percentage"] = adapter.percentage_dl[enb][slice_id]
+                adapter.log.info("Slice Configuration for DL: " + str(adapter.percentage_dl[enb][slice_id]))
+                adapter.log.info("Slice Configuration will be pushed to FlexRAN: \n" + str(slice_config_dl))
+                status = rrm.rrm_apply_policy(slice=slice_id, policy=slice_config_dl)
                      
-                if (dir == 'ul'):
-                    data_ul  = sm.get_slice_config(sid=slice_id, dir='ul')
-                    slice_config_ul["ul"][0]["percentage"] = adapter.percentage_ul[enb][slice_id]
-                    slice_config_ul["ul"][0]["id"] = slice_id
-                    slice_config_ul["ul"][0]["maxmcs"] = data_ul["maxmcs"]
-                    #slice_config["ul"][slice_id]["percentage"] = adapter.percentage_ul[enb][slice_id]
-                    adapter.log.info("Slice Configuration for UL: " + str(adapter.percentage_ul[enb][slice_id]))
-                    adapter.log.info("Slice Configuration will be pushed to FlexRAN: \n" + str(slice_config_ul)) 
-                    status = rrm.rrm_apply_policy(slice=slice_id, policy=slice_config_ul)
+            if (dir[0] == 'ul'):
+                data_ul  = sm.get_slice_config(sid=slice_id, dir='ul')
+                slice_config_ul["ul"][0]["percentage"] = adapter.percentage_ul[enb][slice_id]
+                slice_config_ul["ul"][0]["id"] = slice_id
+                slice_config_ul["ul"][0]["maxmcs"] = data_ul["maxmcs"]
+                #slice_config["ul"][slice_id]["percentage"] = adapter.percentage_ul[enb][slice_id]
+                adapter.log.info("Slice Configuration for UL: " + str(adapter.percentage_ul[enb][slice_id]))
+                adapter.log.info("Slice Configuration will be pushed to FlexRAN: \n" + str(slice_config_ul)) 
+                status = rrm.rrm_apply_policy(slice=slice_id, policy=slice_config_ul)
                     
-                #apply to FlexRAN
-                #status = rrm.rrm_apply_policy(slice=slice_id, policy=slice_config)
-                if (status != 'connected'):                
-                    return NoContent, 500
-        
+            #apply to FlexRAN
+            if (status != 'connected'):                
+                return NoContent, 500
+            
+        elif (num_request == 2):
+            adapter.log.info('Send command to FlexRAN to set slice configuration')                            
+            data_dl  = sm.get_slice_config(sid=slice_id, dir='dl')
+            slice_config['dl'][0]['percentage'] = adapter.percentage_dl[enb][slice_id]
+            slice_config['dl'][0]['id'] = slice_id
+            slice_config['dl'][0]['maxmcs'] = data_dl["maxmcs"]
+            adapter.log.info("Slice Configuration for DL: " + str(adapter.percentage_dl[enb][slice_id]))
+
+            data_ul  = sm.get_slice_config(sid=slice_id, dir='ul')
+            slice_config["ul"][0]["percentage"] = adapter.percentage_ul[enb][slice_id]
+            slice_config["ul"][0]["id"] = slice_id
+            slice_config["ul"][0]["maxmcs"] = data_ul["maxmcs"]
+            adapter.log.info("Slice Configuration for UL: " + str(adapter.percentage_ul[enb][slice_id]))                 
+           
+            adapter.log.info("Slice Configuration will be pushed to FlexRAN: \n" + str(slice_config)) 
+            status = rrm.rrm_apply_policy(slice=slice_id, policy=slice_config)
+
+            #apply to FlexRAN
+            if (status != 'connected'):                
+                return NoContent, 500            
+            
     if (status == 'connected'):
         return NoContent, 201
     else:
-        return NoContent, 500
-             
+        return NoContent, 500      
         
         
 

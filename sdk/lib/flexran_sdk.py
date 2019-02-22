@@ -1719,7 +1719,7 @@ class stats_manager(object):
 
     #TTN, new functions supporting slice
     def get_num_slices(self, enb=0, cc=0, dir='dl'):
-        """!@brief Get the number of connected eNB to this controller 
+        """!@brief Get the number of slices of this eNB 
         
         """
         if dir == 'dl' or dir == 'DL' :
@@ -1734,38 +1734,73 @@ class stats_manager(object):
         """!@brief Get the current percentage share for a slice 
         
         """
-        if dir == 'dl' or dir == 'DL' :
-            return self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['sliceConfig']['dl'][sid]['percentage']
-        elif dir == 'ul' or dir == 'UL' :
-            return self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['sliceConfig']['ul'][sid]['percentage']
-        else :
-            self.log.warning('unknown direction ' + dir + 'set to DL')
-            return self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['sliceConfig']['dl'][sid]['percentage']
+        for slice in range(0, self.get_num_slices(enb=enb, cc=cc, dir=dir)):
+             if int(self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['sliceConfig'][dir][slice]['id']) == sid:
+                 if dir == 'dl' or dir == 'DL' :
+                     return self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['sliceConfig']['dl'][slice]['percentage']    
+                 elif dir == 'ul' or dir == 'UL' :
+                     return self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['sliceConfig']['ul'][slice]['percentage']
+                 else :
+                     self.log.warning('unknown direction ' + dir + 'set to DL')
+                     return self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['sliceConfig']['dl'][slice]['percentage']
+                 
+
+        self.log.warning('unknown slice id ' + str(sid) +' (dir=' + dir + ')')
+        return 0
 
     def get_slice_maxmcs(self, enb=0, cc=0, sid=0, dir='dl'):
         """!@brief Get the number of max MCS for a slice 
         
         """
-        if dir == 'dl' or dir == 'DL' :
-            return self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['sliceConfig']['dl'][sid]['maxmcs']
-        elif dir == 'ul' or dir == 'UL' :
-            return self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['sliceConfig']['ul'][sid]['maxmcs']
-        else :
-            self.log.warning('unknown direction ' + dir + 'set to DL')
-            return self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['sliceConfig']['dl'][sid]['maxmcs']
+        for slice in range(0, self.get_num_slices(enb=enb, cc=cc, dir=dir)):
+            if int(self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['sliceConfig'][dir][slice]['id']) == sid:
+                if dir == 'dl' or dir == 'DL' :
+                    return self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['sliceConfig']['dl'][slice]['maxmcs']
+                elif dir == 'ul' or dir == 'UL' :
+                    return self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['sliceConfig']['ul'][slice]['maxmcs']
+                else :
+                    self.log.warning('unknown direction ' + dir + 'set to DL')
+                    return self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['sliceConfig']['dl'][slice]['maxmcs']
+        self.log.warning('unknown slice id ' + str(sid) +' (dir=' + dir + ')')
+        return 28
+            
 
     def get_slice_config(self, enb=0, cc=0, sid=0, dir='dl'):
         """!@brief Get configuration of a particular slice
         
         """
-        if dir == 'dl' or dir == 'DL' :
-            return self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['sliceConfig']['dl'][sid]
-        elif dir == 'ul' or dir == 'UL' :
-            return self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['sliceConfig']['ul'][sid]
-        else :
-            self.log.warning('unknown direction ' + dir + 'set to DL')
-            return self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['sliceConfig']['dl'][sid]
-
+        for slice in range(0, self.get_num_slices(enb=enb, cc=cc, dir=dir)):
+            if int(self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['sliceConfig'][dir][slice]['id']) == sid:
+                if dir == 'dl' or dir == 'DL' :
+                    return self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['sliceConfig']['dl'][slice]    
+                elif dir == 'ul' or dir == 'UL' :
+                    return self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['sliceConfig']['ul'][slice]
+                else :
+                    self.log.warning('unknown direction ' + dir + 'set to DL')
+                    return self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['sliceConfig']['dl'][slice]
+                 
+ 
+        self.log.warning('unknown slice id ' + str(sid) +' (dir=' + dir + ')')
+        return '' 
+    def check_slice_id(self, enb=0, cc=0, sid=0, dir='dl'):
+        """!@brief verify the existence of a particular slice
+        
+        """
+        for slice in range(0, self.get_num_slices(enb=enb, cc=cc, dir=dir)):
+            if int(self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['sliceConfig'][dir][slice]['id']) == sid:
+                return True          
+        self.log.warning('unknown slice id ' + str(sid) +' (dir=' + dir + ')')
+        return False
+    
+    def get_slice_ids(self, enb=0, cc=0, dir='dl'):
+        """!@brief Get id of all slices in one direction
+        
+        """
+        slice_ids = []
+        for slice in range(0, self.get_num_slices(enb=enb, cc=cc, dir=dir)):
+            slice_ids.append (int(self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['sliceConfig'][dir][slice]['id']))              
+        return slice_ids 
+    
 class ss_policy (object):
     """!@brief Spectrum sharing class
         

@@ -11,11 +11,17 @@ import subprocess
 import time
 
 
-body = {
+body = [{
+  "bandIncDir": "DL",
+  "bandIncVal": "10",
+  "bandUnitScale": "MB"
+},
+    {
   "bandIncDir": "UL",
   "bandIncVal": "10",
   "bandUnitScale": "MB"
 }
+]
 
 class ranAdapter_client(object):
     url = "http://localhost:9090/slicenet/ctrlplane/ranadapter/v1/ranadapter-instance/" #/0/set_qos_on_ran"
@@ -72,20 +78,35 @@ class ranAdapter_client(object):
             
 if __name__ == '__main__':
     ranAdapter_client = ranAdapter_client()
-    
+    '''
     #reduce percentage of slice 0 to 50%
-    reduce_slice_percentage='{"intrasliceShareActive":false,"intersliceShareActive":false,"dl":[{"id":0,"percentage":50}]}'
+    reduce_slice_percentage='{"intrasliceShareActive":false,"intersliceShareActive":false,"dl":[{"id":0,"percentage":30}]}'
     cmd_reduce= 'curl -X POST http://localhost:9999/slice/enb/-1 --data ' + reduce_slice_percentage #192.168.12.45
     print(cmd_reduce)
     return_code = subprocess.call(cmd_reduce, shell=True)
     
     #create the second slice
     time.sleep(5)
-    second_slice='{"intrasliceShareActive":false,"intersliceShareActive":false,"dl":[{"id":1,"percentage":50}]}'
+    second_slice='{"intrasliceShareActive":false,"intersliceShareActive":false,"dl":[{"id":5,"percentage":10}]}'
     cmd_create = 'curl -X POST http://localhost:9999/slice/enb/-1 --data ' + second_slice
     print(cmd_create)
     return_code = subprocess.call(cmd_create, shell=True)   
     
+        #reduce percentage of slice 0 to 50%
+    reduce_slice_percentage='{"intrasliceShareActive":false,"intersliceShareActive":false,"ul":[{"id":0,"percentage":30}]}'
+    cmd_reduce= 'curl -X POST http://localhost:9999/slice/enb/-1 --data ' + reduce_slice_percentage #192.168.12.45
+    print(cmd_reduce)
+    return_code = subprocess.call(cmd_reduce, shell=True)
+    '''
+    #create the second slice
+    #time.sleep(5)
+    second_slice='{"intrasliceShareActive":false,"intersliceShareActive":false,"ul":[{"id":1,"percentage":10}]}'
+    cmd_create = 'curl -X POST http://localhost:9999/slice/enb/-1 --data ' + second_slice
+    print(cmd_create)
+    return_code = subprocess.call(cmd_create, shell=True) 
+    
+    
+    '''
     #set QoS on RAN: decrease 5MB for DL (slice 0)
     time.sleep(5)    
     ranAdapter_client.set_qos_parameters(bandIncDir='dl', bandIncVal='-5')    
@@ -119,9 +140,9 @@ if __name__ == '__main__':
     time.sleep(5)
     ranAdapter_client.set_qos_parameters(bandIncDir='dl', bandIncVal='20') 
     ranAdapter_client.set_QoSOnRAN(sid=1, method='POST')
-        
+    '''    
     #set QoS on RAN: decrease 5MB for UL (slice 0)
     time.sleep(5)
-    ranAdapter_client.set_qos_parameters(bandIncDir='ul', bandIncVal='-10')    
+    #ranAdapter_client.set_qos_parameters(bandIncDir='ul', bandIncVal='-10')    
     ranAdapter_client.set_QoSOnRAN(sid=0, method='POST')
     
