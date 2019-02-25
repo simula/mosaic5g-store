@@ -13,6 +13,7 @@ from threading import Timer
 import urllib2
 import urllib
 
+CPSR_REGISTRATION_INTERVAL=10 
 
 class adapter(object):
     #for FlexRAN
@@ -24,7 +25,6 @@ class adapter(object):
     maxmcs_dl= {}
     maxmcs_ul = {}
 
-
     enb_ulrb={}
     enb_dlrb={}
     enb_ulmaxmcs={}
@@ -33,12 +33,12 @@ class adapter(object):
     ue_dlwcqi={}
     ue_phr={}
 
-    lc_ue_bsr={}
-    lc_ue_report={}
-    lc_ue_dlrb={}
-    lc_ue_ulrb={}
-    lc_ue_dltbs={}
-    lc_ue_ultbs={}
+    #lc_ue_bsr={}
+    #lc_ue_report={}
+    #lc_ue_dlrb={}
+    #lc_ue_ulrb={}
+    #lc_ue_dltbs={}
+    #lc_ue_ultbs={}
     
     ue_dlmcs={}
     ue_ulmcs={}
@@ -65,8 +65,7 @@ class adapter(object):
     percentage_dl = {}
     percentage_ul = {}
     min_ulrb = {}
-    min_dlrb = {}
-    
+    min_dlrb = {}    
     
     #for CPSR
     cpsr_url = '' 
@@ -77,7 +76,7 @@ def update_instance_info(cpsStatus='', cpsInstanceId='', slicenetId='', serviceI
     """
         
     #read JSON file
-    with open('./inputs/cpsr.json', "+r") as data_file:
+    with open('./inputs/ran_adapter_cpsr.json', "+r") as data_file:
         data = json.load(data_file)
         data_file.close()
         
@@ -96,7 +95,7 @@ def update_instance_info(cpsStatus='', cpsInstanceId='', slicenetId='', serviceI
         data["capacity"] = capacity                 
                       
     #write the update information to the file
-    with open('./inputs/cpsr.json', "w") as data_file:
+    with open('./inputs/ran_adapter_cpsr.json', "w") as data_file:
         #json.dump(data,data_file)
         data_file.write(json.dumps(data))
         data_file.close()
@@ -108,7 +107,7 @@ def cpsr_register():
     """
     status = 0                
     # Read JSON file
-    with open('./inputs/cpsr.json') as data_file:
+    with open('./inputs/ran_adapter_cpsr.json') as data_file:
         data = json.load(data_file)
         data_file.close()
     #print(data)
@@ -144,14 +143,14 @@ def cpsr_register():
         t = Timer(adapter.heartbeat_timer, cpsr_update,()).start() 
     else:
         #for the moment,try registratin after 10s
-        t = Timer(10, cpsr_register,()).start()        
+        t = Timer(CPSR_REGISTRATION_INTERVAL, cpsr_register,()).start()        
            
 def cpsr_update():
     """!@brief Update the Adpater with a NRF (e.g., CPSR) 
     """
     status = 0                
     # Read JSON file
-    with open('./inputs/cpsr_update.json') as data_file:
+    with open('./inputs/ran_adapter_cpsr_update.json') as data_file:
         data = json.load(data_file)
         data_file.close()
     #print(data)
@@ -256,13 +255,8 @@ def get_statistics(sm):
         for ue in range(0, sm.get_num_ue(enb=enb)) :
             adapter.ue_dlwcqi[enb,ue]   = sm.get_ue_dlwbcqi(enb,ue)
             adapter.ue_phr[enb,ue]      = sm.get_ue_phr(enb,ue)
-            # skip the control channels, SRB1 and SRB2
-            for lc in range(2, sm.get_num_ue_lc(enb=enb,ue=ue)) :
-                # for each lcgid rater than lc
-                adapter.lc_ue_bsr[enb,ue,lc] = sm.get_ue_bsr(enb,ue,lc=lc)
-                adapter.lc_ue_report[enb, ue, lc] = sm.get_ue_lc_report(enb=enb, ue=ue, lc=lc)
+
                        
-            
 def get_ue_mcs(enb, ue, dir='dl'):
     """!@brief get_ue_mcs Get the value of MCS 
         @param enb: index of eNB
@@ -271,32 +265,12 @@ def get_ue_mcs(enb, ue, dir='dl'):
     """
     if dir == 'dl' or dir == "DL":
         return rrm_app_vars.cqi_to_mcs[adapter.ue_dlwcqi[enb,ue]]
-    elif dir == 'ul' or dir == "UL": #TTN should be verified for UL
+    elif dir == 'ul' or dir == "UL": 
         return 8 # f(ue_phr[enb,ue])
     #else :
     #    self.log.error('Unknown direction ' + dir)
     #    return
-
-def update_slice_info(sid, percentage, dir='dl'):
-    """!@brief update_slice_info update the slice info into a json file
-    """
-        
-    #read JSON file
-    with open('./inputs/slice_config.json', "+r") as data_file:
-        data = json.load(data_file)
-        data_file.close()
-        
-    #Update the data, for example
-    data[dir]["id"] = sid
-    data[dir]["percentage"] = percentage             
-          
-    #write the update information to the file
-    with open('./inputs/slice_config.json', "w") as data_file:
-        #json.dump(data,data_file)
-        data_file.write(json.dumps(data))
-        data_file.close()
-        
-        
+  
 def initialize_variables(rrm,sm):
     """!@brief initialize_variables Initialize the parameters based on collected information from FlexRAN 
         @param rrm: Radio resource management policy (rrm_policy, FlexRAN sdk) 
@@ -348,12 +322,7 @@ def initialize_variables(rrm,sm):
             #adapter.ue_dlmcs[enb,ue] = rrm_app_vars.cqi_to_mcs[adapter.ue_dlwcqi[enb,ue]]
             adapter.ue_ulmcs[enb,ue] = get_ue_mcs(enb, ue, "UL")
             adapter.ue_ulrb[enb,ue]  = 0
-            adapter.ue_dlrb[enb,ue]  = 0
-            # skip the control channels, SRB1 and SRB2, start at index 2
-            for lc in range(2, sm.get_num_ue_lc(enb=enb,ue=ue)) :
-                # Initialization of number of RBs for LC
-                adapter.lc_ue_ulrb[enb,ue,lc] = 0
-                adapter.lc_ue_dlrb[enb,ue,lc] = 0          
+            adapter.ue_dlrb[enb,ue]  = 0     
       
                                    
 def put_QoSOnRAN(sliceId, body):
@@ -429,16 +398,10 @@ def post_QoSOnRAN(sliceId, body):
             if (band_unit_scale_ul == 'KB' or band_unit_scale_ul == 'kb'):
                 unit_scale_ul = 1
             print('Received QoS parameters for slice '  + str (sliceId) + ', direction ul, bandIncVal ' + str(band_inc_val_ul) + ', bandUnitScale ' + str(band_unit_scale_ul))
-  
-    if num_request == 2:
-        if dir[0] == dir[1]:
-            return NoContent, 400
-        
-  
+ 
     """
     Step 1: collect the necessary information by relying on FlexRAN
     """                
-    #adapter.log = flexran_sdk.logger(log_level=adapter.log_level).init_logger()
     rrm = flexran_sdk.rrm_policy(log=adapter.log,
                                  url=adapter.url,
                                  port=adapter.port,

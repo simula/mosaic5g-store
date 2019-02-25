@@ -1,1 +1,16 @@
-{"ul": [{"percentage": 100, "maxmcs": 20, "id": 0}], "dl": [{"percentage": 44.0, "maxmcs": 28, "id": 0}], "intrasliceShareActive": true, "intersliceShareActive": true}
+[{
+  "id": 0,
+  "local_ip": "192.168.12.100",
+  "remote_ip": "193.55.113.100"
+},
+    {
+  "id": 1,
+  "local_ip": "192.168.12.101",
+  "remote_ip": "193.55.113.101"
+},
+{
+  "id": 2,
+  "local_ip": "192.168.12.102",
+  "remote_ip": "193.55.113.102"
+}
+]

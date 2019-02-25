@@ -11,7 +11,7 @@ import argparse
 
  
 def init():
-    print "CPSR service is running"
+    print ("CPSR service is running")
             
 def UpdateCPSInstance(cpsInstanceId, body):
     """!@brief UpdateCPSInstance Update CPS Instance profile

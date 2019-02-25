@@ -43,7 +43,7 @@ import os
 import pprint
 import yaml
 
-from logger import *
+from lib.logger import *
 
 
 class llmec_rest_api(object):
@@ -53,6 +53,10 @@ class llmec_rest_api(object):
  
     """!@brief flow status API endpoint"""
     fs_all='inputs/flow_stats.json'
+    
+    """!@brief Input data sets for all the status used for test"""
+    bs_all='inputs/bearer_stats.json'
+    
 
     """!@brief add/get/remove a ue bearer API endpoint"""
     # APIs : bearer is the smallest unit 
@@ -82,6 +86,7 @@ class bearer_manager(object):
         self.op_mode = op_mode
         self.log = log
         self.stats_data = ''
+        self.bs_file = llmec_rest_api.bs_all
 
         
         self.ue_bearer_context=''
@@ -164,6 +169,9 @@ class bearer_manager(object):
       
         if self.op_mode == 'test' :
             self.log.info('GET ' + str(url))
+            for index in range(0, len(self.bearer_context)):
+                if (self.bearer_context[index]['imsi'] == imsi) and self.bearer_context[index]['eps_bearer_id'] == eps_drb:
+                    return self.bearer_context[index]
             status='connected'
         elif self.op_mode == 'sdk' :
             try :
@@ -193,6 +201,9 @@ class bearer_manager(object):
       
         if self.op_mode == 'test' :
             self.log.info('GET ' + str(url))
+            with open(self.bs_file, "r") as data_file:
+                self.bearer_context = json.load(data_file)                
+                data_file.close()                
             status='connected'
         elif self.op_mode == 'sdk' :
             try :
@@ -397,7 +408,85 @@ class bearer_manager(object):
         else :
             self.log.warn('Unknown operation mode ' + op_mode )
             
-        return status 
+        return status
+     
+    #begin TTN
+    def redirect_all_ue_bearers_belong_to_sliceid(self, imsi='208950000000001',slice_id=0, from_ip='172.16.0.2',to_ip='192.168.12.79'):
+        """!@brief redirect all  ue bearers beloging to a slice from a remote/local server to a local/remote server 
+     
+        @param from_ip: the ip address of the server from which all the flows will be redirected
+        @param to_ip: the ip address of the server to which all the flows will be redirected
+        @param imsi: imsi
+        @param slice_id: slice id               
+        """
+        for index in range(0, len(self.bearer_context)):
+            if (self.bearer_context[index]['imsi'] == imsi) and (int(self.bearer_context[index]['slice_id']) == slice_id):
+                eps_drb = self.bearer_context[index]['eps_bearer_id']      
+                url = self.url+self.redirect_ue_bearer_api+'/'+imsi+','+str(eps_drb)
+                data= {'from':from_ip, 'to': to_ip}
+                status='disconnected'
+        
+                if self.op_mode == 'test' :
+                    self.log.info('POST ' + str(url))
+                    self.log.info('Data ' + str(data))
+                    status='connected'
+                elif self.op_mode == 'sdk' : 
+                    try :
+                        self.log.debug('POST ' + str(url))
+                        self.log.debug('Data ' + str(data))
+               
+                        req = requests.post(url,json.dumps(data),headers={'Content-Type': 'application/x-www-form-urlencoded'})
+                        if req.status_code == 200 :
+                            self.log.debug('successfully redirected the UE bearer' )
+                            status='connected'
+                        else :
+                            self.log.error('Request error code : ' + req.status_code)
+                    except :
+                        self.log.error('Failed to redirect a UE bearer associated to slice id ' + str(slice_id))
+
+                else :
+                    self.log.warn('Unknown operation mode ' + op_mode )
+            
+                return status
+            
+    def redirect_ue_bearer_belong_to_sliceid(self, imsi='208950000000001',eps_drb=1, slice_id=0, from_ip='172.16.0.2',to_ip='192.168.12.79'):
+        """!@brief redirect ue bearer from a remote server to a local server 
+     
+        @param from_ip: the ip address of the server from which all the flows will be redirected
+        @param to_ip: the ip address of the server to which all the flows will be redirected
+        @param imsi: imsi
+        @param slice_id: slice id
+                       
+        """
+        for index in range(0, len(self.bearer_context)):
+            if (self.bearer_context[index]['imsi'] == imsi) and (int(self.bearer_context[index]['slice_id']) == slice_id) and (eps_drb ==  int(self.bearer_context[index]['eps_bearer_id'])):
+                url = self.url+self.redirect_ue_bearer_api+'/'+imsi+','+str(eps_drb)
+                data= {'from':from_ip, 'to': to_ip}
+                status='disconnected'
+        
+                if self.op_mode == 'test' :
+                    self.log.info('POST ' + str(url))
+                    self.log.info('Data ' + str(data))
+                    status='connected'
+                elif self.op_mode == 'sdk' : 
+                    try :
+                        self.log.debug('POST ' + str(url))
+                        self.log.debug('Data ' + str(data))
+               
+                        req = requests.post(url,json.dumps(data),headers={'Content-Type': 'application/x-www-form-urlencoded'})
+                        if req.status_code == 200 :
+                            self.log.debug('successfully redirected the UE bearer' )
+                            status='connected'
+                        else :
+                            self.log.error('Request error code : ' + req.status_code)
+                    except :
+                        self.log.error('Failed to redirect a UE bearer associated to slice id ' + str(slice_id))
+
+                else :
+                    self.log.warn('Unknown operation mode ' + op_mode )
+            
+                return status
+    #end TTN
 
 class flow_manager(object):
     def __init__(self, log, url='http://localhost', port='9999', op_mode='test'):
@@ -427,13 +516,17 @@ class flow_manager(object):
         if self.op_mode == 'test' :
             
             file =  self.fs_file
-            
+            #file = '/home/voiture/store/sdk/inputs/flow_stats_1.json'
+
+        
             try:
-                with open(file) as data_file:
+                with open(file, "r+") as data_file:
                     self.stats_data = json.load(data_file)
                     self.status='connected'
+                    print self.stats_data
+                    data_file.close()
             except :
-                self.log.error('cannot find the output file'  + file )       
+                self.log.error('[THINH] cannot find the output file '  + file )       
 
 
         elif self.op_mode == 'sdk' : 
@@ -507,4 +600,5 @@ class flow_manager(object):
 
         self.log.info('UE id ' + str(ue_id) + ' : ' + flow_dir + ' flow table id: ' + str(self.stats_data[index][dir]['flow_table_id']))    
         return self.stats_data[index][dir]['flow_table_id']
+
 

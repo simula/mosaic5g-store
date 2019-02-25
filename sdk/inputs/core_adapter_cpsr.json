@@ -1,0 +1,39 @@
+{
+  "cpsInstanceId": "7b99a84e-34e8-11e9-b210-d663bd873d93",
+  "cpsType": "COR_ADAPTER",
+  "cpsStatus": "REGISTERED",
+  "slicenetId": "984be0c4-34e8-11e9-b210-d663bd873d93",
+  "fqdn": "",
+  "ipv4Addresses": [
+    "127.0.0.1"
+  ],
+  "ipv6Addresses": ["2001::1"],
+  "ipv6Prefixes": ["2001::"],
+  "capacity": 0,
+  "load": 0,
+  "cpsServices": [
+    {
+      "serviceInstanceId": "7b99a84e-34e8-11e9-b210-d663bd873d93",
+      "serviceName": "qos",
+      "version": "v1",
+      "schema": "http",
+      "slicenetId": "984be0c4-34e8-11e9-b210-d663bd873d93",
+      "fqdn": "",
+      "ipEndPoints": [
+        {
+          "ipv4Address": "127.0.0.1",
+          "ipv6Address": "2001::1",
+          "ipv6Prefix": "2001::",
+          "transport": "tcp",
+          "port": 8080
+        }
+      ],
+      "apiPrefix": "/slicenet/ctrlplane",
+      "defaultNotificationSubscriptions": [["2"],["3"]],
+      "allowedCPSTypes": ["COR_ADAPTER"],
+      "allowedSlices": ["1","2"],
+      "capacity": 0,
+      "load": 0
+    }
+  ]
+}
