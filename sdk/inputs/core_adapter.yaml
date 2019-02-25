@@ -108,15 +108,15 @@ components:
         routes:
           type: array
           items:
-            $ref: '#/components/schemas/BearerIds'
+            $ref: '#/components/schemas/SeverAddresses'
 
-    BearerIds:
+    SeverAddresses:
       type: object
       properties:
-        bearerIdFrom:
-          type: integer
-        bearerIdTo:
-          type: integer
+        FromServer:
+          type: string
+        ToServer:
+          type: string
           
     CoreAdapterConstraints:
         type: object
