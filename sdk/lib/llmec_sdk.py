@@ -419,12 +419,12 @@ class bearer_manager(object):
         @param imsi: imsi
         @param slice_id: slice id               
         """
+        status='disconnected'
         for index in range(0, len(self.bearer_context)):
             if (self.bearer_context[index]['imsi'] == imsi) and (int(self.bearer_context[index]['slice_id']) == slice_id):
                 eps_drb = self.bearer_context[index]['eps_bearer_id']      
                 url = self.url+self.redirect_ue_bearer_api+'/'+imsi+','+str(eps_drb)
-                data= {'from':from_ip, 'to': to_ip}
-                status='disconnected'
+                data= {'from':from_ip, 'to': to_ip}                
         
                 if self.op_mode == 'test' :
                     self.log.info('POST ' + str(url))
@@ -443,11 +443,11 @@ class bearer_manager(object):
                             self.log.error('Request error code : ' + req.status_code)
                     except :
                         self.log.error('Failed to redirect a UE bearer associated to slice id ' + str(slice_id))
-
                 else :
                     self.log.warn('Unknown operation mode ' + op_mode )
             
                 return status
+        return status    
             
     def redirect_ue_bearer_belong_to_sliceid(self, imsi='208950000000001',eps_drb=1, slice_id=0, from_ip='172.16.0.2',to_ip='192.168.12.79'):
         """!@brief redirect ue bearer from a remote server to a local server 
@@ -458,11 +458,11 @@ class bearer_manager(object):
         @param slice_id: slice id
                        
         """
+        status='disconnected'
         for index in range(0, len(self.bearer_context)):
             if (self.bearer_context[index]['imsi'] == imsi) and (int(self.bearer_context[index]['slice_id']) == slice_id) and (eps_drb ==  int(self.bearer_context[index]['eps_bearer_id'])):
                 url = self.url+self.redirect_ue_bearer_api+'/'+imsi+','+str(eps_drb)
                 data= {'from':from_ip, 'to': to_ip}
-                status='disconnected'
         
                 if self.op_mode == 'test' :
                     self.log.info('POST ' + str(url))
@@ -486,6 +486,7 @@ class bearer_manager(object):
                     self.log.warn('Unknown operation mode ' + op_mode )
             
                 return status
+        return status 
     #end TTN
 
 class flow_manager(object):

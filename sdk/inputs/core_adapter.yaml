@@ -21,7 +21,7 @@ paths:
           description: ID of the slice associated to CoreAdapter
           required: true
           schema:
-            type: string
+            type: integer
         - name: userEqId
           in: query
           required: true
@@ -60,7 +60,7 @@ paths:
           description: ID of the slice associated to CoreAdapter
           required: true
           schema:
-            type: string
+            type: integer
         - name: userEqId
           in: query
           required: true
