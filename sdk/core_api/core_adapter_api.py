@@ -273,7 +273,7 @@ def post_QoSOnCore(sliceId, userEqId, body, epsBearerId=-1):
     remote_ip = slice_config[0]['remote_ip']
     local_ip = slice_config[0]['local_ip']
     for index in range(0, len(slice_config)):
-        if (slice_config[index]['id'] == sliceId):
+        if (slice_config[index]['sid'] == sliceId):
             remote_ip = slice_config[index]['remote_ip']
             local_ip = slice_config[index]['local_ip']            
     

@@ -45,6 +45,7 @@ class core_adapter_client(object):
     def set_qoS_on_core(self, method='POST', sid=0, userEqId ='208950000000009', epsBearerId=1, body=body):
         """!@brief set_qoS_on_core set QOS Constraints on Core Adapter
         """
+        time.sleep(1)  
         status = 0                
         #self.set_qos_parameters(bandIncDir='ul', bandIncVal='10')        
         jsondata = json.dumps(self.qos_parameters)
@@ -79,5 +80,12 @@ class core_adapter_client(object):
             
 if __name__ == '__main__':
     core_adapter_client = core_adapter_client()
-    core_adapter_client.set_qoS_on_core(sid=0, userEqId='208950000000009', epsBearerId=5, method='POST')
+    core_adapter_client.set_qoS_on_core(sid=0, userEqId='208950000000009', epsBearerId=5, method='POST')    
+    core_adapter_client.set_qoS_on_core(sid=0, userEqId='208950000000009', epsBearerId=-1, method='POST')
+    core_adapter_client.set_qoS_on_core(sid=1, userEqId='208950000000009', epsBearerId=-1, method='POST')
+    core_adapter_client.set_qoS_on_core(sid=0, userEqId='208950000000001', epsBearerId=5, method='POST')
+    #test invalid request
+    core_adapter_client.set_qoS_on_core(sid=2, userEqId='208950000000009', epsBearerId=-1, method='POST')
+    core_adapter_client.set_qoS_on_core(sid=1, userEqId='208950000000008', epsBearerId=-1, method='POST')
+    core_adapter_client.set_qoS_on_core(sid=0, userEqId='208950000000009', epsBearerId=6, method='POST')
     
