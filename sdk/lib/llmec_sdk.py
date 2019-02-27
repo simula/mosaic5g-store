@@ -446,7 +446,7 @@ class bearer_manager(object):
                 else :
                     self.log.warn('Unknown operation mode ' + op_mode )
             
-                return status
+                #return status
         return status    
             
     def redirect_ue_bearer_belong_to_sliceid(self, imsi='208950000000001',eps_drb=1, slice_id=0, from_ip='172.16.0.2',to_ip='192.168.12.79'):
@@ -460,7 +460,7 @@ class bearer_manager(object):
         """
         status='disconnected'
         for index in range(0, len(self.bearer_context)):
-            if (self.bearer_context[index]['imsi'] == imsi) and (int(self.bearer_context[index]['slice_id']) == slice_id) and (eps_drb ==  int(self.bearer_context[index]['eps_bearer_id'])):
+            if (self.bearer_context[index]['imsi'] == imsi) and (int(self.bearer_context[index]['slice_id']) == slice_id) and (int(self.bearer_context[index]['eps_bearer_id']) == eps_drb):
                 url = self.url+self.redirect_ue_bearer_api+'/'+imsi+','+str(eps_drb)
                 data= {'from':from_ip, 'to': to_ip}
         

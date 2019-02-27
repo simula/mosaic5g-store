@@ -42,6 +42,8 @@ paths:
               type: array
               items:             
                 $ref: '#/components/schemas/CoreAdapterConstraints'
+              minItems: 1
+              maxItems: 2
       responses:
         '200':
           description: OK
@@ -82,6 +84,8 @@ paths:
               type: array
               items: 
                 $ref: "#/components/schemas/CoreAdapterConstraints"
+              minItems: 1
+              maxItems: 2
       responses:
         '200':
           description: Expected response to a valid request

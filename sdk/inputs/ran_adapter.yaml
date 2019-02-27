@@ -30,6 +30,8 @@ paths:
                type: array
                items:            
                   $ref: '#/components/schemas/RanAdapterConstraints'
+               minItems: 1
+               maxItems: 2
       responses:
         '200':
           description: OK
@@ -58,6 +60,8 @@ paths:
               type: array
               items:
                 $ref: "#/components/schemas/RanAdapterConstraints"
+              minItems: 1
+              maxItems: 2
       responses:
         '201':
           description: Added

@@ -15,12 +15,12 @@ body = [{
   "bandIncDir": "DL",
   "bandIncVal": "10",
   "bandUnitScale": "MB"
-},
-    {
+   },
+   {
   "bandIncDir": "UL",
   "bandIncVal": "10",
   "bandUnitScale": "MB"
-}
+  }  
 ]
 
 class core_adapter_client(object):

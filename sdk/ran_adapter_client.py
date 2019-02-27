@@ -11,17 +11,25 @@ import subprocess
 import time
 
 
-body = [{
+body_req_ul_dl = [{
   "bandIncDir": "DL",
-  "bandIncVal": "10",
+  "bandIncVal": "-10",
   "bandUnitScale": "MB"
 },
-    {
+{
   "bandIncDir": "UL",
-  "bandIncVal": "10",
+  "bandIncVal": "-10",
   "bandUnitScale": "MB"
 }
 ]
+body_req = [{
+  "bandIncDir": "DL",
+  "bandIncVal": "-10",
+  "bandUnitScale": "MB"
+}
+]
+
+
 
 class ranAdapter_client(object):
     url = "http://localhost:9090/slicenet/ctrlplane/ranadapter/v1/ranadapter-instance/" #/0/set_qos_on_ran"
@@ -30,7 +38,8 @@ class ranAdapter_client(object):
     
     def __init__(self, url='http://localhost'):
         super(ranAdapter_client, self).__init__()
-        self.qos_parameters = body 
+        self.qos_parameters = body_req 
+        self.qos_parameters_ul_dl = body_req_ul_dl 
           
     def set_qos_parameters (self, bandIncDir ='UL',bandIncVal='1',bandUnitScale='MB'):
         #jsondata = json.dumps(body)
@@ -40,14 +49,28 @@ class ranAdapter_client(object):
             self.qos_parameters['bandIncVal'] =  bandIncVal
         if (bandUnitScale != ''):
             self.qos_parameters['bandUnitScale'] =  bandUnitScale
-                        
-        
-    def set_QoSOnRAN(self, method='POST', sid=0, body=body):
+    
+    def set_qos_parameters_ul_dl (self, bandIncVal_ul='1',bandUnitScale_ul='MB',bandIncVal_dl='1',bandUnitScale_dl='MB' ):
+        for index in range (0, len(self.qos_parameters_ul_dl)):
+            if self.qos_parameters_ul_dl[index]['bandIncDir'] == 'UL' or self.qos_parameters_ul_dl[index]['bandIncDir'] == 'ul':              
+                if (bandIncVal_ul != ''):
+                    self.qos_parameters_ul_dl[index]['bandIncVal'] =  bandIncVal_ul
+                if (bandUnitScale_ul != ''):
+                    self.qos_parameters_ul_dl[index]['bandUnitScale'] =  bandUnitScale_ul
+                                    
+            if self.qos_parameters_ul_dl[index]['bandIncDir'] == 'DL' or self.qos_parameters_ul_dl[index]['bandIncDir'] == 'dl':              
+                if (bandIncVal_dl != ''):
+                    self.qos_parameters_ul_dl[index]['bandIncVal'] =  bandIncVal_dl
+                if (bandUnitScale_dl != ''):
+                    self.qos_parameters_ul_dl[index]['bandUnitScale'] =  bandUnitScale_dl
+                    
+        print self.qos_parameters_ul_dl        
+    def set_QoSOnRAN(self, method='POST', sid=0, body=body_req):
         """!@brief set_QoSOnRAN set QOS Constraints on RAN Adapter
         """
         status = 0                
         #self.set_qos_parameters(bandIncDir='ul', bandIncVal='10')        
-        jsondata = json.dumps(self.qos_parameters)
+        jsondata = json.dumps(body)
         print("slice ID ", sid)
         print ('QoS parameters: ', str(jsondata))            
         #print(jsondata)        
@@ -97,52 +120,44 @@ if __name__ == '__main__':
     cmd_reduce= 'curl -X POST http://localhost:9999/slice/enb/-1 --data ' + reduce_slice_percentage #192.168.12.45
     print(cmd_reduce)
     return_code = subprocess.call(cmd_reduce, shell=True)
-    '''
+   
     #create the second slice
     #time.sleep(5)
     second_slice='{"intrasliceShareActive":false,"intersliceShareActive":false,"ul":[{"id":1,"percentage":10}]}'
     cmd_create = 'curl -X POST http://localhost:9999/slice/enb/-1 --data ' + second_slice
     print(cmd_create)
     return_code = subprocess.call(cmd_create, shell=True) 
-    
-    
-    '''
+  
     #set QoS on RAN: decrease 5MB for DL (slice 0)
     time.sleep(5)    
     ranAdapter_client.set_qos_parameters(bandIncDir='dl', bandIncVal='-5')    
-    ranAdapter_client.set_QoSOnRAN(sid=0, method='POST')
+    ranAdapter_client.set_QoSOnRAN(sid=0, method='POST', body=ranAdapter_client.qos_parameters)
     #set QoS on RAN: decrease 10MB for DL (slice 0)
     time.sleep(5)    
-    ranAdapter_client.set_qos_parameters(bandIncDir='dl', bandIncVal='-10')    
-    ranAdapter_client.set_QoSOnRAN(sid=0, method='POST')
-    #set QoS on RAN: decrease 10MB for DL (slice 0)
-    time.sleep(5)    
-    ranAdapter_client.set_qos_parameters(bandIncDir='dl', bandIncVal='-10')    
-    ranAdapter_client.set_QoSOnRAN(sid=0, method='POST')
-    #set QoS on RAN: decrease 10MB for DL (slice 1)
-    time.sleep(5)
-    ranAdapter_client.set_qos_parameters(bandIncDir='dl', bandIncVal='-10') 
-    ranAdapter_client.set_QoSOnRAN(sid=1, method='POST')
+    ranAdapter_client.set_qos_parameters(bandIncDir='dl', bandIncVal='-5')    
+    ranAdapter_client.set_QoSOnRAN(sid=0, method='POST', body=ranAdapter_client.qos_parameters)
+
     #set QoS on RAN: decrease 5MB for DL (slice 1)
     time.sleep(5)
-    ranAdapter_client.set_qos_parameters(bandIncDir='dl', bandIncVal='-20') 
+    ranAdapter_client.set_qos_parameters(bandIncDir='dl', bandIncVal='-15') 
     ranAdapter_client.set_QoSOnRAN(sid=1, method='POST')
     #set QoS on RAN: increase 20MB for DL (slice 1)
     time.sleep(5)
-    ranAdapter_client.set_qos_parameters(bandIncDir='dl', bandIncVal='20') 
+    ranAdapter_client.set_qos_parameters(bandIncDir='dl', bandIncVal='15') 
     ranAdapter_client.set_QoSOnRAN(sid=1, method='POST')
     
     #set QoS on RAN: increase 20MB for DL (slice 1)
     time.sleep(5)
-    ranAdapter_client.set_qos_parameters(bandIncDir='dl', bandIncVal='20') 
+    ranAdapter_client.set_qos_parameters(bandIncDir='dl', bandIncVal='10') 
     ranAdapter_client.set_QoSOnRAN(sid=1, method='POST')
     #set QoS on RAN: increase 20MB for DL (slice 1)
     time.sleep(5)
-    ranAdapter_client.set_qos_parameters(bandIncDir='dl', bandIncVal='20') 
+    ranAdapter_client.set_qos_parameters(bandIncDir='dl', bandIncVal='10') 
     ranAdapter_client.set_QoSOnRAN(sid=1, method='POST')
-    '''    
-    #set QoS on RAN: decrease 5MB for UL (slice 0)
-    time.sleep(5)
-    #ranAdapter_client.set_qos_parameters(bandIncDir='ul', bandIncVal='-10')    
-    ranAdapter_client.set_QoSOnRAN(sid=0, method='POST')
+    '''
+    #set QoS on RAN: decrease 10MB for DL and UL (slice 0)
+    #time.sleep(5)    
+    ranAdapter_client.set_qos_parameters_ul_dl( bandIncVal_ul='10',bandUnitScale_ul='MB',bandIncVal_dl='10',bandUnitScale_dl='MB')    
+    ranAdapter_client.set_QoSOnRAN(sid=0, method='POST', body=ranAdapter_client.qos_parameters_ul_dl)
+
     
