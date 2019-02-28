@@ -37,6 +37,8 @@ paths:
           description: OK
         '400':
           description: Bad Request
+        '500':
+          description: Internal Server Error
           
     post:
       summary: Add QOS Constraints on RAN Adapter

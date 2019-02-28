@@ -73,7 +73,7 @@ class core_adapter_client(object):
             print("Status: ", response.code)
             status = int(response.code)
         
-        if (status == 201):
+        if (status == 201) or (status == 200):
             print(res_body)         
                
    
@@ -82,8 +82,8 @@ if __name__ == '__main__':
     core_adapter_client = core_adapter_client()
     core_adapter_client.set_qoS_on_core(sid=0, userEqId='208950000000009', epsBearerId=5, method='POST')    
     core_adapter_client.set_qoS_on_core(sid=0, userEqId='208950000000009', epsBearerId=-1, method='POST')
-    core_adapter_client.set_qoS_on_core(sid=1, userEqId='208950000000009', epsBearerId=-1, method='POST')
-    core_adapter_client.set_qoS_on_core(sid=0, userEqId='208950000000001', epsBearerId=5, method='POST')
+    core_adapter_client.set_qoS_on_core(sid=1, userEqId='208950000000009', epsBearerId=-1, method='PUT')
+    core_adapter_client.set_qoS_on_core(sid=0, userEqId='208950000000001', epsBearerId=5, method='PUT')
     #test invalid request
     core_adapter_client.set_qoS_on_core(sid=2, userEqId='208950000000009', epsBearerId=-1, method='POST')
     core_adapter_client.set_qoS_on_core(sid=1, userEqId='208950000000008', epsBearerId=-1, method='POST')

@@ -217,8 +217,116 @@ def put_QoSOnCore(sliceId, userEqId, body, epsBearerId=-1):
         @param body: body of "PUT" message 
     """
     
-    post_QoSOnCore(sliceId, userEqId, body, epsBearerId)
+    """
+    Step 0: get information from the request and verify the input
+    """
+    dir = {}    
+    band_inc_val = 0.0
+    band_unit_scale = ''
+
+    #verify the input
+    num_request = len(body)
+    if (num_request > 2):
+        print ('Bad request!')
+        return NoContent, 400    
+
+    for req in range (0, num_request):
+        try:
+            direction = body[req]['bandIncDir']
+            band_inc_val = float(body[req]['bandIncVal'])    
+            band_unit_scale = body[req]['bandUnitScale']  
+        except (ValueError, KeyError):
+            print ('Bad request!')
+            return NoContent, 400          
+        if  direction == 'dl' or direction == 'DL':
+            dir[req] = 'dl'
+        elif direction == 'ul' or direction == 'UL':
+            dir[req] = 'ul'                            
+ 
+    if num_request == 2:
+        if dir[0] == dir[1]:
+            print('Bad request!')
+            return NoContent, 400
+        
+    """
+    Step 1: get slice_config info from a configuration file
+    """   
+    
+    #read slice_configuration file
+    with open('./inputs/slice_config.json', "r") as data_file:
+        slice_config = json.load(data_file)
+        data_file.close()
+        
+    #get slice config information 
+    #if slice_id doesn't exist -> get from the first slice
+    remote_ip = slice_config[0]['remote_ip']
+    local_ip = slice_config[0]['local_ip']
+    for index in range(0, len(slice_config)):
+        if (slice_config[index]['sid'] == sliceId):
+            remote_ip = slice_config[index]['remote_ip']
+            local_ip = slice_config[index]['local_ip']            
+    
+    """
+    Redirect Direction
+    for the moment, based on the first request only
+    if bandIncVal > 0 -> from remote to local
+       else from local to remote       
+    """ 
+    redirect_dir_to = 'remote'
+    if float(body[0]['bandIncVal']) > 0:
+        redirect_dir_to = 'local'    
             
+    print('Received request for imsi ' + str(userEqId) +', slice '  + str (sliceId) + ', eps bearer id '  + str (epsBearerId) + ', redirect direction to a ' + str(redirect_dir_to) + ' server')
+        
+    """
+    Step 2: collect the necessary information by relying on LL-MEC
+    """ 
+    
+    fm = llmec_sdk.flow_manager(log=adapter.log,
+                                url=adapter.url,
+                                port=adapter.port,
+                                op_mode=adapter.op_mode)
+    bm = llmec_sdk.bearer_manager(log=adapter.log,
+                                  url=adapter.url,
+                                  port=adapter.port,
+                                  op_mode=adapter.op_mode)
+    #fm.flow_status()
+    bm.get_all_bearer_context()
+    
+    """
+    Step 3: Redirect the bearer(s) to/from a local/remote server
+    """
+            
+    status = 'disconnected'
+    core_adapter_routes["userEqId"] = userEqId        
+    if epsBearerId == -1: #redirect all bearers belong to a slice to local/remote server
+        if redirect_dir_to == 'local': #to local server
+            adapter.log.info('Send command to LL-MEC to redirect all bearers belonging to this slice from a remote server (' + str(remote_ip) + ') to a local server (' + str(local_ip) + ')')   
+            status = bm.redirect_all_ue_bearers_belong_to_sliceid(imsi=userEqId, slice_id=sliceId, from_ip=remote_ip,to_ip=local_ip)
+            core_adapter_routes["routes"][0]["FromServer"] = remote_ip
+            core_adapter_routes["routes"][0]["ToServer"] = local_ip                        
+        elif redirect_dir_to == 'remote': #to remote server
+            adapter.log.info('Send command to LL-MEC to redirect all bearers belonging to this slice from a local server (' + str(local_ip) + ') to a remote server (' + str(remote_ip) + ')')
+            status = bm.redirect_all_ue_bearers_belong_to_sliceid(imsi=userEqId, slice_id=sliceId, from_ip=local_ip, to_ip=remote_ip)
+            core_adapter_routes["routes"][0]["FromServer"] = local_ip
+            core_adapter_routes["routes"][0]["ToServer"] = remote_ip
+    elif epsBearerId > -1: #redirect this bearers to local/remote server
+        if redirect_dir_to == 'local': 
+            adapter.log.info('Send command to LL-MEC to redirect this bearer from a remote server (' + str(remote_ip) + ') to a local server (' + str(local_ip) + ')')
+            status = bm.redirect_ue_bearer_belong_to_sliceid(imsi=userEqId, eps_drb=epsBearerId, slice_id=sliceId, from_ip=remote_ip,to_ip=local_ip)
+            core_adapter_routes["routes"][0]["FromServer"] = remote_ip
+            core_adapter_routes["routes"][0]["ToServer"] = local_ip
+        elif redirect_dir_to == 'remote': 
+            adapter.log.info('Send command to LL-MEC to redirect this bearer from a local server (' + str(local_ip) + ') to a remote server (' + str(remote_ip) + ')')
+            status = bm.redirect_ue_bearer_belong_to_sliceid(imsi=userEqId, eps_drb=epsBearerId,slice_id=sliceId, from_ip=local_ip, to_ip=remote_ip)   
+            core_adapter_routes["routes"][0]["FromServer"] = local_ip
+            core_adapter_routes["routes"][0]["ToServer"] = remote_ip
+            
+    if status == 'connected':
+        return core_adapter_routes, 200 
+    else:
+        return NoContent, 500            
+                    
      
 def post_QoSOnCore(sliceId, userEqId, body, epsBearerId=-1):
     """!@brief Add QoS contraints to the corresponding network slice in the core network

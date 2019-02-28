@@ -47,8 +47,14 @@ paths:
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/corAdapterRoutes"
         '400':
           description: Bad Request
+        '500':
+          description: Internal Server Error
           
     post:
       summary: Add QOS Constraints on Core Adapter
@@ -87,7 +93,7 @@ paths:
               minItems: 1
               maxItems: 2
       responses:
-        '200':
+        '201':
           description: Expected response to a valid request
           content:
             application/json:
