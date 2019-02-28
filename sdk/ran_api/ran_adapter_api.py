@@ -33,13 +33,6 @@ class adapter(object):
     ue_dlwcqi={}
     ue_phr={}
 
-    #lc_ue_bsr={}
-    #lc_ue_report={}
-    #lc_ue_dlrb={}
-    #lc_ue_ulrb={}
-    #lc_ue_dltbs={}
-    #lc_ue_ultbs={}
-    
     ue_dlmcs={}
     ue_ulmcs={}
     

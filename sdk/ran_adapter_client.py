@@ -166,12 +166,12 @@ if __name__ == '__main__':
 
     #set QoS on RAN: increase 10MB for DL (slice 1)    
     ranAdapter_client.set_qos_parameters(bandIncDir='dl', bandIncVal='10') 
-    ranAdapter_client.set_QoSOnRAN(sid=1, method='POST')
+    ranAdapter_client.set_QoSOnRAN(sid=1, method='PUT')
     ranAdapter_client.print_slice_stats()
 
     #set QoS on RAN: increase 10MB for DL (slice 1)
     ranAdapter_client.set_qos_parameters(bandIncDir='dl', bandIncVal='10') 
-    ranAdapter_client.set_QoSOnRAN(sid=1, method='POST')
+    ranAdapter_client.set_QoSOnRAN(sid=1, method='PUT')
     ranAdapter_client.print_slice_stats()
 
     #set QoS on RAN: increase 10MB for DL (slice 2-> invalid)
@@ -181,7 +181,7 @@ if __name__ == '__main__':
        
     #set QoS on RAN: decrease 10MB for DL and UL (slice 0)
     ranAdapter_client.set_qos_parameters(bandIncDir='ul', bandIncVal='10')     
-    ranAdapter_client.set_QoSOnRAN(sid=0, method='POST', body=ranAdapter_client.qos_parameters)
+    ranAdapter_client.set_QoSOnRAN(sid=0, method='PUT', body=ranAdapter_client.qos_parameters)
     ranAdapter_client.print_slice_stats()
 
     #set QoS on RAN: decrease 10MB for DL and UL (slice 0)
