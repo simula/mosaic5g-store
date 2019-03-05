@@ -32,12 +32,12 @@ sdk
 ├── ran_adapter_client.py: Example of a RAN adapter client used for testing
 ├── inputs: Example json/yaml input files used for testing
 │   ├── ran_adapter.yaml: Yaml file defining interface of the RAN Adapter
-│   ├── cpsr.json: Adapter's CPSprofile
-│   └── cpsr_update.json
+│   ├── ran_adapter_cpsr.json: Adapter's CPSprofile
+│   └── ran_adapter_cpsr_update.json
 │
-├── ran_api: logic function of the Ran Adapter
+├── ran_api: logic function of the RAN Adapter
 │   ├── __init__.py
-│   └── ran_adapter_api.py: logic of Ran Adapter
+│   └── ran_adapter_api.py: logic of RAN Adapter
 │
 └── cpsr: Example CPSR used for testing
     ├── cpsr.py: Example of CPSR service
@@ -65,4 +65,50 @@ Usage:
  - launch ran_adapter_client
    $cd $STORE_PATH/sdk
    $python ran_adapter_client.py
+
+
+------------------------------
+For CORE Adapter
+sdk
+├── lib: contains the SDK for the LL-MEC following Rest API 
+│   ├── llmec_sdk.py
+│   └── logger.py
+│
+├── core_adapter.py: Core Adapter 
+├── core_adapter_client.py: An example of a Core adapter client used for testing
+├── inputs: Example json/yaml input files used for testing
+│   ├── core_adapter.yaml: Yaml file defining interface of the Core Adapter
+│   ├── core_adapter_cpsr.json: Adapter's CPSprofile
+│   └── core_adapter_cpsr_update.json
+│
+├── core_api: logic function of the Core Adapter
+│   ├── __init__.py
+│   └── core_adapter_api.py: logic of Core Adapter
+│
+└── cpsr: Example CPSR used for testing
+    ├── cpsr.py: Example of CPSR service
+    ├── inputs: Example json/yaml input files used for testing
+    │    ├── cpsr.yaml: Yaml file defining interface of the CPSR
+    │    ├── cpsrRegistrationData.json
+    │    └── cpsrUpdateData.json
+    └── api: Example json/yaml output files used for testing
+        ├── __init__.py
+        └── cpsr-api.py: logic of CPSR function
+
+
+Help:
+  python core_adapter -h
+  
+Usage:
+ - launch CPSR:
+   $cd $STORE_PATH/sdk/cpsr
+   $python cpsr.py 
+  
+ - launch core_adapter (from sdk url: LL-MEC URL, cpsr-url: CPSR URL): 
+   $cd $STORE_PATH/sdk
+   $python core_adapter.py --op-mode test --log info --url http://localhost --cpsr-url http://localhost:9191/slicenet/ctrlplane/cpsr_cps/v1/cps-instances/1
+   
+ - launch core_adapter_client
+   $cd $STORE_PATH/sdk
+   $python core_adapter_client.py
 
