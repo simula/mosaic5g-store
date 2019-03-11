@@ -1,4 +1,0 @@
-restart:
-  description: Restart OAIENB process.
-stop:
-  description: Stop  OAIENB process.

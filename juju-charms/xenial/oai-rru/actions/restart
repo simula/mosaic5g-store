@@ -1,5 +1,0 @@
-#!/bin/bash
-
-systemctl stop  rru || true 
-$CHARM_DIR/hooks/start
-status-set active "OAI RRU is running"

@@ -1,8 +1,0 @@
-#!/bin/bash
-
-juju-log "Retrieving SPGW relation info"
-spgw_s11_ipv4=`relation-get spgw_s11_ipv4`
-spgw_fqdn=`relation-get spgw_hostname`
-
-echo "$spgw_s11_ipv4/24" > $CHARM_DIR/.spgw_s11_ipv4
-./hooks/config-changed

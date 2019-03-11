@@ -1,4 +1,0 @@
-restart:
-  description: Restart HSS process.
-stop:
-  description: Stop  HSS process.

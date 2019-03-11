@@ -1,4 +1,0 @@
-restart:
-  description: Restart rru process.
-stop:
-  description: Stop  rru process.

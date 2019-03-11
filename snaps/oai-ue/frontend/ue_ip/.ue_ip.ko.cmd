@@ -1,1 +1,0 @@
-cmd_/home/mineuse/mosaic5g/store/snaps/oai-ue/frontend/ue_ip/ue_ip.ko := ld -r -m elf_x86_64 -z max-page-size=0x200000 -T ./scripts/module-common.lds --build-id  -o /home/mineuse/mosaic5g/store/snaps/oai-ue/frontend/ue_ip/ue_ip.ko /home/mineuse/mosaic5g/store/snaps/oai-ue/frontend/ue_ip/ue_ip.o /home/mineuse/mosaic5g/store/snaps/oai-ue/frontend/ue_ip/ue_ip.mod.o ;  true

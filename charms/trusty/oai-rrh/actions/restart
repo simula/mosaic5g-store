@@ -1,6 +1,0 @@
-#!/bin/bash
-
-set -eux
-service rrh_gw stop || true
-$CHARM_DIR/hooks/start
-status-set active "RRH GW software is running"

@@ -1,5 +1,0 @@
-oai-spgw:
-   sgw-eth: "eth0"
-   pgw-eth: "eth0"
-   DEFAULT_DNS_IPV4_ADDRESS: "172.27.60.1"
-   DEFAULT_DNS_SEC_IPV4_ADDRESS: "172.27.61.254" 

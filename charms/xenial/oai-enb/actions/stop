@@ -1,5 +1,0 @@
-#!/bin/bash
-
-
-systemctl stop enb.service || true
-status-set blocked "OAI eNB is  not running"

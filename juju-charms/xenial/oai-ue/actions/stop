@@ -1,5 +1,0 @@
-#!/bin/bash
-
-
-service oaieNB stop || true
-status-set blocked "oaisim software not running"

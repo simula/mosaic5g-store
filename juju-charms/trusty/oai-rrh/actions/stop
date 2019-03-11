@@ -1,5 +1,0 @@
-#!/bin/bash
-
-set -eux
-service rrh_gw stop || true
-status-set blocked "RRH software not running"

@@ -1,5 +1,0 @@
-#!/bin/bash
-
-set -eux
-systemctl stop oai_hss || true
-status-set blocked "HSS is not running"

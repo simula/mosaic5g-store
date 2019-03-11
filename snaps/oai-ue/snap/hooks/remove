@@ -1,4 +1,0 @@
-#!/bin/sh
-set -e 
-echo "remove hook"
-rmmod ue_ip --force || true  

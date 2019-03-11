@@ -1,6 +1,0 @@
-#!/bin/bash
-
-source $CHARM_DIR/utils/common
-stop_enb
-$CHARM_DIR/hooks/start
-

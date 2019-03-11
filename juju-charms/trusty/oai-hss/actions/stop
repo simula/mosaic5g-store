@@ -1,6 +1,0 @@
-#!/bin/bash
-
-set -eux
-source $CHARM_DIR/utils/common
-stop_hss 
-status-set blocked "HSS is not running"

@@ -1,4 +1,0 @@
-#!/bin/bash
-
-service dtn stop || true
-status-set blocked "dtn is not running"

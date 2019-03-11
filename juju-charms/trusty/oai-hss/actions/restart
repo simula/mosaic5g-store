@@ -1,7 +1,0 @@
-#!/bin/bash
-
-set -eux
-source $CHARM_DIR/utils/common
-stop_hss 
-$CHARM_DIR/hooks/start
-status-set active "HSS is running"

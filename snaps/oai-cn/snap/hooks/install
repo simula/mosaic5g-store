@@ -1,7 +1,0 @@
-#!/bin/sh
-set -e 
-echo "Install hook"
-
-#$SNAP/init hss
-#$SNAP/init mme
-#$SNAP/init spgw

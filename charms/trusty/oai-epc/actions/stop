@@ -1,5 +1,0 @@
-#!/bin/bash
-
-set -eux
-service mme_gw stop || true
-status-set blocked "EPC software not running"

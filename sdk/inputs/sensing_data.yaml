@@ -1,9 +1,0 @@
-- freq_min: 2666
-  freq_max: 2669
-  operator: orange
-- freq_min: 450
-  freq_max: 470
-  operator: play
-#- freq_min: 2475
-#  freq_max: 2490
-#  operator: play
