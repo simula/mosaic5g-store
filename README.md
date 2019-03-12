@@ -4,6 +4,26 @@ This script allows you to create docker containers already hosting the OAI-CN.
 
 **WARNING NOTE**: This will create a container with **security** options **disabled**, this is an unsupported setup, if you have multiple snap packages inside the same container they will be able to break out of the confinement and see each others data and processes. Use this setup to build or test single snap packages but **do not rely on security inside the container**.
 
+Note: The host machine which hosts the Dockers needs to have the 4.7.x kernel from pre-compiled debian package and enable the GTP module
+```
+## Installing the kernel:
+$ git clone https://gitlab.eurecom.fr/oai/linux-4.7.x.git
+$ cd linux-4.7.x
+$ sudo dpkg -i linux-headers-4.7.7-oaiepc_4.7.7-oaiepc-10.00.Custom_amd64.deb linux-image-4.7.7-oaiepc_4.7.7-oaiepc-10.00.Custom_amd64.deb
+
+## Rebooting the host machine to load the new features:
+$ sudo reboot now
+
+## Test if the new kernel is load:
+$ uname -a
+## The output of the previous command should be similar to : Linux <hostname_of_the_host_machine> 4.7.1 
+
+## Enable the GTP module in linux kernel:
+$ sudo modprobe gtp
+## Check if the module was loaded:
+$ dmesg |tail # You should see something that says about GTP kernel module
+```
+
 ```
 usage: build_docker-oai-cn.sh [options]
 
@@ -81,11 +101,7 @@ mysql: [Warning] Using a password on the command line interface can be insecure.
 Successfully Imported the OAI HSS DB to mysql
 ```
 
-```
 
-
-
-```
 In the end you need to have the following sets of Dockers 
 
 ```
@@ -110,9 +126,5 @@ To access the phpmyadmin webinterface, just lunch the host machine browser and t
 Enter the root user credentials that you have set in the bash script file for diployment of the MYSQL Docker.
 user 		: 		(default: root)
 password 	:		(default: linux)
-
-
-
-
 
 ```
