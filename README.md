@@ -168,7 +168,7 @@ Next to configure is the **hss_fd.conf** file
 root@fa9a6c67fdb7:/# vi /var/snap/oai-cn/26/hss_fd.conf
 ```
 To modify the **hss_fd.conf**, please modify the Identity FQDN with the hostname of the Docker.
-## Example, in our case is fa9a6c67fdb7
+Example, in our case is fa9a6c67fdb7
 ```
 # -------- Local ---------
 # The first parameter in this section is Identity, which will be used to 
