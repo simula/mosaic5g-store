@@ -21,8 +21,8 @@
 #
 #
 ################################################################################
-# file          build_dokcer-oai-cn.sh
-# brief         OAI-CN-ALL-IN-ONE automated Docker deployment 
+# file          build_dokcer-oai-flexran.sh
+# brief         FLEXRAN automated Docker deployment 
 # author        Mihai IDU (C) - 2019 mihai.idu@eurecom.fr
 
 
