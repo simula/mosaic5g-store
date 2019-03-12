@@ -34,8 +34,8 @@ $
 ```
 $ docker ps
 CONTAINER ID        IMAGE                   COMMAND                  CREATED             STATUS              PORTS                            NAMES
-fbd65c797040        oai-flexran-image       "/sbin/init"             8 minutes ago       Up 8 minutes        2210/tcp, 9999/tcp               oai-flexran
-sudo docker exec -it fbd65c797040 bash
+c0cf988624c2        oai-ll-mec-image        "/sbin/init"             22 minutes ago      Up 22 minutes       6653/tcp, 9999/tcp               oai-ll-mec
+sudo docker exec -it c0cf988624c2 bash
 root@ubuntu:/# hostname
 ubuntu
 ```
