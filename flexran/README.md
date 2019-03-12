@@ -44,11 +44,11 @@ ubuntu
 This will install the htop snap and will show the running processes inside the container after connecting the right snap interfaces.
 
 ```
-$ sudo docker exec oai-cn-all-in-one snap install htop
+$ sudo docker exec oai-flexran snap install htop
 htop 2.0.2 from 'maxiberta' installed
-$ sudo docker exec oai-cn-all-in-one snap connect htop:process-control
-$ sudo docker exec oai-cn-all-in-one snap connect htop:system-observe
-$ sudo docker exec -ti oai-cn-all-in-one htop
+$ sudo docker exec oai-flexran snap connect htop:process-control
+$ sudo docker exec oai-flexran snap connect htop:system-observe
+$ sudo docker exec -ti oai-flexran htop
 ```
 ## Extra packages installed in the Docker 
 ```
