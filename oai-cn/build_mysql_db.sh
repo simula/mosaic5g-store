@@ -35,26 +35,25 @@ RELEASE=5.7
 CONTNAME_PHPMYADMIN=oai-mysql-phpmyadmin
 IMGNAME_PHPMYADMIN=phpmyadmin/phpmyadmin
 
+SUDO=""
+if [ -z "$(id -Gn|grep docker)" ] && [ "$(id -u)" != "0" ]; then
+    SUDO="sudo"
+fi
+
 #Cheching if the docker images are pulled from the global repo' for mysql and phpmyadmin
 if [ -n "$($SUDO docker images 2>&1 | grep $IMGNAME:$RELEASE )"]; then
 	echo "The Docker Image $IMGNAME is already pull"
 else 
-	docker pull mysql:$RELEASE
+	$SUDO docker pull mysql:$RELEASE
 fi
 
 if [ -n "$($SUDO docker images 2>&1 | grep $IMGNAME_PHPMYADMIN)"]; then
         echo "The Docker Image $IMGNAME_PHPMYADMIN is already pull"
 else
-        docker pull $IMGNAME_PHPMYADMIN
+        $SUDO docker pull $IMGNAME_PHPMYADMIN
 fi
 
 set -e
-
-
-SUDO=""
-if [ -z "$(id -Gn|grep docker)" ] && [ "$(id -u)" != "0" ]; then
-    SUDO="sudo"
-fi
 
 #Checking if the docker is running 
 if [ -n "$($SUDO docker ps -f name=$CONTNAME -q)" ]; then
