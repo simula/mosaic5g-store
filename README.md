@@ -47,7 +47,7 @@ $ ./build_docker-oai-cn.sh
 $ ./build_mysql_db.sh
 ```
 
-If you want to create subsequent other containers using the same image, use the --containername option with a subsequent run of the ./build.sh script.
+If you want to create subsequent other containers using the same image, use the --containername option with a subsequent run of the ./build_docker-oai-cn.sh script.
 
 ```
 $ ./build_docker-oai-cn.sh -c second
