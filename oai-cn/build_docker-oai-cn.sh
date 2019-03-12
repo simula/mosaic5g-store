@@ -144,7 +144,7 @@ $SUDO docker run \
 # wait for snapd to start
 TIMEOUT=20
 SLEEP=3
-echo -n "Waiting $(($TIMEOUT*3)) seconds for snapd startup"
+echo -n "Waiting $(($TIMEOUT*3)) seconds for Docker startup\n"
 while [ -z "$($SUDO docker exec $CONTNAME pgrep snapd)" ]; do
     echo -n "."
     sleep $SLEEP || clean_up
@@ -163,10 +163,10 @@ $SUDO docker exec $CONTNAME snap install core --channel=edge || clean_up
 
 
 TIMEOUT=10
-echo -n "Waiting $TIMOUT seconds.."
+echo -n "Waiting $TIMOUT seconds..\n"
 for index in $(seq $TIMEOUT -1 1)
 do 
-echo -n "wait for $index"
+echo  "wait for $index\n"
 done
 
 $SUDO docker exec $CONTNAME snap install oai-cn --channel=edge --devmode
