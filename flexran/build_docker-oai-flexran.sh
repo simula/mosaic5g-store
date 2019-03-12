@@ -158,24 +158,6 @@ while [ -z "$($SUDO docker exec $CONTNAME pgrep snapd)" ]; do
 done
 
 $SUDO docker exec $CONTNAME snap install core --channel=edge || clean_up
-
-# ====
-# Modifing the /etc/hosts for the hss realm
-# ====
-
-TIMEOUT=20
-SLEEP=3
-echo -n "Waiting $(($TIMEOUT*3)) seconds for snapd startup"
-while [ -z "$($SUDO docker exec $CONTNAME pgrep snapd)" ]; do
-    echo -n "."
-    sleep $SLEEP || clean_up
-    if [ "$TIMEOUT" -le "0" ]; then
-        echo " Timed out!"
-        clean_up
-    fi
-    TIMEOUT=$(($TIMEOUT-1))
-done
-
 $SUDO docker exec $CONTNAME snap install flexran --channel=edge --devmode || clean_up
 echo "container $CONTNAME started with ..."
 echo ""
