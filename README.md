@@ -19,9 +19,8 @@ $ sudo reboot now
 ## Test if the new kernel is load:
 ```
 $ uname -a
-```
 ## The output of the previous command should be similar to : Linux <hostname_of_the_host_machine> 4.7.1 
-
+```
 ## Enable the GTP module in linux kernel:
 ```
 $ sudo modprobe gtp
