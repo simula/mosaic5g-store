@@ -22,7 +22,7 @@
 #
 ################################################################################
 # file          build_doker-oai-ll-mec.sh
-# brief         OAI-LL-MEC automated Docker deployment 
+# brief         LL-MEC automated Docker deployment 
 # author        Mihai IDU (C) - 2019 mihai.idu@eurecom.fr
 
 
