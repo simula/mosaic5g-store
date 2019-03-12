@@ -116,12 +116,53 @@ CONTAINER ID        IMAGE                     COMMAND                  CREATED  
 5afeae5bc001        mysql:5.7                 "docker-entrypoint.sâ¦"   8 hours ago         Up 8 hours          3306/tcp, 33060/tcp              oai-cn-mysql-hss
 fa9a6c67fdb7        oai-cn-all-in-one-image   "/sbin/init"             3 days ago          Up 8 hours                                           oai-cn-all-in-one
 ```
-To enter any of the dockers 
+To enter any of the dockers and configure
 
 ```
 $ sudo docker exec -it fa9a6c67fdb7 bash
 root@fa9a6c67fdb7:/#
 root@fa9a6c67fdb7:/# vi /var/snap/oai-cn/26/hss.conf
+```
+To modify the hss.conf please modify the IP address of the MYSQL_server with the IP address of the **oai-cn-mysql-hss Docker** and change the comment between the **OPERATOR_key** parameters
+```
+################################################################################
+# Licensed to the OpenAirInterface (OAI) Software Alliance under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The OpenAirInterface Software Alliance licenses this file to You under 
+# the Apache License, Version 2.0  (the "License"); you may not use this file
+# except in compliance with the License.  
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#-------------------------------------------------------------------------------
+# For more information about the OpenAirInterface (OAI) Software Alliance:
+#      contact@openairinterface.org
+################################################################################
+HSS :
+{
+## MySQL mandatory options
+MYSQL_server = "172.17.0.2";     # HSS S6a bind address
+MYSQL_user   = "root";           # Database server login
+MYSQL_pass   = "linux";          # Database server password
+MYSQL_db     = "oai_db";         # Your database name 
+
+## HSS options
+#OPERATOR_key = "1006020f0a478bf6b699f15c062e42b3"; # OP key matching your database
+OPERATOR_key = "11111111111111111111111111111111"; # OP key matching your database
+
+RANDOM = "true";                                   # True random or only pseudo random (for subscriber vector generation)
+
+## Freediameter options
+FD_conf = "/var/snap/oai-cn/current/hss_fd.conf";
+};
+
 ```
 
 The set of the Docker images used are :
