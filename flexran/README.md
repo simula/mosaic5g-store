@@ -5,7 +5,7 @@ This script allows you to create docker containers already hosting the FLEXRAN.
 **WARNING NOTE**: This will create a container with **security** options **disabled**, this is an unsupported setup, if you have multiple snap packages inside the same container they will be able to break out of the confinement and see each others data and processes. Use this setup to build or test single snap packages but **do not rely on security inside the container**.
 
 ```
-usage: build_docker-oai-cn.sh [options]
+usage: build_docker-oai-flexran.sh [options]
 
   -c|--containername <name> (default: oai-flexran)
   -i|--imagename <name> (default:oai-cn-flexran-image)
@@ -17,10 +17,10 @@ Creating a container with defaults (image: oai-flexran-image, container name: oa
 
 ```
 $ sudo apt install docker.io
-$ ./build_docker-flexran.sh
+$ ./build_docker-oai-flexran.sh
 ```
 
-If you want to create subsequent other containers using the same image, use the --containername option with a subsequent run of the ./build.sh script.
+If you want to create subsequent other containers using the same image, use the --containername option with a subsequent run of the ./build_docker-oai-flexran.sh script.
 
 ```
 $ ./build_docker-oai-cn.sh -c second
