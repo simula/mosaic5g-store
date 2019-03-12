@@ -22,7 +22,7 @@
 #
 ################################################################################
 # file          build_doker-oai-ll-mec.sh
-# brief         OAI-CN-ALL-IN-ONE automated Docker deployment 
+# brief         OAI-LL-MEC automated Docker deployment 
 # author        Mihai IDU (C) - 2019 mihai.idu@eurecom.fr
 
 
@@ -158,7 +158,6 @@ while [ -z "$($SUDO docker exec $CONTNAME pgrep snapd)" ]; do
 done
 
 $SUDO docker exec $CONTNAME snap install core --channel=edge || clean_up
-
 $SUDO docker exec $CONTNAME snap install ll-mec --channel=edge --devmode || clean_up
 echo "container $CONTNAME started with ..."
 echo ""
