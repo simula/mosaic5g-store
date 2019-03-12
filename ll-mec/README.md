@@ -25,9 +25,9 @@ If you want to create subsequent other containers using the same image, use the 
 ```
 $ ./build_docker-oai-cn.sh -c second
 $ sudo docker exec -it second snap list
-Name     Version                       Rev   Tracking  Publisher   Notes
-core     16-2.38~pre1+git1188.69c1cf2  6615  edge      canonicalâ  core
-flexran  1.4                           12    edge      mosaic-5g   devmode
+Name    Version                       Rev   Tracking  Publisher   Notes
+core    16-2.38~pre1+git1188.69c1cf2  6615  edge      canonical✓  core
+ll-mec  1.3                           8     edge      mosaic-5g   devmode
 $
 ```
 ### Docker hostname of the docker is **ubuntu**:
