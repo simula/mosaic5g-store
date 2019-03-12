@@ -116,7 +116,13 @@ CONTAINER ID        IMAGE                     COMMAND                  CREATED  
 5afeae5bc001        mysql:5.7                 "docker-entrypoint.sâ¦"   8 hours ago         Up 8 hours          3306/tcp, 33060/tcp              oai-cn-mysql-hss
 fa9a6c67fdb7        oai-cn-all-in-one-image   "/sbin/init"             3 days ago          Up 8 hours                                           oai-cn-all-in-one
 ```
+To enter any of the dockers 
 
+```
+$ sudo docker exec -it fa9a6c67fdb7 bash
+root@fa9a6c67fdb7:/#
+root@fa9a6c67fdb7:/# vi /var/snap/oai-cn/26/hss.conf
+```
 
 The set of the Docker images used are :
 ```
