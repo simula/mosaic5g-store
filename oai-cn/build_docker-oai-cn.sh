@@ -163,7 +163,7 @@ $SUDO docker exec $CONTNAME snap install core --channel=edge || clean_up
 $SUDO docker exec -it $CONTNAME /bin/bash -c "echo '127.0.0.1 ubuntu.openair4G.eur ubuntu hss' >> /etc/hosts"
 $SUDO docker exec -it $CONTNAME /bin/bash -c "echo '127.0.0.1 ubuntu.openair4G.eur ubuntu mme' >> /etc/hosts"
 #
-$SUDO docker exec $CONTNAME snap install oai-cn --channel=edge --devmode
+$SUDO docker exec $CONTNAME snap install oai-cn --channel=edge --devmode || clean_up
 echo "container $CONTNAME started with ..."
 echo ""
 echo "-------------------------------------------------------------"
