@@ -25,7 +25,6 @@
 # brief         OAI-CN-ALL-IN-ONE automated Docker deployment 
 # author        Mihai IDU (C) - 2019 mihai.idu@eurecom.fr
 
-
 set -e
 
 CONTNAME=oai-cn-all-in-one
@@ -157,19 +156,13 @@ while [ -z "$($SUDO docker exec $CONTNAME pgrep snapd)" ]; do
 done
 
 $SUDO docker exec $CONTNAME snap install core --channel=edge || clean_up
-
+#
 # ====
 # Modifing the /etc/hosts for the hss realm
 # ====
-
-
-TIMEOUT=10
-echo -n "Waiting $TIMOUT seconds..\n"
-for index in $(seq $TIMEOUT -1 1)
-do 
-echo  "wait for $index\n"
-done
-
+$SUDO docker exec -it $CONTNAME /bin/bash -c "echo '127.0.0.1 ubuntu.openair4G.eur ubuntu hss' >> /etc/hosts"
+$SUDO docker exec -it $CONTNAME /bin/bash -c "echo '127.0.0.1 ubuntu.openair4G.eur ubuntu mme' >> /etc/hosts"
+#
 $SUDO docker exec $CONTNAME snap install oai-cn --channel=edge --devmode
 echo "container $CONTNAME started with ..."
 echo ""
