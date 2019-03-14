@@ -155,7 +155,7 @@ while [ -z "$($SUDO docker exec $CONTNAME pgrep snapd)" ]; do
     TIMEOUT=$(($TIMEOUT-1))
 done
 
-$SUDO docker exec $CONTNAME snap install core --channel=edge || clean_up
+$SUDO docker exec -it $CONTNAME /bin/bash -c "snap install core --channel=edge"
 #
 # ====
 # Modifing the /etc/hosts for the hss realm
@@ -163,7 +163,7 @@ $SUDO docker exec $CONTNAME snap install core --channel=edge || clean_up
 $SUDO docker exec -it $CONTNAME /bin/bash -c "echo '127.0.0.1 ubuntu.openair4G.eur ubuntu hss' >> /etc/hosts"
 $SUDO docker exec -it $CONTNAME /bin/bash -c "echo '127.0.0.1 ubuntu.openair4G.eur ubuntu mme' >> /etc/hosts"
 #
-$SUDO docker exec $CONTNAME snap install oai-cn --channel=edge --devmode || clean_up
+$SUDO docker exec -it $CONTNAME /bin/bash -c "snap install oai-cn --channel=edge --devmode"
 echo "container $CONTNAME started with ..."
 echo ""
 echo "-------------------------------------------------------------"
