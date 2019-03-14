@@ -157,8 +157,8 @@ while [ -z "$($SUDO docker exec $CONTNAME pgrep snapd)" ]; do
     TIMEOUT=$(($TIMEOUT-1))
 done
 
-$SUDO docker exec $CONTNAME snap install core --channel=edge || clean_up
-$SUDO docker exec $CONTNAME snap install ll-mec --channel=edge --devmode || clean_up
+$SUDO docker exec -it $CONTNAME /bin/bash -c "snap install core --channel=edge"
+$SUDO docker exec -it $CONTNAME /bin/bash -c "snap install ll-mec --channel=edge --devmode"
 echo "container $CONTNAME started with ..."
 echo ""
 echo "-------------------------------------------------------------"
