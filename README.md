@@ -11,6 +11,13 @@ This script allows you to create docker containers already hosting the mosaic5G 
 
 **WARNING NOTE**: This creates a set of containers with **security** options **disabled**, this is an unsupported setup, if you have multiple snap packages inside the same container they will be able to break out of the confinement and see each others data and processes. Use this setup to build or test single snap packages but **do not rely on security inside the container**.
 
+## Cloning the repository
+```
+$ git clone -b docker https://gitlab.eurecom.fr/mosaic5g/store.git
+$ cd store
+
+
+```
 
 ## Extra packages installed in the Docker 
 
