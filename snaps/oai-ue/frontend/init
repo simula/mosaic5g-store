@@ -11,8 +11,8 @@
 #fi
 
 #if [ ! -f $UE_IP_CONF/makefile ]  ; then
-    cp -r $SNAP/ue_ip $CONF_DIR        
-    cp -r $SNAP/ue_ip $SNAP_USER_DATA        
+    cp -r $SNAP/ue_ip $CONF_DIR  
+    cp -r $SNAP/ue_ip $SNAP_USER_DATA    
 #fi
 
 # set the UE conf

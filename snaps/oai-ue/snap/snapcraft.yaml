@@ -1,5 +1,5 @@
 name: oai-ue
-version: '1.3' 
+version: '1.4' 
 summary: OpenAirInterface UE entity 
 description: |
     OAI UE is the openairinterface-based UE that allows you to connect to any commercial eNB. 
@@ -200,6 +200,8 @@ parts:
       - uesim/*
       - usr/lib/*
       - lib/*
+    organize:
+      uesim/liboai_eth_transpro.so.Rel14: usr/lib/liboai_transpro.so  
 
   frontend:
     plugin: dump
