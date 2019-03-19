@@ -1,0 +1,21 @@
+#!/bin/bash
+
+FROM ubuntu:16.04
+ENV container docker
+ENV PATH "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin"
+ENV LANG C.UTF-8
+ENV LC_ALL C.UTF-8
+ADD snap /usr/local/bin/snap
+RUN apt-get update &&\
+ DEBIAN_FRONTEND=noninteractive\
+ apt-get install -y fuse snapd snap-confine squashfuse sudo &&\
+ apt-get clean &&\
+ dpkg-divert --local --rename --add /sbin/udevadm &&\
+ ln -s /bin/true /sbin/udevadm
+RUN apt-get install -y net-tools
+RUN apt-get install -y iputils-ping
+RUN apt-get install -y vim
+RUN systemctl enable snapd
+STOPSIGNAL SIGRTMIN+3
+CMD [ "/sbin/init" ]
+EXPOSE 9998/tcp 6653/tcp
