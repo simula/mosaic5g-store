@@ -11,7 +11,11 @@ Vagrant.configure("2") do |config|
   # https://docs.vagrantup.com.
 
   config.vagrant.plugins = ["vagrant-vbguest", "vagrant-hosts"]
+  #config.vagrant.plugins = ["vagrant-vbguest", "vagrant-hosts", "landrush"]
+  #config.landrush.enabled = true
 
+  #config.landrush.host 'flexran.mosaic-5g.io', '1.2.3.4'
+  
   # Every Vagrant development environment requires a box. You can search for
   # boxes at https://vagrantcloud.com/search.
   config.vm.box = "ubuntu/xenial64"
@@ -31,16 +35,21 @@ Vagrant.configure("2") do |config|
   # within the machine from a port on the host machine and only allow access
   # via 127.0.0.1 to disable public access
   config.vm.network "forwarded_port", guest: 2152, host: 2152, protocol: "udp"
-  config.vm.network "forwarded_port", guest: 6653, host: 6653, protocol: "tcp"
+  config.vm.network "forwarded_port", guest: 36412, host: 36412
+  config.vm.network "forwarded_port", guest: 36422, host: 36422
+
+  #FlexRAN
+  config.vm.network "forwarded_port", guest: 2210, host: 2210, protocol: "tcp"
 
 
   # Create a private network, which allows host-only access to the machine
   # using a specific IP.
-  config.vm.network "private_network", ip: "192.168.111.2"
+  #config.vm.network "private_network", ip: "192.168.111.2"
 
   # Create a public network, which generally matched to bridged network.
   # Bridged networks make the machine appear as another physical device on
   # your network.
+  # S1 interface, and share the same if functional split
   config.vm.network "public_network"
 
   # Share an additional folder to the guest VM. The first argument is
@@ -72,11 +81,14 @@ Vagrant.configure("2") do |config|
       apt-get update
       sysctl -w net.ipv6.conf.all.disable_ipv6=1
       sysctl -w net.ipv6.conf.default.disable_ipv6=1
+      snap remove oai-ran
+      snap install oai-ran --beta --devmode
+      oai-ran.stop-all
       date=$(date +%F)
-      if [ ! -f ./ovs-gtp ] ; then 
-        echo "ovs-gtp vm created: $date" > ./ovs-gtp
+      if [ ! -f ./oai-ran ] ; then 
+        echo "oai-ran vm created: $date" > ./oai-ran
       else
-        echo "ovs-gtp vm reloaded: $date" >> ./ovs-gtp
+        echo "oai-ran vm reloaded: $date" >> ./oai-ran
       fi
   SHELL
 end
