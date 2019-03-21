@@ -122,7 +122,7 @@ parts:
     prime:
       - gdb*
       - share/*
-
+      - usr/bin/gdb*
   tools:
     plugin: nil
     #stage-packages:
@@ -152,10 +152,10 @@ parts:
     source-branch: develop
     build-packages: [build-essential, ]
     override-build: |
-      cd cmake_targets
+      cd ../src/cmake_targets
       ./build_oai -I -w USRP --uhd-images-dir ../common/uhd_images
       ./build_oai --UE -w USRP -c -C 
-      cd -   
+      cd ../ 
       mkdir -p $SNAPCRAFT_PART_INSTALL/ue
       cp  targets/bin/* $SNAPCRAFT_PART_INSTALL/ue
       cp -r common/uhd_images $SNAPCRAFT_PART_INSTALL/ 
@@ -184,10 +184,10 @@ parts:
     source-branch: develop
     build-packages: [build-essential, ]
     override-build: |
-      cd cmake_targets
+      cd ../src/cmake_targets
       ./build_oai -I 
       ./build_oai --UE -t ETHERNET -c -C 
-      cd -
+      cd ../
       mkdir -p $SNAPCRAFT_PART_INSTALL/uesim
       cp  targets/bin/* $SNAPCRAFT_PART_INSTALL/uesim
       cp targets/PROJECTS/GENERIC-LTE-EPC/CONF/* $SNAPCRAFT_PART_INSTALL/uesim
