@@ -90,7 +90,7 @@ class ranAdapter_client(object):
                     self.qos_parameters_ul_dl[index]['bandUnitScale'] =  bandUnitScale_dl
                     
    
-    def set_QoSOnRAN(self, method='POST', sid=0, body=body_req):
+    def set_QoSOnRAN(self, method='POST', sid="", body=body_req):
         """!@brief set_QoSOnRAN set QOS Constraints on RAN Adapter
         """
         time.sleep(1)  
@@ -104,6 +104,7 @@ class ranAdapter_client(object):
         handler = urllib2.HTTPHandler()
         opener = urllib2.build_opener(handler)
         request = urllib2.Request(ranAdapter_client.url + str(sid)+'/set_qos_on_ran', data=jsondataasbytes)
+        print ('url: ', ranAdapter_client.url + str(sid)+'/set_qos_on_ran')
         request.get_method = lambda: method
         request.add_header("content-Type", 'application/json')
         
@@ -125,7 +126,7 @@ class ranAdapter_client(object):
             
 if __name__ == '__main__':
     ranAdapter_client = ranAdapter_client()
- 
+    '''
     #create new slices
     #reduce percentage of slice 0 to 50%
     reduce_slice_percentage='{"intrasliceShareActive":false,"intersliceShareActive":false,"dl":[{"id":0,"percentage":50}]}'
@@ -135,12 +136,13 @@ if __name__ == '__main__':
     ranAdapter_client.print_slice_stats()
     
     #create the second slice
-    second_slice='{"intrasliceShareActive":false,"intersliceShareActive":false,"dl":[{"id":1,"percentage":10}]}'
+    second_slice='{"intrasliceShareActive":false,"intersliceShareActive":false,"dl":[{"id":"3e","percentage":10}]}'
     cmd_create = 'curl -X POST http://localhost:9999/slice/enb/-1 --data ' + second_slice
     print(cmd_create)
     return_code = subprocess.call(cmd_create, shell=True)
-    ranAdapter_client.print_slice_stats()   
-    
+    ranAdapter_client.print_slice_stats() 
+    '''  
+    '''
     #reduce percentage of slice 0 to 50%
     reduce_slice_percentage='{"intrasliceShareActive":false,"intersliceShareActive":false,"ul":[{"id":0,"percentage":40}]}'
     cmd_reduce= 'curl -X POST http://localhost:9999/slice/enb/-1 --data ' + reduce_slice_percentage #192.168.12.45
@@ -188,11 +190,15 @@ if __name__ == '__main__':
     ranAdapter_client.set_qos_parameters(bandIncDir='ul', bandIncVal='10')     
     ranAdapter_client.set_QoSOnRAN(sid=0, method='POST', body=ranAdapter_client.qos_parameters)
     ranAdapter_client.print_slice_stats()
-        
+    '''
+       
     #set QoS on RAN: decrease 10MB for DL and UL (slice 0)      
-    ranAdapter_client.set_qos_parameters_ul_dl( bandIncVal_ul='-10',bandUnitScale_ul='MB',bandIncVal_dl='10',bandUnitScale_dl='MB')    
-    ranAdapter_client.set_QoSOnRAN(sid=0, method='POST', body=ranAdapter_client.qos_parameters_ul_dl)
-    ranAdapter_client.print_slice_stats()
+    ranAdapter_client.set_qos_parameters_ul_dl(bandIncVal_ul='-10',bandUnitScale_ul='MB',bandIncVal_dl='-10',bandUnitScale_dl='MB')    
+    #ranAdapter_client.set_QoSOnRAN(sid="5f698a1c", method='POST', body=ranAdapter_client.qos_parameters_ul_dl)
+    ranAdapter_client.set_QoSOnRAN(sid="5f698a1c-44d4-11e9-b210-d663bd873d93", method='POST', body=ranAdapter_client.qos_parameters_ul_dl)
+    #ranAdapter_client.set_QoSOnRAN(sid="5f698d00-44d4-11e9-b210-d663bd873d93", method='POST', body=ranAdapter_client.qos_parameters_ul_dl)
+    
+    #ranAdapter_client.print_slice_stats()
     
 
 

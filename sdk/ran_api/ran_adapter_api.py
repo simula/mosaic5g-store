@@ -348,8 +348,22 @@ def post_QoSOnRAN(sliceId, body):
     unit_scale_ul = 1
     unit_scale_dl = 1
     band_inc_val_dl = 0.0
-    band_inc_val_ul = 0.0   
+    band_inc_val_ul = 0.0
+    slice_id = -1   
     
+    # check if the mapping between slicenetId and flexran sliceid exist! 
+    with open('./inputs/mapping_slicenetid_sliceid.json') as data_file:
+        slice_mapping = json.load(data_file)
+        data_file.close()        
+
+    for index in range (0, len(slice_mapping)):
+        if slice_mapping[index]['slicenetid'] == sliceId:
+            slice_id = int(slice_mapping[index]['sid'] )
+    
+    if slice_id == -1:
+        print 'FlexRAN sliceId corresponding to the SlicenetId ' + sliceId+ ' does not exist!'
+        return NoContent, 400    
+      
     for req in range (0, num_request):
         try:
             direction = body[req]['bandIncDir']  
@@ -365,7 +379,7 @@ def post_QoSOnRAN(sliceId, body):
         if dir[0] == dir[1]:
             print('Bad request!')
             return NoContent, 400
-        
+
     for req in range (0, num_request):
         if  dir[req] == 'dl':
             try:
@@ -378,7 +392,7 @@ def post_QoSOnRAN(sliceId, body):
                 unit_scale_dl = 1000
             if (band_unit_scale_dl == 'KB' or band_unit_scale_dl == 'kb'):
                 unit_scale_dl = 1
-            print('Received QoS parameters for slice '  + str (sliceId) + ', direction dl, bandIncVal ' + str(band_inc_val_dl) + ', bandUnitScale ' + str(band_unit_scale_dl))
+            print('Received QoS parameters for SlicenetId '  + str (sliceId) + ', FlexRAN sid ' + str(slice_id) + ', direction dl, bandIncVal ' + str(band_inc_val_dl) + ', bandUnitScale ' + str(band_unit_scale_dl))
               
         elif dir[req] == 'ul':
             try:
@@ -390,7 +404,7 @@ def post_QoSOnRAN(sliceId, body):
                 unit_scale_ul = 1000
             if (band_unit_scale_ul == 'KB' or band_unit_scale_ul == 'kb'):
                 unit_scale_ul = 1
-            print('Received QoS parameters for slice '  + str (sliceId) + ', direction ul, bandIncVal ' + str(band_inc_val_ul) + ', bandUnitScale ' + str(band_unit_scale_ul))
+            print('Received QoS parameters for SlicenetId '  + str (sliceId) +  ', FlexRAN sid ' + str(slice_id) + ', direction ul, bandIncVal ' + str(band_inc_val_ul) + ', bandUnitScale ' + str(band_unit_scale_ul))
  
     """
     Step 1: collect the necessary information by relying on FlexRAN
@@ -413,11 +427,12 @@ def post_QoSOnRAN(sliceId, body):
     #initialize the variables based on the collected information
     initialize_variables(rrm=rrm,sm=sm)
                
+     
     #at this moment, we can check if SliceID is valid
-    slice_id = int(sliceId)
-    if (slice_id < 0):
-        adapter.log.info('SliceId is not valid')
-        return NoContent, 400
+    #slice_id = int(sliceId)
+    #if (slice_id < 0):
+    #    adapter.log.info('SliceId is not valid')
+    #    return NoContent, 400
     for req in range(0, num_request):
         if not sm.check_slice_id(sid=slice_id, dir=dir[req]):
             print ('slice '+ str(slice_id)+ ' is not exist! (dir=' + str(dir[req]) + ')' )

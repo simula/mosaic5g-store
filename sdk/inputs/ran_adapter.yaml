@@ -4,10 +4,10 @@ info:
   title: RAN Adapter Service
   description: An example for RAN Adapter
 servers:
-  - url: http://localhost:9090/slicenet/ctrlplane/
+  - url: http://localhost:9090/ranadapter/
   
 paths:             
-  '/ranadapter/v1/ranadapter-instance/{sliceId}/set_qos_on_ran':
+  '{sliceId}/v1/set_qos_on_ran':
 
     put:
       summary: set QOS Constraints on RAN Adapter
@@ -22,6 +22,7 @@ paths:
           required: true
           schema:
             type: string
+            format: uuid
       requestBody:
         required: true
         content:
@@ -53,6 +54,7 @@ paths:
           required: true
           schema:
             type: string
+            format: uuid
       requestBody:
         required: true
         description: slice to add to the system
