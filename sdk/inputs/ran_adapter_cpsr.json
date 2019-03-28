@@ -4,7 +4,7 @@
   "cpsStatus": "REGISTERED",
   "slicenetId": "",
   "ipv4Addresses": [
-    "10.1.1.1"
+    "10.8.202.15"
   ],
   "cpsServices": [
     {
@@ -16,7 +16,7 @@
       "fqdn": "",
       "ipEndPoints": [
         {
-          "ipv4Address": "10.1.1.1",
+          "ipv4Address": "10.8.202.15",
           "transport": "tcp",
           "port": 9090
         }
