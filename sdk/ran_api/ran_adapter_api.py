@@ -166,7 +166,9 @@ def cpsr_update():
     except urllib2.URLError as e:
         adapter.log.info('[CPSR_Update] ERROR: ' + str(e.args))
         #TODO: should try to register after ... seconds
-        
+        #if (e.code == 404):
+        adapter.log.info("[CPSR_Update] Send register ... ")
+        cpsr_register() 
     except urllib2.HTTPError as e:
         adapter.log.info('[CPSR_Update] ERROR: ' + str(e))
         if (e.code == 404):
