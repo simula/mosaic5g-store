@@ -12,7 +12,23 @@
       "serviceName": "all",
       "version": "v1",
       "schema": "http",
-      "slicenetId": "",
+      "slicenetId": "f5b01594-520e-11e9-8647-d663bd873d93",
+      "fqdn": "",
+      "ipEndPoints": [
+        {
+          "ipv4Address": "10.1.1.1",
+          "transport": "tcp",
+          "port": 9090
+        }
+      ],
+      "apiPrefix": "/ranadapter"      
+    },
+    {
+      "serviceInstanceId": "db0666dc-9ea3-417a-9ba5-dc843bec76d4",
+      "serviceName": "all",
+      "version": "v1",
+      "schema": "http",
+      "slicenetId": "c51f2ab8-e390-4d9c-b295-4dd37dbd9005",
       "fqdn": "",
       "ipEndPoints": [
         {
