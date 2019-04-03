@@ -131,10 +131,11 @@ def cpsr_register():
     if (status == 201):
         #print(res_body)
         jsondata = json.loads(res_body)
-        adapter.log.info("[CPSR_Register] HeartbeatTimer: " + str(jsondata["heartbeatTimer"]))
-        adapter.heartbeat_timer = jsondata["heartbeatTimer"]
+        adapter.log.info("[CPSR_Register] HeartbeatTimer: " + str(jsondata["heartBeatTimer"]))
+        adapter.heartbeat_timer = jsondata["heartBeatTimer"]
         t = Timer(adapter.heartbeat_timer, cpsr_update,()).start() 
     else:
+        #print(res_body)
         #for the moment,try registratin after 10s
         t = Timer(CPSR_REGISTRATION_INTERVAL, cpsr_register,()).start()        
            
@@ -158,14 +159,16 @@ def cpsr_update():
     opener = urllib2.build_opener(handler)
     request = urllib2.Request(adapter.cpsr_url, data=jsondataasbytes)
     request.get_method = lambda: method
-    request.add_header("content-Type", 'application/json')
-        
+    request.add_header("content-Type", 'application/json-patch+json')
+    #print ('CPSR_URL:', adapter.cpsr_url)    
     try:
         response = opener.open(request)
     except urllib2.URLError as e:
-        adapter.log.info('[CPSR_Update] ' + str(e.args))
+        adapter.log.info('[CPSR_Update] ERROR: ' + str(e.args))
         #TODO: should try to register after ... seconds
-        
+        #if (e.code == 404):
+        adapter.log.info("[CPSR_Update] Send register ... ")
+        cpsr_register() 
     except urllib2.HTTPError as e:
         adapter.log.info('[CPSR_Update] ERROR: ' + str(e))
         if (e.code == 404):
