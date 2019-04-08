@@ -140,11 +140,13 @@ parts:
       - usr/lib/*
       - lib/*
       - uhd_images/*
+      - usr/share/uhd/*  
     prime:
       - enb/*
       - usr/lib/*
       - lib/*
       - uhd_images/*
+      - usr/share/uhd/*  
     organize:
       enb/liboai_usrpdevif.so.Rel14: usr/lib/liboai_device.so
       enb/libcoding.so: usr/lib/libcoding.so
@@ -171,11 +173,13 @@ parts:
       - usr/lib/*
       - lib/*
       - uhd_images/*
+      - usr/share/uhd/*  
     prime:
       - cudu/*
       - usr/lib/*
       - lib/*
       - uhd_images/*
+      - usr/share/uhd/*  
     organize:
       cudu/liboai_eth_transpro.so.Rel14: usr/lib/liboai_transpro.so
       cudu/lte-softmodem.Rel14: cudu/oai-ran
