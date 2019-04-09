@@ -227,9 +227,8 @@ rm -f $CHARM_DIR/beginning
 
 remove_mme_ip(){
     set_env
-    file_config=`cat $CHARM_DIR/.config_file`
-    sed -r -i "/$1/,/preference/ d" $conf_path/$file_config
-    sed -r -i "0,/ipv4[ \t]*=[ \t]*\"[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\";/ s/,(\{[ \t]*ipv4[ \t]*=[ \t]*\"[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\")/ \1/" $conf_path/$file_config
+    sed -r -i "/$1/,/preference/ d" $conf_file
+    sed -r -i "0,/ipv4[ \t]*=[ \t]*\"[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\";/ s/,(\{[ \t]*ipv4[ \t]*=[ \t]*\"[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\")/ \1/" $conf_file
     
     #if there are no other  relations we can rmeove the file with
     #the list of all the ip mme addresses
