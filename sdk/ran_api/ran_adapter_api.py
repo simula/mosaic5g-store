@@ -465,9 +465,10 @@ def post_QoSOnRAN(sliceId, body):
             slice_dl_tbs = 0
             dl_itbs = rrm_app_vars.mcs_to_itbs[sm.get_slice_maxmcs(sid=sid, dir='dl')]            
             adapter.max_rate_dl[enb] = rrm_app_vars.tbs_table[dl_itbs][adapter.enb_dlrb[enb]]
-            adapter.current_rate_dl[enb][sid] = adapter.max_rate_dl[enb] * sm.get_slice_percentage(sid=sid, dir='dl')/100.0            
-            adapter.current_slice_dlrb[enb][sid] =  int (adapter.enb_dlrb[enb] * sm.get_slice_percentage(sid=sid, dir='dl')/100.0)         
-                 
+            #TTN current rate should be calucated based on current_slice_dlrb
+            adapter.current_slice_dlrb[enb][sid] =  int (adapter.enb_dlrb[enb] * sm.get_slice_percentage(sid=sid, dir='dl')/100.0) 
+            adapter.current_rate_dl[enb][sid]  = rrm_app_vars.tbs_table[dl_itbs][adapter.current_slice_dlrb[enb][sid]]            
+            #adapter.current_rate_dl[enb][sid] = adapter.max_rate_dl[enb] * sm.get_slice_percentage(sid=sid, dir='dl')/100.0                
             adapter.log.debug('Max Rate DL (enb): (' + str(enb) + ') ' + str(adapter.max_rate_dl[enb]))
             adapter.log.debug('Current Rate DL (enb,sid, percentage): (' + str(enb) + ', ' + str(sid) + ', '+ str(sm.get_slice_percentage(sid=sid, dir='dl'))+') ' + str(adapter.current_rate_dl[enb][sid]))
             adapter.log.debug('Current slice RB DL (enb,sid): (' + str(enb) + ', ' + str(sid) + ') ' + str(adapter.current_slice_dlrb[enb][sid]))
@@ -479,9 +480,9 @@ def post_QoSOnRAN(sliceId, body):
             ul_itbs = rrm_app_vars.mcs_to_itbs[sm.get_slice_maxmcs(sid=sid, dir='ul')]            
             adapter.max_rate_ul[enb] = rrm_app_vars.tbs_table[ul_itbs][adapter.enb_ulrb[enb]]
             #should verify the value of rrm.get_slice_rb(sid=sid, dir='ul') 
-            adapter.current_rate_ul[enb][sid] = adapter.max_rate_ul[enb] * sm.get_slice_percentage(sid=sid, dir='ul')/100.0            
-            adapter.current_slice_ulrb[enb][sid] =  int (adapter.enb_ulrb[enb] * sm.get_slice_percentage(sid=sid, dir='ul')/100.0)           
-                    
+            adapter.current_slice_ulrb[enb][sid] =  int (adapter.enb_ulrb[enb] * sm.get_slice_percentage(sid=sid, dir='ul')/100.0)
+            adapter.current_rate_ul[enb][sid] = rrm_app_vars.tbs_table[ul_itbs][adapter.current_slice_ulrb[enb][sid]]
+            #adapter.current_rate_ul[enb][sid] = adapter.max_rate_ul[enb] * sm.get_slice_percentage(sid=sid, dir='ul')/100.0                
             adapter.log.debug('Max Rate UL (enb): (' + str(enb) + ') ' + str(adapter.max_rate_ul[enb]))
             adapter.log.debug('Current Rate UL (enb,sid, percentage): (' + str(enb) + ', ' + str(sid) + ', '+ str(sm.get_slice_percentage(sid=sid, dir='ul'))+') ' + str(adapter.current_rate_ul[enb][sid]))
             adapter.log.debug('Current slice RB UL (enb,sid): (' + str(enb) + ', ' + str(sid) + ') ' + str(adapter.current_slice_ulrb[enb][sid]))
@@ -535,7 +536,7 @@ def post_QoSOnRAN(sliceId, body):
             dl_itbs = rrm_app_vars.mcs_to_itbs[sm.get_slice_maxmcs(sid=sid, dir='dl')]
             expected_dlrb = 0
              
-            while slice_dl_tbs  < adapter.new_rate_dl[enb][sid] :
+            while slice_dl_tbs  <= adapter.new_rate_dl[enb][sid] :
                 expected_dlrb +=1
                 if expected_dlrb > adapter.slice_availabe_dlrb[enb][sid]: 
                     adapter.log.debug('no available dlrb')
@@ -566,7 +567,7 @@ def post_QoSOnRAN(sliceId, body):
             ul_itbs = rrm_app_vars.mcs_to_itbs[sm.get_slice_maxmcs(sid=sid, dir='ul')]
             expected_ulrb = 0
              
-            while slice_ul_tbs  < adapter.new_rate_ul[enb][sid] :
+            while slice_ul_tbs  <= adapter.new_rate_ul[enb][sid] :
                 expected_ulrb +=1
                 if expected_ulrb > adapter.slice_availabe_ulrb[enb][sid]: 
                     adapter.log.debug('no available dlrb')
