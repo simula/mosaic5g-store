@@ -1,9 +1,9 @@
 name: oai-enb
-summary: Evolved NodeB (eNB) powered by OpenAirInterface
+summary: Evolved NodeB (eNB) based on OpenAirInterface
 maintainers:
   - Navid Nikaein <navid.nikaein@eurecom.fr> 
 description: |
-   This charms allows you to design, deploy, provision, and dispose your 4G-5G OpenAirInterface eNB out of the box on any cloud infrastructure. It supports multiple radio frontends, namely EXMIMO II, USRP, LMSDR, and BLADERF.
+   This charms allows you to design, deploy, provision, and dispose your 4G-5G OpenAirInterface eNB out of the box on any cloud infrastructure. Currently, it only supports only USRP radio frontends.
 tags:
   - Telecom, Network
   - 4G, 5G, LTE

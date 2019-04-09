@@ -280,4 +280,4 @@ TAC=`config-get TAC`
 
 ############################################################################
 
-$CHARM_DIR/hooks/start
+#$CHARM_DIR/hooks/start

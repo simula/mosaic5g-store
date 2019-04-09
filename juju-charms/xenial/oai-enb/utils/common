@@ -122,8 +122,21 @@ check_enb_process(){
 #IS_RUNNING=`systemctl status enb.service`
 #if [[ $IS_RUNNING =~ .*running.* ]]; then
     #fi
-
-    IS_ACTIVE=`systemctl is-active snap.oai-ran.daemon.service`
+    node_func=`cat $CHARM_DIR/.node_func`
+    case "$node_func" in
+	"cudu" )
+	    IS_ACTIVE=`systemctl is-active snap.oai-ran.cudud.service`
+	    ;;
+	"rru" )
+	    IS_ACTIVE=`systemctl is-active snap.oai-ran.rrud.service`
+	    ;;
+	"enb" )
+	    IS_ACTIVE=`systemctl is-active snap.oai-ran.enbd.service`
+	    ;;
+	* )
+	    juju-log "Unknown node func $node_func"
+	    ;;
+    esac
 
     if [ "$IS_ACTIVE" == "active" ]; then
 	juju-log "OAI eNB is running"
@@ -135,27 +148,39 @@ check_enb_process(){
 
 }
 start_enb(){
-    oai-ran.start || true
+   snap start oai-ran.enbd || true
 }
 stop_enb(){
-    oai-ran.stop || true
+   snap stop oai-ran.enbd  || true
 }
 restart_enb(){
-    stop_enb
-    start_enb
+    snap restart oai-ran.enbd || true 
 }
 
 start_enb_process(){
+    # this could be developped as in oai-cn/frontend/run gdb
+    node_func=`cat $CHARM_DIR/.node_func`
+    case "$node_func" in
+	"cudu" )
+	    oai-ran.cudu-restart || true
+	    ;;
+	"rru" )
+	    oai-ran.rru-restart || true
+	    ;;
+	* )
+	    oai-ran.enb-restart || true
+	    node_func="enb"
+	    ;;
+    esac
 
-    oai-ran.restart || true  
-    check_enb_process
+    check_enb_process $node_func 
     if [ $status -eq 1 ]; then
 	echo "no"  > $CHARM_DIR/.oairan_running
         status-set blocked "Not Running, check the config file"
        exit 1
     else
 	echo "yes"  > $CHARM_DIR/.oairan_running
-	juju-log "Running OAI ENB"
+	juju-log "Running OAI $node_func"
 	status-set active "Running"
     fi 
 }
@@ -295,4 +320,11 @@ check_ifup(){
     else	
 	return 1
     fi
+}
+get_eth_ip(){
+  echo `ip addr show $1 | grep -o 'inet [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+' | grep -o [0-9].*`
+}
+
+get_eth_ip_net(){
+  echo `ip addr show $1 | grep -o 'inet [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+/[0-9]\+' | grep -o [0-9].*`
 }
