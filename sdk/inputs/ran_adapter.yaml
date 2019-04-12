@@ -4,10 +4,10 @@ info:
   title: RAN Adapter Service
   description: An example for RAN Adapter
 servers:
-  - url: http://localhost:9090/
+  - url: http://localhost:9090/ranadapter/all/v1
   
 paths:             
-  '/ranadapter/all/v1/{sliceId}/set_qos_on_ran':
+  '/{sliceId}/set_qos_on_ran':
 
     put:
       summary: set QOS Constraints on RAN Adapter

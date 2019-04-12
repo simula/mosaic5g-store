@@ -4,10 +4,10 @@ info:
   title: Core Adapter Service
   description: An example for Core Adapter
 servers:
-  - url: http://localhost:9090/slicenet/ctrlplane/
+  - url: http://localhost:9090/coreadapter/all/v1
   
 paths:             
-  '/coreadapter/v1/coreadapter-instance/{sliceId}/set_qos_on_core':
+  '/{sliceId}/set_qos_on_core':
 
     put:
       summary: set QOS Constraints on Core Adapter
