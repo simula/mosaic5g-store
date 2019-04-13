@@ -47,6 +47,28 @@ install_packages(){
     fi
 }
 
+check_install_kernel(){
+    check_current_kernel "4.8"
+    if [ "$REQUIRED_KERNEL_IS_INSTALLED" == "no" ]; then
+    
+	if [ "$machine_type"  == "lxc" -o "$machine_type" == "docker" ]; then
+	    
+	    juju-log "Can't install the required kernel in $machine_type env. Proceed with the current kernel."
+	    juju-log "Please install kerenel version 4.8 or higher with GTP module enabled on the HOST machine"
+	else
+	    if [ "$(cat $CHARM_DIR/.reboot)" != "reboot" ]; then  
+		juju-log "installing the required kernel and reboot"
+		status-set maintenance "installing the required kernel and rebooting"
+		install_required_kernel
+  		echo "reboot" > $CHARM_DIR/.reboot 
+		juju-reboot --now
+	    else 
+		juju-log "Can't install the required kernel. Proceeding with the current kernel."
+	    fi 
+	fi
+    fi 
+}
+
 clone_repo(){
 
     juju-log  "Fetching the Mosaic5G repository"
@@ -151,6 +173,8 @@ machine_type=`virt-what`
 #clone_repo
 
 configure_hosts
+
+check_install_kernel
 
 build_spgw
 
