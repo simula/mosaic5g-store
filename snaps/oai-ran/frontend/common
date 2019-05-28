@@ -6,6 +6,7 @@ CONF_DIR="$SNAP_DATA"
 
 ENB_DIR="$SNAP/enb"
 ENB_CONF_FILE="$CONF_DIR/enb.band7.tm1.50PRB.usrpb210.conf"
+ENB_SIM_CONF_FILE="$CONF_DIR/rcc.band7.tm1.if4p5.50PRB.lo.conf"
 ENB_EXEC="$ENB_DIR/$SNAP_NAME"
 
 
