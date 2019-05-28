@@ -3,6 +3,7 @@
 . $SNAP/common
 
 export UHD_IMAGES_DIR=$SNAP/uhd_images
+export UHD_RFNOC_DIR=$SNAP/usr/share/uhd/rfnoc/blocks
 
 if [ ! -e $UE_EXEC ]; then
     echo "Cannot find $UE_EXEC executable"
