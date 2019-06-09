@@ -1,0 +1,344 @@
+{
+  "date_time": "2019-06-07T14:28:02.464",
+  "eNB_config": [
+    {
+      "bs_id": 10000,
+      "agent_info": [
+        {
+          "agent_id": 0,
+          "bs_id": 10000,
+          "capabilities": [
+            "LOPHY",
+            "HIPHY",
+            "LOMAC",
+            "HIMAC",
+            "RLC",
+            "PDCP",
+            "SDAP",
+            "RRC"
+          ]
+        }
+      ],
+      "eNB": {
+        "header": {
+          "version": 0,
+          "type": 8,
+          "xid": 0
+        },
+        "cellConfig": [
+          {
+            "phyCellId": 1,
+            "puschHoppingOffset": 0,
+            "hoppingMode": 0,
+            "nSb": 1,
+            "phichResource": 0,
+            "phichDuration": 0,
+            "initNrPDCCHOFDMSym": 1,
+            "siConfig": {
+              "sfn": 665,
+              "sib1Length": 17,
+              "siWindowLength": 5
+            },
+            "dlBandwidth": 25,
+            "ulBandwidth": 25,
+            "ulCyclicPrefixLength": 0,
+            "dlCyclicPrefixLength": 0,
+            "antennaPortsCount": 1,
+            "duplexMode": 1,
+            "subframeAssignment": 0,
+            "specialSubframePatterns": 0,
+            "prachConfigIndex": 0,
+            "prachFreqOffset": 2,
+            "raResponseWindowSize": 7,
+            "macContentionResolutionTimer": 5,
+            "maxHARQMsg3Tx": 0,
+            "n1PUCCHAN": 0,
+            "deltaPUCCHShift": 1,
+            "nRBCqi": 0,
+            "srsSubframeConfig": 0,
+            "srsBwConfig": 0,
+            "srsMacUpPts": 0,
+            "enable64QAM": 0,
+            "carrierIndex": 0,
+            "dlFreq": 751,
+            "ulFreq": 782,
+            "eutraBand": 13,
+            "dlPdschPower": -27,
+            "ulPuschPower": -96,
+            "plmnId": [
+              {
+                "mcc": 208,
+                "mnc": 95,
+                "mncLength": 2
+              }
+            ],
+            "sliceConfig": {
+              "dl": [
+                {
+                  "id": 0,
+                  "label": "xMBB",
+                  "percentage": 100,
+                  "isolation": false,
+                  "priority": 10,
+                  "positionLow": 0,
+                  "positionHigh": 25,
+                  "maxmcs": 28,
+                  "sorting": [
+                    "CR_ROUND",
+                    "CR_SRB12",
+                    "CR_HOL",
+                    "CR_LC",
+                    "CR_CQI",
+                    "CR_LCP"
+                  ],
+                  "accounting": "POL_FAIR",
+                  "schedulerName": "schedule_ue_spec"
+                }
+              ],
+              "ul": [
+                {
+                  "id": 0,
+                  "label": "xMBB",
+                  "percentage": 100,
+                  "isolation": false,
+                  "priority": 0,
+                  "firstRb": 0,
+                  "maxmcs": 20,
+                  "accounting": "POLU_FAIR",
+                  "schedulerName": "schedule_ulsch_rnti"
+                }
+              ],
+              "intrasliceShareActive": true,
+              "intersliceShareActive": true
+            },
+            "x2HoNetControl": false
+          }
+        ]
+      },
+      "UE": {
+        "ueConfig": [
+          {
+            "rnti": 42711,
+            "timeAlignmentTimer": 7,
+            "measGapConfigPattern": 4294967295,
+            "measGapConfigSfOffset": 4294967295,
+            "transmissionMode": 0,
+            "ueAggregatedMaxBitrateUL": "0",
+            "ueAggregatedMaxBitrateDL": "0",
+            "capabilities": {
+              "halfDuplex": 0,
+              "intraSFHopping": 0,
+              "type2Sb1": 1,
+              "ueCategory": 4,
+              "resAllocType1": 1
+            },
+            "ueTransmissionAntenna": 2,
+            "ttiBundling": 0,
+            "maxHARQTx": 4,
+            "betaOffsetACKIndex": 0,
+            "betaOffsetRIIndex": 0,
+            "betaOffsetCQIIndex": 8,
+            "ackNackSimultaneousTrans": 0,
+            "simultaneousAckNackCqi": 0,
+            "aperiodicCqiRepMode": 3,
+            "tddAckNackFeedback": 4294967295,
+            "ackNackRepetitionFactor": 0,
+            "extendedBsrSize": 4294967295,
+            "imsi": "208950000000005",
+            "dlSliceId": 0,
+            "ulSliceId": 0,
+            "info": {
+              "offsetFreqServing": "0",
+              "offsetFreqNeighbouring": "0",
+              "cellIndividualOffset": [
+                "0"
+              ],
+              "filterCoefficientRsrp": "4",
+              "filterCoefficientRsrq": "4",
+              "event": {
+                "a3": {
+                  "a3Offset": "0",
+                  "reportOnLeave": 1,
+                  "hysteresis": "0",
+                  "timeToTrigger": "40",
+                  "maxReportCells": "2"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "LC": {
+        "header": {
+          "version": 0,
+          "type": 12,
+          "xid": 0
+        },
+        "lcUeConfig": [
+          {
+            "rnti": 42711,
+            "lcConfig": [
+              {
+                "lcid": 1,
+                "lcg": 0,
+                "direction": 2,
+                "qosBearerType": 0,
+                "qci": 1
+              },
+              {
+                "lcid": 2,
+                "lcg": 0,
+                "direction": 2,
+                "qosBearerType": 0,
+                "qci": 1
+              },
+              {
+                "lcid": 3,
+                "lcg": 1,
+                "direction": 1,
+                "qosBearerType": 0,
+                "qci": 1
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "mac_stats": [
+    {
+      "bs_id": 10000,
+      "ue_mac_stats": [
+        {
+          "rnti": 42711,
+          "mac_stats": {
+            "rnti": 42711,
+            "bsr": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "phr": 18,
+            "rlcReport": [
+              {
+                "lcId": 1,
+                "txQueueSize": 0,
+                "txQueueHolDelay": 0,
+                "statusPduSize": 0
+              },
+              {
+                "lcId": 2,
+                "txQueueSize": 0,
+                "txQueueHolDelay": 0,
+                "statusPduSize": 0
+              },
+              {
+                "lcId": 3,
+                "txQueueSize": 0,
+                "txQueueHolDelay": 0,
+                "statusPduSize": 0
+              }
+            ],
+            "pendingMacCes": 0,
+            "dlCqiReport": {
+              "sfnSn": 11617,
+              "csiReport": [
+                {
+                  "servCellIndex": 0,
+                  "ri": 0,
+                  "type": "FLCSIT_P10",
+                  "p10csi": {
+                    "wbCqi": 15
+                  }
+                }
+              ]
+            },
+            "ulCqiReport": {
+              "sfnSn": 11617,
+              "cqiMeas": [
+                {
+                  "type": "FLUCT_SRS",
+                  "servCellIndex": 0
+                }
+              ],
+              "pucchDbm": [
+                {
+                  "p0PucchDbm": 0,
+                  "servCellIndex": 0
+                }
+              ]
+            },
+            "rrcMeasurements": {
+              "measid": -1,
+              "pcellRsrp": -1,
+              "pcellRsrq": -1
+            },
+            "pdcpStats": {
+              "pktTx": 126,
+              "pktTxBytes": 35079,
+              "pktTxSn": 125,
+              "pktTxW": 0,
+              "pktTxBytesW": 0,
+              "pktTxAiat": 10510,
+              "pktTxAiatW": 0,
+              "pktRx": 138,
+              "pktRxBytes": 60003,
+              "pktRxSn": 137,
+              "pktRxW": 0,
+              "pktRxBytesW": 0,
+              "pktRxAiat": 14896,
+              "pktRxAiatW": 0,
+              "pktRxOo": 0,
+              "sfn": "17498"
+            },
+            "macStats": {
+              "tbsDl": 97,
+              "tbsUl": 63,
+              "prbRetxDl": 2,
+              "prbRetxUl": 0,
+              "prbDl": 2,
+              "prbUl": 0,
+              "mcs1Dl": 28,
+              "mcs2Dl": 20,
+              "mcs1Ul": 10,
+              "mcs2Ul": 10,
+              "totalBytesSdusUl": 62190,
+              "totalBytesSdusDl": 35862,
+              "totalPrbDl": 539,
+              "totalPrbUl": 2824,
+              "totalPduDl": 118,
+              "totalPduUl": 810,
+              "totalTbsDl": 37759,
+              "totalTbsUl": 86068,
+              "macSdusDl": [
+                {
+                  "sduLength": 90,
+                  "lcid": 3
+                }
+              ],
+              "harqRound": 8
+            },
+            "gtpStats": [
+              {
+                "eRabId": 5,
+                "teidEnb": 3672384709,
+                "teidSgw": 10
+              }
+            ]
+          },
+          "harq": [
+            "ACK",
+            "ACK",
+            "ACK",
+            "ACK",
+            "ACK",
+            "ACK",
+            "ACK",
+            "ACK"
+          ]
+        }
+      ]
+    }
+  ]
+}
