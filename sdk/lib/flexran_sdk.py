@@ -1039,10 +1039,8 @@ class stats_manager(object):
                     self.log.info('Reading the json file for test mode. This can take a while...')
                     with open(file) as data_file:
                         # get the entire file
-                        self.stats_data_log = json.load(data_file) 
+                        self.stats_data = json.load(data_file)
                     self.stats_data_index = 0
-                self.stats_data=self.stats_data_log[self.stats_data_index]  
-                self.stats_data_index = (self.stats_data_index + 1) % len(self.stats_data_log)
                 if self.recording:
                     self.stats_data_recorded.append(self.stats_data)
                 self.status='connected'
