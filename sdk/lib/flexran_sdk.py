@@ -1645,20 +1645,6 @@ class stats_manager(object):
             self.log.warning('unknown direction ' + dir + 'set to DL')
             return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['totalbytesSdusDl']
 
-    def get_ue_total_bytes_sdus(self, enb=0, ue=0, dir='UL'):
-        """!@brief Get the RRC RSRP value
-        
-        @param enb: index of eNB
-        @param ue: index of UE
-        """
-        if dir == 'dl' or dir == 'DL' :
-            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['totalbytesSdusDl']
-        elif dir == 'ul' or dir == 'UL' :
-            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['totalbytesSdusUl']
-        else :
-            self.log.warning('unknown direction ' + dir + 'set to DL')
-            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['totalbytesSdusDl']
-
     def get_ue_total_prb(self, enb=0, ue=0, dir='UL'):
         """!@brief Get the RRC RSRP value
         
