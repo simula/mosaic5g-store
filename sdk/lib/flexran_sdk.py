@@ -48,15 +48,6 @@ from logger import *
 from enum import Enum
 
 
-class rrc_triggers(Enum):
-    """!@brief RRC Measurements trigger types
-    
-    """
-
-    ONE_SHOT = 0
-    PERIODICAL = 1
-    EVENT_DRIVEN= 2
-
 class cd_actions(Enum):
     """!@brief control delegation actions
 
@@ -97,7 +88,7 @@ class flexran_rest_api(object):
 
     
     """!@brief RRC API endpoit """ 
-    rrc_trigger='/rrc_trigger'
+    rrc_trigger='/rrc'
     """!@brief control delegation API endpoint for DL """ 
     cd_dl='/dl_sched'
     """!@brief control delegation API endpoint for DL """ 
@@ -139,10 +130,9 @@ class flexran_rest_api(object):
 class rrc_trigger_meas(object):
     """!@brief RRC trigger measurement class
 
-    This class is used to trigger measurement events in the UE for the reception of RSRP and RSRQ values of the neighboring cells.
-    The REST API end point is /rrc_trigger
-    @todo make the measurment trigger event reconfigurable and per UE basis 
-    @return RSRP/RSRQ : from the status manger
+    This class is used to configure RRC parameters and trigger handovers.
+    The REST API end point is /rrc
+    @return RSRP/RSRQ : from the status manager
     """
     def __init__(self, log, url='http://localhost', port='9999', op_mode='test'):
         """!@brief Class constructor """
@@ -153,50 +143,73 @@ class rrc_trigger_meas(object):
         self.status = ''
         self.op_mode = op_mode
         self.log = log
-
         self.rrc_trigger_api=flexran_rest_api.rrc_trigger
 
-        self.rrc_meas = {}
-        self.rrc_meas[rrc_triggers.ONE_SHOT]      = 'ONE_SHOT'
-        self.rrc_meas[rrc_triggers.PERIODICAL]       = 'PERIODICAL'
-        self.rrc_meas[rrc_triggers.EVENT_DRIVEN]  = 'EVENT_DRIVEN'
+    def trigger_ho(self, senb_id, ue_rnti, tenb_id):
+        """!@brief Trigger a HO. No checks are performed.
 
+        @param senb_id: the BS ID of the source eNB
+        @param ue_rnti: the RNTI of the UE to handover
+        @param tenb_id: the BS ID of the target eNB
+        """
+        # /rrc/ho/senb/:sid/ue/:ue/tenb/:tid
+        url = self.url + self.rrc_trigger_api + "/ho/"
+        url += "senb/" + str(senb_id) + "/"
+        url += "ue/" + str(ue_rnti) + "/"
+        url += "tenb/" + str(tenb_id)
+        if self.op_mode == "test":
+            self.log.info("TEST MODE: POST " + url)
+        elif self.op_mode == "sdk":
+            self.log.info("POST " + url)
+            try:
+                req = requests.post(url)
+                if req.status_code == 200:
+                    status = "connected"
+                else:
+                    status = "disconnected"
+                    self.log.error("Request failed. Error " + req.reason + "(code " + str(req.status_code) + ")")
+            except:
+                self.log.error("Exception in trigger_ho()")
+        else:
+            self.log.warn("Unknown operation mode " + op_mode)
+
+    def switch_x2_ho_net_control(self, enb_id, enable):
+        """!@brief Enable/Disable X2 HO net control, i.e. whether handover
+        requests initiated by a UE are ignored (true) or honored (false)
+
+        @param enb_id: The ID of the BS
+        @param enable: boolean
+        """
+        # /rrc/x2_ho_net_control/enb/:id/:bool
+        url = self.url + self.rrc_trigger_api + "/x2_ho_net_control/"
+        url += "enb/" + str(enb_id) + "/"
+        if enable:
+            url += "1"
+        else:
+            url += "0"
+        if self.op_mode == "test":
+            self.log.info("TEST MODE: POST " + url)
+        elif self.op_mode == "sdk":
+            self.log.info("POST " + url)
+            try:
+                req = requests.post(url)
+                if req.status_code == 200:
+                    status = "connected"
+                else:
+                    status = "disconnected"
+                    self.log.error("Request failed. Error " + req.reason + "(code " + str(req.status_code) + ")")
+            except:
+                self.log.error("Exception in switch_x2_ho_net_control()")
+        else:
+            self.log.warn("Unknown operation mode " + op_mode)
 
     def trigger_meas(self, type='EVENT_DRIVEN'):
-        """!@brief Set the type of RRC trigger measurments
-        
-        @param type: ONE_SHOT, PERIODICAL, and EVENT_DRIVEN
-        @note: this call enables RRC measurement for active/connected UEs
+        """!@brief Deprecated: Set the type of RRC trigger measurements,
+
+        @param type: any string
+        @note: This deprecated method does nothing
         """
-
-        if type == self.rrc_meas[rrc_triggers.ONE_SHOT] :
-            url = self.url+self.rrc_trigger_api+'/'+type.lower()
-        elif type == self.rrc_meas[rrc_triggers.PERIODICAL] :
-            url = self.url+self.rrc_trigger_api+'/'+type.lower()
-        elif type == self.rrc_meas[rrc_triggers.EVENT_DRIVEN] :
-            url = self.url+self.rrc_trigger_api+'/'+type.lower()
-        else:
-            self.log.error('Type ' + type + 'not supported')
-            return
-        
-        if self.op_mode == 'test' :
-            self.log.info('POST ' + str(url))
-
-        elif self.op_mode == 'sdk' : 
-            try :
-                req = requests.post(url)
-                self.log.info('POST ' + str(url))
-                if req.status_code == 200 :
-                    self.log.info('successfully send the RRC trigger measurment to the agent' )
-                    self.status='connected'
-                else :
-                    self.status='disconnected'
-                self.log.error('Request error code : ' + str(req.status_code))
-            except :
-                self.log.error('Failed to send the RRC trigger measurement to the agent' )
-
-        else :
-            self.log.warn('Unknown operation mode ' + op_mode )       
+        self.log.warn("trigger_meas() does nothing")
 
 class control_delegate(object):
     """!@brief Control delegation class
