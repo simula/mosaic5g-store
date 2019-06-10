@@ -41,6 +41,7 @@ import argparse
 import os
 import pprint
 import yaml
+from datetime import datetime
 
 from logger import *
 
@@ -1081,6 +1082,11 @@ class stats_manager(object):
             self.log.debug('Stats Manager requested data')
             self.log.debug(json.dumps(self.stats_data, indent=2))
 
+    def get_date_time(self):
+        """!@brief Get the date time when this JSON file was returned
+        """
+        return datetime.strptime(self.stats_data['date_time'], '%Y-%m-%dT%H:%M:%S.%f')
+
     def get_enb_config(self,enb=0):
         """!@brief Get the entire eNB configuration
         
@@ -1093,17 +1099,23 @@ class stats_manager(object):
         
         @param enb: index of eNB
         """
-        if 'eNBId' in self.stats_data['eNB_config'][enb]['eNB']: 
-            return int(self.stats_data['eNB_config'][enb]['eNB']['eNBId'])
+        if 'bs_id' in self.stats_data['eNB_config'][enb]:
+            return int(self.stats_data['eNB_config'][enb]['bs_id'])
         else:
-            self.log.warn('eNB ID not available, sending the eNB index')
+            self.log.warn('BS ID not available, sending the eNB index')
             return enb;
+
+    def get_enb_id_list(self):
+        """!@brief Get a list of all BS identifiers
+        """
+        return [ self.get_enb_id(enb) for enb in range(0, self.get_num_enb()) ]
 
     def get_num_enb(self):
         """!@brief Get the number of connected eNB to this controller 
         
         """
-        
+        if self.stats_data == '': # if nothing received yet
+            return 0
         return len(self.stats_data['eNB_config'])
 
     def get_ue_config(self,enb=0,ue=0):
@@ -1228,6 +1240,21 @@ class stats_manager(object):
             return 16
         else :
             return 28
+
+    def get_phy_cell_id(self,enb=0,cc=0):
+        """!@brief Get the physical cell ID of the eNB
+        @param enb: index of eNB
+        @param cc: index of component carrier
+        @param dir: defines downlink and uplink direction
+        """
+        return self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['phyCellId']
+
+    def get_x2_ho_net_controlled(self, enb=0, cc=0):
+        """!@brief Return whether handover requests initiated by a UE are
+        ignored (true) or honored (false)
+        @param enb: index of eNB
+        """
+        return self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['x2HoNetControl']
     
     def get_lc_config(self,enb=0,lc=0):
         """!@brief Get a logical channel (LC) config for a given eNB and LC id
@@ -1254,6 +1281,18 @@ class stats_manager(object):
         """
 
         return len(self.stats_data['mac_stats'][enb]['ue_mac_stats'])
+
+    def get_ue_rnti(self, enb=0, ue=0):
+        """!@brief Get the RNTI of a UE
+        @param enb: index of eNB
+        @param ue: index of UE
+        """
+        return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['rnti']
+
+    def get_rnti_list(self, enb = 0):
+        """!@brief get a list of all RNTIs for a specific eNB
+        """
+        return [ self.get_ue_rnti(enb, u) for u in range(0, self.get_num_ue(enb)) ]
 
     def get_ue_mac_status(self,enb=0,ue=0):
         """!@brief Get the UE MAC layer status 
@@ -1556,6 +1595,19 @@ class stats_manager(object):
                 return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['rrcMeasurements']['pcellRsrp']
         return 0
 
+    def get_ue_neighboring_cells(self, enb=0, ue=0):
+        """!@brief Return the neighboring cell's physical IDs as seen by a
+        particular UE
+        @param enb: index of eNB
+        @param ue: index of UE
+        """
+        mac_stats = self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']
+        neigh = []
+        if 'rrcMeasurements' in mac_stats:
+            for meas in mac_stats['rrcMeasurements']['neighMeas']['eutraMeas']:
+                neigh += [meas['physCellId']]
+        return neigh
+
     def get_ue_tbs(self, enb=0, ue=0, dir='UL'):
         """!@brief Get the RRC RSRP value
         
@@ -1702,6 +1754,16 @@ class stats_manager(object):
         else :
             self.log.warning('unknown direction ' + dir + 'set to DL')
             return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['macSdusDl'][0]['lcid']
+
+    def get_ue_teid_sgw(self, enb=0, ue=0, erab=0):
+        """!!!@brief Get the SGw TEID for given UE and its erab (index)
+        """
+        return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['gtpStats'][erab]['teidSgw']
+
+    def get_ue_teid_enb(self, enb=0, ue=0, erab=0):
+        """!!!@brief Get the eNB TEID for given UE and its erab (index)
+        """
+        return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['gtpStats'][erab]['teidEnb']
 
 
 
