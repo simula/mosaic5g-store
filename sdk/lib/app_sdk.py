@@ -49,7 +49,7 @@ import datetime
 
 class app_handler:
 
-    def __init__(self, app_name, log, callback=None, notification=None, init=None, save=None, load=None):
+    def __init__(self, app_name, log, callback=None, notification=None, init=None, save=None, load=None, term=None):
 	self.app_name = app_name
 	self.status_path = 'status_saves/'+str(self.app_name)+'.json'
 	self.clients = []
@@ -57,6 +57,7 @@ class app_handler:
 	self.callback = callback
 	self.notification = notification
 	self.init = init
+        self.term = term
 	self.load = load
 	self.save = save
 	
@@ -178,6 +179,8 @@ class client_handler(tornado.websocket.WebSocketHandler):
 
     def on_close(self):
         self.handler.unregister(self, "you are unregistered")
+	if not self.handler.term is None:
+	    self.handler.term(self)
         self.log.info("app_handler: unregistered")
          
     def send(self, msg):
