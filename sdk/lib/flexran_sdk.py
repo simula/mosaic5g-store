@@ -35,6 +35,8 @@ import io
 import requests
 import time
 import logging
+logging.getLogger("requests").setLevel(logging.WARNING)
+logging.getLogger("urllib3").setLevel(logging.WARNING)
 import argparse
 import os
 import pprint
@@ -1058,7 +1060,7 @@ class stats_manager(object):
                 url = self.url+self.sm_enb_api
             
             
-            self.log.info('the request url is: ' + url)
+            self.log.debug('the request url is: ' + url)
             try :
                 req = requests.get(url)
                 if req.status_code == 200:
