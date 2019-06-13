@@ -1115,7 +1115,8 @@ function topology(sources) {
 		.select("text.stats")
 		.attr("y", +GRAPH.NODE.R+8)
 		.selectAll("tspan")
-		.data(['imsi', 'dlSliceId', 'ulSliceId']);
+		//.data(['imsi', 'dlSliceId', 'ulSliceId']);
+		.data(['teidSgw', 'teidEnb', 'neighPhyCellId', 'imsi']);
 	stats.enter()
 	    .append("tspan")
 	    .attr("x", GRAPH.NODE.R)
@@ -1124,7 +1125,19 @@ function topology(sources) {
 	stats.merge(stats)
 	    .text(function (d) {
 		var config = this.parentNode.__data__.config.ueConfig;
-		return config ?  d + '=' + config[d] : '';
+                var stats  = this.parentNode.__data__.config.stats;
+                switch (d) {
+                  case 'teidSgw':
+                  case 'teidEnb':
+                    return stats ? d + '=' + stats.mac_stats.gtpStats[0][d] : '';
+                  case 'neighPhyCellId':
+                    if (stats == null) return '';
+                    var neighMeas = stats.mac_stats.rrcMeasurements.neighMeas;
+                    var meas = neighMeas ? neighMeas.eutraMeas : [];
+                    return d + '=' + meas.map(x => x.physCellId);
+                  default:
+                    return config ?  d + '=' + config[d] : '';
+                }
 	    });
 
 	stats = nodes.filter(function (d) { return d.info === INFO_ENB;})
@@ -1132,7 +1145,7 @@ function topology(sources) {
 		.selectAll("tspan")
 	// The following fields from cellConfig[0] will be show on
 	// right of the eNB icon. Generated below...
-		.data(['eutraBand', 'dlFreq', 'ulFreq', 'dlBandwidth', 'plmnId', 'agents']);
+		.data(['eutraBand', 'dlFreq', 'dlBandwidth', 'plmnId', 'phyCellId', 'x2HoNetControl']);
 	stats.enter()
 	    .append("tspan")
 	    .attr("x", GRAPH.NODE.R+5)
