@@ -636,7 +636,6 @@ function topology(sources) {
 	"RPC": function (src) {
 	    var data = src.node.config;
 	    if (!data) return;
-	    console.log(data);
 	    if (data.id === undefined) {
 		// Assume notification
 		if (data.method == 'capabilities') {
@@ -647,6 +646,7 @@ function topology(sources) {
 		    src.node.config = data.params;
 		    sma_get_list(src);
 		} else if (data.method) {
+                    src.node[data.method] = data.params;
 		    var ctl = select_control(src, src.capabilities[data.method]);
 		    ctl.selectAll(".command")
 			.classed("ok notified", function (d) { return d == data.method;});
@@ -1157,6 +1157,25 @@ function topology(sources) {
                   return d + "=" + config.cellConfig[0][d];
                 }
 	    });
+
+        // applications can show anything next to their icon through the
+        // app_info notification
+        stats = nodes.filter(function (d) { return d.info == INFO_APP; });
+        stats = stats
+                .select("text.stats")
+                .selectAll("tspan")
+                .data([0, 1, 2, 3, 4]);
+        stats.enter()
+            .append("tspan")
+            .attr("x", GRAPH.NODE.R+5)
+            .attr("dx", 0)
+            .attr("dy", "1em");
+        stats.merge(stats)
+            .text(function (d) {
+              var app_info = this.parentNode.__data__.app_info;
+              if (app_info == null || d >= app_info.length) return '';
+              return app_info[d];
+          });
     }
 
     var GRAPH = graph("#topology",
