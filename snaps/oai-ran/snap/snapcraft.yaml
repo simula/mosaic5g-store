@@ -137,16 +137,14 @@ parts:
       cp cmake_targets/snap_environment.sh $SNAPCRAFT_PART_INSTALL/enb
     stage:
       - enb/*
-      - usr/lib/*
+      - usr/*
       - lib/*
       - uhd_images/*
-      - usr/share/uhd/*  
     prime:
       - enb/*
-      - usr/lib/*
+      - usr/*
       - lib/*
       - uhd_images/*
-      - usr/share/uhd/*  
     organize:
       enb/liboai_usrpdevif.so.Rel14: usr/lib/liboai_device.so
       enb/liboai_eth_transpro.so.Rel14: usr/lib/liboai_transpro.so

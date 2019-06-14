@@ -239,7 +239,8 @@ parts:
     source: https://gitlab.eurecom.fr/oai/freediameter.git
     source-branch: eurecom-1.2.0
     override-build: |
-      mkdir build
+      cd ../src
+      mkdir -p build
       cd build
       cmake -DCMAKE_INSTALL_PREFIX:PATH=$SNAPCRAFT_PART_INSTALL/usr/local ../
       #cmake ../
