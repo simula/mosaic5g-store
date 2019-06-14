@@ -54,11 +54,11 @@ if [ "$mme_ip" != "$(cat $CHARM_DIR/.mme_ip)" ]; then
     juju-log "MME IP addr  changed to $(cat $CHARM_DIR/.mme_ip)"
 fi
 
-if [ "$(config-get flexran_active)" != "$(cat $CHARM_DIR/.flexran_active)" ]; then
-    echo "$(config-get flexran_active)" >  $CHARM_DIR/.flexran_active
-    juju-log "Flexran active state changed to $(cat $CHARM_DIR/.flexran_active)"
+#if [ "$(config-get flexran_active)" != "$(cat $CHARM_DIR/.flexran_active)" ]; then
+#    echo "$(config-get flexran_active)" >  $CHARM_DIR/.flexran_active
+#    juju-log "Flexran active state changed to $(cat $CHARM_DIR/.flexran_active)"
     #$CHARM_DIR/hooks/upgrade-charm
-fi
+#fi
 
 
 if [ "$(config-get target_hardware)" != "$(cat $CHARM_DIR/.hw)" ]; then
@@ -280,4 +280,4 @@ TAC=`config-get TAC`
 
 ############################################################################
 
-#$CHARM_DIR/hooks/start
+$CHARM_DIR/hooks/start

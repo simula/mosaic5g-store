@@ -140,9 +140,6 @@ hw=`config-get target_hardware`
 # MME IP ADD
 mme_ip=`config-get mme_ip_addr`
 
-# FlexRAN params 
-flexran_active=`config-get flexran_active`
-
 # RRU params 
 fh_tr_mode=`config-get fh_transport_mode`
 fh_if_name=`config-get fh_if_name`
@@ -161,7 +158,6 @@ bw=`config-get N_RB_DL`
 echo "$snap" > $CHARM_DIR/.snap
 echo "$hw" > $CHARM_DIR/.hw
 echo "$node_func" > $CHARM_DIR/.node_func
-echo "$flexran_active" >  $CHARM_DIR/.flexran_active
 echo "$mme_ip" >  $CHARM_DIR/.mme_ip
 
 echo "no"  > $CHARM_DIR/.rtc_running

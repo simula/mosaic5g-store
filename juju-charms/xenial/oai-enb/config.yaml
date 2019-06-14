@@ -94,11 +94,6 @@ options:
      description: |
        Setting the rx antenna gain.
      type: int
-   flexran_active:
-     default: "no"
-     description: |
-        activates the eNB agent/runtime to interface with the FlexRAN controller.
-     type: string
    flexran_if_name:
      default: "eth0"
      description: |

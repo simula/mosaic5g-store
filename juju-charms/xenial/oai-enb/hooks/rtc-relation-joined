@@ -25,4 +25,4 @@
 # author  navid.nikaein@eurecom.fr
 
 set -eux
-relation-set AGENT_ACTIVE=`config-get flexran_active`
+relation-set AGENT_ACTIVE="yes"

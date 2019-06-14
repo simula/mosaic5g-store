@@ -67,24 +67,35 @@ clone_repro(){
 }
 
 build_flexran(){
-    cd $mosaic_path
-    if [ "$snap" != "edge" ] || [ "snap" != "beta" ] ; then
-	juju-log "channel $snap is not supported, use edge"
-    else
-	juju-log "Installing and building the FlexRAN from snap"
+    if [ ! -d $mosaic_path ] ; then 
+	mkdir $mosaic_path
     fi
-    ./build_m5g -F
+    
+    if [ "$snap" == "edge" ] || [ "$snap" == "beta" ] ; then
+	juju-log "Installing and building the HSS from Flexran snap"
+    else
+	juju-log "channel $snap is not supported, use edge or beta"
+	snap="edge"
+    fi
 
- }
+     if [ -z "$(snap list flexran)" ] ; then
+        op="install"
+    else
+        op="refresh"
+    fi
+    sudo snap $op flexran --channel=$snap --devmode
+    
+}
+
 init_flexran(){
     flexran.stop || true
     flexran.stop || true
-    flexran.init || true 
+    #flexran.init || true 
     #flexran.conf sbi $bind_port
     #flexran.conf nbi $rest_port
     
 # just a flag for start script to run the service 
-    echo "yes" > $CHARM_DIR/.rtc_running_flag
+    #echo "yes" > $CHARM_DIR/.rtc_running_flag
 }
 
 status-set maintenance "Install hook"
@@ -98,14 +109,14 @@ snap=`config-get snap`
 bind_add=`config-get bind_addr`
 bind_port=`config-get bind_sbi_port`
 rest_port=`config-get bind_nbi_port`
+echo "$snap"           >  $CHARM_DIR/.snap
 
+# these are done in config-changed
 #open-port $bind_port/tcp
 #open-port $rest_port/tcp
-
-echo "$snap"           >  $CHARM_DIR/.snap
-echo ""      >  $CHARM_DIR/.bind_addr
-echo ""      >  $CHARM_DIR/.bind_port
-echo ""      >  $CHARM_DIR/.rest_port
+#echo ""      >  $CHARM_DIR/.bind_addr
+#echo ""      >  $CHARM_DIR/.bind_port
+#echo ""      >  $CHARM_DIR/.rest_port
 
 
 install_packages
@@ -113,7 +124,7 @@ machine_type=`virt-what`
 echo "$machine_type"   >  $CHARM_DIR/.machine_type
 
 
-clone_repro
+#clone_repro
 
 build_flexran
 

@@ -5,12 +5,12 @@ options:
       snap indicates which channel to use for installation hook. 
      type: string
    sgw-eth:
-     default: "eth0"
+     default: "ens3"
      description: |
        This is usefull especially when you are in manual environment so you have your own machines. The default value is eth0. NO empty value.
      type: string
    pgw-eth:
-     default: "eth0"
+     default: "ens3"
      description: |
        This is usefull especially when you are in manual environment so you have your own machines. The default value is eth0. NO empty value.
      type: string

@@ -31,10 +31,12 @@ set_env
 status-set maintenance "Stop hook"
 
 juju-log "Stopping flexran  service in this unit"
-flexran.stop || true
+stop_flexran || true
 
 juju-log "Removing the flexran snap "
-snap remove flexran
+remove_flexran
 
 juju-log "Cleaning up the mosaic-5g installation directory..."
-rm -rf $mosaic_path
+if [ -d $mosaic_path ] ; then 
+    rm -rf $mosaic_path
+fi

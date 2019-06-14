@@ -186,6 +186,51 @@ start_enb_process(){
 }
 
 
+add_plmn(){
+
+set_env    
+
+sed -r -n "1,/tracking_area_code/ p" $conf_file > $CHARM_DIR/beginning
+
+if [ ! -f $CHARM_DIR/plmn_list ]; then
+
+cat <<EOF > $CHARM_DIR/plmn_list
+    plmn_list = ( 
+                   { mcc = $1; 
+                     mnc = $2; 
+                     mnc_length = 2; } 
+                );
+EOF
+else
+
+cat <<EOF > /tmp/temp
+                  ,{ mcc = $1; 
+                     mnc = $2; 
+                     mnc_length = 2; } 
+
+EOF
+
+sed -r -i "/mnc_length/r /tmp/temp" $CHARM_DIR/plmn_list
+
+fi
+
+cat $CHARM_DIR/beginning > $CHARM_DIR/enb.conf
+cat $CHARM_DIR/plmn_list >> $CHARM_DIR/enb.conf
+sed -r -n "/tr_s_preference /,$ p" $conf_file >> $CHARM_DIR/enb.conf
+
+mv -f $CHARM_DIR/enb.conf $conf_file
+rm -f $CHARM_DIR/beginning
+
+}
+
+remove_plmn(){
+    # need improvement
+    
+    if [ -z "$(grep "mnc" $CHARM_DIR/plmn_list)" ]; then
+	rm $CHARM_DIR/plmn_list
+    fi
+
+}
 
 add_mme_ip(){
 
@@ -212,7 +257,7 @@ cat <<EOF > /tmp/temp
                                 preference = "ipv4"; }
 EOF
 
-sed -r -i "/preference/r /tmp/temp" $CHARM_DIR/mme_ips
+sed -r -i "/enable_measurement_reports/r /tmp/temp" $CHARM_DIR/mme_ips
 
 fi
 

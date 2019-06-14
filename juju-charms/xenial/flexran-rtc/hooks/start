@@ -28,24 +28,21 @@ set -eux
 source $CHARM_DIR/utils/common
 set_env
 
-if [ -f $CHARM_DIR/.rtc_running_flag ]; then
-    rtc_running_flag=`cat $CHARM_DIR/.rtc_running_flag`
-else
-    rtc_running_flag="no"
-fi
+#if [ -f $CHARM_DIR/.rtc_running_flag ]; then
+#    rtc_running_flag=`cat $CHARM_DIR/.rtc_running_flag`
+#else
+#    rtc_running_flag="no"
+#fi
+#if [ "$rtc_running_flag" == "yes" ] ; then 
 
-if [ "$rtc_running_flag" == "yes" ] ; then 
-    flexran.start || true 
-    
-    check_flexran_process || true 
-    if [ $status -eq 1 ]; then
-	juju-log "Trouble running FlexRAN, check the port conflicts"
-	status-set blocked "Not Running, check the port conflicts"
-	
-	echo "no"  > $CHARM_DIR/.rtc_running
-	exit 1	
-    else
-	echo "yes" > $CHARM_DIR/.rtc_running
-	status-set active "Running"
-    fi 
+start_flexran || true 
+check_flexran_process || true 
+if [ $status -eq 1 ]; then
+    juju-log "Trouble running FlexRAN, check the port conflicts"
+    status-set blocked "Not Running, check the port conflicts"
+    echo "no"  > $CHARM_DIR/.rtc_running
+    exit 1	
+else
+    echo "yes" > $CHARM_DIR/.rtc_running
+    status-set active "Running"
 fi 

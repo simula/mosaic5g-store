@@ -45,7 +45,7 @@ MME_UNIT_PRESENT=1
 RRU_UNIT_RUNNING=0
 RRU_UNIT_PRESENT=0 
 RTC_UNIT_RUNNING=0
-RTC_UNIT_PRESENT=0 
+RTC_UNIT_PRESENT=1 
 
 node_func=`cat $CHARM_DIR/.node_func`
 juju-log "OAI-RAN function is $node_func"
@@ -53,9 +53,9 @@ juju-log "OAI-RAN function is $node_func"
 #    MME_UNIT_PRESENT=1;
 #fi
 
-if [ "$(config-get flexran_active)" == "yes" ] ; then
-    RTC_UNIT_PRESENT=1;
-fi
+#if [ "$(config-get flexran_active)" == "yes" ] ; then
+#    RTC_UNIT_PRESENT=1;
+#fi
 
 if [ "$(cat $CHARM_DIR/.rru_active)" == "yes" ]; then
     RRU_UNIT_PRESENT=1;
