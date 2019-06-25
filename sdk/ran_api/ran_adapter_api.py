@@ -340,6 +340,7 @@ def post_QoSOnRAN(sliceId, body):
     """
     Step 0: get information from the request and verify the input
     """
+    print(body)
     num_request = len(body)
     if (num_request > 2):
         return NoContent, 400
