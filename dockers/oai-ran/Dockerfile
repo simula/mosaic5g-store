@@ -1,4 +1,4 @@
-# Create an image that host oai-cn
+# Create an image that host oai-ran
 FROM ubuntu:16.04
 ENV container docker
 ENV PATH "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin"
@@ -14,8 +14,6 @@ RUN apt-get install -y dnsutils
 RUN apt-get install -y net-tools
 RUN apt-get install -y iputils-ping
 RUN apt-get install -y vim
-RUN apt-get install -y tcpdump
-RUN mv /usr/sbin/tcpdump /usr/bin/
 
 # Use rc.local to help
 COPY ./init.sh /root/
