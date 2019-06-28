@@ -37,15 +37,15 @@ In **compose** directory, we provide docker-compose files that can bring up Mosa
 In the build folder:
 
 - To build oai-cn docker containers from source, with the tag mytest:
-  - `./build_snap_docker.sh oai-cn mytest`
+  - `./build.sh oai-cn mytest`
   - With default setting, you'll get an image **mosaic5gecosys/oaicn:mytest**.
 
 - To build oai-ran docker containers from source, with the tag mytest:
-  - `./build_snap_docker.sh oai-ran mytest`
+  - `./build.sh oai-ran mytest`
   - With default setting, you'll get an image **mosaic5gecosys/oairan:mytest**
 
 - To clean up unused containers & iamges:
-  - `./build_snap_docker.sh clean_all`
+  - `./build.sh clean_all`
   - This will clean the images and containers that are used for building
 
 ## Known Issues

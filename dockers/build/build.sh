@@ -26,11 +26,11 @@
 # author        Kevin Hsu (C) - 2019 hsuh@eurecom.fr
 
 # Information of the image
-REPO_NAME="mosaic5gecosys" #Change it to your repository
-TARGET="${REPO_NAME}/${TARGET_NAME}"
-TAG_BASE="base"
-BASE_CONTAINER="build_base"
-RELEASE_TAG="latest"
+REPO_NAME="mosaic5gecosys" # Change it to your repository
+TARGET="${REPO_NAME}/${TARGET_NAME}" # The name of our image
+TAG_BASE="base" # The tag for the base image
+BASE_CONTAINER="build_base" # The name of the temporary container
+RELEASE_TAG="latest" # Default release tag
 DIR=""
 
 # contains(string, substring)
@@ -130,6 +130,7 @@ main() {
         ;;
         build-hook)
             build_hook
+            exit 0
         ;;
         clean-all)
             clean_all
