@@ -9,5 +9,5 @@ snapBinaryPath: "/snap/bin/"
 mmeDomainName: "oaicn"
 dns: "192.168.106.12"
 flexRAN: true
-flexRANDomain: "flexran"
+flexRANDomainName: "flexran"
 test: false
