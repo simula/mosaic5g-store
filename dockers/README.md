@@ -5,10 +5,10 @@ This directory includes the build materials for building containers with mosaic5
 - Create docker containers that includes the mosaic5G snaps.
 - Bring up a set of applications in one command
 
-## WARNING: Read Before Using any Script 
+## WARNING: Read Before Using any Script
 
 - This creates a set of containers with **security** options **disabled**, this is an unsupported setup, if you have multiple snap packages inside the same container they will be able to break out of the confinement and see each others data and processes. **Do not rely on security inside the container**.
-- The scripts are tested and works fine in our environment. We ARE NOT sure they won't cause trouble in other environments. For more details, please read the known issue section. The models we used for testing is *GIGABYTE BRIX GB-BRi7-8550* and *Dell XPS-15*
+- The scripts are tested and works fine in our environment. The models we used for testing is *GIGABYTE BRIX GB-BRi7-8550* and *Dell XPS-15*.  We ARE NOT sure they won't cause trouble in other environments. For more details, please read the known issue section.
 - For the details of containers, please read the individual README in their foldes.
 
 ## Requirement
@@ -30,7 +30,6 @@ In **compose** directory, we provide docker-compose files that can bring up Mosa
 2. Check if the parameters in `conf.yaml` meet your need
 3. Run `docker-compose up -d`
 4. The services will start running when ready
-
 
 ### Build From Source
 
