@@ -8,6 +8,6 @@ configurationPathofRAN: "/var/snap/oai-ran/current/"
 snapBinaryPath: "/snap/bin/"
 mmeDomainName: "oaicn"
 dns: "192.168.106.12"
-flexRAN: true
-flexRANDomain: "flexran"
+flexRAN: false
+flexRANDomainName: "flexran"
 test: false
