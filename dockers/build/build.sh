@@ -51,8 +51,10 @@ contains() {
 # Rebuild hook every time to update the change
 build_hook(){
     echo "build hook from source"
-    go build ${GOPATH}/src/oai-snap-in-docker/cmd/hook/
-    # mv ${GOPATH}/src/oai-snap-in-docker/cmd/hook/hook ./
+    NOW=`pwd`
+    cd ${GOPATH}/src/oai-snap-in-docker/cmd/hook/
+    go build 
+    mv ./hook ${NOW}/
 }
 
 # Set variables
