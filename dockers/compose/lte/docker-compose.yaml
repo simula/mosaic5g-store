@@ -9,6 +9,8 @@ services:
     privileged: true # Give the container the permission to manipulate the host
     depends_on: # Before starting this container, what should be ready
       - "mysql"
+    # cap_add:
+    #   - SYS_ADMIN
     volumes: # Mounted from host
       - /sys/fs/cgroup:/sys/fs/cgroup:ro
       - /lib/modules:/lib/modules:ro
