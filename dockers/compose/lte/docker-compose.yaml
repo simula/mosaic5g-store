@@ -2,7 +2,7 @@ version: '2'
 
 services:
   oaicn: # Domain name of container
-    image: mosaic5gecosys/oaicn:1.0 # image of the container
+    image: mosaic5gecosys/oaicn:1.1 # image of the container
     restart: always # Operation Policy
     container_name: oaicn # Name of the container
     hostname: ubuntu # hostname
@@ -14,7 +14,7 @@ services:
     volumes: # Mounted from host
       - /sys/fs/cgroup:/sys/fs/cgroup:ro
       - /lib/modules:/lib/modules:ro
-      - ./conf.yaml:/root/conf.yaml:ro
+      - ./conf.yaml:/root/config/conf.yaml:ro
     networks: # the network this container attached to
       - oai
 
