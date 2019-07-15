@@ -20,7 +20,8 @@ class adapter(object):
     url = ''
     port = ''
     op_mode = ''
-    log_level = ''     
+    log_level = ''
+    ip_addr = ''     
 
     maxmcs_dl= {}
     maxmcs_ul = {}
@@ -64,16 +65,21 @@ class adapter(object):
     cpsr_url = '' 
     heartbeat_timer = 0.0
     log = None
-def update_instance_info(cpsStatus='', cpsInstanceId='', slicenetId='', serviceInstanceId='', load=0, capacity=0):
+def update_instance_info(ipv4Addresses='', cpsStatus='', cpsInstanceId='', slicenetId='', serviceInstanceId='', load=0, capacity=0):
     """!@brief update_instance_info update instance info into a json file when necessary
     """
         
     #read JSON file
-    with open('./inputs/ran_adapter_cpsr.json', "+r") as data_file:
+    with open('./inputs/ran_adapter_cpsr.json') as data_file:
         data = json.load(data_file)
-        data_file.close()
-        
+        data_file.close()  
+      
     #Update the data
+    if (ipv4Addresses != ''):
+        data["ipv4Addresses"][0] = ipv4Addresses
+        data["cpsServices"][0]["ipEndPoints"][0]["ipv4Address"] = ipv4Addresses
+        data["cpsServices"][1]["ipEndPoints"][0]["ipv4Address"] = ipv4Addresses
+            
     if (cpsStatus != ''):
         data["cpsStatus"] = cpsStatus  
     if (cpsInstanceId != ''):
@@ -98,13 +104,14 @@ def cpsr_register():
     """!@brief Register the Adpater with a NRF (e.g., CPSR) 
        TODO: should be updated to deal with the situation in which registration procedure is failed at the first time
     """
+      
     status = 0                
     # Read JSON file
     with open('./inputs/ran_adapter_cpsr.json') as data_file:
         data = json.load(data_file)
         data_file.close()
-    #print(data)
-       
+    print(data)          
+           
     jsondata = json.dumps(data)
     #jsondata = json.dumps(body)
     #print(jsondata)        
@@ -147,7 +154,7 @@ def cpsr_update():
     with open('./inputs/ran_adapter_cpsr_update.json') as data_file:
         data = json.load(data_file)
         data_file.close()
-    #print(data)
+    print(data)
        
     jsondata = json.dumps(data)
     #jsondata = json.dumps(body)
@@ -229,6 +236,10 @@ def init():
                         required=False, default='http://localhost', 
                         help='set the CPSR URL: loalhost (default)')
     
+    parser.add_argument('--ip-addr', metavar='[option]', action='store', type=str,
+                        required=False, default='127.0.0.1', 
+                        help='set the RAN Adapter IP address: 127.0.0.1 (default)')
+    
     #parse the arguments and store in the appropriate variables
     args = parser.parse_args()        
     adapter.url = args.url
@@ -236,7 +247,10 @@ def init():
     adapter.op_mode = args.op_mode
     adapter.log_level = args.log    
     adapter.cpsr_url = args.cpsr_url 
-    adapter.log = flexran_sdk.logger(log_level=adapter.log_level).init_logger()                    
+    adapter.log = flexran_sdk.logger(log_level=adapter.log_level).init_logger()
+    adapter.ip_addr = args.ip_addr
+
+    update_instance_info(ipv4Addresses=adapter.ip_addr)          
        
 def get_statistics(sm):
     """!@brief get_statistics Get statistics (eNB, MAC) from FlexRAN
