@@ -48,7 +48,7 @@ contains() {
     fi
 }
 
-# Rebuild hook every time to update the change
+# Rebuild hook to update the change
 build_hook(){
     echo "build hook from source"
     NOW=`pwd`
@@ -149,6 +149,7 @@ main() {
             exit 0
         ;;
     esac
+    echo "All done, please use docker push [IMAGE NAME]:[TAG] to push image to your repository"
 
 }
 main ${1} ${2}
