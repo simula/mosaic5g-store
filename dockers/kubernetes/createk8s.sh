@@ -1,5 +1,18 @@
 #!/bin/bash
 
+KUBE_VERSION="1.15.1-00"
+
+install_req(){
+    sudo apt install -qy kubeadm=${KUBE_VERSION} kubelet=${KUBE_VERSION} kubectl=${KUBE_VERSION}
+    sudo apt-mark hold kubeadm kubelet kubectl
+    sudo swapoff -a
+}
+
+remove_req(){
+    sudo apt-mark unhold kubeadm kubelet kubectl
+    sudo apt remove -qy kubeadm kubelet kubectl
+}
+
 start(){
     # Create Single Node Kubernetes automatically, run this with normal user
     STARTUP_TYPE=${1}
@@ -63,7 +76,7 @@ main() {
     case ${1} in
         start)
             start ${2}
-            echo "Extras for Ubuntu 16.04:"
+            echo "Extras for Ubuntu 16.04 (If core-dns is not working):"
             echo "1、kubectl edit cm coredns -n kube-system"
             echo "2、delete ‘loop’ ,save and exit"
             echo "3、kubectl -n kube-system delete pod -l k8s-app=[kube-dns|core-dns]"
@@ -71,15 +84,23 @@ main() {
         stop)
             stop
         ;;
+        install_req)
+            install_req
+        ;;
+        remove_req)
+            remove_req
+        ;;
         *)
             echo "Requirement:"
-            echo "1. Set up sudo without password and run this with normal user"
-            echo "2. kubectl, kubeadm and kubelet must be installed beforehand"
+            echo "  1. Set up sudo without password and run this script as normal user"
+            echo "  2. Kubernetes source repo must be added. Check here: https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/#installing-kubeadm-kubelet-and-kubectl"
             echo "----"
             echo "Description:"
-            echo "This script uses kubeadm to create a custom Kubernetes with calico/flannel CNI plugin"
-            echo "tested with 18.04/16.04 Ubuntu"
+            echo "  This script uses kubeadm to create a custom Kubernetes with calico/flannel CNI plugin"
+            echo "  tested with 18.04/16.04 Ubuntu; Using Kubernetes version ${KUBE_VERSION}"
             echo "Usage:"
+            echo "  createk8s.sh install_req ---- Install kubeadm, kubelet and kubectl. Disable swap"
+            echo "  createk8s.sh remove_req  ---- remove kubeamd, kubelet and kubectl"
             echo "  createk8s.sh start [calico|flannel] ---- Create a k8s master with CNI installed"
             echo "  createk8s.sh stop ---- break down k8s master"
             echo "  createk8s.sh start simple ---- For minimal setup (no cni plugin)"
