@@ -19,7 +19,7 @@ services:
       - oai
 
   oairan:
-    image: mosaic5gecosys/oairan:1.0
+    image: mosaic5gecosys/oairan:1.1
     restart: always
     container_name: oairan
     hostname: oairan
@@ -30,7 +30,7 @@ services:
       - /sys/fs/cgroup:/sys/fs/cgroup:ro
       - /lib/modules:/lib/modules:ro
       - /dev/bus/usb/:/dev/bus/usb/
-      - ./conf.yaml:/root/conf.yaml:ro
+      - ./conf.yaml:/root/config/conf.yaml:ro
     networks:
       - oai
 
