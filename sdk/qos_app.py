@@ -25,7 +25,7 @@
   Description: This app dynamically get the statistic from elasticmon sdk, calculate and monitor the throughput
   version: 1.0
   Date created: 7 August 2019
-  Date last modified: 27 August 2017
+  Date last modified: 29 August 2017
   Python Version: 2.7
 
 """
@@ -76,7 +76,7 @@ class qos_app(object):
     start = '10s'
     end = '0s'
     dir = 'dl'
-    threshold_wbcqi = 5
+    threshold_wbcqi = 12
     lc = 0
 
     def get_statistic(self):
@@ -94,12 +94,12 @@ class qos_app(object):
             qos_app.ue_rnti = rnti_stats.get_range('rnti')
             qos_app.enb_dlrb = int(rb_config.get_avg())
             qos_app.ue_lc_txqsize = txqsize_stats.get_avg_txqueuesize(qos_app.lc)
-            print "avg dlwcqi is " + str(qos_app.ue_avg_dlwcqi)
-            print "range of rnti is " + str(qos_app.ue_rnti)
-            print "enb dlrb is " + str(qos_app.enb_dlrb)
-            print "ue lc txqsize is " + str(qos_app.ue_lc_txqsize)
+            #print "avg dlwcqi is " + str(qos_app.ue_avg_dlwcqi)
+            #print "range of rnti is " + str(qos_app.ue_rnti)
+            #print "enb dlrb is " + str(qos_app.enb_dlrb)
+            #print "ue lc txqsize is " + str(qos_app.ue_lc_txqsize)
         except:
-            print "None data within this period"
+            pass
 
     def update_slice(self, percentage=5):
         if (qos_app.slice_dlrb_share != percentage) or (qos_app.slice_dlrb_share == ''):
@@ -124,16 +124,25 @@ class qos_app(object):
 
     def monitor_ue_qos(self):
         # read
+        print "monitor ue qos function got cqi range is "
         print qos_app.ue_dlwcqi
         # wait sometime to have a value inside the time range
-        if len(qos_app.ue_dlwcqi) != 0:
+        if len(self.ue_dlwcqi) != 0:
             # compare with threshold
             # decision to update or not the slice RB by K PRB --> set  slice_dlrb_share to a new percentage
-            for i in qos_app.ue_dlwcqi:
-                if i < qos_app.threshold_wbcqi:
-                    self.update_slice(percentage=20)
+            for a, b in zip(qos_app.ue_dlwcqi, qos_app.ue_dlwcqi[1:]):
+                if b < qos_app.threshold_wbcqi:
+                    dif = a-b
+                    if dif == 2:
+                        prtg = 10
+                    elif dif == 3:
+                        prtg = 15
+                    else:
+                        prtg = 20
+                    self.update_slice(percentage=prtg)
+                    break
                 else:
-                    print 'Relax, everything is under control'
+                    print "Relax, everything is under control"
         else:
             print "None data within this period"
 
@@ -176,10 +185,12 @@ class qos_app(object):
         print "average throughput value over the last 10 seconds is " + str(throughput) + " Mbps"
 
     def run(self):
+        print "------------------------------"
         run_app = qos_app()
+        # run_app.test_list()
         run_app.get_statistic()
         run_app.update_slice(percentage=5)
-        # run_app.associate_ue()
+        ## run_app.associate_ue()
         run_app.monitor_ue_qos()
         run_app.calculate_throughput()
 
