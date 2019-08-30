@@ -76,7 +76,7 @@ build_base(){
 build_target(){
     init
     build_base
-    docker run --name=${BASE_CONTAINER} -ti --privileged -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v /lib/modules:/lib/modules:ro -h ubuntu -d ${TARGET}:${TAG_BASE}
+    docker run --name=${BASE_CONTAINER} -ti --privileged -v /proc:/writable-proc -v /sys/fs/cgroup:/sys/fs/cgroup:ro -v /lib/modules:/lib/modules:ro -h ubuntu -d ${TARGET}:${TAG_BASE}
     RET=1
     echo "Installing snaps..."
     while  [ ${RET} -ne 0 ] ;
