@@ -74,7 +74,56 @@ paths:
         '500':
           description: Internal Server Error
 
+  '/set_slice_mapping':
+        
+    post:
+      summary: Set the mapping between FlexRAN slice and Slicenet slice
+      description: Set the mapping between FlexRAN slice and Slicenet slice.
+      tags:
+        - Set slice mapping on RAN Adapter
+      operationId: ran_api.ran_adapter_api.post_SliceMapping
+      requestBody:
+        required: true
+        description: the mapping between FlexRAN slice id and slicenet slice id
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/SliceMapping"
+                minItems: 1                
+      responses:
+        '201':
+          description: Added
+        '400':
+          description: Bad Request
+        '500':
+          description: Internal Server Error
 
+    put:
+      summary: Modify the mapping between FlexRAN slice and Slicenet slice
+      description: Modify the mapping between FlexRAN slice and Slicenet slice.
+      tags:
+        - Modify slice mapping on RAN Adapter
+      operationId: ran_api.ran_adapter_api.put_SliceMapping
+      requestBody:
+        required: true
+        description: the mapping between FlexRAN slice id and slicenet slice id
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/SliceMapping"
+                minItems: 1                
+      responses:
+        '201':
+          description: Added
+        '400':
+          description: Bad Request
+        '500':
+          description: Internal Server Error
+          
 components:
   schemas:
     RanAdapterConstraints:
@@ -100,4 +149,18 @@ components:
             bandIncDir: ul
             bandIncVal: "10"
             bandUnitScale: "MB" 
+
+    SliceMapping:
+        type: object
+        properties:
+          slicenetid:
+            type: string
+            format: uuid
+          sid:
+            type: string
+            format: uuid          
+        example:
+            slicenetid: "f5b01594-520e-11e9-8647-d663bd873d93"
+            sid: "1"          
+            
             

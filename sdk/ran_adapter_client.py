@@ -29,6 +29,16 @@ body_req = [{
 }
 ]
 
+slice_mapping_req = [
+{
+  "slicenetid": "f5b01594-520e-11e9-8647-d663bd873d93",
+  "sid": "3"
+},
+{
+  "slicenetid": "c51f2ab8-e390-4d9c-b295-4dd37dbd9005",
+  "sid": "0"
+}
+]
 
 cmd_stats = """curl -sX GET http://10.8.255.5:9999/stats | jq '
 {
@@ -52,7 +62,7 @@ cmd_stats = """curl -sX GET http://10.8.255.5:9999/stats | jq '
 """
 
 class ranAdapter_client(object):
-    url = "http://10.8.202.15:9090/ranadapter/all/v1/" #/0/set_qos_on_ran"
+    url = "http://localhost:9090/ranadapter/all/v1/" #/0/set_qos_on_ran"
     qos_parameters = {}
     slice_id = 0
     
@@ -60,6 +70,7 @@ class ranAdapter_client(object):
         super(ranAdapter_client, self).__init__()
         self.qos_parameters = body_req 
         self.qos_parameters_ul_dl = body_req_ul_dl 
+        self.slice_mapping = slice_mapping_req
     
     def print_slice_stats(self): 
         print ('Slice statistics')
@@ -122,13 +133,48 @@ class ranAdapter_client(object):
         if (status == 201):
             print(res_body)         
                
-   
+
+    def set_SliceMapping(self, method='POST', body=slice_mapping_req):
+        """!@brief set_SliceMapping
+        """
+        time.sleep(1)  
+        status = 0                
+        #self.set_qos_parameters(bandIncDir='ul', bandIncVal='10')        
+        jsondata = json.dumps(body)
+        print('Set Slice mapping ', str(jsondata))         
+        jsondataasbytes = jsondata.encode('utf-8')   # needs to be bytes
+        
+        #method = 'POST'
+        handler = urllib2.HTTPHandler()
+        opener = urllib2.build_opener(handler)
+        request = urllib2.Request(ranAdapter_client.url +'set_slice_mapping', data=jsondataasbytes)
+        print ('url: ', ranAdapter_client.url +'set_slice_mapping')
+        request.get_method = lambda: method
+        request.add_header("content-Type", 'application/json')
+        
+        try:
+            response = opener.open(request)
+        except urllib2.HTTPError as e:
+            print e 
+            
+        else:
+            # process the response
+            res_body = response.read().decode("utf-8")
+            print("Status: ", response.code)
+            status = int(response.code)
+        
+        if (status == 201):
+            print(res_body)         
+               
+               
+                  
             
 if __name__ == '__main__':
     ranAdapter_client = ranAdapter_client()
         
     #create new slices
     #reduce percentage of slice 0 to 25%
+    '''
     reduce_slice_percentage='{"intrasliceShareActive":true,"intersliceShareActive":true,"dl":[{"id":0,"percentage":25}]}'
     cmd_reduce= 'curl -X POST http://10.8.255.5:9999/slice/enb/-1 --data ' + reduce_slice_percentage #192.168.12.45
     print(cmd_reduce)
@@ -155,6 +201,7 @@ if __name__ == '__main__':
     print(cmd_create)
     return_code = subprocess.call(cmd_create, shell=True)
     ranAdapter_client.print_slice_stats()
+    '''
     
     '''
     #reduce percentage of slice 0 to 50%
@@ -206,16 +253,18 @@ if __name__ == '__main__':
    '''
        
     #set QoS on RAN: decrease 10MB for DL and UL (slice 0)      
-    ranAdapter_client.set_qos_parameters_ul_dl(bandIncVal_ul='0',bandUnitScale_ul='MB',bandIncVal_dl='0',bandUnitScale_dl='MB')    
+    #ranAdapter_client.set_qos_parameters_ul_dl(bandIncVal_ul='0',bandUnitScale_ul='MB',bandIncVal_dl='0',bandUnitScale_dl='MB')
+        
     ##ranAdapter_client.set_QoSOnRAN(sid="5f698a1c", method='POST', body=ranAdapter_client.qos_parameters_ul_dl)
     ##ranAdapter_client.set_QoSOnRAN(sid="418e9a5c-2132-4f0a-84e9-5ccf4de43655", method='POST', body=ranAdapter_client.qos_parameters_ul_dl)
     #slice 3 ranAdapter_client.set_QoSOnRAN(sid="5f698d00-44d4-11e9-b210-d663bd873d93", method='POST', body=ranAdapter_client.qos_parameters_ul_dl)
     #slice 0
     #f5b01594-520e-11e9-8647-d663bd873d93
 
-    ranAdapter_client.set_QoSOnRAN(sid="f5b01594-520e-11e9-8647-d663bd873d93", method='POST', body=ranAdapter_client.qos_parameters_ul_dl)
+    #ranAdapter_client.set_QoSOnRAN(sid="f5b01594-520e-11e9-8647-d663bd873d93", method='POST', body=ranAdapter_client.qos_parameters_ul_dl)
+    ranAdapter_client.set_SliceMapping(method='POST', body=slice_mapping_req)
 
-    ranAdapter_client.print_slice_stats()
+    #ranAdapter_client.print_slice_stats()
     
 
 

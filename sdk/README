@@ -58,9 +58,9 @@ Usage:
    $cd $STORE_PATH/sdk/cpsr
    $python cpsr.py 
   
- - launch ran_adapter (from sdk url: FlexRAN RTC URL, cpsr-url: CPSR URL): 
+ - launch ran_adapter (from sdk url: FlexRAN RTC URL, cpsr-url: CPSR URL, ip-addr: IP Addr of the RAN Adapter): 
    $cd $STORE_PATH/sdk
-   $python ran_adapter.py --op-mode sdk --log info --url http://localhost --cpsr-url http://localhost:9191/slicenet/ctrlplane/cpsr_cps/v1/cps-instances/1
+   $python ran_adapter.py --op-mode sdk --log info --url http://localhost --ip-addr 127.0.0.1 --cpsr-url http://localhost:9191/slicenet/ctrlplane/cpsr_cps/v1/cps-instances/1
    
  - launch ran_adapter_client
    $cd $STORE_PATH/sdk
@@ -106,7 +106,7 @@ Usage:
   
  - launch core_adapter (from sdk url: LL-MEC URL, cpsr-url: CPSR URL): 
    $cd $STORE_PATH/sdk
-   $python core_adapter.py --op-mode test --log info --url http://localhost --cpsr-url http://localhost:9191/slicenet/ctrlplane/cpsr_cps/v1/cps-instances/1
+   $python core_adapter.py --op-mode sdk --log info --url http://localhost --cpsr-url http://localhost:9191/slicenet/ctrlplane/cpsr_cps/v1/cps-instances/1
    
  - launch core_adapter_client
    $cd $STORE_PATH/sdk
