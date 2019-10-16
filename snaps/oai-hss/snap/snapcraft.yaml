@@ -1,0 +1,116 @@
+name: oai-hss
+version: '1.5' 
+summary: OpenAirInterface HSS entity Rel. 14
+description: |
+    OAI-HSS is the openairinterface-based HSS entity allowing to connect a 4G-comptaible BS and UEs to the core network. It is one of the projects of Mosaic5G inititive.
+grade: stable
+type: app
+architectures:
+  - amd64
+  - i386
+confinement: devmode
+
+apps:
+  test:
+    command : test
+  info:
+    command: run info
+  oai-hss:
+    command: run hss
+  hssd:
+    command: run hss
+    daemon: simple
+    stop-command: run stop
+    stop-timeout: 7s
+  debug:
+    command: run gdb
+  start:
+    command: run start
+  stop:
+    command: run stop
+  restart:
+    command: run restart
+  status:
+    command: run status
+  journal:
+    command: run journal
+  cassandra:
+    command: init cassandra
+  init:
+    command: init hss
+  conf-set:
+    command: conf set-hss
+  conf-get:
+    command: conf echo-hss
+  conf-show:
+    command: conf cat-hss
+  conf-list:
+    command: conf ls-hss
+ 
+hooks:
+  install:
+    plugs: [home, network, desktop]
+  configure:
+    plugs: [home, network, desktop]
+    
+parts:
+  gdb:
+    plugin: nil
+    override-build: |
+      sudo apt install gdb -y
+      mkdir $SNAPCRAFT_PART_INSTALL/share 
+      cp -r /usr/share/gdb $SNAPCRAFT_PART_INSTALL/share
+      cp /usr/bin/gdb* $SNAPCRAFT_PART_INSTALL
+    prime:
+      - gdb*
+      - share/*
+  #cassandra:
+  #  plugin: cmake
+  #  source: https://github.com/OPENAIRINTERFACE/openair-cn.git
+  #  source-branch: develop
+  #  build-packages: [build-essential, ]
+  #  override-build: |
+  #    #export DEBIAN_FRONTEND=interactive
+  #    cd ../src/scripts
+  #    ./build_cassandra -i -F  
+  #    cd ..
+  #  stage:
+  #    - usr/lib/*
+  #    - lib/*
+  #  prime:
+  #    - usr/lib/*
+  #    - lib/*
+
+  hss:
+    plugin: cmake
+    source: https://github.com/OPENAIRINTERFACE/openair-cn.git
+    #source-branch: merge_ipv6_interfaces_en-dc
+    source-branch: master
+    build-packages: [build-essential, ]
+    stage-packages:
+      - libstdc++6
+      - uvtool
+    override-build: |
+      #export DEBIAN_FRONTEND=interactive
+      cd ../src/scripts
+      ./build_hss_rel14 -c -i -f -b Release
+      ./build_hss_rel14	-c 
+      cd ..
+      mkdir -p $SNAPCRAFT_PART_INSTALL/hss/
+      cp etc/hss*  $SNAPCRAFT_PART_INSTALL/hss/
+      cp etc/acl*  $SNAPCRAFT_PART_INSTALL/hss/
+      cp -r scripts  $SNAPCRAFT_PART_INSTALL/hss/
+      cp build/hss_rel14/build/*.*  $SNAPCRAFT_PART_INSTALL/hss/
+      cp build/hss_rel14/bin/hss  $SNAPCRAFT_PART_INSTALL/hss/
+    stage:
+      - hss/*
+      - usr/lib/*
+      - lib/*
+    prime:
+      - hss/*
+      - usr/lib/*
+      - lib/*
+
+  frontend:
+    plugin: dump
+    source: frontend

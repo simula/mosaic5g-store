@@ -1,0 +1,331 @@
+#!/bin/sh
+
+. $SNAP/common
+
+
+
+if [ ! -e $HSS_EXEC ]; then
+    echo "Cannot find $HSS_EXEC executable"
+    exit -1 
+fi		   	   
+
+
+check_mysql_service(){
+
+    if [ -z "$($HSS_DIR/mysql -u $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER -e status;)" ] ; then
+	echo "HSS DB can not be initialized. Check if the mysql servie is running and that the credentials are correct in hss.conf."
+	return 1
+    else
+	return 0
+    fi
+    
+}
+
+check_cassandra_service(){
+
+    IS_ACTIVE=`systemctl is-active cassandra.service`
+
+    if [ "$IS_ACTIVE" == "active" ]; then
+	status=0
+    else
+	status=1
+    fi
+}
+
+
+case "$1" in
+    "gdb" )
+	echo "Running $2 with the gdb"
+	touch      $SNAP_DATA/.gdb_$2
+	chmod 777  $SNAP_DATA/.gdb_$2
+	echo "file ${2^^}_EXEC"        > $SNAP_DATA/.gdb_$2
+	echo "set args ${2^^}_EXEC_ARGS" >> $SNAP_DATA/.gdb_$2
+	echo "run"                     >> $SNAP_DATA/.gdb_$2
+	cat $SNAP_DATA/.gdb_$2
+	exec $SNAP/gdb --data-directory=$SNAP_DATA  -n -x $SNAP_DATA/.gdb_$2
+	;;
+    
+    "info" )
+	snap info $SNAP_NAME
+	;; 
+    
+     "start"  )
+	snap start $SNAP_NAME
+	;;
+
+     "stop" )
+	snap stop $SNAP_NAME
+	;;
+
+     "restart" )
+	snap restart $SNAP_NAME
+	;;
+
+     "status" )
+	snap services $SNAP_NAME
+	;;
+    "journal" )
+	journalctl -u snap.$SNAP_NAME.service
+	;;
+    
+    "help" )
+	echo "Usage:   sudo  $SNAP_NAME.[options] args"
+	echo "Note:    need root priviliage"
+	echo "Options:"
+	echo "  start:        start the $SNAP_NAME.mmed daemon"
+	echo "  stop:         stop the $SNAP_NAME.mmed daemon"
+	echo "  restart:      restart the $SNAP_NAME.mmed daemon"
+	echo "  status:       get the $SNAP_NAME.mmed status"
+	echo "  journal:      get the $SNAP_NAME.mmed logs"
+	echo ""
+	echo "  init:         initialize MME"
+	echo "  conf-set:     set the MME configuration file"
+	echo "  conf-get:     get the current MME configuration file (mme.conf)"
+	echo "  conf-show:    show the path to the MME configuration file (mme.conf)"
+	echo "  conf-list:    list all the SPGW configuration files (mme.conf, mme_fd)"
+	echo ""
+	echo "  help:         print this help"
+	echo "  Example:      sudo oai-mme.init; sudo oai-mme;"
+	
+	;;
+
+    "provision-user-cassandra")
+	check_cassandra_service
+
+	# provisin 208930000000001
+	$HSS_SCRIPTS/data_provisioning_users --apn $HSS_APN_OAI --apn2 $HSS_APN_DEFAULT --key $OPC --imsi-first $IMSI_FIRST3 -msisdn-first $MDISDN_FIRST --mme-identity $MME_ID --no-of-users $HSS_NUM_USER --realm $REALM --truncate True  --verbose True --cassandra-cluster $Cassandra_Server_IP
+
+	#provisin 208940000000001
+	$HSS_SCRIPTS/data_provisioning_users --apn $HSS_APN_OAI --apn2 $HSS_APN_DEFAULT --key $OPC --imsi-first $IMSI_FIRST4 -msisdn-first $MDISDN_FIRST --mme-identity $MME_ID --no-of-users $HSS_NUM_USER --realm $REALM --truncate True  --verbose True --cassandra-cluster $Cassandra_Server_IP
+
+	#provisin 208950000000001
+	$HSS_SCRIPTS/data_provisioning_users --apn $HSS_APN_OAI --apn2 $HSS_APN_DEFAULT --key $OPC --imsi-first $IMSI_FIRST5 -msisdn-first $MDISDN_FIRST --mme-identity $MME_ID --no-of-users $HSS_NUM_USER --realm $REALM --truncate True  --verbose True --cassandra-cluster $Cassandra_Server_IP
+
+	
+	;;
+    
+    "provision-mme-cassandra")
+
+	check_cassandra_service
+	
+	$HSS_SCRIPTS/data_provisioning_mme --id $MME_ID --mme-identity $MME_IDENTITIY --realm $REALM --ue-reachability 1 --truncate True  --verbose True -C $Cassandra_Server_IP 
+
+	;;
+    
+    "import-db" | "hss-reset-db" )
+
+	check_mysql_service
+	if [ $? -gt 0 ] ; then
+	    return 1
+	fi
+	    
+	echo "using: MYSQL_SERVER=$MYSQL_SERVER, MYSQL_USER=$MYSQL_USER, MYSQL_PASS=$MYSQL_PW"    HSS_DB_Q1="DROP DATABASE IF EXISTS oai_db;"
+	
+	HSS_DB_Q2="CREATE DATABASE IF NOT EXISTS oai_db;"
+	
+	$HSS_DIR/mysql --force -h $MYSQL_SERVER -u $MYSQL_USER --password=$MYSQL_PW -e "${HSS_DB_Q1}"
+	$HSS_DIR/mysql -h  $MYSQL_SERVER -u  $MYSQL_USER --password=$MYSQL_PW -e "${HSS_DB_Q2}"
+	$HSS_DIR/mysql -h  $MYSQL_SERVER -u  $MYSQL_USER -p$MYSQL_PW oai_db < $HSS_DB 
+	
+	if [ $? -gt 0 ] ; then
+	    echo "failed to import HSS DB"
+	    rm -rf $SNAP_DATA/hss_db_import.sh
+	else
+	    echo "Successfully Imported the OAI HSS DB to mysql"
+	    echo "$HSS_DB_IMPORT" > $SNAP_DATA/hss_db_import.sh
+	fi
+       
+	;;
+
+    "hss-remove-mme" )
+	 check_mysql_service
+	 if [ $? -gt 0 ] ; then
+	     return 1
+	 fi
+	 
+	 if [ $# -ge 2 ] ; then 
+	     mmeid=$2
+	 else
+	     echo "MMEID is missing"
+	     exit 0
+  fi
+
+	 echo "Removing the user with IMSI=$2 from the oai_db database"
+	 #$HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER oai_db -e "delete from users where imsi='$IMSI';")
+	 $HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER oai_db <<EOF
+DELETE FROM mmeidentity WHERE idmmeidentity=$mmeid;
+ 
+EOF
+	 ;;
+
+
+    "hss-add-mme" )
+	check_mysql_service
+	if [ $? -gt 0 ] ; then
+	    return 1
+	fi
+	    
+	if [ $# -ge 2 ] ; then 
+	    fqdn=$2
+	else
+	    fqdn=`hostname --fqdn`
+	fi
+	
+	if [ -z "$($HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h  $MYSQL_SERVER oai_db -e "select mmehost from mmeidentity where mmehost='$fqdn'";)" ]; then
+	    
+	    #count how many in order to compute the right primary key
+	    
+	    primary_key=`$HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER oai_db -e "select max(idmmeidentity) from mmeidentity;" | egrep [0-9]+`
+	    
+	    primary_key=$((primary_key + 1))
+
+	    echo "$primary_key"  > $SNAP_USER_DATA/.mmeidentity
+	    
+	    echo "Inserting MME FQDN=$fqdn, REALM=$REALM, and idmmeidentity=$primary_key in the mmeidentity table of oai_db database"
+	    
+	    #Inserting the mme in the database to let epc connect to hss
+	    $HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER oai_db << EOF 
+INSERT INTO mmeidentity (\`idmmeidentity\`, \`mmehost\`, \`mmerealm\`, \`UE-Reachability\`) VALUES ('$primary_key', '$fqdn', '$REALM', 0);
+EOF
+	 else
+	     echo "The requested FQDN $fqdn is already provisioned"
+	fi
+	 ;;
+
+     "hss-dump-mmeid" )
+	 check_mysql_service
+	 if [ $? -gt 0 ] ; then
+	     return 1
+	 fi
+	
+	 #echo "idmmeidentity | mmehost  | mmerealm | UE-Reachability "
+	 $HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER oai_db << EOF 
+SELECT idmmeidentity,mmehost,mmerealm,\`UE-Reachability\` FROM  mmeidentity;
+EOF
+	 ;;
+  
+     "hss-dump-users" )
+	 check_mysql_service
+	 if [ $? -gt 0 ] ; then
+	     return 1
+	 fi
+
+	 echo "imsi | mmeidentity_idmmeidentity | hex(users.key) | sqn | hex(rand) | hex(OPc)"
+	 $HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER oai_db << EOF 
+SELECT imsi,mmeidentity_idmmeidentity,hex(users.key),sqn,hex(rand),hex(OPc) FROM users;
+EOF
+	 ;;
+
+     "hss-remove-user" )
+	 check_mysql_service
+	 if [ $? -gt 0 ] ; then
+	     return 1
+	 fi
+	 
+	 if [ $# -ge 2 ] ; then 
+	     IMSI=$2
+	 else
+	     echo "IMSI is missing"
+	     exit 0
+  	 fi
+
+	 echo "Removing the user with IMSI=$2 from the oai_db database"
+	 #$HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER oai_db -e "delete from users where imsi='$IMSI';")
+	 $HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER oai_db <<EOF
+DELETE FROM users WHERE imsi=$IMSI;
+ 
+EOF
+	 ;;
+
+     "hss-add-user" )
+	 check_mysql_service
+	 if [ $? -gt 0 ] ; then
+	     return 1
+	 fi
+
+	 
+	 if [ $# -ge 2 ] ; then 
+	     IMSI=$2
+	 else
+	     echo "IMSI is missing"
+	     exit 0
+  	 fi
+	 if [ $# -ge 3 ] ; then
+	     USER_KEY=$3
+	 fi
+	 if [ $# -ge 4 ] ; then 
+	     SQN=$4
+	 fi
+	 if [ $# -ge 5 ] ; then
+	     mmeidentity_idmmeidentity=$5
+	 else
+	   if [ -f $SNAP_USER_DATA/.mmeidentity ] ; then  
+        mmeidentity_idmmeidentity=`cat $SNAP_USER_DATA/.mmeidentity`
+	   else
+        mmeidentity_idmmeidentity=`$HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER oai_db -e "select max(idmmeidentity) from mmeidentity;" | egrep [0-9]+`
+     fi
+   fi
+	 if [ $# -ge 6 ] ; then
+	     OPC=$6
+	 fi
+	 
+	 msisdn=33638050036
+	 imei=35609204079536
+	 rau_tau_timer=120
+	 ue_ambr_ul=50000000
+	 ue_ambr_dl=100000000
+	 access_restriction=47
+	 mme_cap=0
+	 urrp_mme=1
+	 rand=33353336363633303332333633313634
+
+	 echo "Inserting a user with IMSI=$2, USER-KEY=$USER_KEY, SQN=$SQN, OPC=$OPC, MMEIdentity=$mmeidentity_idmmeidentity into the oai_db database"
+
+	 #Inserting the mme in the database to let epc connect to hss
+	 $HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER oai_db << EOF 
+INSERT INTO users
+(imsi,msisdn,imei,imei_sv,ms_ps_status,rau_tau_timer,ue_ambr_ul,ue_ambr_dl,access_restriction,mme_cap,mmeidentity_idmmeidentity,users.key,\`RFSP-Index\`,urrp_mme,sqn,rand,OPc)
+VALUES
+($IMSI,$msisdn,$imei,NULL,"PURGED",$rau_tau_timer,$ue_ambr_ul,$ue_ambr_dl,$access_restriction,$mme_cap,$mmeidentity_idmmeidentity,unhex("$USER_KEY"),1,$urrp_mme,$SQN,unhex("$rand"),unhex("$OPC"));
+EOF
+	 ;;
+    
+    "hss-certificate"  )
+	cd /tmp
+	rm -rf ./demoCA
+	mkdir ./demoCA
+	echo 01 > ./demoCA/serial
+	touch ./demoCA/index.txt
+	fqdn=`hostname --fqdn`
+	echo "Creating HSS certificate for user: $CONF_DIR $fqdn"
+	# Create a Root Certification Authority Certificate
+	openssl req  -new -batch -x509 -days 3650 -nodes -newkey rsa:1024 -out hss.cacert.pem -keyout hss.cakey.pem -subj /CN=$fqdn/C=FR/ST=PACA/L=Aix/O=Eurecom/OU=CM
+	# Generate a Private Key
+	openssl genrsa -out hss.key.pem 1024
+	# Generate a CSR (Certificate Signing Request) that will be self-signed
+	openssl req -new -batch -out hss.csr.pem -key hss.key.pem -subj /CN=$fqdn/C=FR/ST=PACA/L=Aix/O=Eurecom/OU=CM
+	#certificate authority 
+	openssl ca -cert hss.cacert.pem -keyfile hss.cakey.pem -in hss.csr.pem -out hss.cert.pem -outdir . -batch
+	mkdir -p $CONF_DIR/
+	mv hss.cakey.pem hss.cert.pem hss.cacert.pem hss.key.pem $CONF_DIR
+	cd -
+	;;
+
+    
+    * )
+
+	"hss" )
+	if [ -n "$LD_LIBRARY_PATH" ]; then
+	    LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$SNAP/lib:$SNAP/usr/lib:$SNAP/usr/local/lib:$SNAP/usr/local/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
+	else
+	    LD_LIBRARY_PATH=$SNAP/lib:$SNAP/usr/lib:$SNAP/usr/local/lib:$SNAP/usr/local/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu
+	fi
+	export LD_LIBRARY_PATH
+
+        echo "$HSS_EXEC  $HSS_EXEC_ARGS"
+	$HSS_EXEC  `echo $HSS_EXEC_ARGS`  "$@" $*
+	;;
+    
+esac
+
+

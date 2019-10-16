@@ -1,0 +1,102 @@
+#!/bin/sh
+
+. $SNAP/common
+
+case "$1" in
+
+    "cassandra")
+	export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin::$PATH
+	$SNAP/build_cassandra -i -F
+	
+	;;
+	
+    "hss" )
+	if [ ! -f $CONF_DIR/hss.conf ] ; then
+
+	    cp $SNAP/etc/hss_rel14.conf $CONF_DIR
+	    cp $SNAP/etc/hss_rel14_fd.conf $CONF_DIR
+	    cp $SNAP/etc/hss_rel14.json $CONF_DIR
+
+	    cp $SNAP/etc/hss_rel14_t.conf $CONF_DIR
+	    cp $SNAP/etc/hss_rel14_fd_t.conf $CONF_DIR
+	    cp $SNAP/etc/hss_rel14_t.json $CONF_DIR
+	    
+	fi
+	# set the hss.conf
+	echo "set-hss $CONF_DIR/hss.conf"
+	$SNAP/conf set-hss $CONF_DIR/hss_rel14.conf
+	
+	$SNAP/run hss-certificate
+		
+	# a copy for the user: with sudo, the user is root
+	echo "copying the config file to $SNAP_USER_DATA"
+	cp $CONF_DIR/hss_rel14.conf $SNAP_USER_DATA
+	cp $CONF_DIR/hss_rel14_fd.conf $SNAP_USER_DATA
+	cp $CONF_DIR/acl.conf $SNAP_USER_DATA
+
+	# this part needs sudo privilage 
+  	#service mysql restart || true 
+	REALM=`cat $HSS_FD_CONF_FILE | grep  "Realm "  | cut -f2 -d'"'`
+	
+	if [ -z "$(grep -o "`hostname`.$REALM" /etc/hosts)" ]; then
+	    cp /etc/hosts /etc/hosts.$REALM.bkup
+	    #echo 127.0.0.1 localhost > /etc/hosts
+	    #echo 127.0.0.1 `hostname`.$REALM `hostname` hss >> /etc/hosts
+	    #echo 127.0.0.1 `hostname`.$REALM `hostname` mme >> /etc/hosts
+	    echo "Adding 127.0.0.1" `hostname`.$REALM `hostname` "hss to /etc/hosts"
+	    sed -i '/hss/d' /etc/hosts
+	    sed -i "1i127.0.0.1 `hostname`.$REALM `hostname` hss" /etc/hosts
+	    
+	    echo "Adding 127.0.0.1" `hostname`.$REALM `hostname` "mme to /etc/hosts"
+	    sed -i '/mme/d' /etc/hosts
+	    sed -i "1i127.0.0.1 `hostname`.$REALM `hostname` mme" /etc/hosts
+	fi
+
+	$SNAP/run  data_provisioning_users || true 
+	$SNAP/run  data_provisioning_mme   || true 
+
+	hss_conf
+	
+	echo ""
+	echo "HSS is initialized"
+	echo "Now, it is the time to configure the hss_fd.conf"
+	;;
+    
+
+    
+    * )
+	echo "Unknown command: $1"
+	;;
+    
+esac
+
+
+hss_conf(){
+
+    # prompt has been removed for easier Ctrl+C Ctrl+V
+    # cd $OPENAIRCN_DIR/scripts
+    PREFIX='/var/snap/oai-hss/current/hss_rel14.json'
+  
+    declare -A HSS_CONF
+    HSS_CONF[@PREFIX@]=$PREFIX
+    HSS_CONF[@REALM@]=$REALM
+    HSS_CONF[@HSS_FQDN@]="hss.${HSS_CONF[@REALM@]}"
+    HSS_CONF[@cassandra_Server_IP@]=$Cassandra_Server_IP 
+    HSS_CONF[@OP_KEY@]=$OP_KEY
+    HSS_CONF[@ROAMING_ALLOWED@]='true'
+   
+
+    for K in "${!HSS_CONF[@]}"; do 
+	egrep -lRZ "$K" $PREFIX | xargs -0 -l sed -i -e "s|$K|${HSS_CONF[$K]}|g"
+    done
+    sed -i -e 's/#ListenOn/ListenOn/g' $PREFIX/freeDiameter/hss_rel14_fd.conf
+
+    oai_hss -j $PREFIX/hss_rel14.json --onlyloadkey
+	
+    ### freeDiameter certificate
+    #../src/hss_rel14/bin/make_certs.sh hss ${HSS_CONF[@REALM@]} $PREFIX
+
+    # Finally customize the listen address of FD server
+    # set in $PREFIX/freeDiameter/hss_rel14_fd.conf and uncomment the following line
+    #sed -i -e 's/#ListenOn/ListenOn/g' $PREFIX/freeDiameter/hss_rel14_fd.conf
+}

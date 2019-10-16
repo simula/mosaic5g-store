@@ -1,0 +1,19 @@
+{"common": {
+    "fdcfg": "/var/snap/oai-cn/current/hss_rel14_fd.conf",
+    "originhost": "hss.openair5G.eur",
+    "originrealm": "openair5G.eur" 
+ },
+ "hss": {
+    "gtwhost": "*",
+    "gtwport" : 9080,
+    "restport" : 9081,
+    "casssrv": "127.0.0.1", 
+    "cassusr": "root",
+    "casspwd": "root",
+    "cassdb" : "vhss",
+    "randv"  : true,
+    "optkey" : "11111111111111111111111111111111",
+    "reloadkey"  : false,
+    "roamallow"  : true
+ }
+}
