@@ -1,0 +1,89 @@
+#!/bin/sh
+
+. $SNAP/common
+
+if [ ! -e $SPGWC_EXEC ]; then
+    echo "Cannot find $SPGWC_EXEC executable"
+    exit -1
+fi
+
+if [ -r $SNAP_DATA/config_spgwc.sh ]; then
+    . $SNAP_DATA/config_spgwc.sh
+fi
+
+SPGWC_CONFIG=${SPGWC_CONF_FILE2:-$SPGWC_CONF_FILE}
+SPGWC_EXEC_ARGS=" -c $SPGWC_CONFIG "
+
+case "$1" in
+    "gdb" )
+	echo "Running $2 with the gdb"
+	touch      $SNAP_DATA/.gdb_$2
+	chmod 777  $SNAP_DATA/.gdb_$2
+	echo "file ${2^^}_EXEC"        > $SNAP_DATA/.gdb_$2
+	echo "set args ${2^^}_EXEC_ARGS" >> $SNAP_DATA/.gdb_$2
+	echo "run"                     >> $SNAP_DATA/.gdb_$2
+	cat $SNAP_DATA/.gdb_$2
+	exec $SNAP/gdb --data-directory=$SNAP_DATA  -n -x $SNAP_DATA/.gdb_$2
+	;;
+    
+    "info" )
+	snap info $SNAP_NAME
+	;; 
+      
+     "start"  )
+	snap start $SNAP_NAME
+	;;
+     
+    "stop" )
+	snap stop $SNAP_NAME
+	;;
+
+    "restart" )
+	snap restart $SNAP_NAME
+	;;
+    
+    "status" )
+	snap services $SNAP_NAME
+	;;
+
+    "journal" )
+	journalctl -u snap.$SNAP_NAME.service
+	;;
+
+    "help" )
+	echo "Usage:   sudo  $SNAP_NAME.[options] args"
+	echo "Note:    need root priviliage"
+	echo "Options:"
+	echo "  start:       start the $SNAP_NAME.spgwcd daemon"
+	echo "  stop:        stop the $SNAP_NAME.spgwcd daemon"
+	echo "  restart:     restart the $SNAP_NAME.spgwd daemon"
+	echo "  status:      get the $SNAP_NAME.spgwcd status"
+	echo "  journal:     get the $SNAP_NAME.spgwcd logs"
+	echo ""
+	echo "  init:       initialize SPGWC"
+	echo "  conf-set:   set the SPGWC configuration file"
+	echo "  conf-get:   get the current SPGWC configuration file (spgwc.conf)"
+	echo "  conf-show:  show the path to the SPGWC configuration file (spgwc.conf)"
+	echo "  conf-list:  list all the SPGWC configuration files (spgwc.conf)"
+	echo ""
+	echo "  help:       print this help"
+	echo "  Example:    sudo oai-spgwc.init; sudo oai-spgwc;"
+	
+	;;
+    
+    "spgwc" | * )
+	
+	if [ -n "$LD_LIBRARY_PATH" ]; then
+	    LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$SNAP/lib:$SNAP/usr/lib:$SNAP/usr/local/lib:$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
+	else
+	    LD_LIBRARY_PATH=$SNAP/lib:$SNAP/usr/lib:$SNAP/usr/local/lib:$SNAP/usr/local/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu
+	fi
+	export LD_LIBRARY_PATH
+	
+        echo "$SPGWC_EXEC  $SPGWC_EXEC_ARGS" 
+	$SPGWC_EXEC  `echo $SPGWC_EXEC_ARGS` "$@"
+        ;;
+
+esac
+
+
