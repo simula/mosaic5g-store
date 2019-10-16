@@ -1,0 +1,95 @@
+name: oai-spgwu
+version: '1.5' 
+summary: OpenAirInterface spgwc entity Rel. 14 with LL-MEC Agent
+description: |
+    OAI-SPGWU is the openairinterface-based SPGWU with LL-MEC agent allowing to connect a 4G-comptaible BS and UEs to the core network. It is one of the projects of Mosaic5G inititive.
+grade: stable
+type: app
+architectures:
+  - amd64
+  - i386
+confinement: devmode
+
+apps:
+  test:
+    command : test
+  info:
+    command: run info
+  oai-spgwu:
+    command: run spgwu
+  spgwud:
+    command: run spgwu
+    daemon: simple
+    stop-command: run stop spgwud
+    stop-timeout: 7s
+  start:
+    command: run start spgwud
+  stop:
+    command: run stop spgwud
+  restart:
+    command: run restart spgwud
+  status:
+    command: run status spgwud
+  journal:
+    command: run journal spgwud
+  init:
+    command: init spgwu
+  help:
+    command: run help
+  debug:
+    command: run gdb
+  conf-set:
+    command: conf set-spgwu
+  conf-get:
+    command: conf echo-spgwu
+  conf-show:
+    command: conf cat-spgwu
+  conf-list:
+    command: conf ls-spgwu
+  
+hooks:
+  install:
+    plugs: [home, network]
+  configure:
+    plugs: [home, network]
+    
+parts:
+  gdb:
+    plugin: nil
+    override-build: |
+      sudo apt install gdb -y
+      mkdir $SNAPCRAFT_PART_INSTALL/share 
+      cp -r /usr/share/gdb $SNAPCRAFT_PART_INSTALL/share
+      cp /usr/bin/gdb* $SNAPCRAFT_PART_INSTALL
+    prime:
+      - gdb*
+      - share/*
+      
+  spgwu:
+    plugin: cmake
+    source: https://github.com/OPENAIRINTERFACE/openair-cn-cups.git
+    source-branch: llmec
+    build-packages: [build-essential, ]
+    stage-packages:
+      - libstdc++6
+    override-build: |
+      cd ../src/build/scripts
+      ./build_spgwu -I -f 
+      ./build_spgwu -c -b Release
+      cd ../..
+      mkdir -p $SNAPCRAFT_PART_INSTALL/spgwu
+      cp etc/spgw*  $SNAPCRAFT_PART_INSTALL/spgwu/
+      cp build/spgw_u/build/*.*  $SNAPCRAFT_PART_INSTALL/spgwu
+      cp build/spgw_u/build/spgwu  $SNAPCRAFT_PART_INSTALL/spgwu/
+    stage:
+      - spgwu/*
+      - usr/*
+      - lib/*
+    prime:
+      - spgwu/*
+      - usr/*
+      - lib/*
+      
+  frontend:
+    plugin: dump
+    source: frontend

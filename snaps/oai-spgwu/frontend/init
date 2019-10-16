@@ -1,0 +1,80 @@
+#!/bin/sh
+
+. $SNAP/common
+
+case "$1" in
+    "spgwu" )
+
+	if [ ! -f $CONF_DIR/spgwu.conf ] ; then
+	    cp $SNAP/etc/spgwu.conf $CONF_DIR
+	fi
+	
+	$SNAP/conf set-spgwu $CONF_DIR/spgwu.conf
+
+	# a copy for the user
+	cp $CONF_DIR/spgwu.conf $SNAP_USER_DATA
+	echo""
+	echo "SPGWU is initialized"
+	echo "Now, configure the spgwu.conf file (mainly the NETWORK_INTERFACES and P-GW sections)"
+	;;
+    * )
+	echo "Unknown command: $1"
+	;;
+
+esac
+
+get_eth_ip(){
+  echo `ip addr show $1 | grep -o 'inet [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+' | grep -o [0-9].*`
+}
+
+get_eth_ip_net(){
+  echo `ip addr show $1 | grep -o 'inet [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+/[0-9]\+' | grep -o [0-9].*`
+}
+
+get_ifname(){
+    online="no"
+    for interface in $(ls /sys/class/net/ | egrep -v "lo|vir|wl|lxd|veth");
+    do
+	if [[ $(cat /sys/class/net/$interface/carrier) = 1 ]]; then 
+            #ping -q -w 1 -c 1 `ip r | grep default | cut -d ' ' -f 3` > /dev/null && online=1 || online=0
+            online="yes"
+            break 
+	fi
+    done    
+}
+
+spgwu_conf(){
+    get_ifname
+    if [ $online == "no" ] ; then
+	echo "No interface with Internet access found. Run init later."
+	ls /sys/class/net/
+	return 
+    else
+	echo "Setting $interface for SXU and S1U interfaces"
+    fi
+    
+    # prompt has been removed for easier Ctrl+C Ctrl+V
+    sudo ip a del 172.55.55.102 brd + dev $interface label $interface:sxu    # SPGW-U SXab interface
+    sudo ip a del 192.168.248.159 brd + dev $interface label $interface:s1u  # SPGW-U S1U interface
+
+    sudo ip a add 172.55.55.102 brd + dev $interface label $interface:sxu    # SPGW-U SXab interface
+    sudo ip a add 192.168.248.159 brd + dev $interface label $interface:s1u  # SPGW-U S1U interface
+
+    INSTANCE=1
+    PREFIX='/var/snap/oai-spgwu/current/spgwu.conf'
+    
+    declare -A SPGWU_CONF
+    
+    SPGWU_CONF[@INSTANCE@]=$INSTANCE
+    #SPGWU_CONF[@PREFIX@]=$PREFIX
+    SPGWU_CONF[@PID_DIRECTORY@]='/var/run'
+    SPGWU_CONF[@SGW_INTERFACE_NAME_FOR_S1U_S12_S4_UP@]=$interface:s1u
+    SPGWU_CONF[@SGW_INTERFACE_NAME_FOR_SX@]=$interface:sxu
+    SPGWU_CONF[@SGW_INTERFACE_NAME_FOR_SGI@]=$interface
+    
+    for K in "${!SPGWU_CONF[@]}"; do 
+	egrep -lRZ "$K" $PREFIX | xargs -0 -l sed -i -e "s|$K|${SPGWU_CONF[$K]}|g"
+	ret=$?;[[ ret -ne 0 ]] && echo "Tried to replace $K with ${SPGWU_CONF[$K]}"
+    done
+
+}
