@@ -1,0 +1,121 @@
+#!/bin/sh
+
+. $SNAP/common
+
+
+
+if [ ! -e $MME_EXEC ]; then
+    echo "Cannot find $MME_EXEC executable"
+    exit -1 
+fi		   	   
+
+kern=`uname -r`
+kern_version=`echo $kern | cut -d '.' -f1`
+kern_major_revision=`echo $kern | cut -d '.' -f2`
+if [ $kern_version -lt 4 ] && [ $kern_major_revision -le 10 ]; then
+    echo "[Warn] Kernel $kern does not support GTP"
+fi
+
+
+if [ -r $SNAP_DATA/config_mme.sh ]; then
+    . $SNAP_DATA/config_mme.sh
+fi
+
+
+MME_CONFIG=${MME_CONF_FILE2:-$MME_CONF_FILE}
+MME_EXEC_ARGS=" -c $MME_CONFIG "
+
+
+case "$1" in
+    "gdb" )
+	echo "Running $2 with the gdb"
+	touch      $SNAP_DATA/.gdb_$2
+	chmod 777  $SNAP_DATA/.gdb_$2
+	echo "file ${2^^}_EXEC"        > $SNAP_DATA/.gdb_$2
+	echo "set args ${2^^}_EXEC_ARGS" >> $SNAP_DATA/.gdb_$2
+	echo "run"                     >> $SNAP_DATA/.gdb_$2
+	cat $SNAP_DATA/.gdb_$2
+	exec $SNAP/gdb --data-directory=$SNAP_DATA  -n -x $SNAP_DATA/.gdb_$2
+	;;
+    
+    "info" )
+	snap info $SNAP_NAME
+	;; 
+    
+     "start"  )
+	snap start $SNAP_NAME
+	;;
+
+     "stop" )
+	snap stop $SNAP_NAME
+	;;
+
+     "restart" )
+	snap restart $SNAP_NAME
+	;;
+
+     "status" )
+	snap services $SNAP_NAME
+	;;
+    "journal" )
+	journalctl -u snap.$SNAP_NAME.service
+	;;
+    
+    "help" )
+	echo "Usage:   sudo  $SNAP_NAME.[options] args"
+	echo "Note:    need root priviliage"
+	echo "Options:"
+	echo "  start:        start the $SNAP_NAME.mmed daemon"
+	echo "  stop:         stop the $SNAP_NAME.mmed daemon"
+	echo "  restart:      restart the $SNAP_NAME.mmed daemon"
+	echo "  status:       get the $SNAP_NAME.mmed status"
+	echo "  journal:      get the $SNAP_NAME.mmed logs"
+	echo ""
+	echo "  init:         initialize MME"
+	echo "  conf-set:     set the MME configuration file"
+	echo "  conf-get:     get the current MME configuration file (mme.conf)"
+	echo "  conf-show:    show the path to the MME configuration file (mme.conf)"
+	echo "  conf-list:    list all the SPGW configuration files (mme.conf, mme_fd)"
+	echo ""
+	echo "  help:         print this help"
+	echo "  Example:      sudo oai-mme.init; sudo oai-mme;"
+	
+	;;
+        
+    "mme-certificate"  )
+	cd /tmp
+	rm -rf ./demoCA
+	mkdir ./demoCA
+	echo 01 > ./demoCA/serial
+	touch ./demoCA/index.txt
+
+	fqdn=`hostname --fqdn`
+	echo "Creating MME certificate for user $CONF_DIR $fqdn"
+	# Create a Root Certification Authority Certificate
+	openssl req  -new -batch -x509 -days 3650 -nodes -newkey rsa:1024 -out mme.cacert.pem -keyout mme.cakey.pem -subj /CN=$fqdn/C=FR/ST=PACA/L=Aix/O=Eurecom/OU=CM
+	# Generate a Private Key
+	openssl genrsa -out mme.key.pem 1024
+	# Generate a CSR (Certificate Signing Request) that will be self-signed
+	openssl req -new -batch -out mme.csr.pem -key mme.key.pem -subj /CN=$fqdn/C=FR/ST=PACA/L=Aix/O=Eurecom/OU=CM
+	#certificate authority
+	openssl ca -cert mme.cacert.pem -keyfile mme.cakey.pem -in mme.csr.pem -out mme.cert.pem -outdir . -batch
+	mkdir -p $CONF_DIR/
+	mv mme.cakey.pem mme.cert.pem mme.cacert.pem mme.key.pem  $CONF_DIR
+	cd - 
+	;;
+    
+    * )
+       if [ -n "$LD_LIBRARY_PATH" ]; then
+	    LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$SNAP/lib:$SNAP/usr/lib:$SNAP/usr/local/lib:$SNAP/usr/local/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
+	else
+	    LD_LIBRARY_PATH=$SNAP/lib:$SNAP/usr/lib:$SNAP/usr/local/lib:$SNAP/usr/local/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu
+	fi
+	export LD_LIBRARY_PATH
+	
+	echo "$MME_EXEC  $MME_EXEC_ARGS"
+	$MME_EXEC  `echo $MME_EXEC_ARGS` "$@"
+	;;
+    
+esac
+
+

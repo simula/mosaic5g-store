@@ -1,0 +1,93 @@
+name: oai-mme
+version: '1.5' 
+summary: OpenAirInterface MME entity with LL-MEC Agent
+description: |
+    OAI-MME is the openairinterface-based MME entity with the LL-MEC agent allowing to connect a 4G-comptaible BS and UEs to the core network and monitor and control the UP with LL-MEC controller. It is one of the projects of Mosaic5G inititive.
+grade: stable
+type: app
+architectures:
+  - amd64
+  - i386
+confinement: classic
+
+apps:
+  test:
+    command : test
+  info:
+    command: run info
+  oai-mme:
+    command: run mme
+  mmed:
+    command: run mme
+    daemon: simple
+    stop-command: run stop
+    stop-timeout: 7s
+  debug:
+    command: run gdb
+  start:
+    command: run start
+  stop:
+    command: run stop
+  restart:
+    command: run restart
+  status:
+    command: run status
+  journal:
+    command: run journal
+  init:
+    command: init mme
+  conf-set:
+    command: conf set-mme
+  conf-get:
+    command: conf echo-mme
+  conf-show:
+    command: conf cat-mme
+  conf-list:
+    command: conf ls-mme
+ 
+hooks:
+  install:
+    plugs: [home, network]
+  configure:
+    plugs: [home, network]
+    
+parts:
+  gdb:
+    plugin: nil
+    override-build: |
+      sudo apt install gdb -y
+      mkdir $SNAPCRAFT_PART_INSTALL/share 
+      cp -r /usr/share/gdb $SNAPCRAFT_PART_INSTALL/share
+      cp /usr/bin/gdb* $SNAPCRAFT_PART_INSTALL
+    prime:
+      - gdb*
+      - share/*
+  mme:
+    plugin: cmake
+    source: https://github.com/OPENAIRINTERFACE/openair-cn.git
+    source-branch: develop
+    build-packages: [build-essential, ]
+    stage-packages:
+      - libstdc++6
+    override-build: |
+      #export DEBIAN_FRONTEND=interactive
+      cd ../src/scripts
+      ./build_mme -i -f 
+      ./build_mme
+      cd ..
+      mkdir -p $SNAPCRAFT_PART_INSTALL/mme/
+      cp etc/mme*  $SNAPCRAFT_PART_INSTALL/mme/
+      cp build/mme/build/*.*  $SNAPCRAFT_PART_INSTALL/mme/
+      cp build/mme/build/mme  $SNAPCRAFT_PART_INSTALL/mme/
+    stage:
+      - mme/*
+      - usr/lib/*
+      - lib/*
+    prime:
+      - mme/*
+      - usr/lib/*
+      - lib/*
+
+  frontend:
+    plugin: dump
+    source: frontend

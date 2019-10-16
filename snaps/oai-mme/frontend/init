@@ -1,0 +1,42 @@
+#!/bin/sh
+
+. $SNAP/common
+
+case "$1" in
+
+    "mme" )
+	
+	if [ ! -f $CONF_DIR/mme.conf ] ; then
+	    cp $SNAP/etc/mme.conf $CONF_DIR
+	    cp $SNAP/etc/mme_fd.conf $CONF_DIR
+	fi
+	# set the mme.conf
+	$SNAP/conf set-mme $CONF_DIR/mme.conf
+	
+	$SNAP/run mme-certificate
+	
+	# a copy for the user
+	cp $CONF_DIR/mme.conf $SNAP_USER_DATA
+	cp $CONF_DIR/mme_fd.conf $SNAP_USER_DATA
+	
+	REALM=`cat $HSS_FD_CONF_FILE | grep  "Realm "  | cut -f2 -d'"'`
+	echo "fixme: get the realm from mme config"
+	
+	if [ -z "$(grep -o "`hostname`.$REALM" /etc/hosts)" ]; then
+	    cp /etc/hosts /etc/hosts.$REALM.bkup
+	    
+	    echo "Adding 127.0.0.1" `hostname`.$REALM `hostname` "mme to /etc/hosts"
+	    sed -i '/mme/d' /etc/hosts
+	    sed -i "1i127.0.0.1 `hostname`.$REALM `hostname` mme" /etc/hosts
+	    
+	fi
+	echo ""
+	echo "MME is initialized"
+	echo "Now, it is the time to configure the mme.conf and mme_fd.conf"
+	;;
+    
+    * )
+	echo "Unknown command: $1"
+	;;
+    
+esac

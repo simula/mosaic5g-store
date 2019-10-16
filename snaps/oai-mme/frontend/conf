@@ -1,0 +1,61 @@
+#!/bin/sh
+
+. $SNAP/common
+
+case "$1" in
+    "set-mme" )
+	CONFIG_FILE=$2
+	if [ -f $(dirname $(readlink -f $0))/$CONFIG_FILE ]; then
+	    CONFIG_FILE=$(dirname $(readlink -f $0))/$CONFIG_FILE
+	    echo "Setting the default config file to: $CONFIG_FILE"
+	else
+	    # may be absolute path 
+	    if [ -f "$CONFIG_FILE" ]; then
+		# $CONFIG_FILE already exist in the $SNAP_DATA
+		if [ -f $SNAP_DATA/$(basename $CONFIG_FILE) ] ; then 
+		    echo "Reset the config file to: $SNAP_DATA/$(basename $CONFIG_FILE)"
+		else 
+		    #echo "$SNAP_DATA/$CONFIG_FILE"
+		    cp $CONFIG_FILE $SNAP_DATA/
+		    echo "Adding and setting a new config file : $SNAP_DATA/$(basename $CONFIG_FILE)"
+		fi
+		CONFIG_FILE=$SNAP_DATA/$(basename $CONFIG_FILE)
+	    else
+		echo "Config file <$CONFIG_FILE> not found in $SNAP/current directory"
+		echo "Reset to default config file: $MME_CONF_FILE"
+		CONFIG_FILE=$MME_CONF_FILE
+	    fi
+	fi
+	echo "MME_CONF_FILE2=$CONFIG_FILE" > $SNAP_DATA/config_mme.sh
+	#copy for the user
+	echo "MME_CONF_FILE2=$CONFIG_FILE" > $SNAP_USER_DATA/config_mme.sh
+	;;
+
+    
+     "ls-mme" )
+	if [ -r $SNAP_DATA/config_mme.sh ]; then
+	    . $SNAP_DATA/config_mme.sh
+	fi
+	
+	# default config file is (unless set in above config)
+	MME_CONFIG=${MME_CONF_FILE2:-$MME_CONF_FILE}
+	ls $(dirname $MME_CONFIG)/mme*.conf
+	;;
+
+     "echo-mme" | "cat-mme" )
+	
+	if [ -r $SNAP_DATA/config_mme.sh ]; then
+	    . $SNAP_DATA/config_mme.sh
+	fi
+	
+	# default config file is (unless set in above config)
+	MME_CONFIG=${MME_CONF_FILE2:-$MME_CONF_FILE}
+	# echo (get), cat (show)
+        `echo $1 | cut -d"-" -f1` $MME_CONFIG
+	;;
+      *)
+       echo "unknown command $1"
+       ;;
+esac
+    
+
