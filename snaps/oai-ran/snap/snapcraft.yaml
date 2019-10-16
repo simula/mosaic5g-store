@@ -1,5 +1,5 @@
 name: oai-ran
-version: '1.3' 
+version: '1.5' 
 summary: OpenAirInterface RAN entity with FlexRAN Agent/Runtime 
 description: |
     OAI RAN is the openairinterface-based RAN with different deployment flavor (eNB,C-RAN, CU,DU, RRU) with FlexRAN agent/runtime allowing to connect any commercial UEs with the band of your choice. It is one of the projects of Mosaic5G inititive.
@@ -24,7 +24,7 @@ apps:
   cudu:
     command: run cudu
   rru:
-    command: run rru
+    command: run rru  
   init:
     command: init
   enbd:
@@ -119,16 +119,17 @@ parts:
     prime:
       - gdb*
       - share/*
+      - usr/bin/gdb*
   enb:
     plugin: cmake
     source: https://gitlab.eurecom.fr/oai/openairinterface5g.git
-    source-branch: develop
+    source-branch: 2019.w21
     build-packages: [build-essential, ]
     override-build: |
-      cd cmake_targets
+      cd ../src/cmake_targets
       ./build_oai -I -w USRP --uhd-images-dir ../common/uhd_images
       ./build_oai --eNB -w USRP -c -C 
-      cd -   
+      cd ../ 
       mkdir -p $SNAPCRAFT_PART_INSTALL/enb
       cp  targets/bin/* $SNAPCRAFT_PART_INSTALL/enb
       cp -r common/uhd_images $SNAPCRAFT_PART_INSTALL/ 
@@ -139,45 +140,19 @@ parts:
       - usr/lib/*
       - lib/*
       - uhd_images/*
+      - usr/share/uhd/*  
     prime:
       - enb/*
       - usr/lib/*
       - lib/*
       - uhd_images/*
+      - usr/share/uhd/*  
     organize:
       enb/liboai_usrpdevif.so.Rel14: usr/lib/liboai_device.so
+      enb/liboai_eth_transpro.so.Rel14: usr/lib/liboai_transpro.so
       enb/libcoding.so: usr/lib/libcoding.so
       enb/libparams_libconfig.so: usr/lib/libparams_libconfig.so
       enb/lte-softmodem.Rel14: enb/oai-ran
-
-  cudu:
-    plugin: cmake
-    source: https://gitlab.eurecom.fr/oai/openairinterface5g.git
-    source-branch: develop
-    build-packages: [build-essential, ]
-    override-build: |
-      cd cmake_targets
-      ./build_oai -I -w USRP --uhd-images-dir ../common/uhd_images
-      ./build_oai --eNB -w USRP -t ETHERNET -c -C 
-      cd -
-      mkdir -p $SNAPCRAFT_PART_INSTALL/cudu
-      cp  targets/bin/* $SNAPCRAFT_PART_INSTALL/cudu
-      cp -r common/uhd_images $SNAPCRAFT_PART_INSTALL/ 
-      cp targets/PROJECTS/GENERIC-LTE-EPC/CONF/* $SNAPCRAFT_PART_INSTALL/cudu
-      cp cmake_targets/snap_environment.sh $SNAPCRAFT_PART_INSTALL/cudu
-    stage:
-      - cudu/*
-      - usr/lib/*
-      - lib/*
-      - uhd_images/*
-    prime:
-      - cudu/*
-      - usr/lib/*
-      - lib/*
-      - uhd_images/*
-    organize:
-      cudu/liboai_eth_transpro.so.Rel14: usr/lib/liboai_transpro.so
-      cudu/lte-softmodem.Rel14: cudu/oai-ran
 
   frontend:
     plugin: dump

@@ -41,17 +41,17 @@ if [ "$oairan_running_flag" == "no" ] ; then
 fi
     
 MME_UNIT_RUNNING=0
-MME_UNIT_PRESENT=0
+MME_UNIT_PRESENT=1
 RRU_UNIT_RUNNING=0
 RRU_UNIT_PRESENT=0 
 RTC_UNIT_RUNNING=0
 RTC_UNIT_PRESENT=0 
 
-node_func=`config-get node_function`
-
-if [ "$node_func" != "eNodeB_IP" ] ; then
-    MME_UNIT_PRESENT=1;
-fi
+node_func=`cat $CHARM_DIR/.node_func`
+juju-log "OAI-RAN function is $node_func"
+#if [ "$node_func" != "eNodeB_IP" ] ; then
+#    MME_UNIT_PRESENT=1;
+#fi
 
 if [ "$(config-get flexran_active)" == "yes" ] ; then
     RTC_UNIT_PRESENT=1;
@@ -146,14 +146,14 @@ if [ $MME_UNIT_PRESENT -gt 0 ]; then
 		if [ $RRU_UNIT_PRESENT -gt 0 ]; then 
 		    if [ $RRU_UNIT_RUNNING -gt 0 ]; then
 			
-			start_enb_process
+			start_enb_process $node_func 
 			
 		    else # RRU not running
 			juju-log "Waiting for RRU Relation"
 			status-set maintenance "Add RRU relation" 
 		    fi
 		else # RRU not present
-		    start_enb_process
+		    start_enb_process $node_func
 		fi
 	    else # RTC not running
 		juju-log "Waiting for RTC Relation"
@@ -162,13 +162,13 @@ if [ $MME_UNIT_PRESENT -gt 0 ]; then
 	    
 	elif [ $RRU_UNIT_PRESENT -gt 0 ]; then  # RTC not present but RRU present
 	    if [ $RRU_UNIT_RUNNING -gt 0 ]; then
-		start_enb_process
+		start_enb_process $node_func
 	    else # RRU not running
 		juju-log "Waiting for RRU Relation"
 		status-set maintenance "Add RRU relation" 
 	    fi
 	else #RTC and RRU not present, but mme running
-	    start_enb_process
+	    start_enb_process $node_func
 	fi 
 	
     else  # mme not running
@@ -184,14 +184,14 @@ elif [ "$node_func" == "eNodeB_IP" ]; then
 	    if [ $RRU_UNIT_PRESENT -gt 0 ]; then 
 		if [ $RRU_UNIT_RUNNING -gt 0 ]; then
 		    
-		    start_enb_process
+		    start_enb_process $node_func
 		    
 		else # RRU not running
 		    juju-log "Waiting for RRU Relation"
 		    status-set maintenance "Add RRU relation" 
 		fi
 	    else # RRU not present
-		start_enb_process
+		start_enb_process $node_func
 	    fi
 	else # RTC not running
 	    juju-log "Waiting for RTC Relation"
@@ -200,13 +200,13 @@ elif [ "$node_func" == "eNodeB_IP" ]; then
 	
     elif [ $RRU_UNIT_PRESENT -gt 0 ]; then  # RTC not present but RRU present
 	if [ $RRU_UNIT_RUNNING -gt 0 ]; then
-	    start_enb_process
+	    start_enb_process $node_func
 	else # RRU not running
 	    juju-log "Waiting for RRU Relation"
 	    status-set maintenance "Add RRU relation" 
 	fi
     else #RTC and RRU not present
-	start_enb_process
+	start_enb_process $node_func
     fi
 else
     juju-log "Unknown node func $node_func"

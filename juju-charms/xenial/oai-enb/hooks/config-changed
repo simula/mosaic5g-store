@@ -92,14 +92,14 @@ if [ "$node_func" == "eNodeB_3GPP_BBU" ] || [ "$node_func" == "NGFI_RCC_IF4p5" ]
 
     fh_if_name=`config-get fh_if_name`
     if [ "$fh_if_name" != "$(cat $CHARM_DIR/.fh_if_name)" ]; then
-	sed -r -i "/local_if_name/ s/\".+\"/\"$fh_if_name\"/" $conf_path/$file_config
+	sed -r -i "/local_if_name/ s/\".+\"/\"$fh_if_name\"/" $conf_file 
 	if [ "$fh_tr_mode" == "raw" ] || [ "$fh_tr_mode" == "raw_if4p5" ]; then 
 	     check_ifup $fh_if_name
              status=$?
              if [ "$status" == "0" ] ; then
 	        read mac_addr </sys/class/net/$fh_if_name/address
                 echo "$mac_addr"  > $CHARM_DIR/.fh_address
-	        sed -r -i "/local_address/ s/\".+\"/\"$mac_addr\"/" $conf_path/$config_file
+	        sed -r -i "/local_address/ s/\".+\"/\"$mac_addr\"/" $conf_file 
 	    else
 		 juju-log -l WARNING "fh_if_name interface $fh_if_name does not exist"
                  status-set blocked "fh_if_name interface $fh_if_name does not exist"
@@ -115,7 +115,7 @@ if [ "$node_func" == "eNodeB_3GPP_BBU" ] || [ "$node_func" == "NGFI_RCC_IF4p5" ]
                    fh_ipv4=`ifconfig $fh_if_name | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
                    if  [ -n "$fh_ipv4" ]; then
                       echo "$fh_ipv4"  > $CHARM_DIR/.fh_address
-                      sed -r -i "/local_address/ s/\".+\"/\"$fh_ipv4\"/" $conf_path/$config_file_name
+                      sed -r -i "/local_address/ s/\".+\"/\"$fh_ipv4\"/" $conf_file 
 
                    else
                      juju-log -l WARNING "The fh_if_name $fh_if_name has to be specified before the relation with MME can be added"
@@ -280,4 +280,4 @@ TAC=`config-get TAC`
 
 ############################################################################
 
-$CHARM_DIR/hooks/start
+#$CHARM_DIR/hooks/start

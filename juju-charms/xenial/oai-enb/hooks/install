@@ -81,21 +81,36 @@ set_cpu_freq(){
 
 
 build_oai_ran(){
-    # IF
-    cd $mosaic_path
-    if [ "$snap" == "edge" ] || [ "$snap" == "beta" ] ; then
-	juju-log "Installing and building the OAI-RAN from snap channel $snap"
-    else
-	juju-log "channel $snap is not supported, use edge"
+    
+     if [ ! -d $mosaic_path ] ; then 
+	mkdir $mosaic_path
     fi
-    ./build_m5g -R
+    
+    if [ "$snap" == "edge" ] || [ "$snap" == "beta" ] ; then
+	juju-log "Installing OAI-RAN snap"
+    else
+	juju-log "channel $snap is not supported, use edge or beta"
+	snap="edge"
+    fi
+
+    if [ -z "$(snap list oai-ran)" ] ; then
+        op="install"
+    else
+        op="refresh"
+    fi
+    sudo snap $op oai-ran --channel=$snap --devmode
 
 }
 
 init_oai_ran(){
-    oai-ran.stop || true
-    oai-ran.stop || true
-    oai-ran.init || true
+    oai-ran.stop-all || true 
+
+    #check oai ran func 
+    if [ "$node_func" != "enb" -o  "$node_func" != "ENB" -o  "$node_func" != "eNB" ] ; then
+	echo "The requested $node_func is not supported, reverting to enb."
+	echo "enb" > $CHARM_DIR/.node_func
+    fi
+    
     # just a flag for start script to run the service
     echo "yes" > $CHARM_DIR/.oairan_running_flag
 }
@@ -163,7 +178,7 @@ install_packages
 machine_type=`virt-what`
 
 
-clone_repro
+#clone_repro
 
 set_cpu_freq
 

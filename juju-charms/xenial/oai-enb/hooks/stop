@@ -29,9 +29,10 @@ set -eux
 source $CHARM_DIR/utils/common
 set_env
 status-set maintenance "Stop hook"
+node_func=`cat $CHARM_DIR/.node_func`
 
 juju-log "Stopping OAI-RAN service in this unit"
-stop_enb
+stop_enb $node_func
 
 juju-log "Removing the oai-ran snap "
 snap remove oai-ran

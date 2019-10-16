@@ -1,5 +1,5 @@
 name: oai-ue
-version: '1.3' 
+version: '1.5' 
 summary: OpenAirInterface UE entity 
 description: |
     OAI UE is the openairinterface-based UE that allows you to connect to any commercial eNB. 
@@ -15,7 +15,7 @@ apps:
     command: test all
   info:
     command: run info
-  oai-ue:
+  ue:
     command: run ue
   uesim:
     command: run uesim
@@ -122,7 +122,7 @@ parts:
     prime:
       - gdb*
       - share/*
-
+      - usr/bin/gdb*
   tools:
     plugin: nil
     #stage-packages:
@@ -149,13 +149,13 @@ parts:
   oai-ue:
     plugin: cmake
     source: https://gitlab.eurecom.fr/oai/openairinterface5g.git
-    source-branch: develop
+    source-branch: 2019.w21
     build-packages: [build-essential, ]
     override-build: |
-      cd cmake_targets
+      cd ../src/cmake_targets
       ./build_oai -I -w USRP --uhd-images-dir ../common/uhd_images
       ./build_oai --UE -w USRP -c -C 
-      cd -   
+      cd ../ 
       mkdir -p $SNAPCRAFT_PART_INSTALL/ue
       cp  targets/bin/* $SNAPCRAFT_PART_INSTALL/ue
       cp -r common/uhd_images $SNAPCRAFT_PART_INSTALL/ 
@@ -175,31 +175,9 @@ parts:
       ue/liboai_usrpdevif.so.Rel14: usr/lib/liboai_device.so
       ue/libcoding.so: usr/lib/libcoding.so
       ue/libparams_libconfig.so: usr/lib/libparams_libconfig.so
+      ue/liboai_eth_transpro.so.Rel14: usr/lib/liboai_transpro.so  
       #ue/lte-uesoftmodem.Rel14: ue/oai-ue
       #usr/lib/lapack/liblapack.so.3: usr/lib/liblapack.so.3 
-
-  uesim:
-    plugin: cmake
-    source: https://gitlab.eurecom.fr/oai/openairinterface5g.git
-    source-branch: develop
-    build-packages: [build-essential, ]
-    override-build: |
-      cd cmake_targets
-      ./build_oai -I 
-      ./build_oai --UE -t ETHERNET -c -C 
-      cd -
-      mkdir -p $SNAPCRAFT_PART_INSTALL/uesim
-      cp  targets/bin/* $SNAPCRAFT_PART_INSTALL/uesim
-      cp targets/PROJECTS/GENERIC-LTE-EPC/CONF/* $SNAPCRAFT_PART_INSTALL/uesim
-      cp cmake_targets/snap_environment.sh $SNAPCRAFT_PART_INSTALL/uesim
-    stage:
-      - uesim/*
-      - usr/lib/*
-      - lib/*
-    prime:
-      - uesim/*
-      - usr/lib/*
-      - lib/*
 
   frontend:
     plugin: dump

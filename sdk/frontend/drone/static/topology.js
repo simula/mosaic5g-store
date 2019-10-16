@@ -149,14 +149,14 @@ function topology(sources) {
 	    var freq_min = list[i].options[0].freq_min;
 	    var freq_max = list[i].options[0].freq_max;
 	    var bandwidth = list[i].options[0].bandwidth;
-	    var eNB_id = list[i].options[0].eNB_id;
-	    if (!eNB_id) {
+	    var bs_id = list[i].options[0].eNB_id;
+	    if (!bs_id) {
 		// Just a testing fallback
 		if (LIST[0].type == 'RTC' && LIST[0].node) {
-		    eNB_id = LIST[0].node.config.eNB_config[i].eNB.eNBId;
+		    bs_id = LIST[0].node.config.eNB_config[i].bs_id;
 		}
 	    }
-	    var cell = GRAPH.find('eNB_' + eNB_id);
+	    var cell = GRAPH.find('BS_' + bs_id);
 	    if (cell) {
 		// Record last setting for each controlled eNB cell
 		src.option[cell.id] = list[i].options[0];
@@ -622,9 +622,9 @@ function topology(sources) {
 	    .filter(function (d) { return cap && d == cap.group;});
     }
 
-    function get_enb_node(enb_id) {
+    function get_enb_node(bs_id) {
 	// Create or find existing eNB node
-	return GRAPH.node('eNB_' + enb_id, 'eNB ' + enb_id, INFO_ENB);
+	return GRAPH.node('BS_' + bs_id, 'BS ' + bs_id, INFO_ENB);
     }
     function get_ue_node(enb, ue_id, info) {
 	var node = GRAPH.node(enb.id + '_UE_'+ ue_id, 'RNTI ' + ue_id, info);
@@ -731,11 +731,12 @@ function topology(sources) {
 	    node.enb_list = [];
 	    for (i = 0; i < data.eNB_config.length; ++i) {
 		var config = data.eNB_config[i];
-		enb = get_enb_node(config.eNB.eNBId);
+		enb = get_enb_node(config.bs_id);
 		node.enb_list.push(enb);
 
 		GRAPH.relation(enb, node, 'rtc', {},undefined,GRAPH.MARKER.END|GRAPH.MARKER.START);
 		enb.config = {
+                    agentInfo: config.agent_info,
 		    cellConfig: config.eNB.cellConfig,
 		    ueConfig: config.UE.ueConfig,
 		    lcUeConfig: config.LC.lcUeConfig
@@ -775,7 +776,7 @@ function topology(sources) {
 		    show_config(enb.config);
 	    }
 	    for (i = 0; i < data.mac_stats.length; ++i) {
-		enb = get_enb_node(data.mac_stats[i].eNBId);
+		enb = get_enb_node(data.mac_stats[i].bs_id);
 		for (var m = 0; m < data.mac_stats[i].ue_mac_stats.length; ++m) {
 		    var stats = data.mac_stats[i].ue_mac_stats[m];
 		    if (!stats) continue;
@@ -1131,7 +1132,7 @@ function topology(sources) {
 		.selectAll("tspan")
 	// The following fields from cellConfig[0] will be show on
 	// right of the eNB icon. Generated below...
-		.data(['cellId', 'dlFreq', 'ulFreq', 'eutraBand', 'dlPdschPower', 'ulPuschPower', 'dlBandwidth', 'ulBandwidth']);
+		.data(['eutraBand', 'dlFreq', 'ulFreq', 'dlBandwidth', 'plmnId', 'agents']);
 	stats.enter()
 	    .append("tspan")
 	    .attr("x", GRAPH.NODE.R+5)
@@ -1142,7 +1143,19 @@ function topology(sources) {
 		var config = this.parentNode.__data__.config;
 		// ...add/update the above defined cellConfig[0].xxx
 		// fields in graph.
-		return d + '=' + config.cellConfig[0][d];
+                if (d == 'plmnId') {
+                  var ps = config.cellConfig[0].plmnId;
+                  var plmns = [];
+                  for (var p in ps) plmns.push(ps[p].mcc * 10 ** ps[p].mncLength + ps[p].mnc);
+                  return d + "=" + plmns;
+                } else if (d == 'agents') {
+                  var as = config.agentInfo;
+                  var agents = [];
+                  for (var a in as) agents.push(as[a].agent_id);
+                  return d + "=" + agents;
+                } else {
+                  return d + "=" + config.cellConfig[0][d];
+                }
 	    });
     }
 

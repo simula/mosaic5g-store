@@ -1,5 +1,5 @@
 name: flexran
-version: '1.3' 
+version: '1.4' 
 summary: FlexRAN SD-RAN platfrrom
 description: |
    FlexRAN is a software-defined radio access network platform licensed under Apache License V2.0. It is one of the projects of Mosaic5G inititive.
@@ -101,6 +101,7 @@ parts:
       - libboost-all-dev
       - liblog4cxx-dev
       - liblog4cxx10v5
+      - libcurl4-openssl-dev
     override-build: |
       ./build_flexran_rtc.sh -r 
       mkdir -p $SNAPCRAFT_PART_INSTALL/bin
@@ -110,17 +111,12 @@ parts:
       cp -r log_config/* $SNAPCRAFT_PART_INSTALL/log_config
     stage:
       - bin/flexran
-      - usr/lib/x86_64-linux-gnu/liblog4cxx*
-      - usr/lib/x86_64-linux-gnu/libboost*
-      - usr/lib/x86_64-linux-gnu/libapr*
+      - usr/lib/x86_64-linux-gnu/*
       - lib/*
       - log_config
     prime:
       - bin/flexran
-      - usr/lib/x86_64-linux-gnu/liblog4cxx*
-      - usr/lib/x86_64-linux-gnu/libboost*
-      - usr/lib/x86_64-linux-gnu/libapr*
-      #- usr/lib/*
+      - usr/lib/x86_64-linux-gnu/*
       - lib/*
       - log_config
 

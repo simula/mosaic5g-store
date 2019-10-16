@@ -2,12 +2,12 @@ options:
    snap:
      default: "edge"
      description: |
-      snap indicates which channel to use for installation hook. 
+      snap indicates which channel to use for the installation hook. 
      type: string
    node_function: 
-     default: "eNodeB_3GPP"
+     default: "enb"
      description: | 
-       set the function of this BS node. Available Options: eNodeB_3GPP (classical eNodeB function). Other options will be made available later: eNodeB_IP (eNodeB Standalone), eNodeB_3GPP_BBU (eNodeB with NGFI IF5), NGFI_RCC_IF4p5 (NGFI radio cloud center).
+       set the function of this BS node. Available Options: enb. Support for cudu, cu, du, and rru operations will be added in the subsequent releases. 
      type: string
    target_hardware:
      default: "usrp_b200"
