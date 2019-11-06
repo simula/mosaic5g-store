@@ -23,3 +23,7 @@ requires:
   rru:
     interface: FH-ETH
     optional: true
+peers:
+  cudu:
+    interface:F1
+    optional: true

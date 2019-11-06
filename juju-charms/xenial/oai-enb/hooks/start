@@ -78,11 +78,11 @@ if [ -f $CHARM_DIR/.mme_running ] ;then
 else 
     mme_running="no"
 fi
-
-# 
-if [ "$mme_running" == "remote" ] ; then 
+ 
+if [ "$mme_running" == "remote" ] || [ "$node_func" == "du" ] || [ "$node_func" == "DU" ]; then 
     MME_UNIT_RUNNING=1
 fi 
+
 
 if [ -n "$(relation-ids mme)" ]; then
    #we start the service only if we have a relation

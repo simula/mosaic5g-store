@@ -74,7 +74,9 @@ if [ -z "$(grep "$mmeipv4" $CHARM_DIR/mme_ips)"  ]; then
     add_mme_ip $mmeipv4
 fi
 
-add_plmn $mobile_country_code $mobile_network_code
+if [ -z "$(grep "$mobile_network_code" $CHARM_DIR/plmn_list)"  ]; then
+    add_plmn $mobile_country_code $mobile_network_code
+fi
 
 #when integrer
 #sed -r -i "s/(mnc[ ]*=[ ]*)[0-9]+/\$mobile_network_code/" $conf_file
@@ -102,6 +104,5 @@ add_plmn $mobile_country_code $mobile_network_code
 #    done
 #done
 
-$CHARM_DIR/hooks/start
-
+$CHARM_DIR/hooks/config-changed
 

@@ -25,6 +25,8 @@
 # author  navid.nikaein@eurecom.fr
 
 install_packages(){
+    apt update
+    
     gitAlreadyInstalled=$(dpkg --get-selections snapd 2>/dev/null | grep -c 'install') || true
     if [ ! $gitAlreadyInstalled -eq 1 ]; then # If git is NOT installed
 	apt-get install -y --force-yes snapd # Ensure necessary git dependency exist.
@@ -42,10 +44,10 @@ install_packages(){
     fi
     virtwhatAlreadyInstalled=$(dpkg --get-selections virt-what 2>/dev/null | grep -c 'install') || true
     if [ ! $virtwhatAlreadyInstalled -eq 1 ]; then 
-	apt-get install -y --force-yes virt-what
+	apt-get install -y --force-yes virt-what || true 
     fi
     cpufreqAlreadyInstalled=$(dpkg --get-selections cpufrequtils 2>/dev/null | grep -c 'install') || true
-    if [ ! $virtwhatAlreadyInstalled -eq 1 ]; then 
+    if [ ! $cpufreqAlreadyInstalled -eq 1 ]; then 
 	apt-get install -y --force-yes cpufrequtils
     fi
 }
@@ -81,10 +83,12 @@ set_cpu_freq(){
 
 
 build_oai_ran(){
-    
-     if [ ! -d $mosaic_path ] ; then 
-	mkdir $mosaic_path
-    fi
+
+    #sudo snap remove oai-ran
+
+    #if [ ! -d $mosaic_path ] ; then 
+#	mkdir $mosaic_path
+ #   fi
     
     if [ "$snap" == "edge" ] || [ "$snap" == "beta" ] ; then
 	juju-log "Installing OAI-RAN snap"
@@ -120,7 +124,7 @@ status-set maintenance "Install hook"
 set -eux
 export DEBIAN_FRONTEND=noninteractive
 source /$CHARM_DIR/utils/common
-set_env
+#set_env
 echo "no" > $CHARM_DIR/.oairan_running_flag
 
 
@@ -161,6 +165,9 @@ echo "$node_func" > $CHARM_DIR/.node_func
 echo "$mme_ip" >  $CHARM_DIR/.mme_ip
 
 echo "no"  > $CHARM_DIR/.rtc_running
+echo "no"  > $CHARM_DIR/.enb_running
+echo "no"  > $CHARM_DIR/.cu_running
+echo "no"  > $CHARM_DIR/.du_running
 echo "no"  > $CHARM_DIR/.rru_running
 echo "no"  > $CHARM_DIR/.mme_running
 

@@ -71,5 +71,5 @@ add_rtc_ip $agnet_if $rtc_ip $rtc_port
 #fi 
 
 stop_enb
-$CHARM_DIR/hooks/start
+$CHARM_DIR/hooks/config-changed
 

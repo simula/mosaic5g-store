@@ -155,7 +155,17 @@ if [ "$node_func" == "eNodeB_3GPP_BBU" ] || [ "$node_func" == "NGFI_RCC_IF4p5" ]
 	sed -r -i  "s/(tx_scheduling_advance[ ]*=[ ]*)[0-9]+/\1$rru_tx_schedadvance/" $conf_path/$file_config
     fi
 
+elif [ "$node_func" == "cu" ] || [ "$node_func" == "CU" ] ; then
+
+    enable_cu_f1  `config-get cu_if_name` `config-get cu_ip_addr`
+    
+
+elif [ "$node_func" == "du" ] || [ "$node_func" == "DU" ] ; then
+
+    enable_du_f1  `config-get du_if_name` `config-get du_ip_addr`
+   
 else
+    disable_f1
     echo "no" > $CHARM_DIR/.rru_active
     
 fi 
@@ -280,4 +290,4 @@ TAC=`config-get TAC`
 
 ############################################################################
 
-$CHARM_DIR/hooks/start
+$CHARM_DIR/hooks/start || true 

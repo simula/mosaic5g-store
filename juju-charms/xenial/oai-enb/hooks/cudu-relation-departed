@@ -20,32 +20,17 @@
 #      contact@mosaic5g.io
 #
 ################################################################################
-# file mme-relation-departed
-# brief called when the enb-epc relation is removed 
+# file cudu-relation-departed
+# brief handle CU and DU relation departed 
 # author  navid.nikaein@eurecom.fr 
 
 set -eux
 source $CHARM_DIR/utils/common
 set_env
 
-status-set maintenance "mme-relation-departed hook"
+status-set maintenance "cudu-relation-departed hook"
 
-juju-log "stopping eNB service and waiting for a MME relation to be restablished"
+juju-log "stopping eNB service (CU / DU)"
 stop_enb
 
-#I can remove from Hss the entry of the IMSI in the case we put from here and not from 
-#PHPOMYADMIN
-#I could remove mnc mcc tai and mme_address from the config file
-
-juju-log "Deleting MME relation info from the config file in use"
-echo "no" > $CHARM_DIR/.mme_running
-rm -f $CHARM_DIR/.trigger_restart
-sed -r -i  "s/(mobile_country_code[ ]*=[ ]*)\"[0-9]*\"/\1\"0\"/" $conf_file
-sed -r -i  "s/(mobile_network_code[ ]*=[ ]*)\"[0-9]*\"/\1\"0\"/" $conf_file
-#sed -r -i "/mme_ip_address/ s-\"[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\"-\"0.0.0.0\"-" $conf_file
-mmeipv4=`relation-get mme_ip`
-remove_mme_ip $mmeipv4
-
-mcc=`relation-get MCC`
-mnc=`relation-get MNC`
-remove_plmn $mcc $mnc  
+disable_f1

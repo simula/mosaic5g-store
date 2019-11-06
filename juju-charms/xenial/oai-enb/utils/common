@@ -32,7 +32,10 @@ set_env(){
 #paths in openairinterface-5G on Git
     mosaic_path=/srv/mosaic5g
     export PATH=$PATH:/snap/bin
-    conf_file=/var/snap/oai-ran/current/enb.band7.tm1.50PRB.usrpb210.conf
+    enb_conf=/var/snap/oai-ran/current/enb.band7.tm1.50PRB.usrpb210.conf
+    cu_conf=/var/snap/oai-ran/current/cu.lte.conf
+    du_conf=/var/snap/oai-ran/current/du.lte.band7.10MHz.if4p5.conf
+    conf_file=`oai-ran.enb-conf-get`
     
     # not needed anymore, keeping these for a while
     openair_path=$mosaic_path/oai-ran
@@ -122,21 +125,7 @@ check_enb_process(){
 #IS_RUNNING=`systemctl status enb.service`
 #if [[ $IS_RUNNING =~ .*running.* ]]; then
     #fi
-    node_func=`cat $CHARM_DIR/.node_func`
-    case "$node_func" in
-	"cudu" )
-	    IS_ACTIVE=`systemctl is-active snap.oai-ran.cudud.service`
-	    ;;
-	"rru" )
-	    IS_ACTIVE=`systemctl is-active snap.oai-ran.rrud.service`
-	    ;;
-	"enb" )
-	    IS_ACTIVE=`systemctl is-active snap.oai-ran.enbd.service`
-	    ;;
-	* )
-	    juju-log "Unknown node func $node_func"
-	    ;;
-    esac
+    IS_ACTIVE=`systemctl is-active snap.oai-ran.enbd.service`
 
     if [ "$IS_ACTIVE" == "active" ]; then
 	juju-log "OAI eNB is running"
@@ -159,19 +148,7 @@ restart_enb(){
 
 start_enb_process(){
     # this could be developped as in oai-cn/frontend/run gdb
-    node_func=`cat $CHARM_DIR/.node_func`
-    case "$node_func" in
-	"cudu" )
-	    oai-ran.cudu-restart || true
-	    ;;
-	"rru" )
-	    oai-ran.rru-restart || true
-	    ;;
-	* )
-	    oai-ran.enb-restart || true
-	    node_func="enb"
-	    ;;
-    esac
+    oai-ran.enb-restart || true
 
     check_enb_process $node_func 
     if [ $status -eq 1 ]; then
@@ -198,8 +175,7 @@ cat <<EOF > $CHARM_DIR/plmn_list
     plmn_list = ( 
                    { mcc = $1; 
                      mnc = $2; 
-                     mnc_length = 2; } 
-                );
+                     mnc_length = 2; }
 EOF
 else
 
@@ -207,15 +183,16 @@ cat <<EOF > /tmp/temp
                   ,{ mcc = $1; 
                      mnc = $2; 
                      mnc_length = 2; } 
-
 EOF
 
-sed -r -i "/mnc_length/r /tmp/temp" $CHARM_DIR/plmn_list
+sed -r -i "$,/mnc_length/r /tmp/temp" $CHARM_DIR/plmn_list
 
 fi
 
 cat $CHARM_DIR/beginning > $CHARM_DIR/enb.conf
 cat $CHARM_DIR/plmn_list >> $CHARM_DIR/enb.conf
+echo ");"                >> $CHARM_DIR/enb.conf
+
 sed -r -n "/tr_s_preference /,$ p" $conf_file >> $CHARM_DIR/enb.conf
 
 mv -f $CHARM_DIR/enb.conf $conf_file
@@ -224,12 +201,16 @@ rm -f $CHARM_DIR/beginning
 }
 
 remove_plmn(){
-    # need improvement
-    
-    if [ -z "$(grep "mnc" $CHARM_DIR/plmn_list)" ]; then
-	rm $CHARM_DIR/plmn_list
-    fi
 
+    mcc=$1
+    mnc=$2
+    if [ -f $CHARM_DIR/plmn_list ] ; then
+
+	if [ -z "$(grep $mnc $CHARM_DIR/plmn_list)" ]; then
+	    rm -f $CHARM_DIR/plmn_list
+	fi
+
+    fi
 }
 
 add_mme_ip(){
@@ -246,7 +227,6 @@ cat <<EOF > $CHARM_DIR/mme_ips
                                 ipv6       = "192:168:30::17";
                                 active     = "yes";
                                 preference = "ipv4"; }
-                          );
 EOF
 else
 
@@ -257,12 +237,14 @@ cat <<EOF > /tmp/temp
                                 preference = "ipv4"; }
 EOF
 
-sed -r -i "/enable_measurement_reports/r /tmp/temp" $CHARM_DIR/mme_ips
+sed -r -i "$,/enable_measurement_reports/r /tmp/temp" $CHARM_DIR/mme_ips
 
 fi
 
 cat $CHARM_DIR/beginning > $CHARM_DIR/enb.conf
 cat $CHARM_DIR/mme_ips >> $CHARM_DIR/enb.conf
+echo ");"              >> $CHARM_DIR/enb.conf
+
 sed -r -n "/NETWORK_INTERFACES/,$ p" $conf_file >> $CHARM_DIR/enb.conf
 
 mv -f $CHARM_DIR/enb.conf $conf_file
@@ -277,14 +259,16 @@ remove_mme_ip(){
     
     #if there are no other  relations we can rmeove the file with
     #the list of all the ip mme addresses
-    
-    sed -r -i "/$1/,/preference/ d" $CHARM_DIR/mme_ips
-    sed -r -i "0,/ipv4[ \t]*=[ \t]*\"[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\";/ s/,(\{[ \t]*ipv4[ \t]*=[ \t]*\"[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\")/ \1/" $CHARM_DIR/mme_ips
-    
-    if [ -z "$(grep "ipv4" $CHARM_DIR/mme_ips)" ]; then
-	rm $CHARM_DIR/mme_ips
-    fi
 
+    if [ -f $CHARM_DIR/mme_ips ] ; then
+	
+	sed -r -i "/$1/,/preference/ d" $CHARM_DIR/mme_ips
+	sed -r -i "0,/ipv4[ \t]*=[ \t]*\"[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\";/ s/,(\{[ \t]*ipv4[ \t]*=[ \t]*\"[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\")/ \1/" $CHARM_DIR/mme_ips
+	
+	if [ -z "$(grep "ipv4" $CHARM_DIR/mme_ips)" ]; then
+	    rm -f $CHARM_DIR/mme_ips
+	fi
+    fi 
 }
 
 add_rtc_ip(){
@@ -304,6 +288,82 @@ disable_rtc(){
     sed -r -i "/FLEXRAN_ENABLED/ s/\".+\"/\"no\"/" $conf_file
         
 }
+
+add_rtc_ip(){
+
+    set_env
+ 
+    sed -r -i "/FLEXRAN_ENABLED/ s/\".+\"/\"yes\"/" $conf_file
+    
+    sed -r -i "/FLEXRAN_INTERFACE_NAME/ s/\".+\"/\"$1\"/" $conf_file 
+    sed -r -i "/FLEXRAN_IPV4_ADDRESS/ s/\".+\"/\"$2\"/" $conf_file 
+    sed -r -i "/FLEXRAN_PORT/ s/\".+\"/\$3/" $conf_file 
+        
+}
+
+enable_cu_f1(){
+    set_env
+
+    sed -r -i "/CU_INTERFACE_NAME_FOR_F1U/ s/\".+\"/\"$1\"/" $conf_file 
+    sed -r -i "/CU_IPV4_ADDRESS_FOR_F1U/ s/\".+\"/\"$2\"/" $conf_file
+
+    sed -r -i "/local_s_if_name/ s/\".+\"/\"$1\"/" $conf_file
+    sed -r -i "/local_s_address/ s/\".+\"/\"$2\"/" $conf_file
+
+
+    if [ "$3" != " " ]; then 
+	sed -r -i "/remote_s_address/ s/\".+\"/\"$3\"/" $conf_file
+	sed -r -i "/local_s_portc/ s/\".+\"/\"$4\"/" $conf_file
+	sed -r -i "/remote_s_portc/ s/\".+\"/\"$5\"/" $conf_file
+	sed -r -i "/loal_s_portd/ s/\".+\"/\"$6\"/" $conf_file
+	sed -r -i "/remote_s_portd/ s/\".+\"/\"$7\"/" $conf_file
+    fi
+    
+    sed -r -i  "s/(tr_s_preference[ ]*=[ ]*)\"local_mac\"/\1\"f1\"/" $conf_file
+  #  sed -r -i  "s/(tr_n_preference[ ]*=[ ]*)\".*\"/\1\"f1\"/" $conf_file
+    
+    open-port 22100/tcp
+    oai-ran.enb-conf-set $cu_conf
+    set_env
+}
+
+enable_du_f1(){
+    set_env
+    sed -r -i "/DU_INTERFACE_NAME_FOR_F1U/ s/\".+\"/\"$1\"/" $conf_file 
+    sed -r -i "/DU_IPV4_ADDRESS_FOR_F1U/ s/\".+\"/\"$2\"/" $conf_file
+
+    
+    sed -r -i "/local_n_if_name/ s/\".+\"/\"$1\"/" $conf_file
+    sed -r -i "/local_n_address/ s/\".+\"/\"$2\"/" $conf_file
+    
+    if [ "$3" != " " ]; then 
+	sed -r -i "/remote_n_address/ s/\".+\"/\"$3\"/" $conf_file
+	sed -r -i "/local_n_portc/ s/\".+\"/\"$4\"/" $conf_file
+	sed -r -i "/remote_n_portc/ s/\".+\"/\"$5\"/" $conf_file
+	sed -r -i "/loal_n_portd/ s/\".+\"/\"$6\"/" $conf_file
+	sed -r -i "/remote_n_portd/ s/\".+\"/\"$7\"/" $conf_file
+    fi
+    
+    sed -r -i "s/(tr_n_preference[ ]*=[ ]*)\"local_RRC\"/\1\"f1\"/" $conf_file
+
+    open-port 22100/tcp
+    oai-ran.enb-conf-set $du_conf
+    set_env
+}
+
+
+disable_f1(){
+
+    set_env
+    sed -r -i  "s/(tr_s_preference[ ]*=[ ]*)\"f1\"/\1\"local_mac\"/" $conf_file
+    
+    sed -r -i  "s/(tr_n_preference[ ]*=[ ]*)\"f1\"/\1\"local_RRC\"/" $conf_file
+    
+    close-port 22100/tcp    || true
+    oai-ran.enb-conf-set $enb_conf
+    set_env
+}
+
 
 # get from http://www.linuxjournal.com/content/validating-ip-address-bash-script
 validate_ip() {
