@@ -25,6 +25,7 @@
 # author  navid.nikaein@eurecom.fr and A. B. Molini   
 
 install_packages(){
+    apt update 
     #status-set maintenance "Installing some dependencies"
      gitAlreadyInstalled=$(dpkg --get-selections snapd 2>/dev/null | grep -c 'install') || true
     if [ ! $gitAlreadyInstalled -eq 1 ]; then # If git is NOT installed
@@ -136,10 +137,10 @@ configure_network(){
   sed -i -e "s/eth1/$eth/g" $file
 
   #prevent dhcp gateway
-  local hook=/etc/dhcp/dhclient-enter-hooks.d/net-${eth}
-  cp ./files/dhclient_hook_tpl $hook
-  sed -i -e "s/eth1/$eth/g" $hook
-  chmod +x $hook
+  #local hook=/etc/dhcp/dhclient-enter-hooks.d/net-${eth}
+  #cp ./files/dhclient_hook_tpl $hook
+  #sed -i -e "s/eth1/$eth/g" $hook
+  #chmod +x $hook
 }
 init_spgw(){
     
