@@ -27,4 +27,4 @@
 set -eux
 source $CHARM_DIR/utils/common
 #set_env
-status-set active "RTC-relation-departed hook"
+#status-set active "RTC-relation-departed hook"
