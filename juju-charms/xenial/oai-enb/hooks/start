@@ -90,15 +90,21 @@ if [ "$mme_running" == "remote" ] || [ "$node_func" == "du" ] || [ "$node_func" 
     MME_UNIT_RUNNING=1
 fi 
 
-
 if [ $CU_UNIT_PRESENT -gt 0 ]; then
-    cu_running=`relation-get cu_running`
-    if [ "cu_running" = "yes" ]; then
-	CU_UNIT_RUNNING=1
-	echo "yes"  > $CHARM_DIR/.cu_running
-    else
-	echo "no"  > $CHARM_DIR/.cu_running
-    fi
+    if [ -n "$(relation-ids cu)" ]; then
+	
+	for cu_id in $(relation-ids cu); do
+	    for unit in $(relation-list -r $cu_id); do
+		cu_running=`relation-get -r $cu_id cu_running $unit`
+		if [ "$cu_running" == "yes" ]; then
+		    CU_UNIT_RUNNING=$((cu_UNIT_RUNNING + 1))
+		    echo "yes"  > $CHARM_DIR/.cu_running
+		else
+		    echo "no"  > $CHARM_DIR/.cu_running
+		fi
+	    done
+	done
+
 fi
 
 if [ -n "$(relation-ids mme)" ]; then

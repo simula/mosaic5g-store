@@ -154,16 +154,38 @@ start_enb_process(){
     if [ $status -eq 1 ]; then
 	echo "no"  > $CHARM_DIR/.oairan_running
         status-set blocked "Not Running, check the config file"
-	relation-set ${node_func}_running="no"
+	if [ "$node_func" = "cu" ] ; then
+	    reset_cu_running_state
+	fi
+	#relation-set ${node_func}_running="no"
 	exit 1
     else
 	echo "yes"  > $CHARM_DIR/.oairan_running
-	relation-set ${node_func}_running="yes"
+	#relation-set ${node_func}_running="yes"
+	if [ "$node_func" = "cu" ] ; then 
+	    set_cu_running_state
+	fi
 	juju-log "Running OAI $node_func"
 	status-set active "Running"
     fi 
 }
 
+set_cu_running_state(){
+    CU_UNIT_RUNNING=0
+    if [ -n "$(relation-ids cu)" ]; then
+	for cu_id in $(relation-ids cu); do
+	    relation-set -r $cu_id cu_running=yes
+	done
+    fi    
+}
+reset_cu_running_state(){
+
+    if [ -n "$(relation-ids cu)" ]; then
+	for cu_id in $(relation-ids cu); do
+	    relation-set -r $cu_id cu_running=no
+	done
+    fi    
+}
 
 add_plmn(){
 
