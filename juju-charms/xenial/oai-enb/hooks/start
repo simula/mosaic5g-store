@@ -90,6 +90,7 @@ if [ "$mme_running" == "remote" ] || [ "$node_func" == "du" ] || [ "$node_func" 
     MME_UNIT_RUNNING=1
 fi 
 
+# here we are at DU check the CU
 if [ $CU_UNIT_PRESENT -gt 0 ]; then
     if [ -n "$(relation-ids cu)" ]; then
 	
@@ -104,7 +105,8 @@ if [ $CU_UNIT_PRESENT -gt 0 ]; then
 		fi
 	    done
 	done
-
+	
+    fi
 fi
 
 if [ -n "$(relation-ids mme)" ]; then

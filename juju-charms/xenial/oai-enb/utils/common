@@ -378,17 +378,18 @@ enable_du_f1(){
 
 disable_f1(){
 
-    set_env
-    sed -r -i  "s/(tr_s_preference[ ]*=[ ]*)\"f1\"/\1\"local_mac\"/" $conf_file
+    #set_env
+    #sed -r -i  "s/(tr_s_preference[ ]*=[ ]*)\"f1\"/\1\"local_mac\"/" $conf_file
     
-    sed -r -i  "s/(tr_n_preference[ ]*=[ ]*)\"f1\"/\1\"local_RRC\"/" $conf_file
+    #sed -r -i  "s/(tr_n_preference[ ]*=[ ]*)\"f1\"/\1\"local_RRC\"/" $conf_file
     
     close-port 22100/tcp    || true
-    oai-ran.enb-conf-set $enb_conf
+    #oai-ran.enb-conf-set $enb_conf
     
-    echo "no"  > $CHARM_DIR/.du_active
-    echo "no"  > $CHARM_DIR/.cu_active
-
+    #echo "no"  > $CHARM_DIR/.du_active
+    #echo "no"  > $CHARM_DIR/.cu_active
+    echo "no"  > $CHARM_DIR/.cu_running
+    
     set_env
 }
 
