@@ -172,6 +172,7 @@ start_enb_process(){
 
 set_cu_running_state(){
     CU_UNIT_RUNNING=0
+    relation-set CURUNNING=yes
     if [ -n "$(relation-ids cu)" ]; then
 	for cu_id in $(relation-ids cu); do
 	    relation-set -r $cu_id cu_running=yes
@@ -179,7 +180,7 @@ set_cu_running_state(){
     fi    
 }
 reset_cu_running_state(){
-
+    relation-set CURUNNING=no
     if [ -n "$(relation-ids cu)" ]; then
 	for cu_id in $(relation-ids cu); do
 	    relation-set -r $cu_id cu_running=no

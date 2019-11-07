@@ -92,17 +92,21 @@ fi
 
 # here we are at DU check the CU
 if [ $CU_UNIT_PRESENT -gt 0 ]; then
+    CU_UNIT_RUNNING=`relation-get CURUNNING`
+    
     if [ -n "$(relation-ids cu)" ]; then
 	
 	for cu_id in $(relation-ids cu); do
+	    juju-log ""$cu_id""
 	    for unit in $(relation-list -r $cu_id); do
 		cu_running=`relation-get -r $cu_id cu_running $unit`
 		if [ "$cu_running" == "yes" ]; then
-		    CU_UNIT_RUNNING=$((cu_UNIT_RUNNING + 1))
+		    CU_UNIT_RUNNING=$((CU_UNIT_RUNNING + 1))
 		    echo "yes"  > $CHARM_DIR/.cu_running
 		else
 		    echo "no"  > $CHARM_DIR/.cu_running
 		fi
+		juju-log "CU_UNIT_RUNNING $CU_UNIT_RUNNING"
 	    done
 	done
 	
