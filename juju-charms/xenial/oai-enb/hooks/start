@@ -178,32 +178,59 @@ if [ $MME_UNIT_PRESENT -gt 0 ]; then
 				juju-log "Waiting for F1-CUDU Relation"
 				status-set maintenance "Add F1-CUDU relation"
 			    fi
-			fi
-			# either eNB or CU
-			start_enb_process $node_func
-			
+			else  # start either eNB or CU
+			    start_enb_process $node_func
+	    		fi
+					
 		    else # RRU not running
 			juju-log "Waiting for RRU Relation"
 			status-set maintenance "Add RRU relation" 
 		    fi
-		else # RRU not present
+		    # RRU not present
+		elif  [ $CU_UNIT_PRESENT -gt 0 ]; then # node func shall be DU 
+		    if [ $CU_UNIT_RUNNING -gt 0 ]; then
+			start_enb_process $node_func
+		    else
+			juju-log "Waiting for F1-CUDU Relation"
+			status-set maintenance "Add F1-CUDU relation"
+		    fi
+		else  # start either eNB or CU
 		    start_enb_process $node_func
-		fi
+	    	fi 
 	    else # RTC not running
 		juju-log "Waiting for RTC Relation"
 		status-set maintenance "Add RTC relation"
 	    fi
-	    
-	elif [ $RRU_UNIT_PRESENT -gt 0 ]; then  # RTC not present but RRU present
+	    # RTC not present but RRU present
+	elif [ $RRU_UNIT_PRESENT -gt 0 ]; then  
 	    if [ $RRU_UNIT_RUNNING -gt 0 ]; then
-		start_enb_process $node_func
+
+		if [ $CU_UNIT_PRESENT -gt 0 ]; then # node func shall be DU 
+		    if [ $CU_UNIT_RUNNING -gt 0 ]; then
+			start_enb_process $node_func
+		    else
+			juju-log "Waiting for F1-CUDU Relation"
+			status-set maintenance "Add F1-CUDU relation"
+		    fi
+		else  # start either eNB or CU
+		    start_enb_process $node_func
+	    	fi
+		
 	    else # RRU not running
 		juju-log "Waiting for RRU Relation"
 		status-set maintenance "Add RRU relation" 
 	    fi
-	else #RTC and RRU not present, but mme running
+	    #RTC and RRU not present, but mme running
+	elif [ $CU_UNIT_PRESENT -gt 0 ]; then # node func shall be DU 
+	    if [ $CU_UNIT_RUNNING -gt 0 ]; then
+		start_enb_process $node_func
+	    else
+		juju-log "Waiting for F1-CUDU Relation"
+		status-set maintenance "Add F1-CUDU relation"
+	    fi
+	else  # start just eNB, mme running 
 	    start_enb_process $node_func
-	fi 
+	fi	
 	
     else  # mme not running
 	juju-log "Waiting for MME relation"
