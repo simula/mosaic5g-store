@@ -158,15 +158,15 @@ if [ "$node_func" == "eNodeB_3GPP_BBU" ] || [ "$node_func" == "NGFI_RCC_IF4p5" ]
 elif [ "$node_func" == "cu" ] || [ "$node_func" == "CU" ] ; then
 
     enable_cu_f1  `config-get cu_if_name` `config-get cu_ip_addr`
-    
+    echo "yes"  > $CHARM_DIR/.cu_active
 
 elif [ "$node_func" == "du" ] || [ "$node_func" == "DU" ] ; then
 
     enable_du_f1  `config-get du_if_name` `config-get du_ip_addr`
-   
+    echo "yes"  > $CHARM_DIR/.du_active
 else
     disable_f1
-    echo "no" > $CHARM_DIR/.rru_active
+    echo "no" > $CHARM_DIR/.rru_active  
     
 fi 
 

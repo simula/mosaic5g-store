@@ -39,7 +39,9 @@ if [ "$oairan_running_flag" == "no" ] ; then
     juju-log "oai-ran not yet initialized "
     #exit 0
 fi
-    
+
+CU_UNIT_RUNNING=0
+CU_UNIT_PRESENT=0
 MME_UNIT_RUNNING=0
 MME_UNIT_PRESENT=1
 RRU_UNIT_RUNNING=0
@@ -56,6 +58,11 @@ juju-log "OAI-RAN function is $node_func"
 #if [ "$(config-get flexran_active)" == "yes" ] ; then
 #    RTC_UNIT_PRESENT=1;
 #fi
+
+if [ "$(cat $CHARM_DIR/.du_active)" == "yes" ]; then
+    # flag indicating that there is a remote CU unit 
+    CU_UNIT_PRESENT=1;
+fi
 
 if [ "$(cat $CHARM_DIR/.rru_active)" == "yes" ]; then
     RRU_UNIT_PRESENT=1;
@@ -83,6 +90,16 @@ if [ "$mme_running" == "remote" ] || [ "$node_func" == "du" ] || [ "$node_func" 
     MME_UNIT_RUNNING=1
 fi 
 
+
+if [ $CU_UNIT_PRESENT -gt 0 ]; then
+    cu_running=`relation-get cu_running`
+    if [ "cu_running" = "yes" ]; then
+	CU_UNIT_RUNNING=1
+	echo "yes"  > $CHARM_DIR/.cu_running
+    else
+	echo "no"  > $CHARM_DIR/.cu_running
+    fi
+fi
 
 if [ -n "$(relation-ids mme)" ]; then
    #we start the service only if we have a relation
@@ -145,8 +162,17 @@ if [ $MME_UNIT_PRESENT -gt 0 ]; then
 		
 		if [ $RRU_UNIT_PRESENT -gt 0 ]; then 
 		    if [ $RRU_UNIT_RUNNING -gt 0 ]; then
-			
-			start_enb_process $node_func 
+
+			if [ $CU_UNIT_PRESENT -gt 0 ]; then # node func shall be DU 
+			    if [ $CU_UNIT_RUNNING -gt 0 ]; then
+				start_enb_process $node_func
+			    else
+				juju-log "Waiting for F1-CUDU Relation"
+				status-set maintenance "Add F1-CUDU relation"
+			    fi
+			fi
+			# either eNB or CU
+			start_enb_process $node_func
 			
 		    else # RRU not running
 			juju-log "Waiting for RRU Relation"

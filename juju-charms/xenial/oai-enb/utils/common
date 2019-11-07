@@ -154,9 +154,11 @@ start_enb_process(){
     if [ $status -eq 1 ]; then
 	echo "no"  > $CHARM_DIR/.oairan_running
         status-set blocked "Not Running, check the config file"
-       exit 1
+	relation-set ${node_func}_running="no"
+	exit 1
     else
 	echo "yes"  > $CHARM_DIR/.oairan_running
+	relation-set ${node_func}_running="yes"
 	juju-log "Running OAI $node_func"
 	status-set active "Running"
     fi 
@@ -361,6 +363,10 @@ disable_f1(){
     
     close-port 22100/tcp    || true
     oai-ran.enb-conf-set $enb_conf
+    
+    echo "no"  > $CHARM_DIR/.du_active
+    echo "no"  > $CHARM_DIR/.cu_active
+
     set_env
 }
 
