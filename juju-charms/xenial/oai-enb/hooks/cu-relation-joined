@@ -20,17 +20,27 @@
 #      contact@mosaic5g.io
 #
 ################################################################################
-# file cudu-relation-departed
-# brief handle CU and DU relation departed 
-# author  navid.nikaein@eurecom.fr 
+# file cu-relation-joint
+# brief manage the F1 interface between CU and DU 
+# author navid.nikaein@eurecom.fr 
 
 set -eux
 source $CHARM_DIR/utils/common
 set_env
+status-set maintenance "cu-relation-joint hook"
+oai-ran.enb-conf-set $cu_conf
+#node_func=`config-get node_function`
+#if [ "$node_func" == "cu" ] || [ "$node_func" == "CU" ] ; then
 
-status-set maintenance "cudu-relation-departed hook"
+    relation-set CUIP=`config-get cu_ip_addr`
+    relation-set CUIF=`config-get cu_if_name`
+    relation-set CUPORTC=`config-get cu_portc`
+    relation-set CUPORTD=`config-get cu_portd`
 
-juju-log "stopping eNB service (CU / DU)"
-stop_enb
 
-disable_f1
+    
+#else
+#    disable_f1
+#    echo "no" > $CHARM_DIR/.rru_active
+    
+#fi 

@@ -20,32 +20,17 @@
 #      contact@mosaic5g.io
 #
 ################################################################################
-# file cudu-relation-joint
-# brief manage the F1 interface between CU and DU 
-# author navid.nikaein@eurecom.fr 
+# file du-relation-departed
+# brief handle CU and DU relation departed 
+# author  navid.nikaein@eurecom.fr 
 
 set -eux
 source $CHARM_DIR/utils/common
 set_env
-status-set maintenance "cudu-relation-joint hook"
 
-if [ "$node_func" == "cu" ] || [ "$node_func" == "CU" ] ; then
+status-set maintenance "du-relation-departed hook"
 
-    relation-set CUIP=`config-get cu_ip_addr`
-    relation-set CUIF=`config-get cu_if_name`
-    relation-set CUPORTC=`config-get cu_portc`
-    relation-set CUPORTD=`config-get cu_portd`
-    
+juju-log "stopping DU service "
+stop_enb
 
-elif [ "$node_func" == "du" ] || [ "$node_func" == "DU" ] ; then
-
-    relation-set DUIP=`config-get du_ip_addr`
-    relation-set DUIF=`config-get du_if_name`
-    relation-set DUPORTC=`config-get du_portc`
-    relation-set DUPORTD=`config-get du_portd`
-
-else
-    disable_f1
-    echo "no" > $CHARM_DIR/.rru_active
-    
-fi 
+disable_f1

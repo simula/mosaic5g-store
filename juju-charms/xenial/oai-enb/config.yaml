@@ -49,8 +49,8 @@ options:
      description: |
        The port number of the CU module for control plane. Only valid if the node function is CU.
      type: int
-   du_portc: 500
-     default:
+   du_portc:
+     default: 500
      description: |
        The control port number of the DU module for control plane. Only valid if the node function is DU.
      type: int
@@ -59,8 +59,8 @@ options:
      description: |
        The port number of the CU module for data plane. Only valid if the node function is CU.
      type: int
-   du_portd:600
-     default: 
+   du_portd:
+     default: 600 
      description: |
        The control port number of the DU module for data plane. Only valid if the node function is DU.
      type: int

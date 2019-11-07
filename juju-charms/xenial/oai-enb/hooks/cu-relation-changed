@@ -1,0 +1,59 @@
+#!/bin/bash
+# Copyright 2016-2018 Eurecom and Mosaic5G Platforms Authors
+# Licensed to the Mosaic5G under one or more contributor license
+# agreements. See the NOTICE file distributed with this
+# work for additional information regarding copyright ownership.
+# The Mosaic5G licenses this file to You under the
+# Apache License, Version 2.0  (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#-------------------------------------------------------------------------------
+# For more information about the Mosaic5G:
+#      contact@mosaic5g.io
+#
+################################################################################
+# file cu-relation-changed
+# brief manage the config changes of oai-enb service, and occurs everytime a new configuration value is updated (juju set)
+# author navid.nikaein@eurecom.fr 
+
+set -eux
+source $CHARM_DIR/utils/common
+set_env
+status-set maintenance "cu-relation-changed hook"
+#node_func=`config-get node_function`
+#if [ "$node_func" == "cu" ] || [ "$node_func" == "CU" ] ; then
+
+    DUIP=`relation-get DUIP`
+    DUIF=`relation-get DUIF`
+    DUPORTC=`relation-get DUPORTC`
+    DUPORTD=`relation-get DUPORTD`
+    
+    if [ -z "$DUIP" ]; then
+	juju-log "DU IP addr not yet available"
+	exit 0
+    fi
+    if [ -z "$DUIF" ]; then
+	juju-log "DU IF name not yet available"
+	exit 0
+    fi
+    if [ -z "$DUPORTC" ]; then
+	juju-log "DU PORTC not yet available"
+	exit 0
+    fi
+    if [ -z "$DUPORTD" ]; then
+	juju-log "DU PORTD not yet available"
+	exit 0
+    fi
+    
+    enable_cu_f1 `config-get cu_if_name` `config-get cu_ip_addr` $DUIP `config-get cu_portc` $DUPORTC `config-get cu_portd` $DUPORTD
+    
+    juju-log "CU config done"
+#fi 
