@@ -36,6 +36,9 @@ if [ $status -eq 1 ]; then
     $CHARM_DIR/hooks/start
 else 
     status-set active "Running"
+    if [ "$(cat $CHARM_DIR/.node_func)"  == "cu" ]; then
+       set_cu_running_state
+    fi 
     #application-version-set oai-enb-version
 fi
 

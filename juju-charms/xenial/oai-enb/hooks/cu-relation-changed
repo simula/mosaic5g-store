@@ -52,8 +52,9 @@ status-set maintenance "cu-relation-changed hook"
 	juju-log "DU PORTD not yet available"
 	exit 0
     fi
-    
-    enable_cu_f1 `config-get cu_if_name` `config-get cu_ip_addr` $DUIP `config-get cu_portc` $DUPORTC `config-get cu_portd` $DUPORTD
+    cu_ip_addr=`ifconfig $(config-get cu_if_name) | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
+    enable_cu_f1 `config-get cu_if_name` $cu_ip_addr $DUIP `config-get cu_portc` $DUPORTC `config-get cu_portd` $DUPORTD
+    #enable_cu_f1 `config-get cu_if_name` `config-get cu_ip_addr` $DUIP `config-get cu_portc` $DUPORTC `config-get cu_portd` $DUPORTD
     
     juju-log "CU config done"
 #fi 

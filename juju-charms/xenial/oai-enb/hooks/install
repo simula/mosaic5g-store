@@ -112,7 +112,7 @@ init_oai_ran(){
     #check oai ran func 
     if [ "$node_func" != "cu" -o  "$node_func" != "CU" ]; then
 	echo "cu" > $CHARM_DIR/.node_func
-	echo "yes"  > $CHARM_DIR/.cu_avtive
+	echo "yes"  > $CHARM_DIR/.cu_active
     elif [ "$node_func" != "du" -o  "$node_func" != "DU" ] ; then
 	echo "du" > $CHARM_DIR/.node_func
 	echo "yes"  > $CHARM_DIR/.du_avtive

@@ -31,8 +31,9 @@ status-set maintenance "cu-relation-joint hook"
 oai-ran.enb-conf-set $cu_conf
 #node_func=`config-get node_function`
 #if [ "$node_func" == "cu" ] || [ "$node_func" == "CU" ] ; then
-
-    relation-set CUIP=`config-get cu_ip_addr`
+    cu_ip_addr=`ifconfig $(config-get cu_if_name) | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
+    #relation-set CUIP=`config-get cu_ip_addr`
+    relation-set CUIP=$cu_ip_addr
     relation-set CUIF=`config-get cu_if_name`
     relation-set CUPORTC=`config-get cu_portc`
     relation-set CUPORTD=`config-get cu_portd`

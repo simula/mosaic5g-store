@@ -156,13 +156,16 @@ if [ "$node_func" == "eNodeB_3GPP_BBU" ] || [ "$node_func" == "NGFI_RCC_IF4p5" ]
     fi
 
 elif [ "$node_func" == "cu" ] || [ "$node_func" == "CU" ] ; then
-
-    enable_cu_f1  `config-get cu_if_name` `config-get cu_ip_addr`
+    cu_ip_addr=`ifconfig $(config-get cu_if_name) | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
+    #enable_cu_f1  `config-get cu_if_name` `config-get cu_ip_addr`
+    enable_cu_f1  `config-get cu_if_name` $cu_ip_addr
     echo "yes"  > $CHARM_DIR/.cu_active
 
 elif [ "$node_func" == "du" ] || [ "$node_func" == "DU" ] ; then
 
-    enable_du_f1  `config-get du_if_name` `config-get du_ip_addr`
+    du_ip_addr=`ifconfig $(config-get du_if_name) | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
+    enable_du_f1  `config-get du_if_name` $du_ip_addr
+    #enable_du_f1  `config-get du_if_name` `config-get du_ip_addr`
     echo "yes"  > $CHARM_DIR/.du_active
 else
     disable_f1
@@ -208,7 +211,8 @@ nb_antennas_tx=`config-get nb_antennas_tx`
 nb_antennas_rx=`config-get nb_antennas_rx`
 tx_gain=`config-get tx_gain`
 rx_gain=`config-get rx_gain`
-
+parallel_config=`config-get parallel_config`
+max_rxgain=`config-get max_rxgain`
 [ -z "$frame_type" ] || (sed -r -i  "s/(frame_type[ \t]*=[ \t]*)\"[a-zA-Z]+\"/\1\"$frame_type\"/" $conf_file)
 
 [ -z "$tdd_config" ] || (sed -r -i  "s/(tdd_config[ \t]*=[ \t]*)[0-9]+/\1$tdd_config/" $conf_file)
@@ -231,6 +235,10 @@ rx_gain=`config-get rx_gain`
 
 [ -z "$rx_gain" ] || (sed -r -i  "s/(rx_gain[ ]*=[ ]*)[0-9]+/\1$rx_gain/" $conf_file)
 
+[ -z "$parallel_config" ] || (sed -r -i  "s/(parallel_config[ ]*=[ ]*)\"[^ ]+\"/\1\"$parallel_config\"/" $conf_file)
+#[ -z "$parallel_config" ] || (sed -r -i  "s/(parallel_config[ \t]*=[ \t]*)\"[^ ]+\"/\1\"$parallel_config\"/" $conf_file)
+
+[ -z "$max_rxgain" ] || (sed -r -i  "s/(max_rxgain[ \t]*=[ \t]*)[0-9]+/\1$max_rxgain/" $conf_file)
 
 pdsch_referenceSignalPower_b13=-27
 pusch_p0_Nominal_b13=-96

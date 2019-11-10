@@ -169,4 +169,14 @@ options:
      description: |
         defines the tx i/q scheduling advance
      type: int
-
+   parallel_config:
+     default: PARALLEL_SINGLE_THREAD
+     description: |
+        defines the level of parallelism. There are three available values; "PARALLEL_SINGLE_THREAD", "PARALLEL_RU_L1_SPLIT", or "PARALLEL_RU_L1_TRX_SPLIT"
+     type: string
+   max_rxgain:
+     default: 120
+     description: |
+        defines the maximum Rx gain
+     type: int
+     
