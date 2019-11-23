@@ -53,8 +53,23 @@ status-set maintenance "du-relation-changed hook"
 	juju-log "CU PORTD not yet available"
 	exit 0
     fi
-    du_ip_addr=`ifconfig $(config-get du_if_name) | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
-    enable_du_f1  `config-get du_if_name` $du_ip_addr $CUIP `config-get du_portc` $CUPORTC `config-get du_portd` $CUPORTD
+    du_ip_addr=`unit-get public-address`
+    #du_iface_name=`config-get du_if_name`
+    du_iface_name="none"
+    if [ "$du_iface_name" == "none" ] ; then      
+        for interface in $(ls /sys/class/net); do
+            if [ `ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"` != "" ]; then
+                ip_addr=`ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
+                if [ "$ip_addr" == $du_ip_addr ] ; then
+                    du_iface_name=$interface
+                    break
+                fi
+            fi
+        done
+    fi
+    #du_ip_addr=`ifconfig $(config-get du_if_name) | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
+    enable_du_f1  $du_iface_name $du_ip_addr $CUIP `config-get du_portc` $CUPORTC `config-get du_portd` $CUPORTD
+    #enable_du_f1  `config-get du_if_name` $du_ip_addr $CUIP `config-get du_portc` $CUPORTC `config-get du_portd` $CUPORTD
     #enable_du_f1  `config-get du_if_name` `config-get du_ip_addr` $CUIP `config-get du_portc` $CUPORTC `config-get du_portd` $CUPORTD
 
     juju-log "DU config done"

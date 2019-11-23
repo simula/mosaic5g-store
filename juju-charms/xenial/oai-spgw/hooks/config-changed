@@ -42,10 +42,43 @@ fi
 
 sgw_iface=`config-get sgw-eth`
 pgw_iface=`config-get pgw-eth`
+#sgw_iface="none"
+#pgw_iface="none"
+if [ "$sgw_iface" == "none" ] || [ "$pgw_iface" == "none" ]; then
+    ip_addr=`unit-get public-address`
+    for interface in $(ls /sys/class/net); do
+        if [ `ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"` != "" ]; then
+            ipv4=`ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
+            if [ $ipv4 == $ip_addr ] ; then
+                if [ "$sgw_iface" == "none" ] ; then
+                    sgw_iface=$interface
+                fi
+                if [ "$pgw_iface" == "none" ] ; then
+                    pgw_iface=$interface  
+                fi
+                break
+            fi
+        fi
+    done
+fi
 ipv4_list_start=`config-get ipv4_list_start`
 ipv4_list_end=`config-get ipv4_list_end`
 ipv6_list=`config-get ipv6_list`
 DEFAULT_DNS_IPV4_ADDRESS=`config-get DEFAULT_DNS_IPV4_ADDRESS`
+if [ $DEFAULT_DNS_IPV4_ADDRESS == "127.0.0.1" ]; then
+    ip_addr=`unit-get public-address`
+    for interface in $(ls /sys/class/net); do
+        if [ `ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"` != "" ]; then      
+          ipv4=`ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
+          if [ $ipv4 == $ip_addr ] ; then
+                dns=$(nmcli device  show $interface |grep -i dns)
+                DEFAULT_DNS_IPV4_ADDRESS="$(cut -d':' -f2 <<<"$dns")"
+                DEFAULT_DNS_IPV4_ADDRESS=`echo $DEFAULT_DNS_IPV4_ADDRESS`
+                break
+          fi
+        fi
+    done
+fi
 DEFAULT_DNS_SEC_IPV4_ADDRESS=`config-get DEFAULT_DNS_SEC_IPV4_ADDRESS`
 mme_s11_ipv4=`cat $CHARM_DIR/.mme_s11_ipv4`
 pgw_masquerade=`config-get pgw_masquerade_sgi`

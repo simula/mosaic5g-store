@@ -19,11 +19,12 @@ options:
      description: |
        if the MME IP address is provided, the BS node connects to MME without waiting for S1-C relation. Default is an empty string.
      type: string  
-   eth:
-     default: "eth0"
-     description: |
-       defines the interface for S1-U and S1-C. Set this option to the interface the machine onto you deploy this charm has. 
-     type: string
+   #eth:
+   #  default: "none"
+   #  description: |
+   #    If the value of this interface is "none", the interface name will be detected authomatically
+   #    defines the interface for S1-U and S1-C. Set this option to the interface the machine onto you deploy this charm has. 
+   #  type: string
    cu_ip_addr:
      default: "127.0.0.1"
      description: |
@@ -34,16 +35,18 @@ options:
      description: |
        The IP address of the DU module. Only valid if the node function is DU.
      type: string
-   cu_if_name:
-     default: "lo"
-     description: |
-       The interface name of the CU module. Only valid if the node function is CU.
-     type: string
-   du_if_name:
-     default: "lo"
-     description: |
-       The interface name of the DU module. Only valid if the node function is DU.
-     type: string
+   #cu_if_name:
+   #  default: "none"
+   #  description: |
+   #    If the value of this interface is "none", the interface name will be detected authomatically
+   #    The interface name of the CU module. Only valid if the node function is CU.
+   #  type: string
+   #du_if_name:
+   #  default: "none"
+   #  description: |
+   #    If the value of this interface is "none", the interface name will be detected authomatically  
+   #    The interface name of the DU module. Only valid if the node function is DU.
+   #  type: string
    cu_portc:
      default: 501
      description: |

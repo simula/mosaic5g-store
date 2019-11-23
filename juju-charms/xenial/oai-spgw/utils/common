@@ -102,6 +102,29 @@ user_conf(){
 
   juju-log "Setting up network configuration in the spgw.conf file"
 
+  
+
+  sgw_iface=`config-get sgw-eth`
+  pgw_iface=`config-get pgw-eth`
+  #sgw_iface="none"
+  #pgw_iface="none"
+  if [ "$sgw_iface" == "none" ] || [ "$pgw_iface" == "none" ]; then
+      ip_addr=`unit-get public-address`
+      for interface in $(ls /sys/class/net); do
+          if [ `ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"` != "" ]; then
+            ipv4=`ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
+            if [ $ipv4 == $ip_addr ] ; then
+                if [ "$sgw_iface" == "none" ] ; then
+                    sgw_iface=$interface
+                fi
+                if [ "$pgw_iface" == "none" ] ; then
+                    pgw_iface=$interface  
+                fi
+                break
+            fi
+          fi
+      done
+  fi
   sgw_ipv4=`get_eth_ip $sgw_iface`
   pgw_ipv4=`get_eth_ip $pgw_iface`
 
@@ -118,7 +141,23 @@ user_conf(){
   sed -r -i "/PGW_MASQUERADE_SGI/ s/\".*\";/\"$pgw_masquerade\";/" $spgw_conf
 
   #DNS
-  sed -r -i "/DEFAULT_DNS_IPV4_ADDRESS/ s/\".*\"/\"$DEFAULT_DNS_IPV4_ADDRESS\"/" $spgw_conf
+  if [ $DEFAULT_DNS_IPV4_ADDRESS == "127.0.0.1" ]; then
+      ip_addr=`unit-get public-address`
+      for interface in $(ls /sys/class/net); do
+          if [ `ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"` != "" ]; then      
+            ipv4=`ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
+            if [ $ipv4 == $ip_addr ] ; then
+                  dns=$(nmcli device  show $interface |grep -i dns)
+                  DEFAULT_DNS_IPV4_ADDRESS_CURRENT="$(cut -d':' -f2 <<<"$dns")"
+                  DEFAULT_DNS_IPV4_ADDRESS_CURRENT=`echo $DEFAULT_DNS_IPV4_ADDRESS_CURRENT`
+                  break
+            fi
+          fi
+      done
+  else
+    DEFAULT_DNS_IPV4_ADDRESS_CURRENT=$DEFAULT_DNS_IPV4_ADDRESS
+  fi
+  sed -r -i "/DEFAULT_DNS_IPV4_ADDRESS/ s/\".*\"/\"$DEFAULT_DNS_IPV4_ADDRESS_CURRENT\"/" $spgw_conf
   sed -r -i "/DEFAULT_DNS_SEC_IPV4_ADDRESS/ s/\".*\"/\"$DEFAULT_DNS_SEC_IPV4_ADDRESS\"/" $spgw_conf
 
   if [ $ue_mtu -le 1500 ] &&  [ $ue_mtu -ge 256 ]; then

@@ -32,10 +32,25 @@ oai-ran.enb-conf-set $du_conf
 #node_func=`config-get node_function`
 #if [ "$node_func" == "du" ] || [ "$node_func" == "DU" ] ; then
 
-    du_ip_addr=`ifconfig $(config-get du_if_name) | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
+    du_ip_addr=`unit-get public-address`
+    #du_iface_name=`config-get du_if_name`
+    du_iface_name="none"
+    if [ "$du_iface_name" == "none" ] ; then
+        for interface in $(ls /sys/class/net); do
+            if [ `ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"` != "" ]; then
+                ip_addr=`ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
+                if [ "$ip_addr" == $du_ip_addr ] ; then
+                    du_iface_name=$interface
+                    break
+                fi
+            fi
+        done
+    fi
+    #du_ip_addr=`ifconfig $(config-get du_if_name) | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
     #relation-set DUIP=`config-get du_ip_addr`
     relation-set DUIP=$du_ip_addr
-    relation-set DUIF=`config-get du_if_name`
+    relation-set DUIF=$du_iface_name
+    #relation-set DUIF=`config-get du_if_name`
     relation-set DUPORTC=`config-get du_portc`
     relation-set DUPORTD=`config-get du_portd`
 
