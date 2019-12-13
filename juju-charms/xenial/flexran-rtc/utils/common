@@ -41,19 +41,19 @@ set_env(){
 
 check_flexran_process(){
 
-#IS_RUNNING=`service rtc status`
-#if [[ $IS_RUNNING =~ .*running.* ]]; then
-#fi
+    #IS_RUNNING=`service rtc status`
+    #if [[ $IS_RUNNING =~ .*running.* ]]; then
+    #fi
 
-IS_ACTIVE=`systemctl is-active snap.flexran.daemon.service`
+    IS_ACTIVE=`systemctl is-active snap.flexran.daemon.service`
 
-if [ "$IS_ACTIVE" == "active" ]; then
-   juju-log "Flexran service is running" 
-   status=0
-else
-   juju-log "Flexran service is not running"
-   status=1
-fi
+    if [ "$IS_ACTIVE" == "active" ]; then
+        juju-log "Flexran service is running" 
+        status=0
+    else
+        juju-log "Flexran service is not running"
+        status=1
+    fi
 
 }
 

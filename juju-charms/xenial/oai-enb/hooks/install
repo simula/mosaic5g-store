@@ -29,26 +29,26 @@ install_packages(){
     
     gitAlreadyInstalled=$(dpkg --get-selections snapd 2>/dev/null | grep -c 'install') || true
     if [ ! $gitAlreadyInstalled -eq 1 ]; then # If git is NOT installed
-	apt-get install -y --force-yes snapd # Ensure necessary git dependency exist.
+	    apt-get install -y --force-yes snapd # Ensure necessary git dependency exist.
     fi
 
     gitAlreadyInstalled=$(dpkg --get-selections git 2>/dev/null | grep -c 'install') || true
     if [ ! $gitAlreadyInstalled -eq 1 ]; then # If git is NOT installed
-	apt-get install -y --force-yes git # Ensure necessary git dependency exist.
+	    apt-get install -y --force-yes git # Ensure necessary git dependency exist.
     fi
     atAlreadyInstalled=$(dpkg --get-selections at 2>/dev/null | grep -c 'install') || true
     if [ ! $atAlreadyInstalled -eq 1 ]; then 
-	# If at command is NOT installed
-	apt-get install -y --force-yes at
-	# Ensure at command exists to let juju reschedule this hook after rebooting the machine.
+        # If at command is NOT installed
+        apt-get install -y --force-yes at
+        # Ensure at command exists to let juju reschedule this hook after rebooting the machine.
     fi
     virtwhatAlreadyInstalled=$(dpkg --get-selections virt-what 2>/dev/null | grep -c 'install') || true
     if [ ! $virtwhatAlreadyInstalled -eq 1 ]; then 
-	apt-get install -y --force-yes virt-what || true 
+    	apt-get install -y --force-yes virt-what || true 
     fi
     cpufreqAlreadyInstalled=$(dpkg --get-selections cpufrequtils 2>/dev/null | grep -c 'install') || true
     if [ ! $cpufreqAlreadyInstalled -eq 1 ]; then 
-	apt-get install -y --force-yes cpufrequtils
+	    apt-get install -y --force-yes cpufrequtils
     fi
 }
 
@@ -59,11 +59,11 @@ clone_repro(){
 
     #everytime refresh the installation 
     if [ -d "$mosaic_path" ]; then  
-	cd $mosaic_path
-	git reset --hard HEAD
-	cd - 
+        cd $mosaic_path
+        git reset --hard HEAD
+        cd - 
     else
-	git clone https://gitlab.eurecom.fr/mosaic5g/mosaic5g.git $mosaic_path
+    	git clone https://gitlab.eurecom.fr/mosaic5g/mosaic5g.git $mosaic_path
     fi
 }
 
@@ -71,9 +71,8 @@ set_cpu_freq(){
 #getconf _NPROCESSORS_CONF
     num_cpu=`nproc`
     num_cpu=$((num_cpu-1))
-    for i in `seq 0 $num_cpu`;
-    do 
-	cpufreq-set -g performance -c $i || true 
+    for i in `seq 0 $num_cpu`; do
+	    cpufreq-set -g performance -c $i || true 
     done 
     #lsmod | grep intel_powerclamp
     #[ $? -eq 0 ] && (rmmod intel_powerclamp || true)
@@ -91,10 +90,10 @@ build_oai_ran(){
  #   fi
     
     if [ "$snap" == "edge" ] || [ "$snap" == "beta" ] ; then
-	juju-log "Installing OAI-RAN snap"
+	    juju-log "Installing OAI-RAN snap"
     else
-	juju-log "channel $snap is not supported, use edge or beta"
-	snap="edge"
+        juju-log "channel $snap is not supported, use edge or beta"
+        snap="edge"
     fi
 
     if [ -z "$(snap list oai-ran)" ] ; then
@@ -110,9 +109,28 @@ init_oai_ran(){
     oai-ran.stop-all || true 
 
     #check oai ran func 
+<<<<<<< Updated upstream
     if [ "$node_func" != "enb" -o  "$node_func" != "ENB" -o  "$node_func" != "eNB" ] ; then
 	echo "The requested $node_func is not supported, reverting to enb."
 	echo "enb" > $CHARM_DIR/.node_func
+=======
+    if [ "$node_func" != "cu" -o  "$node_func" != "CU" ]; then
+        echo "cu" > $CHARM_DIR/.node_func
+        echo "yes"  > $CHARM_DIR/.cu_active
+    elif [ "$node_func" != "du" -o  "$node_func" != "DU" ] ; then
+        echo "du" > $CHARM_DIR/.node_func
+        echo "yes"  > $CHARM_DIR/.du_avtive
+    elif [ "$node_func" != "rru" -o  "$node_func" != "RRU" ] ; then
+        echo "rru" > $CHARM_DIR/.node_func
+        echo "yes"  > $CHARM_DIR/.rru_avtive
+    elif [ "$node_func" != "rcc" -o  "$node_func" != "RCC" ] ; then
+        echo "rcc" > $CHARM_DIR/.node_func
+        echo "yes"  > $CHARM_DIR/.rcc_avtive
+    else 
+        juju-log "The requested $node_func is not supported, reverting to enb."
+        echo "enb" > $CHARM_DIR/.node_func
+        echo "yes"  > $CHARM_DIR/.enb_avtive
+>>>>>>> Stashed changes
     fi
     
     # just a flag for start script to run the service

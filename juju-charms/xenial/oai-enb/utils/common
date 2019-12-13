@@ -35,8 +35,15 @@ set_env(){
     enb_conf=/var/snap/oai-ran/current/enb.band7.tm1.50PRB.usrpb210.conf
     cu_conf=/var/snap/oai-ran/current/cu.lte.conf
     du_conf=/var/snap/oai-ran/current/du.lte.band7.10MHz.if4p5.conf
+<<<<<<< Updated upstream
     conf_file=`oai-ran.enb-conf-get`
     
+=======
+    rcc_conf=/var/snap/oai-ran/current/rcc.band7.tm1.if4p5.50PRB.conf
+    rru_conf=/var/snap/oai-ran/current/rru.oaisim.conf
+    conf_file=$(oai-ran.enb-conf-get)
+
+>>>>>>> Stashed changes
     # not needed anymore, keeping these for a while
     openair_path=$mosaic_path/oai-ran
     build_path=$openair_path/cmake_targets
@@ -154,16 +161,63 @@ start_enb_process(){
     if [ $status -eq 1 ]; then
 	echo "no"  > $CHARM_DIR/.oairan_running
         status-set blocked "Not Running, check the config file"
+<<<<<<< Updated upstream
        exit 1
     else
 	echo "yes"  > $CHARM_DIR/.oairan_running
 	juju-log "Running OAI $node_func"
 	status-set active "Running"
     fi 
+=======
+        if [ "$node_func" = "cu" ]; then
+            reset_cu_running_state
+        fi
+        if [ "$node_func" = "rcc" ]; then
+            reset_rcc_running_state
+        fi
+        #relation-set ${node_func}_running="no"
+        exit 1
+    else
+        echo "yes" >$CHARM_DIR/.oairan_running
+        #relation-set ${node_func}_running="yes"
+        if [ "$node_func" = "cu" ]; then
+            set_cu_running_state
+        fi
+        if [ "$node_func" = "rcc" ]; then
+            set_rcc_running_state
+        fi
+        juju-log "Running OAI $node_func"
+        status-set active "Running"
+    fi
+>>>>>>> Stashed changes
 }
 
 
+<<<<<<< Updated upstream
 add_plmn(){
+=======
+
+set_rcc_running_state() {
+    RCC_UNIT_RUNNING=0
+    if [ -n "$(relation-ids rcc)" ]; then
+        for rcc_id in $(relation-ids rcc); do
+            relation-set -r $rcc_id rcc_running=yes
+			echo "yes" >$CHARM_DIR/.rcc_running
+        done 
+    fi
+}
+reset_rcc_running_state() {
+    if [ -n "$(relation-ids rcc)" ]; then
+        juju-log "208 found a realtion : The rcc is NOT running"
+        for rcc_id in $(relation-ids rcc); do
+            relation-set -r $rcc_id rcc_running=no
+			echo "no" >$CHARM_DIR/.rcc_running
+        done
+    fi
+}
+
+add_plmn() {
+>>>>>>> Stashed changes
 
 set_env    
 
@@ -361,10 +415,103 @@ disable_f1(){
     
     close-port 22100/tcp    || true
     oai-ran.enb-conf-set $enb_conf
+<<<<<<< Updated upstream
     set_env
 }
 
 
+=======
+
+    echo "no"  > $CHARM_DIR/.du_active
+    echo "no"  > $CHARM_DIR/.cu_active
+    echo "no" >$CHARM_DIR/.cu_running
+    echo "no" >$CHARM_DIR/.du_running
+
+    echo "no"  > $CHARM_DIR/.rru_active
+    echo "no"  > $CHARM_DIR/.rcc_active
+    echo "no" >$CHARM_DIR/.rru_running
+    echo "no" >$CHARM_DIR/.rcc_running
+
+    set_env
+}
+###############################################################################
+
+enable_rcc_if4p5() {
+    set_env
+    #enable_cu_f1 $cu_iface_name $cu_ip_addr $DUIP `config-get cu_portc` $DUPORTC `config-get cu_portd` $DUPORTD
+    # TODO to change the config 
+    #sed -r -i "/CU_INTERFACE_NAME_FOR_F1U/ s/\".+\"/\"$1\"/" $conf_file
+    #sed -r -i "/CU_IPV4_ADDRESS_FOR_F1U/ s/\".+\"/\"$2\"/" $conf_file
+
+    # local_if_name_rcc local_address_rcc remote_address_rru local_portc_rrc remote_portc_rru local_portd_rcc remote_portd_rru
+    sed -r -i "/local_if_name/ s/\".+\"/\"$1\"/" $conf_file
+    sed -r -i "/local_address/ s/\".+\"/\"$2\"/" $conf_file
+
+    if [ $# -ge 3 ]; then
+        sed -r -i "/remote_address/ s/\".+\"/\"$3\"/" $conf_file
+        sed -r -i "/local_portc/ s/\".+\"/\"$4\"/" $conf_file
+        sed -r -i "/remote_portc/ s/\".+\"/\"$5\"/" $conf_file
+        sed -r -i "/local_portd/ s/\".+\"/\"$6\"/" $conf_file
+        sed -r -i "/remote_portd/ s/\".+\"/\"$7\"/" $conf_file
+    fi
+
+    sed -r -i "s/(tr_preference[ ]*=[ ]*)\"local_mac\"/\1\"f1\"/" $conf_file
+    #  sed -r -i  "s/(tr_n_preference[ ]*=[ ]*)\".*\"/\1\"f1\"/" $conf_file
+
+    open-port 22100/tcp
+    oai-ran.enb-conf-set $rcc_conf
+    set_env
+}
+
+enable_rru_if4p5() {
+    set_env
+    # TODO to change the config 
+    #sed -r -i "/DU_INTERFACE_NAME_FOR_F1U/ s/\".+\"/\"$1\"/" $conf_file
+    #sed -r -i "/DU_IPV4_ADDRESS_FOR_F1U/ s/\".+\"/\"$2\"/" $conf_file
+
+    # local_if_name_rru local_address_rru remote_address_rcc local_portc_rru remote_portc_rcc local_portd_rru remote_portd_rcc
+    sed -r -i "/local_if_name/ s/\".+\"/\"$1\"/" $conf_file
+    sed -r -i "/local_address/ s/\".+\"/\"$2\"/" $conf_file
+
+    if [ $# -ge 3 ]; then
+        sed -r -i "/remote_address/ s/\".+\"/\"$3\"/" $conf_file
+        sed -r -i "/local_portc/ s/\".+\"/\"$4\"/" $conf_file
+        sed -r -i "/remote_portc/ s/\".+\"/\"$5\"/" $conf_file
+        sed -r -i "/local_portd/ s/\".+\"/\"$6\"/" $conf_file
+        sed -r -i "/remote_portd/ s/\".+\"/\"$7\"/" $conf_file
+    fi
+
+    #sed -r -i "s/(tr_n_preference[ ]*=[ ]*)\"local_RRC\"/\1\"f1\"/" $conf_file
+
+    open-port 22100/tcp
+    oai-ran.enb-conf-set $du_conf
+    set_env
+}
+
+disable_if4p5() {
+    # TODO to change the config 
+    #set_env
+    #sed -r -i  "s/(tr_s_preference[ ]*=[ ]*)\"f1\"/\1\"local_mac\"/" $conf_file
+
+    sed -r -i  "s/(tr_n_preference[ ]*=[ ]*)\"f1\"/\1\"local_RRC\"/" $conf_file
+
+    close-port 22100/tcp || true
+    oai-ran.enb-conf-set $enb_conf
+
+    echo "no"  > $CHARM_DIR/.du_active
+    echo "no"  > $CHARM_DIR/.cu_active
+    echo "no" >$CHARM_DIR/.du_running
+    echo "no" >$CHARM_DIR/.cu_running
+
+    echo "no"  > $CHARM_DIR/.rru_active
+    echo "no"  > $CHARM_DIR/.rcc_active
+    echo "no" >$CHARM_DIR/.rru_running
+    echo "no" >$CHARM_DIR/.rcc_running
+
+    set_env
+}
+#################################################################################
+>>>>>>> Stashed changes
 # get from http://www.linuxjournal.com/content/validating-ip-address-bash-script
 validate_ip() {
 

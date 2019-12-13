@@ -56,26 +56,26 @@ if [ "$node_func" == "eNodeB_3GPP_BBU" ] || [ "$node_func" == "NGFI_RCC_IF4p5" ]
     echo "$rru_running" >  $CHARM_DIR/.rru_running
     
     if [ -z "$rru_running" ]; then
-	juju-log "rru_running: Data not available yet, exit silently"
-	exit 0
+	    juju-log "rru_running: Data not available yet, exit silently"
+	    exit 0
     fi
 
     if [ -z "$rru_addr" ]; then
-	juju-log "rru_ip_addr: Data not available yet, exit silently"
-	exit 0
+        juju-log "rru_ip_addr: Data not available yet, exit silently"
+        exit 0
     fi
     
     if [ -z "$rru_port" ]; then
-	juju-log "rru_port: Data not available yet, exit silently"
-	exit 0
+        juju-log "rru_port: Data not available yet, exit silently"
+        exit 0
     fi
     
     
     file_config=`cat $CHARM_DIR/.config_file`
 
-###############################################################################
+    ###############################################################################
     juju-log "Setting up configuration in the "$file_config" file"
-###############################################################################
+    ###############################################################################
 
     # eNB relation could be 1:n, so for each rrh, we need to add blocks similar to mme_ip address 
     

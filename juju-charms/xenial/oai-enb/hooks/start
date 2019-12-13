@@ -42,6 +42,8 @@ fi
     
 MME_UNIT_RUNNING=0
 MME_UNIT_PRESENT=1
+RCC_UNIT_RUNNING=0
+RCC_UNIT_PRESENT=0
 RRU_UNIT_RUNNING=0
 RRU_UNIT_PRESENT=0 
 RTC_UNIT_RUNNING=0
@@ -58,7 +60,12 @@ juju-log "OAI-RAN function is $node_func"
 #fi
 
 if [ "$(cat $CHARM_DIR/.rru_active)" == "yes" ]; then
+<<<<<<< Updated upstream
     RRU_UNIT_PRESENT=1;
+=======
+	#RRU_UNIT_PRESENT=1
+	RCC_UNIT_PRESENT=1
+>>>>>>> Stashed changes
 fi
 
 if [ -f $CHARM_DIR/.rru_running ]; then
@@ -73,15 +80,76 @@ else
     rtc_running="no"
 fi
 
+<<<<<<< Updated upstream
 if [ -f $CHARM_DIR/.mme_running ] ;then
     mme_running=`cat $CHARM_DIR/.mme_running`
 else 
     mme_running="no"
+=======
+if [ "$mme_running" == "remote" ] || [ "$node_func" == "du" ] || [ "$node_func" == "DU" ] || [ "$node_func" == "rru" ] || [ "$node_func" == "RRU" ]; then
+	MME_UNIT_RUNNING=1
+>>>>>>> Stashed changes
 fi
  
 if [ "$mme_running" == "remote" ] || [ "$node_func" == "du" ] || [ "$node_func" == "DU" ]; then 
     MME_UNIT_RUNNING=1
 fi 
+
+<<<<<<< Updated upstream
+=======
+
+if [ $CU_UNIT_PRESENT -gt 0 ]; then
+	# here we are at DU check the CU
+	if [ -n "$(relation-ids du)" ]; then
+		for du_id in $(relation-ids du); do
+			juju-log "Relation id with cu is $du_id"
+			for unit in $(relation-list -r $du_id); do
+				cu_running=$(relation-get -r $du_id cu_running $unit)
+				if [ "$cu_running" == "yes" ]; then
+					CU_UNIT_RUNNING=$((CU_UNIT_RUNNING + 1))
+					echo "yes" >$CHARM_DIR/.cu_running
+				else
+					echo "no" >$CHARM_DIR/.cu_running
+				fi
+#				juju-log "107 unit=$unit CU_UNIT_RUNNING $CU_UNIT_RUNNING"
+#				echo "107 unit=$unit CU_UNIT_RUNNING $CU_UNIT_RUNNING"
+			done
+		done
+
+	else
+		juju-log "cu relationd with DU NOT found"
+	fi
+#else
+#	juju-log "The entity is NOT DU"
+#	echo "The entity is NOT DU"
+fi
+>>>>>>> Stashed changes
+
+if [ $RCC_UNIT_PRESENT -gt 0 ]; then
+	# here we are at RRU check the RCC
+	if [ -n "$(relation-ids rru)" ]; then
+		for rru_id in $(relation-ids rru); do
+			juju-log "Relation id with rcc is $rru_id"
+			for unit in $(relation-list -r $rru_id); do
+				rcc_running=$(relation-get -r $rru_id rcc_running $unit)
+				if [ "$rcc_running" == "yes" ]; then
+					RCC_UNIT_RUNNING=$((RCC_UNIT_RUNNING + 1))
+					echo "yes" >$CHARM_DIR/.rcc_running
+				else
+					echo "no" >$CHARM_DIR/.rcc_running
+				fi
+#				juju-log "107 unit=$unit RCC_UNIT_RUNNING $RCC_UNIT_RUNNING"
+#				echo "107 unit=$unit RCC_UNIT_RUNNING $RCC_UNIT_RUNNING"
+			done
+		done
+
+	#else
+	#	juju-log "rcc relationd with RRU NOT found"
+	#fi
+#else
+#	juju-log "The entity is NOT RRU"
+#	echo "The entity is NOT RRU"
+fi
 
 
 if [ -n "$(relation-ids mme)" ]; then
