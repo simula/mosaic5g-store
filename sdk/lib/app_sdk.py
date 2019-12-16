@@ -113,7 +113,7 @@ class app_handler:
 	else:
 	    self.log.info(str(self.app_name) + ' loads status but file does not exists')
 
-class client_handler(tornado.websocket.WebSocketHandler):
+class websocket_handler(tornado.websocket.WebSocketHandler):
 	
     def __init__(self, *args, **kwargs):
 	self.log = kwargs['handler'].log
@@ -123,7 +123,7 @@ class client_handler(tornado.websocket.WebSocketHandler):
 
 	del kwargs['handler']        
         
-        super(client_handler,self).__init__(*args, **kwargs)
+        super(websocket_handler,self).__init__(*args, **kwargs)
 
     def check_origin(self, origin):
         return True
@@ -226,10 +226,10 @@ class app_builder:
         """
         
         """
-	self.handler_list.append(("/" + uri, client_handler, {'handler': handler}))
+	self.handler_list.append(("/" + uri, websocket_handler, {'handler': handler}))
 
     def add_runtime_options(self, uri, handler):
-	handler = ("/" + uri, client_handler, {'handler': handler})
+	handler = ("/" + uri, websocket_handler, {'handler': handler})
 	self.handler_list.append(handler)
 	self.app.add_handlers(self.address,[handler,])
 	
