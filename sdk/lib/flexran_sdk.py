@@ -1302,6 +1302,14 @@ class stats_manager(object):
         """
         return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['rnti']
 
+    def get_ue_imsi(self, enb=0, ue=0):
+        """!@brief Get the IMSI of a UE
+        @param enb: index of eNB
+        @param ue: index of UE
+        """
+        return self.stats_data['eNB_config'][enb]['UE']['ueConfig'][ue]['imsi']
+
+
     def get_rnti_list(self, enb = 0):
         """!@brief get a list of all RNTIs for a specific eNB
         """
