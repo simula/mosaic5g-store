@@ -206,6 +206,30 @@ class websocket_handler(tornado.websocket.WebSocketHandler):
 	            'params': params
 		   })
 
+class request_handler(tornado.web.RequestHandler):
+    def initialize(self, **kwargs):
+        self.handlers = kwargs
+
+    def get(self, *args):
+        if self.handlers['get'] is None:
+            raise tornado.web.HTTPError(405)
+        self.handlers['get'](self, *args)
+
+    def post(self, *args):
+        if self.handlers['post'] is None:
+            raise tornado.web.HTTPError(405)
+        self.handlers['post'](self, *args)
+
+    def delete(self, *args):
+        if self.handlers['delete'] is None:
+            raise tornado.web.HTTPError(405)
+        self.handlers['delete'](self, *args)
+
+    def put(self, *args):
+        if self.handlers['put'] is None:
+            raise tornado.web.HTTPError(405)
+        self.handlers['put'](self, *args)
+
 class app_builder:
     
     def __init__(self, log, app="test",address="localhost", port=8080):
@@ -232,7 +256,25 @@ class app_builder:
 	handler = ("/" + uri, websocket_handler, {'handler': handler})
 	self.handler_list.append(handler)
 	self.app.add_handlers(self.address,[handler,])
-	
+
+    def add_http_handler(self, uri, get = None, post = None, delete = None, put = None):
+        """
+        adds a HTTP/REST endpoint. Cf. https://www.tornadoweb.org/en/stable/web.html
+
+        @param uri    the URI at which to install the handler: example with one
+                      parameter is "number/([0-9]+)" which captures one
+                      parameter
+        @param get    a Handler for the HTTP GET method. The handlers signature
+                      is h(client, *args) where client is a
+                      tornado.web.RequestHandler and args is an unnamed list of
+                      captured URL parameters
+        @param post   a Handler for the HTTP post method as get
+        @param delete a Handler for the HTTP delete method as get
+        @param put    a Handler for the HTTP put method as get
+        """
+        funcs = { 'get' : get, 'post' : post, 'delete' : delete, 'put' : put}
+        self.handler_list.append(("/" + uri, request_handler, funcs))
+
     def send_apps_list(self, client, message):
 	list_apps = []
 	for i in self.handler_list:
