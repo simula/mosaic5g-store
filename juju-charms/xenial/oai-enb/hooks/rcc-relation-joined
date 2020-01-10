@@ -1,0 +1,56 @@
+#!/bin/bash
+# Copyright 2016-2018 Eurecom and Mosaic5G Platforms Authors
+# Licensed to the Mosaic5G under one or more contributor license
+# agreements. See the NOTICE file distributed with this
+# work for additional information regarding copyright ownership.
+# The Mosaic5G licenses this file to You under the
+# Apache License, Version 2.0  (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#-------------------------------------------------------------------------------
+# For more information about the Mosaic5G:
+#      contact@mosaic5g.io
+#
+################################################################################
+# file rcc-relation-joint
+# brief manage the if4p5 interface between RCC and RRU
+# author navid.nikaein@eurecom.fr 
+
+set -eux
+source $CHARM_DIR/utils/common
+set_env
+
+node_func=`config-get node_function`
+if [ "$node_func" == "rcc" ] || [ "$node_func" == "RCC" ] ; then
+
+    status-set maintenance "rcc-relation-joint hook"
+    oai-ran.enb-conf-set $rcc_conf
+
+    rcc_ip_addr=`unit-get public-address`
+    rcc_iface_name="none"
+    if [ "$rcc_iface_name" == "none" ] ; then
+        for interface in $(ls /sys/class/net); do
+            if [ `ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"` != "" ]; then
+                ip_addr=`ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
+                if [ "$ip_addr" == $rcc_ip_addr ] ; then
+                    rcc_iface_name=$interface
+                    break
+                fi
+            fi
+        done
+    fi
+    relation-set RCCIP=$rcc_ip_addr
+    relation-set RCCIF=$rcc_iface_name
+    relation-set RCCPORTC=`config-get rcc_portc`
+    relation-set RCCPORTD=`config-get rcc_portd`
+else
+    status-set blocked "Error, function $node_func does not have rcc relation"
+fi
