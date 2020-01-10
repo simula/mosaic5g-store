@@ -74,6 +74,10 @@ if [ -z "$(grep "$mmeipv4" $CHARM_DIR/mme_ips)"  ]; then
     add_mme_ip $mmeipv4
 fi
 
+juju-log "mobile_country_code=$mobile_country_code"
+echo "mobile_country_code=$mobile_country_code"
+juju-log "mobile_network_code=$mobile_network_code"
+echo "mobile_network_code=$mobile_network_code"
 if [ -z "$(grep "$mobile_network_code" $CHARM_DIR/plmn_list)"  ]; then
     add_plmn $mobile_country_code $mobile_network_code
 fi

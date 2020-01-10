@@ -27,9 +27,10 @@
 set -eux
 source $CHARM_DIR/utils/common
 set_env
-status-set maintenance "cu-relation-changed hook"
-#node_func=`config-get node_function`
-#if [ "$node_func" == "cu" ] || [ "$node_func" == "CU" ] ; then
+
+node_func=`config-get node_function`
+if [ "$node_func" == "cu" ] || [ "$node_func" == "CU" ] ; then
+    status-set maintenance "cu-relation-changed hook"
 
     DUIP=`relation-get DUIP`
     DUIF=`relation-get DUIF`
@@ -73,4 +74,7 @@ status-set maintenance "cu-relation-changed hook"
     #enable_cu_f1 `config-get cu_if_name` `config-get cu_ip_addr` $DUIP `config-get cu_portc` $DUPORTC `config-get cu_portd` $DUPORTD
     
     juju-log "CU config done"
-#fi 
+else
+    status-set blocked "Error, function $node_func does not have cu relation"
+fi
+

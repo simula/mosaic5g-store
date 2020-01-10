@@ -23,21 +23,39 @@
 # file update-status
 # brief called to provide a feedback to the user about the status of the service
 # author  navid.nikaein@eurecom.fr 
-
+juju-log "update-status 26 update status"
+echo "update-status 26 update status"
 set -eux
 source $CHARM_DIR/utils/common
+juju-log "update-status 30 set_env"
+echo "update-status 30 set_env"
 set_env
 
+juju-log "update-status 34 check_enb_process"
+echo "update-status 34 check_enb_process"
 check_enb_process || true
 if [ $status -eq 1 ]; then
+
     echo "no"  > $CHARM_DIR/.enb_running
     juju-log "OAI eNB is not running"
     status-set blocked "Not Running"
+    ##############
+    if [ "$(cat $CHARM_DIR/.node_func)"  == "du" ]; then
+        echo "yes"  > $CHARM_DIR/.du_active
+    fi
+    if [ "$(cat $CHARM_DIR/.node_func)"  == "rru" ]; then
+        echo "yes"  > $CHARM_DIR/.rru_active
+    fi
+    ##################
     $CHARM_DIR/hooks/start
 else 
-    status-set active "Running"
     if [ "$(cat $CHARM_DIR/.node_func)"  == "cu" ]; then
+       status-set active "Running"
        set_cu_running_state
+    fi 
+    if [ "$(cat $CHARM_DIR/.node_func)"  == "rcc" ]; then
+       status-set active "Running"
+       set_rcc_running_state
     fi 
     #application-version-set oai-enb-version
 fi

@@ -27,10 +27,12 @@
 set -eux
 source $CHARM_DIR/utils/common
 set_env
-status-set maintenance "cu-relation-joint hook"
-oai-ran.enb-conf-set $cu_conf
-#node_func=`config-get node_function`
-#if [ "$node_func" == "cu" ] || [ "$node_func" == "CU" ] ; then
+
+node_func=`config-get node_function`
+if [ "$node_func" == "cu" ] || [ "$node_func" == "CU" ] ; then
+    status-set maintenance "cu-relation-joint hook"
+    oai-ran.enb-conf-set $cu_conf
+
     cu_ip_addr=`unit-get public-address`
     cu_iface_name="none"
     #cu_iface_name=`config-get cu_if_name`
@@ -53,10 +55,6 @@ oai-ran.enb-conf-set $cu_conf
     relation-set CUPORTC=`config-get cu_portc`
     relation-set CUPORTD=`config-get cu_portd`
 
-
-    
-#else
-#    disable_f1
-#    echo "no" > $CHARM_DIR/.rru_active
-    
-#fi 
+else
+    status-set blocked "Error, function $node_func does not have cu relation"
+fi

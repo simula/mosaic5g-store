@@ -13,8 +13,8 @@ options:
      description: |
        Diameter realm of the MME. HSS and EPC have to have the same. NO empty value.
      type: string
-   eth:
-     default: "eth0"
-     description: |
-       This is usefull especially when you are in manual environment so you have your own machines. The default value is eth0. NO empty value.
-     type: string
+  #  eth:
+  #    default: "eth0"
+  #    description: |
+  #      This is usefull especially when you are in manual environment so you have your own machines. The default value is eth0. NO empty value.
+  #    type: string

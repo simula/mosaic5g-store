@@ -27,11 +27,12 @@
 set -eux
 source $CHARM_DIR/utils/common
 set_env
-status-set maintenance "du-relation-joint hook"
-oai-ran.enb-conf-set $du_conf
-#node_func=`config-get node_function`
-#if [ "$node_func" == "du" ] || [ "$node_func" == "DU" ] ; then
+node_func=`config-get node_function`
+if [ "$node_func" == "du" ] || [ "$node_func" == "DU" ] ; then
 
+    status-set maintenance "du-relation-joint hook"
+    oai-ran.enb-conf-set $du_conf
+    
     du_ip_addr=`unit-get public-address`
     #du_iface_name=`config-get du_if_name`
     du_iface_name="none"
@@ -54,7 +55,6 @@ oai-ran.enb-conf-set $du_conf
     relation-set DUPORTC=`config-get du_portc`
     relation-set DUPORTD=`config-get du_portd`
 
-#else
-#    disable_f1
-#    echo "no" > $CHARM_DIR/.rru_active 
-#fi 
+else
+    status-set blocked "Error, function $node_func does not have du relation"
+fi

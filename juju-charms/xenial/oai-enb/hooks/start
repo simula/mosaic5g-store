@@ -44,16 +44,18 @@ CU_UNIT_RUNNING=0
 CU_UNIT_PRESENT=0
 MME_UNIT_RUNNING=0
 MME_UNIT_PRESENT=1
+RCC_UNIT_RUNNING=0
+RCC_UNIT_PRESENT=0
 RRU_UNIT_RUNNING=0
 RRU_UNIT_PRESENT=0
 RTC_UNIT_RUNNING=0
-RTC_UNIT_PRESENT=1
+RTC_UNIT_PRESENT=0
 
 node_func=$(cat $CHARM_DIR/.node_func)
 juju-log "OAI-RAN function is $node_func"
-#if [ "$node_func" != "eNodeB_IP" ] ; then
+# if [ "$node_func" != "enb" ] || [ "$node_func" != "cu" ] || [ "$node_func" != "CU" ] || [ "$node_func" != "rcc" ] || [ "$node_func" != "RCC" ] ; then
 #    MME_UNIT_PRESENT=1;
-#fi
+# fi
 
 #if [ "$(config-get flexran_active)" == "yes" ] ; then
 #    RTC_UNIT_PRESENT=1;
@@ -65,7 +67,8 @@ if [ "$(cat $CHARM_DIR/.du_active)" == "yes" ]; then
 fi
 
 if [ "$(cat $CHARM_DIR/.rru_active)" == "yes" ]; then
-	RRU_UNIT_PRESENT=1
+	# flag indicating that there is a remote RCC unit
+	RCC_UNIT_PRESENT=1
 fi
 
 if [ -f $CHARM_DIR/.rru_running ]; then
@@ -86,17 +89,15 @@ else
 	mme_running="no"
 fi
 
-if [ "$mme_running" == "remote" ] || [ "$node_func" == "du" ] || [ "$node_func" == "DU" ]; then
+if [ "$mme_running" == "remote" ] || [ "$node_func" == "du" ] || [ "$node_func" == "DU" ] || [ "$node_func" == "rru" ] || [ "$node_func" == "RRU" ]; then
 	MME_UNIT_RUNNING=1
 fi
 
-# here we are at DU check the CU
 if [ $CU_UNIT_PRESENT -gt 0 ]; then
-#	juju-log "The entity is DU"
-#	echo "The entity is DU"
+	# here we are at DU check the CU
 	if [ -n "$(relation-ids du)" ]; then
 		for du_id in $(relation-ids du); do
-			juju-log ""$du_id""
+			juju-log "Relation id with cu is $du_id"
 			for unit in $(relation-list -r $du_id); do
 				cu_running=$(relation-get -r $du_id cu_running $unit)
 				if [ "$cu_running" == "yes" ]; then
@@ -105,22 +106,46 @@ if [ $CU_UNIT_PRESENT -gt 0 ]; then
 				else
 					echo "no" >$CHARM_DIR/.cu_running
 				fi
-#				juju-log "107 unit=$unit CU_UNIT_RUNNING $CU_UNIT_RUNNING"
-#				echo "107 unit=$unit CU_UNIT_RUNNING $CU_UNIT_RUNNING"
 			done
 		done
 
-#	else
-#		juju-log "cu relationd with DU NOT found"
+	else
+		#juju-log "cu relationd with DU NOT found"
+		juju-log "115 Waiting for F1-CUDU Relation with CU"
+		status-set maintenance "115 Add F1-CUDU relation with CU"
 	fi
-#else
-#	juju-log "The entity is NOT DU"
-#	echo "The entity is NOT DU"
+fi
+
+if [ $RCC_UNIT_PRESENT -gt 0 ]; then
+	
+	# here we are at RRU check the RCC
+	if [ -n "$(relation-ids rru)" ]; then
+		for rru_id in $(relation-ids rru); do
+			juju-log "Relation id with rcc is $rru_id"
+			for unit in $(relation-list -r $rru_id); do
+				rcc_running=$(relation-get -r $rru_id rcc_running $unit)
+				juju-log "128 rcc_running=$rcc_running"
+				echo "128 rcc_running=$rcc_running"
+				if [ "$rcc_running" == "yes" ]; then
+					RCC_UNIT_RUNNING=$((RCC_UNIT_RUNNING + 1))
+					echo "yes" >$CHARM_DIR/.rcc_running
+				else
+					echo "no" >$CHARM_DIR/.rcc_running
+				fi
+			done
+		done
+	else
+		#juju-log "rcc relationd with rcc NOT found"
+		juju-log "139 Waiting for FH-ECPRI Relation with RCC"
+		status-set maintenance "139 Add FH-ECPRI relation with RCC"
+	fi
+	juju-log "$RCC_UNIT_RUNNING RCC units are connected to the $node_func"
 fi
 
 if [ -n "$(relation-ids mme)" ]; then
 	#we start the service only if we have a relation
-
+	juju-log "relation mme is found"
+	echo "relation mme is found"
 	for mme_id in $(relation-ids mme); do
 		juju-log ""$mme_id""
 		#if the TAC is the same as before, the local setting won't change and so the relation-changed hook
@@ -138,23 +163,21 @@ if [ -n "$(relation-ids mme)" ]; then
 
 fi
 
-if [ -n "$(relation-ids rru)" ]; then
-	#we start the service only if we have a relation
-
-	for rru_id in $(relation-ids rru); do
-		juju-log ""$rru_id""
-		RRU_UNIT_PRESENT=1
-		relation-set -r "$rru_id" TARGET_HARDWARE=$(config-get target_hardware)
-		for rru_unit in $(relation-list -r $rru_id); do
-			rru_running=$(relation-get -r $rru_id RRU_RUNNING $rru_unit)
-			if [ "$rru_running" == "yes" ]; then
-				RRU_UNIT_RUNNING=$((RRU_UNIT_RUNNING + 1))
-			fi
-		done
-	done
-
-fi
-
+#if [ -n "$(relation-ids rru)" ]; then
+#	#we start the service only if we have a relation
+#	for rru_id in $(relation-ids rru); do
+#		juju-log ""$rru_id""
+#		RRU_UNIT_PRESENT=1
+#		relation-set -r "$rru_id" TARGET_HARDWARE=$(config-get target_hardware)
+#		for rru_unit in $(relation-list -r $rru_id); do
+#			rru_running=$(relation-get -r $rru_id RRU_RUNNING $rru_unit)
+#			if [ "$rru_running" == "yes" ]; then
+#				RRU_UNIT_RUNNING=$((RRU_UNIT_RUNNING + 1))
+#			fi
+#		done
+#	done
+#
+#fi
 if [ -n "$(relation-ids rtc)" ]; then
 	#we start the service only if we have a relation
 
@@ -176,84 +199,64 @@ if [ $MME_UNIT_PRESENT -gt 0 ]; then
 
 		if [ $RTC_UNIT_PRESENT -gt 0 ]; then
 			if [ $RTC_UNIT_RUNNING -gt 0 ]; then
-
-				if [ $RRU_UNIT_PRESENT -gt 0 ]; then
-					if [ $RRU_UNIT_RUNNING -gt 0 ]; then
-
-						if [ $CU_UNIT_PRESENT -gt 0 ]; then # node func shall be DU
-							if [ $CU_UNIT_RUNNING -gt 0 ]; then
-								start_enb_process $node_func
-							else
-								juju-log "Waiting for F1-CUDU Relation"
-								status-set maintenance "182 Add F1-CUDU relation"
-							fi
-						else # start either eNB or CU
-							start_enb_process $node_func
-						fi
-
-					else # RRU not running
-						juju-log "Waiting for RRU Relation"
-						status-set maintenance "Add RRU relation"
-					fi
-					# RRU not present
-				juju-log "199 CU_UNIT_PRESENT=$CU_UNIT_PRESENT"
-				echo "199 CU_UNIT_PRESENT=$CU_UNIT_PRESENT"
-				elif [ $CU_UNIT_PRESENT -gt 0 ]; then # node func shall be DU
-					juju-log "202 CU_UNIT_RUNNING=$CU_UNIT_RUNNING"
-					echo "202 CU_UNIT_RUNNING=$CU_UNIT_RUNNING"
-					if [ $CU_UNIT_RUNNING -gt 0 ]; then
+				########################################################
+				if [ $RCC_UNIT_PRESENT -gt 0 ]; then  # node func shall be RRU
+					if [ $RCC_UNIT_RUNNING -gt 0 ]; then
+						juju-log "node_func=$node_func"
+						echo "node_func=$node_func"
 						start_enb_process $node_func
-						juju-log "206 node_func=$node_func"
-						echo "206 node_func=$node_func"
-					else
-						juju-log "Waiting for F1-CUDU Relation"
-						status-set maintenance "Add F1-CUDU relation"
+					else # RCC not running
+						juju-log "209 Waiting for FH-ECPRI Relation with RCC"
+						status-set maintenance "209 Add FH-ECPRI relation with RCC"
 					fi
-				else # start either eNB or CU
-					juju-log "213 node_func=$node_func"
-					echo "213 node_func=$node_func"
+				elif [ $CU_UNIT_PRESENT -gt 0 ]; then # node func shall be DU
+					if [ $CU_UNIT_RUNNING -gt 0 ]; then
+						juju-log "node_func=$node_func"
+						echo "node_func=$node_func"
+						start_enb_process $node_func
+					else
+						juju-log "220 Waiting for F1-CUDU Relation with CU"
+						status-set maintenance "220 Add F1-CUDU relation with CU"
+					fi
+				else # start either eNB or DU or RRU
+					juju-log "node_func=$node_func"
+					echo "node_func=$node_func"
 					start_enb_process $node_func
 				fi
+				########################################################
 			else # RTC not running
 				juju-log "Waiting for RTC Relation"
 				status-set maintenance "Add RTC relation"
 			fi
-			# RTC not present but RRU present
-		elif [ $RRU_UNIT_PRESENT -gt 0 ]; then
-			if [ $RRU_UNIT_RUNNING -gt 0 ]; then
-
-				if [ $CU_UNIT_PRESENT -gt 0 ]; then # node func shall be DU
-					if [ $CU_UNIT_RUNNING -gt 0 ]; then
-						start_enb_process $node_func
-					else
-						juju-log "Waiting for F1-CUDU Relation"
-						status-set maintenance "216 Add F1-CUDU relation"
-					fi
-				else # start either eNB or CU
-					start_enb_process $node_func
-				fi
-
-			else # RRU not running
-				juju-log "Waiting for RRU Relation"
-				status-set maintenance "Add RRU relation"
+			########################################################
+		elif [ $RCC_UNIT_PRESENT -gt 0 ]; then  # node func shall be RRU
+			if [ $RCC_UNIT_RUNNING -gt 0 ]; then
+				juju-log "node_func=$node_func"
+				echo "node_func=$node_func"
+				start_enb_process $node_func
+			else # RCC not running
+				juju-log "238 Waiting for FH-ECPRI Relation with RCC"
+				status-set maintenance "238 Add FH-ECPRI relation with RCC"
 			fi
-			#RTC and RRU not present, but mme running
 		elif [ $CU_UNIT_PRESENT -gt 0 ]; then # node func shall be DU
 			if [ $CU_UNIT_RUNNING -gt 0 ]; then
+				juju-log "node_func=$node_func"
+				echo "node_func=$node_func"
 				start_enb_process $node_func
 			else
-				juju-log "Waiting for F1-CUDU Relation"
-				status-set maintenance "232 Add F1-CUDU relation"
+				juju-log "248 Waiting for F1-CUDU Relation with CU"
+				status-set maintenance "248 Add F1-CUDU relation with CU"
 			fi
-		else # start just eNB, mme running
+		else # start either eNB or DU or RRU
+			juju-log "node_func=$node_func"
+			echo "node_func=$node_func"
 			start_enb_process $node_func
 		fi
-
+		########################################################
 	else # mme not running
 		juju-log "Waiting for MME relation"
 		status-set maintenance "Add MME relations"
 	fi
-
 elif [ "$node_func" == "eNodeB_IP" ]; then
 
 	if [ $RTC_UNIT_PRESENT -gt 0 ]; then
@@ -289,5 +292,4 @@ elif [ "$node_func" == "eNodeB_IP" ]; then
 else
 	juju-log "Unknown node func $node_func"
 	status-set blocked "Unknown node func $node_func"
-
 fi

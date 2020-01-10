@@ -167,6 +167,8 @@ update_hostname
 
 sgw_iface=`config-get sgw-eth`
 pgw_iface=`config-get pgw-eth`
+juju-log "setting the sgw_iface and pgw_iface"
+echo "setting the sgw_iface and pgw_iface"
 #sgw_iface="none"
 #pgw_iface="none"
 if [ "$sgw_iface" == "none" ] || [ "$pgw_iface" == "none" ]; then
@@ -186,7 +188,8 @@ if [ "$sgw_iface" == "none" ] || [ "$pgw_iface" == "none" ]; then
         fi
     done
 fi
-
+juju-log "191 setting the sgw_iface=$sgw_iface and pgw_iface=$pgw_iface"
+echo "191 setting the sgw_iface=$sgw_iface and pgw_iface=$pgw_iface"
 configure_network $sgw_iface
 configure_network $pgw_iface
 

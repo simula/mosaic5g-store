@@ -1,67 +1,54 @@
 #!/bin/bash
-################################################################################
+# Copyright 2016-2018 Eurecom and Mosaic5G Platforms Authors
+# Licensed to the Mosaic5G under one or more contributor license
+# agreements. See the NOTICE file distributed with this
+# work for additional information regarding copyright ownership.
+# The Mosaic5G licenses this file to You under the
+# Apache License, Version 2.0  (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# Copyright (c) 2016, EURECOM (www.eurecom.fr)
-# All rights reserved.
+#      http://www.apache.org/licenses/LICENSE-2.0
 #
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are met:
-#
-# 1. Redistributions of source code must retain the above copyright notice, this
-#    list of conditions and the following disclaimer.
-# 2. Redistributions in binary form must reproduce the above copyright notice,
-#    this list of conditions and the following disclaimer in the documentation
-#    and/or other materials provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and documentation are those
-# of the authors and should not be interpreted as representing official policies,
-# either expressed or implied, of the FreeBSD Project.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#-------------------------------------------------------------------------------
+# For more information about the Mosaic5G:
+#      contact@mosaic5g.io
 #
 ################################################################################
-# file rru-relation-joined
-# brief called when a relation betwen an eNB and RRU is created 
-# author  navid.nikaein@eurecom.fr
+# file rru-relation-joint
+# brief manage the F1 interface between RCC and RRU
+# author navid.nikaein@eurecom.fr 
 
 set -eux
-
+source $CHARM_DIR/utils/common
+set_env
 node_func=`config-get node_function`
+if [ "$node_func" == "rru" ] || [ "$node_func" == "RRU" ] ; then
+    status-set maintenance "rru-relation-joint hook"
+    oai-ran.enb-conf-set $rru_conf
 
-if [ -f $CHARM_DIR/.fh_address ]; then
-fh_address=`cat $CHARM_DIR/.fh_address`
-else
-fh_address="no"
-fi 
-
-if [ "$node_func" == "eNodeB_3GPP_BBU" ] || [ "$node_func" == "NGFI_RCC_IF4p5" ]; then
-    
-
-    if [ "$(cat $CHARM_DIR/.rru_active)" == "yes" ]; then 
-	juju-log "Setting up eNB relations for RRU charm"
-#	relation-set RRU_ACTIVE="yes"
-	relation-set TARGET_HARDWARE=`config-get target_hardware`
-	relation-set TRANSPORT_MODE=`config-get fh_transport_mode`
-	relation-set FH_ADDRESS=$fh_address
-	
-    else
-	juju-log "Probably node func changed (rru_active is no), upgrade the charm"
-	$CHARM_DIR/hooks/upgrade-charm
+    rru_ip_addr=`unit-get public-address`
+    rru_iface_name="none"
+    if [ "$rru_iface_name" == "none" ] ; then
+        for interface in $(ls /sys/class/net); do
+            if [ `ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"` != "" ]; then
+                ip_addr=`ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
+                if [ "$ip_addr" == $rru_ip_addr ] ; then
+                    rru_iface_name=$interface
+                    break
+                fi
+            fi
+        done
     fi
-    
+    relation-set RRUIP=$rru_ip_addr
+    relation-set RRUIF=$rru_iface_name
+    relation-set RRUPORTC=`config-get rru_portc`
+    relation-set RRUPORTD=`config-get rru_portd`
 else
-    juju-log "Nothing to be done for $node_func"
-    
+    status-set blocked "Error, function $node_func does not have rru relation"
 fi
-
-    
-

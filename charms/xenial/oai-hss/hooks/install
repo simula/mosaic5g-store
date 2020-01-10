@@ -223,7 +223,18 @@ update_hostname
 install_packages
 machine_type=`virt-what`
 
-configure_network `config-get eth`
+hss_public_ip=`unit-get public-address`
+hss_iface="none"
+for interface in $(ls /sys/class/net); do
+    if [ `ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"` != "" ]; then
+        ip_addr=`ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
+        if [ "$ip_addr" == $hss_public_ip ] ; then
+            hss_iface=$interface
+            break
+        fi
+    fi
+done
+configure_network $hss_iface # `config-get eth`
 
 clone_repo
 

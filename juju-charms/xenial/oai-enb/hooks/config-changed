@@ -43,13 +43,13 @@ if [ "$mme_ip" != "$(cat $CHARM_DIR/.mme_ip)" ]; then
    
     validate_ip $mme_ip
     if [ $stat -eq 0 ] ; then
-	juju-log "MME IP address is set to $mme_ip, do not wait for mme-relation"
-	echo "remote"  > $CHARM_DIR/.mme_running
-	echo "$mme_ip" >  $CHARM_DIR/.mme_ip
-	add_mme_ip $mme_ip
+        juju-log "MME IP address is set to $mme_ip, do not wait for mme-relation"
+        echo "remote"  > $CHARM_DIR/.mme_running
+        echo "$mme_ip" >  $CHARM_DIR/.mme_ip
+        add_mme_ip $mme_ip
     else
-	echo "no"  > $CHARM_DIR/.mme_running
-	echo "" >  $CHARM_DIR/.mme_ip
+        echo "no"  > $CHARM_DIR/.mme_running
+        echo "" >  $CHARM_DIR/.mme_ip
     fi
     juju-log "MME IP addr  changed to $(cat $CHARM_DIR/.mme_ip)"
 fi
@@ -197,6 +197,44 @@ elif [ "$node_func" == "du" ] || [ "$node_func" == "DU" ] ; then
     #enable_du_f1  `config-get du_if_name` $du_ip_addr
     #enable_du_f1  `config-get du_if_name` `config-get du_ip_addr`
     echo "yes"  > $CHARM_DIR/.du_active
+elif [ "$node_func" == "rcc" ] || [ "$node_func" == "RCC" ] ; then
+    rcc_ip_addr=`unit-get public-address`
+    rcc_iface_name="none"
+    if [ "$rcc_iface_name" == "none" ] ; then
+        for interface in $(ls /sys/class/net); do
+            if [ `ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"` != "" ]; then
+                ip_addr=`ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
+                if [ "$ip_addr" == $rcc_ip_addr ] ; then
+                    rcc_iface_name=$interface
+                    break
+                fi
+            fi
+        done
+    fi
+    enable_rcc_ecpri  $rcc_iface_name $rcc_ip_addr
+    echo "yes"  > $CHARM_DIR/.rcc_active
+elif [ "$node_func" == "rru" ] || [ "$node_func" == "RRU" ] ; then
+
+    rru_ip_addr=`unit-get public-address`
+    rru_iface_name="none"
+    if [ "$rru_iface_name" == "none" ] ; then
+        for interface in $(ls /sys/class/net); do
+            if [ `ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"` != "" ]; then
+                ip_addr=`ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
+                if [ "$ip_addr" == $rru_ip_addr ] ; then
+                    rru_iface_name=$interface
+                    break
+                fi
+            fi
+        done
+    fi
+    juju-log "rru_iface_name=$rru_iface_name"
+    echo "rru_iface_name=$rru_iface_name"
+    juju-log "rru_ip_addr=$rru_ip_addr"
+    echo "rru_ip_addr=$rru_ip_addr"
+    
+    enable_rru_ecpri  $rru_iface_name $rru_ip_addr
+    echo "yes"  > $CHARM_DIR/.rru_active
 else
     disable_f1
     echo "no" > $CHARM_DIR/.rru_active  

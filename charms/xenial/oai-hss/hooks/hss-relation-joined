@@ -39,9 +39,19 @@ source $CHARM_DIR/utils/common
 juju-log "Setting up HSS relation info for EPC"
 relation-set hss_hostname=`hostname --fqdn`
 
-hss_iface=`config-get eth`
-hss_public_unit_ip=`unit-get public-address`
-hss_public_ip=`get_eth_ip $hss_iface`
+#hss_iface=`config-get eth`
+hss_public_ip=`unit-get public-address`
+#hss_public_ip=`get_eth_ip $hss_iface`
+hss_iface="none"
+for interface in $(ls /sys/class/net); do
+    if [ `ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"` != "" ]; then
+        ip_addr=`ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
+        if [ "$ip_addr" == $hss_public_ip ] ; then
+            hss_iface=$interface
+            break
+        fi
+    fi
+done
 
 get_ip_address $hss_public_ip
 status=$?
