@@ -7,7 +7,7 @@ options:
    node_function: 
      default: "enb"
      description: | 
-       set the function of this BS node. Available Options: enb, cu, and du. Support for bbu and rru operations will be added in the subsequent releases. 
+       set the function of this BS node. Available Options: enb, cu and du, rcc and rru.
      type: string
    target_hardware:
      default: "usrp_b200"
@@ -67,6 +67,33 @@ options:
      description: |
        The control port number of the DU module for data plane. Only valid if the node function is DU.
      type: int
+   ##############
+   fh_transport_mode:
+     default: "udp_if4p5"
+     description: |
+        defines the I/Q sample transport mode between RRU and RCC. Available mode are raw, udp, raw_if4p5, and udp_if4p5.
+     type: string
+   rcc_portc:
+     default: 50000
+     description: |
+       The port number of the RCC module for control plane. Only valid if the node function is RCC.
+     type: int
+   rru_portc:
+     default: 50000
+     description: |
+       The control port number of the RRU module for control plane. Only valid if the node function is RRU.
+     type: int
+   rcc_portd:
+     default: 50001
+     description: |
+       The port number of the RCC module for data plane. Only valid if the node function is RCC.
+     type: int
+   rru_portd:
+     default: 50001 
+     description: |
+       The control port number of the RRU module for data plane. Only valid if the node function is DU.
+     type: int 
+    ##############
    TAC:
      default: 1
      description: |
@@ -152,11 +179,6 @@ options:
      description: |
         defines the network interface port to connect to the RRU.
      type: int
-   fh_transport_mode:
-     default: "udp_if4p5"
-     description: |
-        defines the I/Q sample transport mode. Available mode are raw, udp, raw_if4p5, and udp_if4p5.
-     type: string
    rru_tx_shift: 
      default: 4  
      description: |

@@ -20,8 +20,8 @@
 #      contact@mosaic5g.io
 #
 ################################################################################
-# file cu-relation-joint
-# brief manage the F1 interface between CU and DU 
+# file rcc-relation-changed
+# brief manage the config changes of oai-enb service, and occurs everytime a new configuration value is updated (juju set)
 # author navid.nikaein@eurecom.fr 
 
 set -eux
@@ -29,32 +29,49 @@ source $CHARM_DIR/utils/common
 set_env
 
 node_func=`config-get node_function`
-if [ "$node_func" == "cu" ] || [ "$node_func" == "CU" ] ; then
-    status-set maintenance "cu-relation-joint hook"
-    oai-ran.enb-conf-set $cu_conf
+if [ "$node_func" == "rcc" ] || [ "$node_func" == "RCC" ] ; then
 
-    cu_ip_addr=`unit-get public-address`
-    cu_iface_name="none"
-    #cu_iface_name=`config-get cu_if_name`
-    if [ "$cu_iface_name" == "none" ] ; then
+    status-set maintenance "rrc-relation-changed hook"
+
+    RRUIP=`relation-get RRUIP`
+    RRUIF=`relation-get RRUIF`
+    RRUPORTC=`relation-get RRUPORTC`
+    RRUPORTD=`relation-get RRUPORTD`
+
+    if [ -z "$RRUIP" ]; then
+        juju-log "RRU IP addr not yet available"
+        exit 0
+    fi
+    if [ -z "$RRUIF" ]; then
+        juju-log "RRU IF name not yet available"
+        exit 0
+    fi
+    if [ -z "$RRUPORTC" ]; then
+        juju-log "RRU PORTC not yet available"
+        exit 0
+    fi
+    if [ -z "$RRUPORTD" ]; then
+        juju-log "RRU PORTD not yet available"
+        exit 0
+    fi
+
+    rcc_ip_addr=`unit-get public-address`
+    rcc_iface_name="none"
+    if [ "$rcc_iface_name" == "none" ] ; then
         for interface in $(ls /sys/class/net); do
             if [ `ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"` != "" ]; then
                 ip_addr=`ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
-                if [ "$ip_addr" == $cu_ip_addr ] ; then
-                    cu_iface_name=$interface
+                if [ "$ip_addr" == $rcc_ip_addr ] ; then
+                    rcc_iface_name=$interface
                     break
                 fi
             fi
         done
     fi
-    #cu_ip_addr=`ifconfig $(config-get cu_if_name) | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
-    #relation-set CUIP=`config-get cu_ip_addr`
-    relation-set CUIP=$cu_ip_addr
-    relation-set CUIF=$cu_iface_name
-    #relation-set CUIF=`config-get cu_if_name`
-    relation-set CUPORTC=`config-get cu_portc`
-    relation-set CUPORTD=`config-get cu_portd`
 
+    enable_rcc_ecpri $rcc_iface_name $rcc_ip_addr $RRUIP `config-get rcc_portc` $RRUPORTC `config-get rcc_portd` $RRUPORTD
+
+    juju-log "rcc config done"
 else
-    status-set blocked "Error, function $node_func does not have cu relation"
+    status-set blocked "Error, function $node_func does not have rcc relation"
 fi

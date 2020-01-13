@@ -21,7 +21,7 @@ requires:
     interface: F1
     optional: true
   rru:
-    interface: FH-ETH
+    interface: FH-ECPRI
     optional: true
   du:
     interface: F1-CUDU
@@ -29,4 +29,7 @@ requires:
 provides:
   cu:
     interface: F1-CUDU
+    optional: true
+  rcc:
+    interface: FH-ECPRI
     optional: true

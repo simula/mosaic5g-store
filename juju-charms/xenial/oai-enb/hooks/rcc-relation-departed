@@ -20,7 +20,7 @@
 #      contact@mosaic5g.io
 #
 ################################################################################
-# file du-relation-departed
+# file rcc-relation-departed
 # brief handle RCC and RRU relation departed 
 # author  navid.nikaein@eurecom.fr 
 
@@ -28,9 +28,9 @@ set -eux
 source $CHARM_DIR/utils/common
 set_env
 
-status-set maintenance "rru-relation-departed hook"
+status-set maintenance "rcc-relation-departed hook"
 
-juju-log "stopping RRU service "
+juju-log "stopping RCC service"
 stop_enb
 
 disable_f1

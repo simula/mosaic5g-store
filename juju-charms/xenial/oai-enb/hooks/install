@@ -29,26 +29,26 @@ install_packages(){
     
     gitAlreadyInstalled=$(dpkg --get-selections snapd 2>/dev/null | grep -c 'install') || true
     if [ ! $gitAlreadyInstalled -eq 1 ]; then # If git is NOT installed
-	apt-get install -y --force-yes snapd # Ensure necessary git dependency exist.
+	    apt-get install -y --force-yes snapd # Ensure necessary git dependency exist.
     fi
 
     gitAlreadyInstalled=$(dpkg --get-selections git 2>/dev/null | grep -c 'install') || true
     if [ ! $gitAlreadyInstalled -eq 1 ]; then # If git is NOT installed
-	apt-get install -y --force-yes git # Ensure necessary git dependency exist.
+	    apt-get install -y --force-yes git # Ensure necessary git dependency exist.
     fi
     atAlreadyInstalled=$(dpkg --get-selections at 2>/dev/null | grep -c 'install') || true
     if [ ! $atAlreadyInstalled -eq 1 ]; then 
-	# If at command is NOT installed
-	apt-get install -y --force-yes at
-	# Ensure at command exists to let juju reschedule this hook after rebooting the machine.
+        # If at command is NOT installed
+        apt-get install -y --force-yes at
+        # Ensure at command exists to let juju reschedule this hook after rebooting the machine.
     fi
     virtwhatAlreadyInstalled=$(dpkg --get-selections virt-what 2>/dev/null | grep -c 'install') || true
     if [ ! $virtwhatAlreadyInstalled -eq 1 ]; then 
-	apt-get install -y --force-yes virt-what || true 
+    	apt-get install -y --force-yes virt-what || true 
     fi
     cpufreqAlreadyInstalled=$(dpkg --get-selections cpufrequtils 2>/dev/null | grep -c 'install') || true
     if [ ! $cpufreqAlreadyInstalled -eq 1 ]; then 
-	apt-get install -y --force-yes cpufrequtils
+	    apt-get install -y --force-yes cpufrequtils
     fi
 }
 
@@ -59,11 +59,58 @@ clone_repro(){
 
     #everytime refresh the installation 
     if [ -d "$mosaic_path" ]; then  
-	cd $mosaic_path
-	git reset --hard HEAD
-	cd - 
+        cd $mosaic_path
+        git reset --hard HEAD
+        cd - 
     else
-	git clone https://gitlab.eurecom.fr/mosaic5g/mosaic5g.git $mosaic_path
+    	git clone https://gitlab.eurecom.fr/mosaic5g/mosaic5g.git $mosaic_path
+    fi
+}
+
+optimize_cpu_for_ran_split(){
+    # required optimizations for RAN split
+    if [ "$machine_type" != "lxc" ] ; then
+        ipv4=`unit-get public-address`
+        iface="none"
+        if [ "$iface" == "none" ] ; then
+            for interface in $(ls /sys/class/net); do
+                if [ `ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"` != "" ]; then
+                    ip_addr=`ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
+                    if [ "$ip_addr" == $ipv4 ] ; then
+                        iface=$interface
+                        break
+                    fi
+                fi
+            done
+        fi
+        apt-get update  -y
+        apt-get install auditd -y
+        # install the cpuspeed
+        wget https://carlthompson.net/downloads/cpuspeed/cpuspeed-1.5.tar.bz2
+        tar -xvf cpuspeed-1.5.tar.bz2
+        cd cpuspeed-1.5
+        make install_debian
+        cd ../
+        service cpuspeed stop
+        service auditd stop
+        update-rc.d ondemand disable
+        #Disable pause frames on Ethernet
+        /sbin/ethtool -A  $iface  autoneg off rx off tx off || true
+
+        #Increase Ethernet Buffer rings
+        sudo /sbin/ethtool -G  $iface   rx  4096 tx  4096 || true
+        
+        #Set Ethernet interrupt coalescence mode (dynamic conservative mode is recommended)
+        sudo /sbin/ethtool -C  $iface  rx-usecs 3 || true
+        
+        #Increase interface queue length
+        ifconfig  $iface txqueuelen 1000
+
+        #Increase kerenl socket buffer
+        sysctl -w net.core.rmem_max=8388608
+        sysctl -w net.core.wmem_max=8388608
+        sysctl -w net.core.rmem_default=65536
+        sysctl -w net.core.wmem_default=65536
     fi
 }
 
@@ -71,9 +118,8 @@ set_cpu_freq(){
 #getconf _NPROCESSORS_CONF
     num_cpu=`nproc`
     num_cpu=$((num_cpu-1))
-    for i in `seq 0 $num_cpu`;
-    do 
-	cpufreq-set -g performance -c $i || true 
+    for i in `seq 0 $num_cpu`; do
+	    cpufreq-set -g performance -c $i || true 
     done 
     #lsmod | grep intel_powerclamp
     #[ $? -eq 0 ] && (rmmod intel_powerclamp || true)
@@ -91,10 +137,10 @@ build_oai_ran(){
  #   fi
     
     if [ "$snap" == "edge" ] || [ "$snap" == "beta" ] ; then
-	juju-log "Installing OAI-RAN snap"
+	    juju-log "Installing OAI-RAN snap"
     else
-	juju-log "channel $snap is not supported, use edge or beta"
-	snap="edge"
+        juju-log "channel $snap is not supported, use edge or beta"
+        snap="edge"
     fi
 
     if [ -z "$(snap list oai-ran)" ] ; then
@@ -111,15 +157,46 @@ init_oai_ran(){
 
     #check oai ran func 
     if [ "$node_func" != "cu" -o  "$node_func" != "CU" ]; then
-	echo "cu" > $CHARM_DIR/.node_func
-	echo "yes"  > $CHARM_DIR/.cu_active
+        echo "cu" > $CHARM_DIR/.node_func
+        echo "yes"  > $CHARM_DIR/.cu_active
+        
+        echo "no"  > $CHARM_DIR/.du_active
+        echo "no"  > $CHARM_DIR/.rru_active
+        echo "no"  > $CHARM_DIR/.rcc_active
+        echo "no"  > $CHARM_DIR/.enb_active
     elif [ "$node_func" != "du" -o  "$node_func" != "DU" ] ; then
-	echo "du" > $CHARM_DIR/.node_func
-	echo "yes"  > $CHARM_DIR/.du_avtive
+        echo "du" > $CHARM_DIR/.node_func
+        echo "yes"  > $CHARM_DIR/.du_active
+
+        echo "no"  > $CHARM_DIR/.cu_active
+        echo "no"  > $CHARM_DIR/.rru_active
+        echo "no"  > $CHARM_DIR/.rcc_active
+        echo "no"  > $CHARM_DIR/.enb_activ
+    elif [ "$node_func" != "rru" -o  "$node_func" != "RRU" ] ; then
+        echo "rru" > $CHARM_DIR/.node_func
+        echo "yes"  > $CHARM_DIR/.rru_active
+
+        echo "no"  > $CHARM_DIR/.du_active
+        echo "no"  > $CHARM_DIR/.cu_active
+        echo "no"  > $CHARM_DIR/.rcc_active
+        echo "no"  > $CHARM_DIR/.enb_activ
+    elif [ "$node_func" != "rcc" -o  "$node_func" != "RCC" ] ; then
+        echo "rcc" > $CHARM_DIR/.node_func
+        echo "yes"  > $CHARM_DIR/.rcc_active
+
+        echo "no"  > $CHARM_DIR/.du_active
+        echo "no"  > $CHARM_DIR/.cu_active
+        echo "no"  > $CHARM_DIR/.rru_active
+        echo "no"  > $CHARM_DIR/.enb_activ
     else 
-	juju-log "The requested $node_func is not supported, reverting to enb."
-	echo "enb" > $CHARM_DIR/.node_func
-	echo "yes"  > $CHARM_DIR/.enb_avtive
+        juju-log "The requested $node_func is not supported, reverting to enb."
+        echo "enb" > $CHARM_DIR/.node_func
+        echo "yes"  > $CHARM_DIR/.enb_active
+
+        echo "no"  > $CHARM_DIR/.du_active
+        echo "no"  > $CHARM_DIR/.cu_active
+        echo "no"  > $CHARM_DIR/.rru_active
+        echo "no"  > $CHARM_DIR/.rcc_active
     fi
     
     # just a flag for start script to run the service
@@ -137,6 +214,9 @@ echo "no" > $CHARM_DIR/.oairan_running_flag
 
 open-port 2152/udp  # S1-U
 open-port 36412/tcp # S1-C
+
+open-port 50000/udp  # local_portc
+open-port 50001/udp # local_portd
 #default port 
 #open-port 2210/tcp  # FlexRAN
 #echo "2210" > $CHARM_DIR/.rtc_port
@@ -152,13 +232,13 @@ hw=`config-get target_hardware`
 mme_ip=`config-get mme_ip_addr`
 
 # RRU params 
-fh_tr_mode=`config-get fh_transport_mode`
-fh_if_name=`config-get fh_if_name`
-fh_local_port=`config-get fh_local_port`
-open-port $fh_local_port/udp
-rru_tx_shift=`config-get rru_tx_shift`
-rru_tx_sampleadvance=`config-get rru_tx_sampleadvance`
-rru_tx_schedadvance=`config-get rru_tx_schedadvance`
+#fh_tr_mode=`config-get fh_transport_mode`
+#fh_if_name=`config-get fh_if_name`
+#fh_local_port=`config-get fh_local_port`
+#open-port $fh_local_port/udp
+#rru_tx_shift=`config-get rru_tx_shift`
+#rru_tx_sampleadvance=`config-get rru_tx_sampleadvance`
+#rru_tx_schedadvance=`config-get rru_tx_schedadvance`
 
 
 # used to set the config file for this node
@@ -176,6 +256,7 @@ echo "no"  > $CHARM_DIR/.enb_running
 echo "no"  > $CHARM_DIR/.cu_running
 echo "no"  > $CHARM_DIR/.du_running
 echo "no"  > $CHARM_DIR/.rru_running
+echo "no"  > $CHARM_DIR/.rcc_running
 echo "no"  > $CHARM_DIR/.mme_running
 
 exec_args=""
@@ -187,8 +268,7 @@ config_file_lmsdr="null"
 install_packages
 machine_type=`virt-what`
 
-
-#clone_repro
+optimize_cpu_for_ran_split
 
 set_cpu_freq
 
