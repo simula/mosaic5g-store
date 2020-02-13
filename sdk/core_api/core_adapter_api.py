@@ -123,7 +123,7 @@ def cpsr_update():
     with open('./inputs/core_adapter_cpsr_update.json') as data_file:
         data = json.load(data_file)
         data_file.close()
-    #print(data)
+    print(data)
        
     jsondata = json.dumps(data)
     #jsondata = json.dumps(body)
@@ -135,14 +135,15 @@ def cpsr_update():
     opener = urllib2.build_opener(handler)
     request = urllib2.Request(adapter.cpsr_url, data=jsondataasbytes)
     request.get_method = lambda: method
-    request.add_header("content-Type", 'application/json')
-        
+    request.add_header("content-Type", 'application/json-patch+json')
+   # print ('CPSR_URL:', adapter.)    
     try:
         response = opener.open(request)
     except urllib2.URLError as e:
-        adapter.log.info('[CPSR_Update] ' + str(e.args))
+        adapter.log.info('[CPSR_Update] ERROR: ' + str(e.args))
         #TODO: should try to register after ... seconds
-        
+        adapter.log.info("[CPSR_Update] Send register ...")
+        cpsr_register()
     except urllib2.HTTPError as e:
         adapter.log.info('[CPSR_Update] ERROR: ' + str(e))
         if (e.code == 404):
@@ -220,6 +221,8 @@ def put_QoSOnCore(sliceId, userEqId, body, epsBearerId=-1):
     """
     Step 0: get information from the request and verify the input
     """
+    #print 'Received a request with sliceID ' + sliceId + 'userEqId ' + userEqId + '!'
+    #print 'Body request '+  body 
     dir = {}    
     band_inc_val = 0.0
     band_unit_scale = ''
@@ -339,8 +342,9 @@ def put_QoSOnCore(sliceId, userEqId, body, epsBearerId=-1):
             core_adapter_routes["routes"][0]["ToServer"] = remote_ip
             
     if status == 'connected':
-        return core_adapter_routes, 200 
+        return core_adapter_routes, 201 
     else:
+        #return core_adapter_routes, 201 
         return NoContent, 500            
                     
      
@@ -355,6 +359,7 @@ def post_QoSOnCore(sliceId, userEqId, body, epsBearerId=-1):
     """
     Step 0: get information from the request and verify the input
     """
+    print(body)
     dir = {}    
     band_inc_val = 0.0
     band_unit_scale = ''
@@ -474,6 +479,7 @@ def post_QoSOnCore(sliceId, userEqId, body, epsBearerId=-1):
     if status == 'connected':
         return core_adapter_routes, 201 
     else:
+        #return core_adapter_routes, 201 
         return NoContent, 500             
 
             
