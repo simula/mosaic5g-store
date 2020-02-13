@@ -229,8 +229,8 @@ def put_QoSOnCore(sliceId, userEqId, body, epsBearerId=-1):
 
     slice_id = -1 #LL-MEC's Slice ID
     
-    # check if the mapping between slicenetId and flexran sliceid exist! 
-    with open('./inputs/mapping_slicenetid_sliceid.json') as data_file:
+    # check if the mapping between slicenetId and llmec sliceid exist! 
+    with open('./inputs/mapping_slicenetid_sliceid_mec.json') as data_file:
         slice_mapping = json.load(data_file)
         data_file.close()        
 
@@ -239,7 +239,7 @@ def put_QoSOnCore(sliceId, userEqId, body, epsBearerId=-1):
             slice_id = int(slice_mapping[index]['sid'] )
     
     if slice_id == -1:
-        print 'FlexRAN sliceId corresponding to the SlicenetId ' + sliceId+ ' does not exist!'
+        print 'LLMEC sliceId corresponding to the SlicenetId ' + sliceId+ ' does not exist!'
         return NoContent, 400  
     
     
@@ -366,7 +366,7 @@ def post_QoSOnCore(sliceId, userEqId, body, epsBearerId=-1):
     slice_id = -1   #LL-MEC's Slice ID
     
     # check if the mapping between slicenetId and flexran sliceid exist! 
-    with open('./inputs/mapping_slicenetid_sliceid.json') as data_file:
+    with open('./inputs/mapping_slicenetid_sliceid_mec.json') as data_file:
         slice_mapping = json.load(data_file)
         data_file.close()        
 
@@ -482,7 +482,75 @@ def post_QoSOnCore(sliceId, userEqId, body, epsBearerId=-1):
         #return core_adapter_routes, 201 
         return NoContent, 500             
 
+def post_redirect_traffic(sliceId, userEqId, body, epsBearerId=-1):
+    """!@brief Redirect traffic flow for one bearer 
+        @param sliceId: Id of the slice
+        @param userEqId: IMSI
+        @param epsBearerId: eps bearer id
+        @param body: body of post message including the parameters from server and to server
+    """
+
+    """
+    Step 0: get information from the request and verify the input
+    """
+    slice_id = -1   #LL-MEC's Slice ID
+    
+    # check if the mapping between slicenetId and flexran sliceid exist! 
+    with open('./inputs/mapping_slicenetid_sliceid_mec.json') as data_file:
+        slice_mapping = json.load(data_file)
+        data_file.close()        
+
+    for index in range (0, len(slice_mapping)):
+        if slice_mapping[index]['slicenetid'] == sliceId:
+            slice_id = int(slice_mapping[index]['sid'] )
+    
+    if slice_id == -1:
+        print 'MEC sliceId corresponding to the SlicenetId ' + sliceId+ ' does not exist!'
+        return NoContent, 400 
+   
+    #verify the input
+        
+    try:
+        from_server = body['FromServer']
+        to_server = body['ToServer']    
+    except (ValueError, KeyError):
+        print ('Bad request!')
+        return NoContent, 400          
+ 
+    
+    """
+    Step 2: collect the necessary information by relying on LL-MEC
+    """ 
+    
+    fm = llmec_sdk.flow_manager(log=adapter.log,
+                                url=adapter.url,
+                                port=adapter.port,
+                                op_mode=adapter.op_mode)
+    bm = llmec_sdk.bearer_manager(log=adapter.log,
+                                  url=adapter.url,
+                                  port=adapter.port,
+                                  op_mode=adapter.op_mode)
+    #fm.flow_status()
+    bm.get_all_bearer_context()
+    
+    """
+    Step 3: Redirect the bearer(s) to/from a local/remote server
+    """
             
-        
-        
+    status = 'disconnected'
+    core_adapter_routes["userEqId"] = userEqId        
+    if epsBearerId == -1: #redirect all bearers belong to a slice to local/remote server
+        adapter.log.info('Send command to LL-MEC to redirect all bearers belonging to this slice from a server (' + str(from_server) + ') to a server (' + str(to_server) + ')')   
+        status = bm.redirect_all_ue_bearers_belong_to_sliceid(imsi=userEqId, slice_id=slice_id, from_ip=from_server,to_ip=to_server)                    
+    elif epsBearerId > -1: #redirect this bearers to local/remote server
+        adapter.log.info('Send command to LL-MEC to redirect this bearer from a server (' + str(from_server) + ') to a server (' + str(to_server) + ')')
+        status = bm.redirect_ue_bearer_belong_to_sliceid(imsi=userEqId, eps_drb=epsBearerId, slice_id=slice_id, from_ip=from_server,to_ip=to_server)
+            
+    if status == 'connected':
+        return NoContent, 201 
+    else:
+        return NoContent, 500 
+    
+#TODO: should support also feature set slice mapping
+
 

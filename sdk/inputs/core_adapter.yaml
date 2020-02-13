@@ -106,6 +106,48 @@ paths:
         '500':
           description: Internal Server Error
 
+  '/{sliceId}/redirect':
+    post:
+      summary: Redirect traffic flow from for one bearer one server to another
+      description: To redirect traffic flow for one bearer identified by IMSI and EPS bearer id from one server to another server
+      tags:
+        - Redirect Traffic for one Bearer
+      operationId: core_api.core_adapter_api.post_redirect_traffic
+      parameters:
+        - name: sliceId
+          in: path
+          description: ID of the slice associated to CoreAdapter
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: userEqId
+          in: query
+          required: true
+          description: Identify the User Equipment Identity
+          schema:
+            type: string
+        - name: epsBearerId
+          in: query
+          required: false
+          description: Identify EPS Bearer Identity
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        description: Addresses of the servers (from/to)
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServerAddresses"
+      responses:
+        '201':
+          description: Traffic redirected
+        '400':
+          description: Bad Request
+        '500':
+          description: Internal Server Error
+
 
 components:
   schemas:
