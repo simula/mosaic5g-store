@@ -692,8 +692,6 @@ def post_SliceMapping(body):
      
     for req in range (0, num_request):
         try:
-            #slicenet_slice_ids[req] = body[req]['slicenetid']
-            #flexran_slice_ids[req] = body[req]['sid']
             jsondata[req]['slicenetid'] = body[req]['slicenetid']
             jsondata[req]['sid'] = body[req]['sid']             
         except (ValueError, KeyError):
@@ -733,6 +731,49 @@ def put_SliceMapping(body):
     
     post_SliceMapping(body)
     
+def delete_SliceMapping(sliceId):
+    """!@brief delete_SliceMapping Remove mapping between FlexRAN slice ID and Slicenet slice ID on RAN Adapter        
+        @param body: body of "Delete" message 
+    """
     
+    """
+    Step 0: get information from the request and verify the input
+    """
+    adapter.log.info("Delete_SliceMapping, received a request with sliceId: " + str(sliceId))
+        
+    # Update mapping
+    with open('./inputs/mapping_slicenetid_sliceid.json') as data_file:
+        slice_mapping = json.load(data_file)
+        data_file.close()        
+    
+    found = False
+    
+    new_slice_mapping = []
+    
+    for index in range (0, len(slice_mapping)):
+        if slice_mapping[index]['slicenetid'] == sliceId:
+            adapter.log.info("Delete_SliceMapping, the mapping between slicenetId " + str(sliceId) + " and sid "+ str(slice_mapping[index]['sid']) + " will be removed \n")
+            slice_mapping[index]['sid'] = "-1"
+            found = True            
+        else:
+            new_slice_mapping.append({"slicenetid":slice_mapping[index]['slicenetid'], "sid": slice_mapping[index]['sid']})
+                                    
+    #write the update information to the file
+    with open('./inputs/mapping_slicenetid_sliceid.json', "w") as data_file:   
+        data_file.write(json.dumps(new_slice_mapping))
+        data_file.close()
+    
+    #TODO: update RAN Adapter info and send update to CPSR
+        
+    if (found == False):
+        adapter.log.info("No slice with id " + str(sliceId) + "\n")
+        return NoContent, 404
+    else:
+         return NoContent, 201     
+        
+    #register to CPSR
+    #TODO: should be verified 
+    #cpsr_register()
+ 
       
   
