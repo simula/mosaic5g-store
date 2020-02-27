@@ -29,13 +29,6 @@ check_cassandra_service(){
     # FIX ME
     return 0
 
-    if [ "$1" != "" ] ; then
-	$CAS_NODETOOL status | grep $1
-    else
-	$CAS_NODETOOL status | grep "127.0.0.1"
-    fi
-    
-    return $?
       
 }
 

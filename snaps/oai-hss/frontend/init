@@ -7,12 +7,6 @@ CURRENT_PATH=$(dirname $(readlink -f $0))
 
 case "$1" in
 
-    "cassandra")
-	export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin::$PATH
-	$SNAP/etc/build_cassandra -i -F
-	
-	;;
-	
     "hss" )
 
 	if [ ! -f $CONF_DIR/hss.conf ]; then
@@ -21,7 +15,7 @@ case "$1" in
 
 	# set the hss.conf
 	echo "set-hss $CONF_DIR/hss.conf"
-	$SNAP/conf set-hss $CONF_DIR/hss_rel14.conf
+	$SNAP/conf set-hss $CONF_DIR/hss_rel14.json
 	
 	$SNAP/run hss-certificate
 		
@@ -56,14 +50,14 @@ case "$1" in
 	check_cassandra_service
 	if [ $? -eq 0 ]; then
 	    $SNAP/run  provision-user-cassandra "$@" $*  || true 
-	    #$SNAP/run  provision-mme-cassandra   "$@" $* || true 
+	    $SNAP/run  provision-mme-cassandra  "$@" $* || true 
 
 	    #echo "hss_conf $REALM $cassandra_Server_IP $OP_KEY" 
 	    #hss_conf $REALM $cassandra_Server_IP $OP_KEY "$@" $*
 	
 	    echo ""
 	    echo "HSS is initialized"
-	    echo "Now, it is the time to configure the hss_fd.conf"
+	    echo "Now, it is the time to configure the $CONF_DIR/hss_rel14_fd.conf"
 	else
 	    echo ""
 	    echo "Cassandra service is not yet active"

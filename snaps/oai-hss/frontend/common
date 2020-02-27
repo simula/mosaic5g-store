@@ -7,10 +7,9 @@ set -e
 CONF_DIR="$SNAP_DATA"
 
 HSS_DIR="$SNAP/hss"
-HSS_SCRIPTS="$HSS_DIR/scripts"
+HSS_SCRIPTS="$SNAP/scripts"
 HSS_CONF_FILE="$CONF_DIR/hss_rel14.conf"
 HSS_FD_CONF_FILE="$CONF_DIR/hss_rel14_fd.conf"
 HSS_EXEC="$HSS_DIR/hss"
-CAS_NODETOOL="$SNAP/nodetool status "
 
 

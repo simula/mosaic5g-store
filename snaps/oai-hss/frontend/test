@@ -20,18 +20,6 @@ case "$1" in
 
     ;;
 
-    "all" )
-	$SNAP/run status-all
-	sleep $waiting_time 
-	$SNAP/run start-all
-	sleep $waiting_time 
-	$SNAP/run status-all
-	sleep $waiting_time 
-	$SNAP/run stop-all
-	sleep $waiting_time
-	$SNAP/run status-all
-	sleep $waiting_time 
-	;;
 	
     * )
 	echo "Unknown command: $1"

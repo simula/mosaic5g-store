@@ -10,13 +10,13 @@ license: Apache-2.0
 architectures:
   - amd64
     
-confinement: devmode
+confinement: classic
 grade: stable
 base: core18
 
 apps:
   test:
-    command : test
+    command : test hss-service
   info:
     command: run info
   oai-hss:
@@ -38,8 +38,6 @@ apps:
     command: run status
   journal:
     command: run journal
-  cassandra:
-    command: init cassandra
   init:
     command: init hss
   conf-set:
@@ -118,7 +116,7 @@ parts:
     plugin: cmake
     source: https://github.com/OPENAIRINTERFACE/openair-cn.git
     #source-branch: merge_ipv6_interfaces_en-dc
-    source-branch: master
+    source-branch: develop
     build-packages: [build-essential, ]
     stage-packages:
       - libstdc++6
@@ -142,14 +140,18 @@ parts:
       #- etc/*
       - scripts/*
       - usr/lib/*
+      - usr/local/x86_64-linux-gnu/*
       - lib/*
     prime:
       - hss/*
       #- etc/*
       - scripts/*
       - usr/lib/*
+      - usr/local/x86_64-linux-gnu/*
       - lib/*
     
   frontend:
     plugin: dump
+   # stage-packages:
+   #   -  python3-cassandra
     source: frontend
