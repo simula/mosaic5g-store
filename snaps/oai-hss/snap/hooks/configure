@@ -6,9 +6,9 @@ if [ -n "$LD_LIBRARY_PATH" ]; then
 else
     LD_LIBRARY_PATH=$SNAP/lib:$SNAP/usr/lib:$SNAP/usr/local/lib:$SNAP/usr/local/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu
 fi
-export LD_LIBRARY_PATH
+#export $LD_LIBRARY_PATH
 
 #$snapctl stop --disable ${SNAP_NAME}  2>&1  || true
 
-#$SNAP/init mme
+#$SNAP/init hss
 

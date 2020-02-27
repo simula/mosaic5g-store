@@ -1,14 +1,18 @@
 name: oai-hss
 version: '1.5' 
+title: OpenAirInterface HSS module
 summary: OpenAirInterface HSS entity Rel. 14
 description: |
     OAI-HSS is the openairinterface-based HSS entity allowing to connect a 4G-comptaible BS and UEs to the core network. It is one of the projects of Mosaic5G inititive.
-grade: stable
 type: app
+license: Apache-2.0
+
 architectures:
   - amd64
-  - i386
+    
 confinement: devmode
+grade: stable
+base: core18
 
 apps:
   test:
@@ -56,6 +60,11 @@ hooks:
 parts:
   gdb:
     plugin: nil
+    stage-packages:
+      - libbabeltrace1
+      - libdw1
+      - libmpfr6
+      - libpython3.6
     override-build: |
       sudo apt install gdb -y
       mkdir $SNAPCRAFT_PART_INSTALL/share 
@@ -80,8 +89,32 @@ parts:
   #  prime:
   #    - usr/lib/*
   #    - lib/*
-
+  fd:
+    plugin: cmake
+    source: https://gitlab.eurecom.fr/oai/freediameter.git
+    source-branch: eurecom-1.2.0
+    stage-packages:
+      - libsctp1
+    override-build: |
+      cd ../src
+      mkdir build
+      cd build
+      cmake -DCMAKE_INSTALL_PREFIX:PATH=$SNAPCRAFT_PART_INSTALL/usr/local ../
+      #cmake ../
+      make -j`nproc`
+      sudo -S -E make install
+      #mkdir -p $SNAPCRAFT_PART_INSTALL/usr/local/lib/freeDiameter/
+      #sudo cp -r /usr/local/lib/freeDiameter $SNAPCRAFT_PART_INSTALL/usr/local/lib
+    stage:
+      - lib/*
+      - usr/local/*
+    prime:
+      - lib/*
+      - usr/local/*
   hss:
+    build-environment:
+    - LANG: C.UTF-8
+    - LC_ALL: C.UTF-8
     plugin: cmake
     source: https://github.com/OPENAIRINTERFACE/openair-cn.git
     #source-branch: merge_ipv6_interfaces_en-dc
@@ -90,27 +123,33 @@ parts:
     stage-packages:
       - libstdc++6
       - uvtool
+      - libuv1
     override-build: |
       #export DEBIAN_FRONTEND=interactive
       cd ../src/scripts
-      ./build_hss_rel14 -c -i -f -b Release
+      ./build_hss_rel14 -c -i -f 
       ./build_hss_rel14	-c 
       cd ..
+      pwd 
       mkdir -p $SNAPCRAFT_PART_INSTALL/hss/
-      cp etc/hss*  $SNAPCRAFT_PART_INSTALL/hss/
-      cp etc/acl*  $SNAPCRAFT_PART_INSTALL/hss/
-      cp -r scripts  $SNAPCRAFT_PART_INSTALL/hss/
-      cp build/hss_rel14/build/*.*  $SNAPCRAFT_PART_INSTALL/hss/
+      #mkdir -p $SNAPCRAFT_PART_INSTALL/etc/
+      mkdir -p $SNAPCRAFT_PART_INSTALL/scripts/
+      #cp  etc/*  $SNAPCRAFT_PART_INSTALL/etc/
+      cp  scripts/*  $SNAPCRAFT_PART_INSTALL/scripts/
       cp build/hss_rel14/bin/hss  $SNAPCRAFT_PART_INSTALL/hss/
     stage:
       - hss/*
+      #- etc/*
+      - scripts/*
       - usr/lib/*
       - lib/*
     prime:
       - hss/*
+      #- etc/*
+      - scripts/*
       - usr/lib/*
       - lib/*
-
+    
   frontend:
     plugin: dump
     source: frontend
