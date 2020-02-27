@@ -2,13 +2,14 @@ name: oai-ran
 version: '1.5' 
 summary: OpenAirInterface RAN entity with FlexRAN Agent/Runtime 
 description: |
-    OAI RAN is the openairinterface-based RAN with different deployment flavor (eNB,C-RAN, CU,DU, RRU) with FlexRAN agent/runtime allowing to connect any commercial UEs with the band of your choice. It is one of the projects of Mosaic5G inititive.
+    OAI RAN is an openairinterface-based 4G BS with different deployment flavors (eNB,C-RAN, CU,DU, RRU) allowing to connect any commercial UEs with the band of your choice. It is one of the projects of Mosaic5G inititive and includes FlexRAN agent.
 grade: stable
 type: app
 architectures:
   - amd64
   - i386
 confinement: devmode
+base: core18
 
 apps:
   test:
@@ -111,6 +112,10 @@ hooks:
 parts:
   gdb:
     plugin: nil
+    stage-packages:
+      - libbabeltrace1
+      - libdw1
+      - libmpfr6
     override-build: |
       sudo apt install gdb -y
       mkdir $SNAPCRAFT_PART_INSTALL/share 
@@ -122,8 +127,10 @@ parts:
       - usr/bin/gdb*
   enb:
     plugin: cmake
-    source: https://gitlab.eurecom.fr/oai/openairinterface5g.git
-    source-branch: 2019.w21
+    source: https://gitlab.eurecom.fr/schmidtr/openairinterface5g.git
+    source-branch: flexran-snaps
+    #source: https://gitlab.eurecom.fr/oai/openairinterface5g.git
+    #source-branch: 2019.w21
     build-packages: [build-essential, ]
     override-build: |
       cd ../src/cmake_targets
