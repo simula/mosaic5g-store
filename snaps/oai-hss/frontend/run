@@ -2,35 +2,42 @@
 
 . $SNAP/common
 
+CURRENT_PATH=$(dirname $(readlink -f $0))
+. $CURRENT_PATH/util
 
+if [ -r $SNAP_DATA/config_hss.sh ]; then
+    . $SNAP_DATA/config_hss.sh
+fi
+
+HSS_EXEC_ARGS=" -c $HSS_CONFIG "
+
+HSS_CONFIG=${HSS_CONF_FILE2:-$HSS_CONF_FILE}
+HSS_FD_CONF_FILE2=$(dirname $HSS_CONFIG)/hss_rel14_fd.conf
+HSS_FD_CONFIG=${HSS_FD_CONF_FILE2:-$HSS_FD_CONF_FILE}
+MYSQL_SERVER=`cat $HSS_CONFIG | grep  MYSQL_server  | cut -f2 -d'"'`
+MYSQL_USER=`cat $HSS_CONFIG | grep  MYSQL_user  | cut -f2 -d'"'`
+MYSQL_PW=`cat $HSS_CONFIG | grep  MYSQL_pass  | cut -f2 -d'"'`
+REALM=`cat $HSS_FD_CONFIG | grep  "Realm "  | cut -f2 -d'"'`
+USER_KEY=8BAF473F2F8FD09487CCCBD7097C6862
+SQN=000000000021
+OP=`cat $HSS_CONFIG | grep  -m1 OPERATOR_key  | cut -f2 -d'"'`
+OPC="8E27B6AF0E692E750F32667A3B14605D"
+
+HSS_APN_DEFAULT="default"
+HSS_APN_ALT="internet"
+HSS_APN_OAI="oai."$REAMLM
+IMSI_FIRST3=208930000000001
+IMSI_FIRST4=208940000000001
+IMSI_FIRST5=208950000000001
+MSISDN_FIRST=001011234561000
+MME_ID=3
+MME_IDENTITIY="mme."$REAMLM
+HSS_NUM_USER=40
 
 if [ ! -e $HSS_EXEC ]; then
     echo "Cannot find $HSS_EXEC executable"
     exit -1 
 fi		   	   
-
-
-check_mysql_service(){
-
-    if [ -z "$($HSS_DIR/mysql -u $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER -e status;)" ] ; then
-	echo "HSS DB can not be initialized. Check if the mysql servie is running and that the credentials are correct in hss.conf."
-	return 1
-    else
-	return 0
-    fi
-    
-}
-
-check_cassandra_service(){
-
-    IS_ACTIVE=`systemctl is-active cassandra.service`
-
-    if [ "$IS_ACTIVE" == "active" ]; then
-	status=0
-    else
-	status=1
-    fi
-}
 
 
 case "$1" in
@@ -89,22 +96,22 @@ case "$1" in
 	
 	;;
 
-    "provision-user-cassandra")
+    "provision-user-cassandra" )
 	check_cassandra_service
 
 	# provisin 208930000000001
-	$HSS_SCRIPTS/data_provisioning_users --apn $HSS_APN_OAI --apn2 $HSS_APN_DEFAULT --key $OPC --imsi-first $IMSI_FIRST3 -msisdn-first $MDISDN_FIRST --mme-identity $MME_ID --no-of-users $HSS_NUM_USER --realm $REALM --truncate True  --verbose True --cassandra-cluster $Cassandra_Server_IP
+	echo "$HSS_SCRIPTS/data_provisioning_users --apn $HSS_APN_OAI --apn2 $HSS_APN_DEFAULT --key $OPC --imsi-first $IMSI_FIRST3 -msisdn-first $MDISDN_FIRST --mme-identity $MME_ID --no-of-users $HSS_NUM_USER --realm $REALM --truncate True  --verbose True --cassandra-cluster $Cassandra_Server_IP"
 
 	#provisin 208940000000001
-	$HSS_SCRIPTS/data_provisioning_users --apn $HSS_APN_OAI --apn2 $HSS_APN_DEFAULT --key $OPC --imsi-first $IMSI_FIRST4 -msisdn-first $MDISDN_FIRST --mme-identity $MME_ID --no-of-users $HSS_NUM_USER --realm $REALM --truncate True  --verbose True --cassandra-cluster $Cassandra_Server_IP
+	echo "$HSS_SCRIPTS/data_provisioning_users --apn $HSS_APN_OAI --apn2 $HSS_APN_DEFAULT --key $OPC --imsi-first $IMSI_FIRST4 -msisdn-first $MDISDN_FIRST --mme-identity $MME_ID --no-of-users $HSS_NUM_USER --realm $REALM --truncate True  --verbose True --cassandra-cluster $Cassandra_Server_IP"
 
 	#provisin 208950000000001
-	$HSS_SCRIPTS/data_provisioning_users --apn $HSS_APN_OAI --apn2 $HSS_APN_DEFAULT --key $OPC --imsi-first $IMSI_FIRST5 -msisdn-first $MDISDN_FIRST --mme-identity $MME_ID --no-of-users $HSS_NUM_USER --realm $REALM --truncate True  --verbose True --cassandra-cluster $Cassandra_Server_IP
+	echo "$HSS_SCRIPTS/data_provisioning_users --apn $HSS_APN_OAI --apn2 $HSS_APN_DEFAULT --key $OPC --imsi-first $IMSI_FIRST5 -msisdn-first $MDISDN_FIRST --mme-identity $MME_ID --no-of-users $HSS_NUM_USER --realm $REALM --truncate True  --verbose True --cassandra-cluster $Cassandra_Server_IP"
 
 	
 	;;
     
-    "provision-mme-cassandra")
+    "provision-mme-cassandra" )
 
 	check_cassandra_service
 	
@@ -290,18 +297,24 @@ VALUES
 EOF
 	 ;;
     
-    "hss-certificate"  )
+     "hss-certificate" )
+
 	cd /tmp
 	rm -rf ./demoCA
 	mkdir ./demoCA
 	echo 01 > ./demoCA/serial
 	touch ./demoCA/index.txt
+	touch ./demoCA/index.txt.attr
 	fqdn=`hostname --fqdn`
+	#RANDFILE=/tmp/.rnd
+	#export "$RANDFILE"
+	echo `whoami`
+	
 	echo "Creating HSS certificate for user: $CONF_DIR $fqdn"
 	# Create a Root Certification Authority Certificate
 	openssl req  -new -batch -x509 -days 3650 -nodes -newkey rsa:1024 -out hss.cacert.pem -keyout hss.cakey.pem -subj /CN=$fqdn/C=FR/ST=PACA/L=Aix/O=Eurecom/OU=CM
 	# Generate a Private Key
-	openssl genrsa -out hss.key.pem 1024
+	openssl genrsa -out hss.key.pem 1024 
 	# Generate a CSR (Certificate Signing Request) that will be self-signed
 	openssl req -new -batch -out hss.csr.pem -key hss.key.pem -subj /CN=$fqdn/C=FR/ST=PACA/L=Aix/O=Eurecom/OU=CM
 	#certificate authority 
@@ -309,23 +322,24 @@ EOF
 	mkdir -p $CONF_DIR/
 	mv hss.cakey.pem hss.cert.pem hss.cacert.pem hss.key.pem $CONF_DIR
 	cd -
+	
+#	echo "Done creating HSS certificate for user: $CONF_DIR $fqdn"
+	
 	;;
-
-    
-    * )
-
-	"hss" )
-	if [ -n "$LD_LIBRARY_PATH" ]; then
-	    LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$SNAP/lib:$SNAP/usr/lib:$SNAP/usr/local/lib:$SNAP/usr/local/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
-	else
-	    LD_LIBRARY_PATH=$SNAP/lib:$SNAP/usr/lib:$SNAP/usr/local/lib:$SNAP/usr/local/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu
-	fi
-	export LD_LIBRARY_PATH
-
-        echo "$HSS_EXEC  $HSS_EXEC_ARGS"
-	$HSS_EXEC  `echo $HSS_EXEC_ARGS`  "$@" $*
-	;;
-    
+     
+     "hss" | * )
+	 if [ -n "$LD_LIBRARY_PATH" ]; then
+	     LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$SNAP/lib:$SNAP/usr/lib:$SNAP/usr/local/lib:$SNAP/usr/local/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
+	 else
+	     LD_LIBRARY_PATH=$SNAP/lib:$SNAP/usr/lib:$SNAP/usr/local/lib:$SNAP/usr/local/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu
+	 fi
+	 export $LD_LIBRARY_PATH
+	 
+         echo "$HSS_EXEC  $HSS_EXEC_ARGS"
+	 $HSS_EXEC  `echo $HSS_EXEC_ARGS`  "$@" $*
+	 
+	 ;;
+     
 esac
 
 
