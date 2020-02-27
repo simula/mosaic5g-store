@@ -1,0 +1,73 @@
+#!/bin/sh
+. $SNAP/common
+
+check_mysql_service(){
+
+    if [ -z "$($HSS_DIR/mysql -u $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER -e status;)" ] ; then
+	echo "HSS DB can not be initialized. Check if the mysql servie is running and that the credentials are correct in hss.conf."
+	return 1
+    else
+	return 0
+    fi
+    
+}
+
+check_cassandra_service(){
+
+    #IS_ACTIVE=`systemctl is-active cassandra.service`
+    #IS_RUNNING=`service cassandra status`
+    #echo $IS_RUNNING
+    #if [ "$IS_ACTIVE" = "active" ]; then
+    #if [ $IS_RUNNING =~ .*running.* ]; then 
+    #  	return 0
+    #else
+#	return 1
+    #   fi
+
+    #$CAS_NODETOOL
+
+    # FIX ME
+    return 0
+
+    if [ "$1" != "" ] ; then
+	$CAS_NODETOOL status | grep $1
+    else
+	$CAS_NODETOOL status | grep "127.0.0.1"
+    fi
+    
+    return $?
+      
+}
+
+hss_conf(){
+
+    # prompt has been removed for easier Ctrl+C Ctrl+V
+    # cd $OPENAIRCN_DIR/scripts
+    # reset the config file 
+    cp /var/snap/oai-hss/current/hss_rel14_t.json /var/snap/oai-hss/current/hss_rel14.json
+    
+    PREFIX='/var/snap/oai-hss/current/'
+  
+    declare -A HSS_CONF
+    HSS_CONF[@PREFIX@]=$PREFIX
+    HSS_CONF[@REALM@]=$1
+    HSS_CONF[@HSS_FQDN@]="hss.${HSS_CONF[@REALM@]}"
+    HSS_CONF[@cassandra_Server_IP@]=$2 
+    HSS_CONF[@OP_KEY@]=$3
+    HSS_CONF[@ROAMING_ALLOWED@]='true'
+   
+
+    for K in "${!HSS_CONF[@]}"; do 
+	egrep -lRZ "$K" $PREFIX | xargs -0 -l sed -i -e "s|$K|${HSS_CONF[$K]}|g"
+    done
+    sed -i -e 's/#ListenOn/ListenOn/g' $PREFIX/hss_rel14_fd.conf
+
+    $SNAP/run hss -j $PREFIX/hss_rel14.json --onlyloadkey
+	
+    ### freeDiameter certificate
+    #../src/hss_rel14/bin/make_certs.sh hss ${HSS_CONF[@REALM@]} $PREFIX
+
+    # Finally customize the listen address of FD server
+    # set in $PREFIX/freeDiameter/hss_rel14_fd.conf and uncomment the following line
+    #sed -i -e 's/#ListenOn/ListenOn/g' $PREFIX/freeDiameter/hss_rel14_fd.conf
+}
