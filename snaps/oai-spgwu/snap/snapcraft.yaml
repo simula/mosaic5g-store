@@ -1,14 +1,17 @@
 name: oai-spgwu
-version: '1.5' 
+version: '1.0' 
 summary: OpenAirInterface spgwc entity Rel. 14 with LL-MEC Agent
 description: |
     OAI-SPGWU is the openairinterface-based SPGWU with LL-MEC agent allowing to connect a 4G-comptaible BS and UEs to the core network. It is one of the projects of Mosaic5G inititive.
-grade: stable
+
 type: app
+license: Apache-2.0
 architectures:
   - amd64
   - i386
 confinement: devmode
+grade: stable
+base: core18
 
 apps:
   test:
@@ -68,10 +71,17 @@ parts:
   spgwu:
     plugin: cmake
     source: https://github.com/OPENAIRINTERFACE/openair-cn-cups.git
-    source-branch: llmec
+    source-branch: develop
     build-packages: [build-essential, ]
     stage-packages:
       - libstdc++6
+      - libboost-system1.65.1
+      - libconfig++9v5
+      - libdouble-conversion1
+      - libgflags2.2
+      - libgoogle-glog0v5
+      - libunwind8
+
     override-build: |
       cd ../src/build/scripts
       ./build_spgwu -I -f 

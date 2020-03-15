@@ -5,9 +5,9 @@
 case "$1" in
     "spgwc" )
 
-	if [ ! -f $CONF_DIR/spgwc.conf ] ; then
+#	if [ ! -f $CONF_DIR/spgwc.conf ] ; then
 	    cp $SNAP/etc/spgwc.conf $CONF_DIR
-	fi
+#	fi
 	
 	$SNAP/conf set-spgwc $CONF_DIR/spgwc.conf
 
@@ -23,68 +23,3 @@ case "$1" in
 
 esac
 
-get_eth_ip(){
-  echo `ip addr show $1 | grep -o 'inet [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+' | grep -o [0-9].*`
-}
-
-get_eth_ip_net(){
-  echo `ip addr show $1 | grep -o 'inet [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+/[0-9]\+' | grep -o [0-9].*`
-}
-
-get_ifname(){
-    online="no"
-    for interface in $(ls /sys/class/net/ | egrep -v "lo|vir|wl|lxd|veth");
-    do
-	if [[ $(cat /sys/class/net/$interface/carrier) = 1 ]]; then 
-            #ping -q -w 1 -c 1 `ip r | grep default | cut -d ' ' -f 3` > /dev/null && online=1 || online=0
-            online="yes"
-            break 
-	fi
-    done    
-}
-
-dns='8.8.8.8'
-dns_sec='4.4.4.4'
-
-spgwc_conf(){
-    get_ifname
-    if [ $online == "no" ] ; then
-	echo "No interface with Internet access found. Run init later."
-	ls /sys/class/net/
-	return 
-    else
-	echo "Setting $interface for SXU and S1U interfaces"
-    fi
-
-      # prompt has been removed for easier Ctrl+C Ctrl+V
-    sudo ip a del 172.55.55.101 brd + dev $interface label $interface:sxc    # SPGW-C SXab interface
-    sudo ip a del 172.58.58.102 brd + dev $interface label $interface:s5c  # SGW-C S5S8 interface
-    sudo ip a del 172.58.58.10 brd + dev $interface label $interface:p5c    # PGW-C S5S8 interface
-    sudo ip a del 172.16.1.104 brd + dev $interface label $interface:s11  # SGW-C S11 interface
-
-    sudo ip a del 172.55.55.101 brd + dev $interface label $interface:sxc    # SPGW-C SXab interface
-    sudo ip a del 172.58.58.102 brd + dev $interface label $interface:s5c  # SGW-C S5S8 interface
-    sudo ip a del 172.58.58.10 brd + dev $interface label $interface:p5c    # PGW-C S5S8 interface
-    sudo ip a del 172.16.1.104 brd + dev $interface label $interface:s11  # SGW-C S11 interface
-
-    INSTANCE=1
-    PREFIX='/var/snap/oai-spgwu/current/spgwu.conf'
-    
-    declare -A SPGWC_CONF
-
-    SPGWC_CONF[@INSTANCE@]=$INSTANCE
-    SPGWC_CONF[@PREFIX@]=$PREFIX
-    SPGWC_CONF[@PID_DIRECTORY@]='/var/run'
-    SPGWC_CONF[@SGW_INTERFACE_NAME_FOR_S11@]=$interface:s11
-    SPGWC_CONF[@SGW_INTERFACE_NAME_FOR_S5_S8_CP@]=$interface:s5c
-    SPGWC_CONF[@PGW_INTERFACE_NAME_FOR_S5_S8_CP@]=$interface:p5c
-    SPGWC_CONF[@PGW_INTERFACE_NAME_FOR_SX@]=$interface:sxc
-    SPGWC_CONF[@DEFAULT_DNS_IPV4_ADDRESS@]=$dns
-    SPGWC_CONF[@DEFAULT_DNS_SEC_IPV4_ADDRESS@]=$dns_sec
-    
-    for K in "${!SPGWC_CONF[@]}"; do 
-	egrep -lRZ "$K" $PREFIX | xargs -0 -l sed -i -e "s|$K|${SPGWC_CONF[$K]}|g"
-	ret=$?;[[ ret -ne 0 ]] && echo "Tried to replace $K with ${SPGWC_CONF[$K]}"
-    done
-
-}

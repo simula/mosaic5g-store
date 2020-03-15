@@ -68,35 +68,33 @@ case "$1" in
     
     "info" )
 	shift 
-	snap info $SNAP_NAME "$@"
+	echo "Please manually run: snap info $SNAP_NAME "
 	;; 
-    "status-all" )
-	shift 
-	snap services $SNAP_NAME "$@"
-	;;
-    "stop-all" )
-	shift 
-	snap stop $SNAP_NAME  "$@"
-	;;
     "start"  )
 	daemon=$2
 	shift 2
-	snap start $SNAP_NAME.$daemon  "$@"
+	snapctl start --enable $SNAP_NAME.$daemon "$@"
+	#snap start $SNAP_NAME.$daemon  "$@"
 	;;
     "stop" )
 	daemon=$2
 	shift 2
-	snap stop $SNAP_NAME.$daemon  "$@"
+	snapctl stop --disable $SNAP_NAME.$daemon "$@"
+	#snap stop $SNAP_NAME.$daemon  "$@"
 	;;
     "restart" )
 	daemon=$2
 	shift 2
-	snap restart $SNAP_NAME.$daemon  "$@"
+	snapctl stop $SNAP_NAME.$daemon "$@"
+	snapctl start --enable $SNAP_NAME.$daemon "$@"
+	#snapctl restart $SNAP_NAME.$daemon "$@"
+	#snap restart $SNAP_NAME.$daemon  "$@"
 	;;
     "status" )
 	daemon=$2
 	shift 2
-	snap services $SNAP_NAME.$daemon "$@" 
+	echo "Please manually run: snap services $SNAP_NAME.$daemon" 
+	snapctl services $SNAP_NAME.$daemon 
 	#systemctl status --lines 0 snap.$SNAP_NAME.$2.service
 	;;
     "journal" )
@@ -109,9 +107,7 @@ case "$1" in
 	echo "                          App [x] is enb, cudu, and rru"
 	echo "Note:                     root priviliage required"
 	echo "Options:"
-	echo "oai-ran.info              get the info for this snap"            
-	echo "oai-ran.status-all        status of all the services of this snap"
-	echo "oai-ran.stop-all          stop all the services of this snap"
+	echo "oai-ran.info              get the info for this snap"     
 	echo "oai-ran.test              test snap services" 
 	echo "oai-ran.init              initialize $SNAP_NAME (after the 1st installation)"
 	echo ""

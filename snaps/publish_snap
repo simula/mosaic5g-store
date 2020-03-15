@@ -8,6 +8,8 @@ fi
 declare -a snaps=("oai-cn" "oai-ran" "oai-ue" "oai-tracer" "flexran" "ll-mec")
 declare -a snaps=("oai-cn")
 declare -a snaps=("oai-ue")
+declare -a snaps=("oai-hss oai-mme oai-spgwc oai-spgwu")
+declare -a snaps=("oai-spgwu")
 declare -a channels=("edge,beta")
 
 for s in "${channels[@]}"

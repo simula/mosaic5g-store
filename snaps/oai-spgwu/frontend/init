@@ -5,9 +5,9 @@
 case "$1" in
     "spgwu" )
 
-	if [ ! -f $CONF_DIR/spgwu.conf ] ; then
+#	if [ ! -f $CONF_DIR/spgwu.conf ] ; then
 	    cp $SNAP/etc/spgwu.conf $CONF_DIR
-	fi
+#	fi
 	
 	$SNAP/conf set-spgwu $CONF_DIR/spgwu.conf
 

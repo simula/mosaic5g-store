@@ -5,4 +5,3 @@ echo "Configure hook "
 snapctl stop --disable ${SNAP_NAME}  2>&1  || true
 
 $SNAP/init hss
-

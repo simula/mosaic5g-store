@@ -1,18 +1,20 @@
 name: oai-mme
-version: '1.5' 
+version: '1.0' 
 summary: OpenAirInterface MME entity with LL-MEC Agent
 description: |
     OAI-MME is the openairinterface-based MME entity with the LL-MEC agent allowing to connect a 4G-comptaible BS and UEs to the core network and monitor and control the UP with LL-MEC controller. It is one of the projects of Mosaic5G inititive.
-grade: stable
 type: app
+license: Apache-2.0
 architectures:
   - amd64
   - i386
-confinement: classic
+confinement: devmode
+grade: stable
+base: core18
 
 apps:
   test:
-    command : test
+    command : test mme-service
   info:
     command: run info
   oai-mme:
@@ -62,6 +64,29 @@ parts:
     prime:
       - gdb*
       - share/*
+  #fd:
+  #  plugin: cmake
+  #  source: https://gitlab.eurecom.fr/oai/freediameter.git
+  # source-branch: eurecom-1.2.0
+  # stage-packages:
+  #   - libsctp1
+  # override-build: |
+  #   cd ../src
+  #   mkdir build
+  #   cd build
+  #   cmake -DCMAKE_INSTALL_PREFIX:PATH=$SNAPCRAFT_PART_INSTALL/usr/local ../
+  #   #cmake ../
+  #   make -j`nproc`
+  #   sudo -S -E make install
+  #   #mkdir -p $SNAPCRAFT_PART_INSTALL/usr/local/lib/freeDiameter/
+  #   #sudo cp -r /usr/local/lib/freeDiameter $SNAPCRAFT_PART_INSTALL/usr/local/lib
+  # stage:
+  #   - lib/*
+  #   - usr/local/*
+  # prime:
+  #   - lib/*
+  #   - usr/local/*
+
   mme:
     plugin: cmake
     source: https://github.com/OPENAIRINTERFACE/openair-cn.git
@@ -69,6 +94,8 @@ parts:
     build-packages: [build-essential, ]
     stage-packages:
       - libstdc++6
+      - libsctp1
+      - libconfig9
     override-build: |
       #export DEBIAN_FRONTEND=interactive
       cd ../src/scripts
@@ -79,6 +106,9 @@ parts:
       cp etc/mme*  $SNAPCRAFT_PART_INSTALL/mme/
       cp build/mme/build/*.*  $SNAPCRAFT_PART_INSTALL/mme/
       cp build/mme/build/mme  $SNAPCRAFT_PART_INSTALL/mme/
+      cp /usr/local/lib/libfd* $SNAPCRAFT_PART_INSTALL/usr/lib
+      cp /usr/local/lib/liblfds* $SNAPCRAFT_PART_INSTALL/usr/lib
+      cp -r /usr/local/lib/freeDiameter/  $SNAPCRAFT_PART_INSTALL/usr/lib
     stage:
       - mme/*
       - usr/lib/*

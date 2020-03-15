@@ -5,18 +5,25 @@
 CURRENT_PATH=$(dirname $(readlink -f $0))
 . $CURRENT_PATH/util
 
+REALM=`cat $HSS_FD_CONF_FILE | grep  "Realm "  | cut -f2 -d'"'`
+HOSTNAME=`hostname` # `cat /etc/hostname` #`hostname`
+cassandra_Server_IP=`cat $HSS_CONF_FILE | grep cassandra_Server_IP | cut -d "#" -f1 | tr -d ";" | cut -f3 -d' '`
+OP_KEY=`cat $HSS_CONF_FILE | grep -m1 OPERATOR_key | cut -f2 -d '"'`
+
+	
 case "$1" in
 
     "hss" )
-
-	if [ ! -f $CONF_DIR/hss.conf ]; then
+	shift 
+#	if [ ! -f $CONF_DIR/hss.conf ]; then
 	    cp $SNAP/etc/* $CONF_DIR
-	fi
+#	fi
 
 	# set the hss.conf
 	echo "set-hss $CONF_DIR/hss.conf"
 	$SNAP/conf set-hss $CONF_DIR/hss_rel14.json
 	
+	sed -i -e "s/ubuntu/$HOSTNAME/g" $CONF_DIR/hss_rel14_fd.conf 
 	$SNAP/run hss-certificate
 		
 	# a copy for the user: with sudo, the user is root
@@ -28,10 +35,6 @@ case "$1" in
 
 	# this part needs sudo privilage 
   	#service mysql restart || true 
-	REALM=`cat $HSS_FD_CONF_FILE | grep  "Realm "  | cut -f2 -d'"'`
-	HOSTNAME=`hostname` # `cat /etc/hostname` #`hostname`
-	cassandra_Server_IP=`cat $HSS_CONF_FILE | grep cassandra_Server_IP | cut -d "#" -f1 | tr -d ";" | cut -f3 -d' '`
-	OP_KEY=`cat $HSS_CONF_FILE | grep -m1 OPERATOR_key | cut -f2 -d '"'`
 	
 	if [ -z "$(grep -o "$HOSTNAME.$REALM" /etc/hosts)" ]; then
 	    cp /etc/hosts /etc/hosts.$REALM.bkup
@@ -50,11 +53,8 @@ case "$1" in
 	check_cassandra_service
 	if [ $? -eq 0 ]; then
 	    $SNAP/run  provision-user-cassandra "$@" $*  || true 
-	    $SNAP/run  provision-mme-cassandra  "$@" $* || true 
+	    $SNAP/run  provision-mme-cassandra "$@" $*  || true
 
-	    #echo "hss_conf $REALM $cassandra_Server_IP $OP_KEY" 
-	    #hss_conf $REALM $cassandra_Server_IP $OP_KEY "$@" $*
-	
 	    echo ""
 	    echo "HSS is initialized"
 	    echo "Now, it is the time to configure the $CONF_DIR/hss_rel14_fd.conf"

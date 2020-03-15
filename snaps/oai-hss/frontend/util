@@ -14,22 +14,19 @@ check_mysql_service(){
 
 check_cassandra_service(){
 
-    #IS_ACTIVE=`systemctl is-active cassandra.service`
-    #IS_RUNNING=`service cassandra status`
-    #echo $IS_RUNNING
-    #if [ "$IS_ACTIVE" = "active" ]; then
-    #if [ $IS_RUNNING =~ .*running.* ]; then 
-    #  	return 0
-    #else
-#	return 1
-    #   fi
-
-    #$CAS_NODETOOL
-
-    # FIX ME
     return 0
+    
+    cassandra_IP=$(docker inspect --format="{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}" cassandra-docker)
 
-      
+    cassandra_config_IP=`cat $HSS_CONF_FILE | grep cassandra_Server_IP | cut -d "#" -f1 | tr -d ";" | cut -f3 -d' '`
+
+    if ( "$cassandra_IP" != "$cassandra_config_IP$" ) ; then
+	echo "cassandra_config_IP: $cassandra_config_IP different from cassandra_IP $cassandra_IP"
+	return 1
+    else
+	return 0
+    fi
+     
 }
 
 hss_conf(){

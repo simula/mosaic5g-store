@@ -25,31 +25,44 @@ case "$1" in
 	cat $SNAP_DATA/.gdb_$2
 	exec $SNAP/gdb --data-directory=$SNAP_DATA  -n -x $SNAP_DATA/.gdb_$2
 	;;
-    
+
     "info" )
-	snap info $SNAP_NAME
+	#snap info $SNAP_NAME
+	shift 
+	echo "Please manually run: snap info $SNAP_NAME "
 	;; 
-      
+    
      "start"  )
-	snap start $SNAP_NAME
-	;;
-     
-    "stop" )
-	snap stop $SNAP_NAME
+	 #snap start $SNAP_NAME
+	 shift 
+	 snapctl start --enable $SNAP_NAME "$@"
+	 ;;
+
+     "stop" )
+	#snap stop $SNAP_NAME
+	 shift 
+	 snapctl stop --disable $SNAP_NAME "$@"
+	 ;;
+
+     "restart" )
+	 #snap restart $SNAP_NAME
+	 shift 
+	 snapctl stop --disable $SNAP_NAME "$@"
+	 snapctl start --enable $SNAP_NAME "$@"
+	 
 	;;
 
-    "restart" )
-	snap restart $SNAP_NAME
+     "status" )
+	 #snap services $SNAP_NAME
+	 shift
+	 snapctl services $SNAP_NAME "$@"
+	 ;;
+
+     "journal" )
+	journalctl -u snap.$SNAP_NAME.service "$@"
 	;;
     
-    "status" )
-	snap services $SNAP_NAME
-	;;
-
-    "journal" )
-	journalctl -u snap.$SNAP_NAME.service
-	;;
-
+    
     "help" )
 	echo "Usage:   sudo  $SNAP_NAME.[options] args"
 	echo "Note:    need root priviliage"
@@ -73,12 +86,6 @@ case "$1" in
     
     "spgwu" | * )
 	
-	if [ -n "$LD_LIBRARY_PATH" ]; then
-	    LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$SNAP/lib:$SNAP/usr/lib:$SNAP/usr/local/lib:$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
-	else
-	    LD_LIBRARY_PATH=$SNAP/lib:$SNAP/usr/lib:$SNAP/usr/local/lib:$SNAP/usr/local/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu
-	fi
-	export LD_LIBRARY_PATH
 	
         echo "$SPGWU_EXEC  $SPGWU_EXEC_ARGS" 
 	$SPGWU_EXEC  `echo $SPGWU_EXEC_ARGS` "$@"

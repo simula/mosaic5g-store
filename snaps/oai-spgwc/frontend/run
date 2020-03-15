@@ -14,6 +14,8 @@ fi
 SPGWC_CONFIG=${SPGWC_CONF_FILE2:-$SPGWC_CONF_FILE}
 SPGWC_EXEC_ARGS=" -c $SPGWC_CONFIG "
 
+export LD_LIBRARY_PATH="$SNAP/usr/lib:$SNAP/usr/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"
+
 case "$1" in
     "gdb" )
 	echo "Running $2 with the gdb"
@@ -27,29 +29,39 @@ case "$1" in
 	;;
     
     "info" )
-	snap info $SNAP_NAME
+	#snap info $SNAP_NAME
+	shift 
+	echo "Please manually run: snap info $SNAP_NAME "
 	;; 
-      
-     "start"  )
-	snap start $SNAP_NAME
+    
+    "start"  )
+	#snap start $SNAP_NAME
+	shift 
+	snapctl start --enable $SNAP_NAME "$@"
 	;;
-     
+    
     "stop" )
-	snap stop $SNAP_NAME
+	#snap stop $SNAP_NAME
+	shift 
+	snapctl stop --disable $SNAP_NAME "$@"
 	;;
-
+    
     "restart" )
-	snap restart $SNAP_NAME
+	#snap restart $SNAP_NAME
+	shift 
+	snapctl stop  --disable $SNAP_NAME "$@"
+	snapctl start --enable  $SNAP_NAME "$@"
 	;;
     
     "status" )
-	snap services $SNAP_NAME
+	#snap services $SNAP_NAME
+	shift
+	snapctl services $SNAP_NAME "$@"
 	;;
-
     "journal" )
-	journalctl -u snap.$SNAP_NAME.service
+	journalctl -u snap.$SNAP_NAME.service "$@"
 	;;
-
+    
     "help" )
 	echo "Usage:   sudo  $SNAP_NAME.[options] args"
 	echo "Note:    need root priviliage"
@@ -72,14 +84,7 @@ case "$1" in
 	;;
     
     "spgwc" | * )
-	
-	if [ -n "$LD_LIBRARY_PATH" ]; then
-	    LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$SNAP/lib:$SNAP/usr/lib:$SNAP/usr/local/lib:$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
-	else
-	    LD_LIBRARY_PATH=$SNAP/lib:$SNAP/usr/lib:$SNAP/usr/local/lib:$SNAP/usr/local/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu
-	fi
-	export LD_LIBRARY_PATH
-	
+		
         echo "$SPGWC_EXEC  $SPGWC_EXEC_ARGS" 
 	$SPGWC_EXEC  `echo $SPGWC_EXEC_ARGS` "$@"
         ;;

@@ -2,36 +2,23 @@
 
 . $SNAP/common
 
-echo "Test Snap Service $1"
+echo "Test Snap MMED Service"
 
 waiting_time=2
 case "$1" in
-    "hss-service" )
-	$SNAP/run status hssd 
+    "mme-service" )
+	$SNAP/run status  
 	sleep $waiting_time 
-	$SNAP/run start hssd
+	$SNAP/run start 
 	sleep $waiting_time 
-	$SNAP/run status hssd
+	$SNAP/run status
 	sleep $waiting_time 
-	$SNAP/run stop hssd
+	$SNAP/run stop 
 	sleep $waiting_time
-	$SNAP/run status hssd
+	$SNAP/run status 
 	sleep $waiting_time 
 
     ;;
-
-    "all" )
-	$SNAP/run status-all
-	sleep $waiting_time 
-	$SNAP/run start-all
-	sleep $waiting_time 
-	$SNAP/run status-all
-	sleep $waiting_time 
-	$SNAP/run stop-all
-	sleep $waiting_time
-	$SNAP/run status-all
-	sleep $waiting_time 
-	;;
 	
     * )
 	echo "Unknown command: $1"

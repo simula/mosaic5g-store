@@ -9,22 +9,15 @@ if [ ! -e $MME_EXEC ]; then
     exit -1 
 fi		   	   
 
-kern=`uname -r`
-kern_version=`echo $kern | cut -d '.' -f1`
-kern_major_revision=`echo $kern | cut -d '.' -f2`
-if [ $kern_version -lt 4 ] && [ $kern_major_revision -le 10 ]; then
-    echo "[Warn] Kernel $kern does not support GTP"
-fi
-
 
 if [ -r $SNAP_DATA/config_mme.sh ]; then
     . $SNAP_DATA/config_mme.sh
 fi
 
-
 MME_CONFIG=${MME_CONF_FILE2:-$MME_CONF_FILE}
 MME_EXEC_ARGS=" -c $MME_CONFIG "
 
+export LD_LIBRARY_PATH="$SNAP/usr/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"
 
 case "$1" in
     "gdb" )
@@ -37,29 +30,41 @@ case "$1" in
 	cat $SNAP_DATA/.gdb_$2
 	exec $SNAP/gdb --data-directory=$SNAP_DATA  -n -x $SNAP_DATA/.gdb_$2
 	;;
-    
-    "info" )
-	snap info $SNAP_NAME
+
+     "info" )
+	#snap info $SNAP_NAME
+	shift 
+	echo "Please manually run: snap info $SNAP_NAME "
 	;; 
     
      "start"  )
-	snap start $SNAP_NAME
-	;;
+	 #snap start $SNAP_NAME
+	 shift 
+	 snapctl start --enable $SNAP_NAME "$@"
+	 ;;
 
      "stop" )
-	snap stop $SNAP_NAME
-	;;
+	#snap stop $SNAP_NAME
+	 shift 
+	 snapctl stop --disable $SNAP_NAME "$@"
+	 ;;
 
      "restart" )
-	snap restart $SNAP_NAME
+	 #snap restart $SNAP_NAME
+	 shift 
+	 snapctl stop  --disable $SNAP_NAME "$@"
+	 snapctl start --enable  $SNAP_NAME "$@"
 	;;
 
      "status" )
-	snap services $SNAP_NAME
-	;;
+	 #snap services $SNAP_NAME
+	 shift
+	 snapctl services $SNAP_NAME "$@"
+	 ;;
     "journal" )
-	journalctl -u snap.$SNAP_NAME.service
+	journalctl -u snap.$SNAP_NAME.service "$@"
 	;;
+    
     
     "help" )
 	echo "Usage:   sudo  $SNAP_NAME.[options] args"
@@ -88,7 +93,8 @@ case "$1" in
 	mkdir ./demoCA
 	echo 01 > ./demoCA/serial
 	touch ./demoCA/index.txt
-
+	touch ./demoCA/index.txt.attr
+	
 	fqdn=`hostname --fqdn`
 	echo "Creating MME certificate for user $CONF_DIR $fqdn"
 	# Create a Root Certification Authority Certificate
@@ -104,16 +110,10 @@ case "$1" in
 	cd - 
 	;;
     
-    * )
-       if [ -n "$LD_LIBRARY_PATH" ]; then
-	    LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$SNAP/lib:$SNAP/usr/lib:$SNAP/usr/local/lib:$SNAP/usr/local/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
-	else
-	    LD_LIBRARY_PATH=$SNAP/lib:$SNAP/usr/lib:$SNAP/usr/local/lib:$SNAP/usr/local/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu
-	fi
-	export LD_LIBRARY_PATH
-	
+    "mme" | * )
+	shift 
 	echo "$MME_EXEC  $MME_EXEC_ARGS"
-	$MME_EXEC  `echo $MME_EXEC_ARGS` "$@"
+	$MME_EXEC  `echo $MME_EXEC_ARGS` "$@" $*
 	;;
     
 esac
