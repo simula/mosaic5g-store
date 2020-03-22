@@ -12,7 +12,7 @@ if [ -r $SNAP_DATA/config_spgwu.sh ]; then
 fi
 
 SPGWU_CONFIG=${SPGWU_CONF_FILE2:-$SPGWU_CONF_FILE}
-SPGWU_EXEC_ARGS=" -c $SPGWU_CONFIG "
+SPGWU_EXEC_ARGS=" -c $SPGWU_CONFIG -o "
 
 case "$1" in
     "gdb" )
@@ -59,8 +59,9 @@ case "$1" in
 	 ;;
 
      "journal" )
-	journalctl -u snap.$SNAP_NAME.service "$@"
-	;;
+	 shift
+	 journalctl -u snap.$SNAP_NAME.spgwud.service "$@"
+	 ;;
     
     
     "help" )

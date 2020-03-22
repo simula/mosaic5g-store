@@ -12,7 +12,7 @@ if [ -r $SNAP_DATA/config_spgwc.sh ]; then
 fi
 
 SPGWC_CONFIG=${SPGWC_CONF_FILE2:-$SPGWC_CONF_FILE}
-SPGWC_EXEC_ARGS=" -c $SPGWC_CONFIG "
+SPGWC_EXEC_ARGS=" -c $SPGWC_CONFIG -o "
 
 export LD_LIBRARY_PATH="$SNAP/usr/lib:$SNAP/usr/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"
 
@@ -59,7 +59,8 @@ case "$1" in
 	snapctl services $SNAP_NAME "$@"
 	;;
     "journal" )
-	journalctl -u snap.$SNAP_NAME.service "$@"
+	shift
+	journalctl -u snap.$SNAP_NAME.spgwcd.service "$@"
 	;;
     
     "help" )

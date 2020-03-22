@@ -23,7 +23,7 @@ apps:
     command: run mme
     daemon: simple
     stop-command: run stop
-    stop-timeout: 7s
+    stop-timeout: 1s
   debug:
     command: run gdb
   start:

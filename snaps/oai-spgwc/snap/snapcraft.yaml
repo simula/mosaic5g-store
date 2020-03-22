@@ -23,18 +23,18 @@ apps:
   spgwcd:
     command: run spgwc
     daemon: simple
-    stop-command: run stop spgwcd
-    stop-timeout: 7s
+    stop-command: run stop
+    stop-timeout: 1s
   start:
-    command: run start spgwcd
+    command: run start
   stop:
-    command: run stop spgwcd
+    command: run stop
   restart:
-    command: run restart spgwcd
+    command: run restart
   status:
-    command: run status spgwcd
+    command: run status
   journal:
-    command: run journal spgwcd
+    command: run journal
   init:
     command: init spgwc
   help:

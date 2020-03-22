@@ -15,7 +15,7 @@ if [ -r $SNAP_DATA/config_mme.sh ]; then
 fi
 
 MME_CONFIG=${MME_CONF_FILE2:-$MME_CONF_FILE}
-MME_EXEC_ARGS=" -c $MME_CONFIG "
+MME_EXEC_ARGS=" -c $MME_CONFIG"
 
 export LD_LIBRARY_PATH="$SNAP/usr/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"
 
@@ -62,7 +62,9 @@ case "$1" in
 	 snapctl services $SNAP_NAME "$@"
 	 ;;
     "journal" )
-	journalctl -u snap.$SNAP_NAME.service "$@"
+	shift
+	journalctl -u snap.$SNAP_NAME.mmed.service "$@"
+	
 	;;
     
     

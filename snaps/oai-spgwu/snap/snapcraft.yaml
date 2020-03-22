@@ -23,18 +23,18 @@ apps:
   spgwud:
     command: run spgwu
     daemon: simple
-    stop-command: run stop spgwud
-    stop-timeout: 7s
+    stop-command: run stop
+    stop-timeout: 1s
   start:
-    command: run start spgwud
+    command: run start
   stop:
-    command: run stop spgwud
+    command: run stop
   restart:
-    command: run restart spgwud
+    command: run restart
   status:
-    command: run status spgwud
+    command: run status
   journal:
-    command: run journal spgwud
+    command: run journal
   init:
     command: init spgwu
   help:
