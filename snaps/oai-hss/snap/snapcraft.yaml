@@ -19,13 +19,15 @@ apps:
     command : test hss-service
   info:
     command: run info
+  help:
+    command: run help 
   oai-hss:
     command: run hss
   hssd:
     command: run hss
     daemon: simple
     stop-command: run stop
-    stop-timeout: 7s
+    stop-timeout: 1s
   debug:
     command: run gdb
   start:
@@ -54,6 +56,8 @@ apps:
     command: run dump-users
   reset-db:
     command: run reset-db
+  clean-db:
+    command: run clean-db
   add-mme:
     command: run add-mme
   dump-mme:

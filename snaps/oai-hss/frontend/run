@@ -34,7 +34,7 @@ MSISDN_FIRST=001011234561000
 MME_ID=3
 MME_ISDN=208
 MME_IDENTITIY=`hostname`"."$REALM
-HSS_NUM_USER=40
+HSS_NUM_USER=5
 Cassandra_Server_IP=`cat $HSS_CONF_FILE | grep cassandra_Server_IP | cut -d "#" -f1 | tr -d ";" | cut -f3 -d' '`
 
 	
@@ -47,6 +47,7 @@ export LD_LIBRARY_PATH="$SNAP/usr/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gn
 
 	 
 case "$1" in
+   
     "gdb" )
 	echo "Running $2 with the gdb"
 	touch      $SNAP_DATA/.gdb_$2
@@ -57,14 +58,20 @@ case "$1" in
 	cat $SNAP_DATA/.gdb_$2
 	exec $SNAP/gdb --data-directory=$SNAP_DATA  -n -x $SNAP_DATA/.gdb_$2
 	;;
+
     
      "info" )
 	#snap info $SNAP_NAME
-	shift 
-	echo "Please manually run: snap info $SNAP_NAME "
+	 shift
+	 echo "This command shall manually be run, try: snap info $SNAP_NAME "
 
 	;; 
-    
+
+     "get" )
+	 shift
+	 snapctl get $SNAP_NAME "$@"
+
+	 ;;
      "start"  )
 	 #snap start $SNAP_NAME
 	 shift 
@@ -89,29 +96,40 @@ case "$1" in
 	 #snap services $SNAP_NAME
 	 shift
 	 snapctl services $SNAP_NAME "$@"
+
 	 ;;
-    "journal" )
-	journalctl -u snap.$SNAP_NAME.service "$@"
-	;;
+     
+     "journal" )
+	 shift
+	 journalctl -u snap.$SNAP_NAME.hssd.service "$@"
+
+	 ;;
     
     "help" )
 	echo "Usage:   sudo  $SNAP_NAME.[options] args"
 	echo "Note:    need root priviliage"
 	echo "Options:"
-	echo "  start:        start the $SNAP_NAME.mmed daemon"
-	echo "  stop:         stop the $SNAP_NAME.mmed daemon"
-	echo "  restart:      restart the $SNAP_NAME.mmed daemon"
-	echo "  status:       get the $SNAP_NAME.mmed status"
-	echo "  journal:      get the $SNAP_NAME.mmed logs"
+	echo "  start:        start the $SNAP_NAME.hssd daemon"
+	echo "  stop:         stop the $SNAP_NAME.hssd daemon"
+	echo "  restart:      restart the $SNAP_NAME.hssd daemon"
+	echo "  status:       get the $SNAP_NAME.hssd status"
+	echo "  journal:      get the $SNAP_NAME.hssd logs"
 	echo ""
-	echo "  init:         initialize MME"
-	echo "  conf-set:     set the MME configuration file"
-	echo "  conf-get:     get the current MME configuration file (mme.conf)"
-	echo "  conf-show:    show the path to the MME configuration file (mme.conf)"
-	echo "  conf-list:    list all the SPGW configuration files (mme.conf, mme_fd)"
+	echo "  init:         initialize HSS"
+	echo "  conf-set:     set the HSS configuration file"
+	echo "  conf-get:     get the current HSS configuration file (hss_rel14.conf)"
+	echo "  conf-show:    show the path to the HSS configuration file (hss_rel14.conf)"
+	echo "  conf-list:    list all the HSS configuration files"
+	echo ""
+	echo "  add-user:     Add a user to Cassandra DB. For more option, try oai-hss.add-user --help "
+	echo "  dump-users:   dump the current user DB. Use option -h for more options."
+	echo "  add-mme:      [MME_FQDN]  Add a MME identified by its FQDN (default is the local FQDN)"
+	echo "  dump-mmeid:   dump the current authenticated mme hosts"
+	echo "  reset-db:     reset the oai_db to its initial values"
+	echo "  clean-db:     clean all the entires in the cassandra db"
 	echo ""
 	echo "  help:         print this help"
-	echo "  Example:      sudo oai-mme.init; sudo oai-mme;"
+	echo "  Example:      sudo oai-hss.init; sudo oai-hss;"
 	
 	;;
 
@@ -119,40 +137,54 @@ case "$1" in
 	check_cassandra_service
 	
 	# provisin 208930000000001
-	echo "$SNAP/data_provisioning_users --apn $HSS_APN_OAI --apn2 $HSS_APN_DEFAULT --key $OPC --imsi-first $IMSI_FIRST3 --msisdn-first $MSISDN_FIRST --mme-identity $MME_IDENTITIY --no-of-users $HSS_NUM_USER --realm $REALM --sqn $SQN --truncate True  --verbose True --cassandra-cluster $Cassandra_Server_IP"
+	#echo "$SNAP/data_provisioning_users --apn $HSS_APN_OAI --apn2 $HSS_APN_DEFAULT --key $OPC --imsi-first $IMSI_FIRST3 --msisdn-first $MSISDN_FIRST --mme-identity $MME_IDENTITIY --no-of-users $HSS_NUM_USER --realm $REALM --sqn $SQN --truncate True  --cassandra-cluster $Cassandra_Server_IP"
 
-	python3 $SNAP/data_provisioning_users --apn $HSS_APN_OAI --apn2 $HSS_APN_DEFAULT --key $OPC --imsi-first $IMSI_FIRST3 --msisdn-first $MSISDN_FIRST --mme-identity $MME_IDENTITIY --no-of-users $HSS_NUM_USER --realm $REALM --sqn $SQN --truncate True  --verbose True --cassandra-cluster $Cassandra_Server_IP
+	#python3 $SNAP/data_provisioning_users --apn $HSS_APN_OAI --apn2 $HSS_APN_DEFAULT --key $OPC --imsi-first $IMSI_FIRST3 --msisdn-first $MSISDN_FIRST --mme-identity $MME_IDENTITIY --no-of-users $HSS_NUM_USER --realm $REALM --sqn $SQN --truncate True --cassandra-cluster $Cassandra_Server_IP
 
-	echo ""
+	#echo ""
 	#provisin 208940000000001
-	python3 $SNAP/data_provisioning_users --apn $HSS_APN_OAI --apn2 $HSS_APN_DEFAULT --key $OPC --imsi-first $IMSI_FIRST4 --msisdn-first $MSISDN_FIRST --mme-identity $MME_IDENTITIY --no-of-users $HSS_NUM_USER --realm $REALM  --sqn $SQN --truncate False --verbose True --cassandra-cluster $Cassandra_Server_IP
+	#python3 $SNAP/data_provisioning_users --apn $HSS_APN_OAI --apn2 $HSS_APN_DEFAULT --key $OPC --imsi-first $IMSI_FIRST4 --msisdn-first $MSISDN_FIRST --mme-identity $MME_IDENTITIY --no-of-users $HSS_NUM_USER --realm $REALM  --sqn $SQN --truncate False --cassandra-cluster $Cassandra_Server_IP
 
 	echo ""
 	#provisin 208950000000001
-	python3 $SNAP/data_provisioning_users --apn $HSS_APN_OAI --apn2 $HSS_APN_DEFAULT --key $OPC --imsi-first $IMSI_FIRST5 --msisdn-first $MSISDN_FIRST --mme-identity $MME_IDENTITIY --no-of-users $HSS_NUM_USER --realm $REALM  --sqn $SQN --verbose True --truncate False --cassandra-cluster $Cassandra_Server_IP
+	echo "$SNAP/data_provisioning_users --apn $HSS_APN_OAI --apn2 $HSS_APN_DEFAULT --key $OPC --imsi-first $IMSI_FIRST5 --msisdn-first $MSISDN_FIRST --mme-identity $MME_IDENTITIY --no-of-users $HSS_NUM_USER --realm $REALM  --sqn $SQN --truncate True --cassandra-cluster $Cassandra_Server_IP"
+	
+	python3 $SNAP/data_provisioning_users --apn $HSS_APN_OAI --apn2 $HSS_APN_DEFAULT --key $OPC --imsi-first $IMSI_FIRST5 --msisdn-first $MSISDN_FIRST --mme-identity $MME_IDENTITIY --no-of-users $HSS_NUM_USER --realm $REALM  --sqn $SQN --truncate True --cassandra-cluster $Cassandra_Server_IP
 
 	;;
 
-     "add-users" )
+    "clean-db" )
+	python3 $SNAP/data_provisioning_users -t True -n 0 
+	;;
+    
+    "add-users" )
 	check_cassandra_service
-       
-	if [ $# -lt 10 ] ; then
-	    python3 $SNAP/data_provisioning_users --cassandra-cluster $Cassandra_Server_IP -h
-	    echo ""
-	    echo "Note: if truncate is true, then the previous user base will be overwritten"
+	
+	if [ $# -lt 1 ] ; then
+	    #python3 $SNAP/data_provisioning_users --cassandra-cluster $Cassandra_Server_IP -h
+	    echo "[ERR] Arguments are missing, please Check out oai-hss.add-user --help"
 	    echo ""
 	    echo "Example:"
-	    echo "$add-user --apn $HSS_APN_OAI --apn2 $HSS_APN_DEFAULT --key $OPC --imsi-first $IMSI_FIRST3 --msisdn-first $MSISDN_FIRST --mme-identity $MME_IDENTITIY --no-of-users $HSS_NUM_USER --realm $REALM --verbose True --cassandra-cluster $Cassandra_Server_IP"
+	    echo "$ oai-hss.add-user --apn $HSS_APN_OAI --apn2 $HSS_APN_DEFAULT --key $OPC --imsi-first $IMSI_FIRST3 --msisdn-first $MSISDN_FIRST --mme-identity $MME_IDENTITIY --no-of-users $HSS_NUM_USER --realm $REALM --cassandra-cluster $Cassandra_Server_IP"
+	    echo "Note: if truncate is true, then the previous user base will be overwritten"
 	    return 1
 	fi
 	shift 
-	python3 $SNAP/data_provisioning_users "$@" $*
-	;;
+	python3 $SNAP/data_provisioning_users "$@" $* 
+	imsi=$(echo "$@" | grep -oP "imsi-first \K\w+")
+	num_users=$(echo "$@" | grep -oP "no-of-users \K\w+")
+	if [ "imsi" != ' ' ] ; then 
+	    python3 $SNAP/dump_users --imsi-first $imsi --cassandra-cluster $Cassandra_Server_IP
+	else
+	    python3 $SNAP/dump_users --cassandra-cluster $Cassandra_Server_IP
+	fi
 
-     "dump-users" )
-	 
-	 python3 $SNAP/dump_users --cassandra-cluster $Cassandra_Server_IP
-	 ;;
+	;;
+	     
+    "dump-users" )
+	shift 
+	python3 $SNAP/dump_users --cassandra-cluster $Cassandra_Server_IP "$@" 
+	;;
      
     "provision-mme-cassandra" )
 	shift

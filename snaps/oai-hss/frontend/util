@@ -1,16 +1,6 @@
 #!/bin/sh
 . $SNAP/common
 
-check_mysql_service(){
-
-    if [ -z "$($HSS_DIR/mysql -u $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER -e status;)" ] ; then
-	echo "HSS DB can not be initialized. Check if the mysql servie is running and that the credentials are correct in hss.conf."
-	return 1
-    else
-	return 0
-    fi
-    
-}
 
 check_cassandra_service(){
 
