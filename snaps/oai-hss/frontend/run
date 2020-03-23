@@ -183,7 +183,7 @@ case "$1" in
 	    imsi_digits=$imsi_i_digits
 	fi
 
-	if [ $imsi_digits --eq 15 ] ; then
+	if [ $imsi_digits -eq 15 ] ; then
 	    echo "[INFO] Please enter a valid IMSI  with 15 digits ($imsi, $imsi_digits/15)"
 	    return
 	fi
