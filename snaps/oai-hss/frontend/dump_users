@@ -55,10 +55,10 @@ def main():
     parser.add_argument('-C', '--cassandra-cluster', default='172.17.0.2',      help="Cassandra list of nodes")
     parser.add_argument('-I', '--imsi-first',   default='000000000000000',     help="Check if the IMSI is in the DB")
     parser.add_argument('-v', '--verbose',      default='False',    choices=['True', 'TRUE', 'true', 'False', 'FALSE', 'false'],          help="Verbosity of dumped data")
-    parser.add_argument('-n', '--no-of-users',  type=int, default=1,         help="Number of users")
+    #parser.add_argument('-n', '--no-of-users',  type=int, default=1,         help="Number of users")
     args = parser.parse_args()
 
-    num_users=int(args.no_of_users)
+    #num_users=int(args.no_of_users)
         
     # This will attempt to connection to a Cassandra instance on your local machine (127.0.0.1)
     # The set of IP addresses we pass to the :class:`~.Cluster` is simply an initial set of contact points.
@@ -77,9 +77,17 @@ def main():
         print ('imsi | msisdn | access_restriction | key | opc | mmehost | mmeid | mmerealm | rand | sqn | subscription_data |')
         for row in rows:
             #logging.info("%s %s %s %s %s %s %s %s %s %s" % (row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9]))
-            print()
-            print ('user_'+str(count)+': ', row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10])
-            count +=1
+            if args.imsi_first == '000000000000000' :
+                print()
+                print ('user_'+str(count)+': ', row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10])
+                count +=1
+            elif args.imsi_first == row[0] :
+                print()
+                print (row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10])
+            else:
+                print()
+                print ('User with IMSI ' + args.imsi_first + " does not exist in DB" )
+                
     else:
         rows = session.execute('SELECT imsi, key, opc, mmehost, mmeidentity_idmmeidentity, mmerealm, sqn FROM vhss.users_imsi')
         count = 0
@@ -96,6 +104,10 @@ def main():
                 print ('{:<20s}{:<35s}{:<35s}{:<25s}{:<5d}{:<15s}{:<10d}'.format(row[0], row[1], row[2], row[3], row[4], row[5], row[6]))
                 print()
                 print ('[INFO] User added/exists in the DB')
+            else:
+                print()
+                print ('User with IMSI ' + args.imsi_first + " does not exist in DB" )
+                
 if __name__ == "__main__":
     main()
 

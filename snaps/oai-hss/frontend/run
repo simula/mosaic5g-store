@@ -34,7 +34,7 @@ MSISDN_FIRST=001011234561000
 MME_ID=3
 MME_ISDN=208
 MME_IDENTITIY=`hostname`"."$REALM
-HSS_NUM_USER=5
+HSS_NUM_USER=10
 Cassandra_Server_IP=`cat $HSS_CONF_FILE | grep cassandra_Server_IP | cut -d "#" -f1 | tr -d ";" | cut -f3 -d' '`
 
 	
@@ -121,9 +121,9 @@ case "$1" in
 	echo "  conf-show:    show the path to the HSS configuration file (hss_rel14.conf)"
 	echo "  conf-list:    list all the HSS configuration files"
 	echo ""
-	echo "  add-user:     Add a user to Cassandra DB. For more option, try oai-hss.add-user --help "
+	echo "  add-users      [IMSI] Add a user identfied by an IMSI to the Cassandra DB. For more option, try oai-hss.add-user --help "
 	echo "  dump-users:   dump the current user DB. Use option -h for more options."
-	echo "  add-mme:      [MME_FQDN]  Add a MME identified by its FQDN (default is the local FQDN)"
+	echo "  add-mme       [MME_FQDN]  Add a MME identified by its FQDN (default is the local FQDN)"
 	echo "  dump-mmeid:   dump the current authenticated mme hosts"
 	echo "  reset-db:     reset the oai_db to its initial values"
 	echo "  clean-db:     clean all the entires in the cassandra db"
@@ -169,16 +169,32 @@ case "$1" in
 	    echo "Note: if truncate is true, then the previous user base will be overwritten"
 	    return 1
 	fi
-	shift 
-	python3 $SNAP/data_provisioning_users "$@" $* 
-	imsi=$(echo "$@" | grep -oP "imsi-first \K\w+")
-	num_users=$(echo "$@" | grep -oP "no-of-users \K\w+")
-	if [ "imsi" != ' ' ] ; then 
-	    python3 $SNAP/dump_users --imsi-first $imsi --cassandra-cluster $Cassandra_Server_IP
-	else
-	    python3 $SNAP/dump_users --cassandra-cluster $Cassandra_Server_IP
+	shift
+	imsi=$(echo $@ | grep -oP '\--imsi-first \K\w+') || true
+	imsi_digits=$(echo $imsi | grep -P -o '\d' | wc -l) || true 
+	imsi_i=$(echo $@ | grep -oP '\-I \K\w+') || true
+	imsi_i_digits=$(echo $imsi_i | grep -P -o '\d' | wc -l) || true 
+			
+	if [ "$imsi" = "" ] && [ "$imsi_i" = "" ] ; then
+	    echo "[ERR] Please provide a valid IMSI with 15 digits!"
+	    return
+	elif [ "$imsi" = "" ] ; then
+	    imsi=$imsi_i
+	    imsi_digits=$imsi_i_digits
 	fi
 
+	if [ $imsi_digits --eq 15 ] ; then
+	    echo "[INFO] Please enter a valid IMSI  with 15 digits ($imsi, $imsi_digits/15)"
+	    return
+	fi
+	
+	echo "[INFO] Writing (adding/updating) IMSI $imsi into the DB"
+	echo ""
+	python3 $SNAP/data_provisioning_users "$@" $*
+	echo ""
+	echo "[INFO] Reading the DB entry for IMSI $imsi"
+	python3 $SNAP/dump_users --imsi-first $imsi --cassandra-cluster $Cassandra_Server_IP
+	
 	;;
 	     
     "dump-users" )
