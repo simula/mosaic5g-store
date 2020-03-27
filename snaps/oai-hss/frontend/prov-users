@@ -1,0 +1,341 @@
+#!/usr/bin/python3
+
+#Copyright (c) 2017 Sprint
+################################################################################
+# Licensed to the OpenAirInterface (OAI) Software Alliance under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The OpenAirInterface Software Alliance licenses this file to You under
+# the Apache License, Version 2.0  (the "License"); you may not use this file
+# except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#-------------------------------------------------------------------------------
+# For more information about the OpenAirInterface (OAI) Software Alliance:
+#      contact@openairinterface.org
+################################################################################
+# author Robert Schmidt
+
+import argparse
+import ipaddress
+import logging
+import json
+#import tempfile
+from cassandra.cluster import Cluster
+import socket
+import re
+
+class Namespace:
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+    def __repr__(self):
+        return f"{self.__dict__}"
+    def __str__(self):
+        return f"{self.__dict__}"
+    def set(self, field, value):
+        self.__dict__[field] = value
+
+class StoreAppendConst(argparse.Action):
+    def __init__(self, option_strings, dest, const, nargs=1, **kwargs):
+        if nargs != 1:
+            raise ValueError("nargs must be 1")
+        super(StoreAppendConst, self).__init__(option_strings, dest, nargs, **kwargs)
+        self.const = const
+    def __call__(self, parser, namespace, values, option_string=None):
+        dest = (getattr(namespace, self.dest) or []) + [self.const]
+        setattr(namespace, self.dest, dest)
+        setattr(namespace, self.const, values[0])
+
+class AppendStoreAppendConst(argparse.Action):
+    def __init__(self, option_strings, dest, const, nargs=1, **kwargs):
+        if nargs != 1:
+            raise ValueError("nargs must be 1")
+        super(AppendStoreAppendConst, self).__init__(option_strings, dest, nargs, **kwargs)
+        self.const = const
+    def __call__(self, parser, namespace, values, option_string=None):
+        dest = (getattr(namespace, self.dest) or []) + [self.const]
+        setattr(namespace, self.dest, dest)
+        exist = hasattr(namespace, self.const)
+        values = (getattr(namespace, self.const) if exist else []) + values
+        setattr(namespace, self.const, values)
+
+def imsi_regex_match(imsis, regex):
+    try:
+        pattern = re.compile(regex)
+    except Exception as e:
+        print(f"error when compiling exception '{regex}':\n{e}")
+        exit(1)
+    result = []
+    for imsi in imsis:
+        if pattern.search(imsi):
+            #print(f"{imsi} matches {regex}")
+            result += [imsi]
+    return result
+
+def get_default(param):
+    return {
+        'access_restriction':            41,
+        'apn':                           'oai.ipv4',
+        'apn2':                          'internet',
+        'key':                           '8baf473f2f8fd09487cccbd7097c6862',
+        'mmehost':                      f'{socket.gethostname()}.openair5G.eur',
+        'mmeidentity_idmmeidentity':     3,
+        'mmerealm':                      'openair5G.eur',
+        'msisdn':                        33663000021,
+        'opc':                           '8e27b6af0e692e750f32667a3b14605d',
+        'rand':                          '2683b376d1056746de3b254012908e0e',
+        'sqn':                           21
+    }[param]
+
+def get_known_imsis(session):
+    rows = try_execute(session, 'SELECT imsi FROM vhss.users_imsi')
+    imsis = []
+    for row in rows:
+        imsis += [row[0]]
+    return imsis
+
+def build_update_subscription_string(session, args):
+    rows = try_execute(session, f"SELECT subscription_data FROM vhss.users_imsi WHERE imsi = '{args.imsi}'")
+    sd = json.loads(rows[0][0])
+    if hasattr(args, 'msisdn'):
+        sd['Subscription-Data']['MSISDN'] = "0x" + str(getattr(args, 'msisdn'))
+        print(f"    subscription_data.msisdn = {sd['Subscription-Data']['MSISDN']}")
+    if hasattr(args, 'apn'):
+        sd['Subscription-Data']['APN-Configuration-Profile']['APN-Configuration']['Service-Selection'] = getattr(args, 'apn')
+        print(f"    subscription_data.apn = {sd['Subscription-Data']['APN-Configuration-Profile']['APN-Configuration']['Service-Selection']}")
+    if hasattr(args, 'apn2'):
+        print("WARNING: cannot configure APN2 because of multiple APN-Configuration!?")
+    if hasattr(args, "static_ue_ipv4_allocation"):
+        sd['Subscription-Data']['APN-Configuration-Profile']['APN-Configuration']['Served-Party-IP-Address'] = getattr(args, 'static_ue_ipv4_allocation')
+        print(f"    subscription_data.static_ue_ipv4_allocation = {sd['Subscription-Data']['APN-Configuration-Profile']['APN-Configuration']['Served-Party-IP-Address']}")
+    if hasattr(args, "static_ue_ipv6_allocation"):
+        sd['Subscription-Data']['APN-Configuration-Profile']['APN-Configuration']['Served-Party-IP-Address'] = getattr(args, 'static_ue_ipv6_allocation')
+        print(f"    subscription_data.static_ue_ipv6_allocation = {sd['Subscription-Data']['APN-Configuration-Profile']['APN-Configuration']['Served-Party-IP-Address']}")
+    return f"subscription_data = '{json.dumps(sd)}'"
+
+def build_update_call(session, args):
+    updates = []
+    update_subscription = False
+    for f in list(set(args.fields or [])):
+        if f == "apn" or f == "apn2" or f == "static_ue_ipv4_allocation" or f == "static_ue_ipv6_allocation":
+            update_subscription = True
+            continue # will be handled later
+        if f == "msisdn":
+            update_subscription = True
+        v = getattr(args, f)
+        print(f"    {f} = {v}")
+        if type(v) is str:
+            updates += [f"{f} = '{v}'" ]
+        else:
+            updates += [f"{f} = {v}"]
+    if update_subscription:
+        updates += [build_update_subscription_string(session, args)]
+    return f"UPDATE vhss.users_imsi SET {', '.join(updates)} WHERE IMSI = '{args.imsi}'"
+
+def build_subscription_string(args):
+    apn = getattr(args, "apn") if hasattr(args, "apn") else get_default("apn")
+    if hasattr(args, "apn"):
+        print(f"    apn = {getattr(args, 'apn')}")
+    apn2 = getattr(args, "apn2") if hasattr(args, "apn2") else get_default("apn2")
+    if hasattr(args, "apn2"):
+        print(f"    apn2 = {getattr(args, 'apn2')}")
+    msisdn = getattr(args, "msisdn") if hasattr(args, "msisdn") else get_default("msisdn")
+    # msisdn is already logged in build_create_call()
+    ip = ""
+    if hasattr(args, "static_ue_ipv4_allocation"):
+        ip = '"Served-Party-IP-Address":["'+str(getattr(args, 'static_ue_ipv4_allocation'))+'"],'
+        print(f"    ip = {getattr(args, 'static_ue_ipv4_allocation')}")
+    elif hasattr(args, "static_ue_ipv6_allocation"):
+        ip = '"Served-Party-IP-Address":["'+str(getattr(args, 'static_ue_ipv6_allocation'))+'"],'
+        print(f"    ip = {getattr(args, 'static_ue_ipv6_allocation')}")
+    return '\'{"Subscription-Data":{"Access-Restriction-Data":41,"Subscriber-Status":0,"Network-Access-Mode":2,"Regional-Subscription-Zone-Code":["0x0123","0x4567","0x89AB","0xCDEF","0x1234","0x5678","0x9ABC","0xDEF0","0x2345","0x6789"],"MSISDN":"0x'+str(msisdn)+'","AMBR":{"Max-Requested-Bandwidth-UL":50000000,"Max-Requested-Bandwidth-DL":100000000},"APN-Configuration-Profile":{"Context-Identifier":0,"All-APN-Configurations-Included-Indicator":0,"APN-Configuration":{"Context-Identifier":0,"PDN-Type":0,'+ip+'"Service-Selection":"'+apn+'","EPS-Subscribed-QoS-Profile":{"QoS-Class-Identifier":9,"Allocation-Retention-Priority":{"Priority-Level":15,"Pre-emption-Capability":0,"Pre-emption-Vulnerability":0}},"AMBR":{"Max-Requested-Bandwidth-UL":50000000,"Max-Requested-Bandwidth-DL":100000000},"PDN-GW-Allocation-Type":0,"MIP6-Agent-Info":{"MIP-Home-Agent-Address":["172.26.17.183"]}},"APN-Configuration":{"Context-Identifier":1,"PDN-Type":0,'+ip+'"Service-Selection":"'+apn2+'","EPS-Subscribed-QoS-Profile":{"QoS-Class-Identifier":9,"Allocation-Retention-Priority":{"Priority-Level":13,"Pre-emption-Capability":1,"Pre-emption-Vulnerability":0}},"AMBR":{"Max-Requested-Bandwidth-UL":50000000,"Max-Requested-Bandwidth-DL":100000000},"PDN-GW-Allocation-Type":0,"MIP6-Agent-Info":{"MIP-Home-Agent-Address":["172.26.17.183"]}}},"Subscribed-Periodic-RAU-TAU-Timer":0}}\''
+
+def build_create_call(args):
+    fields = ['msisdn', 'access_restriction', 'key', 'opc', 'mmehost',
+            'mmeidentity_idmmeidentity', 'mmerealm', 'rand', 'sqn']
+    values = []
+    for f in fields:
+        v = getattr(args, f) if hasattr(args, f) else get_default(f)
+        values += ["'" + v + "'"] if type(v) is str else [str(v)]
+        if hasattr(args, f):
+            print(f"    {f} = {getattr(args, f)}")
+    fields = ['imsi'] + fields + ['subscription_data']
+    values = [f"'{args.imsi}'"] + values + [build_subscription_string(args)]
+    return f"INSERT INTO vhss.users_imsi ({', '.join(fields)}) VALUES ({', '.join(values)})"
+
+def handle_args(session, args, known):
+    if known:
+        if args.fields == None:
+            print(f"nothing to update for known IMSI {args.imsi}")
+            return
+        print(f"Update user {args.imsi}:")
+        cmd = build_update_call(session, args)
+        try_execute(session, cmd)
+        if hasattr(args, "msisdn"):
+            cmd = f"INSERT INTO vhss.msisdn_imsi (msisdn, imsi) VALUES ({args.msisdn}, '{args.imsi}')"
+            try_execute(session, cmd)
+    else:
+        print(f"Create user {args.imsi} with non-defaults:")
+        cmd = build_create_call(args)
+        try_execute(session, cmd)
+        msisdn = getattr(args, "msisdn") if hasattr(args, "msisdn") else get_default("msisdn")
+        cmd = f"INSERT INTO vhss.msisdn_imsi (msisdn, imsi) VALUES ({msisdn}, '{args.imsi}')"
+        try_execute(session, cmd)
+
+def try_execute(session, cmd):
+    try:
+        return session.execute(cmd)
+    except Exception as e:
+        print(f"could not execute statemend '{cmd}':\n{e}")
+        exit(1)
+
+def read_json(jsons):
+    fields = ['msisdn', 'access_restriction', 'key', 'opc', 'mmehost',
+            'mmeidentity_idmmeidentity', 'mmerealm', 'rand', 'sqn', 'apn', 'apn2',
+            'static_ue_ipv4_allocation', 'static_ue_ipv6_allocation']
+    l = json.loads(jsons)
+    ns = []
+    try:
+        for e in l:
+            imsi=e['imsi']
+            if not imsi:
+                print(f"error: no IMSI in JSON")
+                exit(1)
+            nns = Namespace(imsi=imsi, fields = [])
+            for f in fields:
+                if e.get(f):
+                    nns.set(f, e[f])
+                    nns.fields += [f]
+            ns += [nns]
+    except Exception as e:
+        print(f"error while parsing JSON:\n{e}")
+        exit(1)
+    return ns
+
+def dump_json():
+    fields = ['msisdn', 'access_restriction', 'key', 'opc', 'mmehost',
+            'mmeidentity_idmmeidentity', 'mmerealm', 'rand', 'sqn', 'apn', 'apn2']
+    sd = [{'imsi': 'IMSI'}]
+    for f in fields:
+        sd[0][f] = get_default(f)
+    print(json.dumps(sd, indent=True))
+
+def main():
+    parser = argparse.ArgumentParser(description="Configure the HSS. Multiple IMSIs can be specified and will be created in the DB if they don't exist. All parameters will be equally applied for all indicated IMSIs.")
+    parser.add_argument('-C', '--cassandra-cluster', action='append', metavar="Cluster-IP-address", help="add a Cassandra node; can connect to multiple nodes (clusters)")
+    parser.add_argument('-f', '--read-file', metavar="JSON-File", help="read list of IMSI configuration from JSON file")
+    parser.add_argument('-F', '--dump-json', default=False, action='store_true', help="dump the JSON file format with default values")
+    parser.add_argument('-I', '--imsi',   type=str, action='append',
+            help="single IMSI, IMSI range of form `start-end` or IMSI regex to match IMSIs in the database. Multiple IMSIs are handled in order. For a new IMSI, will create entry")
+    parser.add_argument('-t', '--truncate',     default=False, action='store_true', help="reset the DB")
+
+    parser.add_argument('-a', '--apn', metavar="APN", action=StoreAppendConst, help=f"APN (default: \"{get_default('apn')}\")", dest="fields", const="apn")
+    parser.add_argument('-A', '--apn2', metavar="APN2", action=StoreAppendConst, help=f"APN2 (default: \"{get_default('apn2')}\")", dest="fields", const="apn2")
+    parser.add_argument('-c', '--access-restriction', metavar="Access-Restriction", action=StoreAppendConst, help=f"Access Restriction (default: \"{get_default('access_restriction')}\")", dest="fields", const="access_restriction")
+    parser.add_argument('-i','--mme-id', metavar="MME-ID", type=int, action=StoreAppendConst, help=f"MME ID (default: {get_default('mmeidentity_idmmeidentity')})", dest="fields", const="mmeidentity_idmmeidentity")
+    parser.add_argument('-k', '--key', metavar="KEY", action=StoreAppendConst, help=f"LTE K (default: {get_default('key')} for OP 1111...)", dest="fields", const="key")
+    parser.add_argument('-m', '--mme-identity', metavar="MME-Host", action=StoreAppendConst, help=f"MME Host (default: \"{get_default('mmehost')}\")", dest="fields", const="mmehost")
+    parser.add_argument('-M', '--msisdn', metavar="MSISDN", action=AppendStoreAppendConst, help=f"MSISDN or MSISDN range of form `start-end` (default: single {get_default('msisdn')}). Multiple MSISDN are handled in order. If multiple MSISDN are given, their number needs to match the number of IMSIs", dest="fields", const="msisdn")
+    parser.add_argument('-o', '--opc', metavar="OPc", action=StoreAppendConst, help=f"LTE OPc (default: {get_default('opc')} for OP 1111...)", dest="fields", const="opc")
+    parser.add_argument('-q', '--sqn', metavar="SQN", type=int, action=StoreAppendConst, help=f"USIM SQN (default: {get_default('sqn')})", dest="fields", const="sqn")
+    parser.add_argument('-r', '--realm', metavar="Realm", action=StoreAppendConst, help=f"Realm of the CN (default: \"{get_default('mmerealm')}\")", dest="fields", const="mmerealm")
+    parser.add_argument('-R', '--rand', metavar="Rand", action=StoreAppendConst, help=f"Rand (default: \"{get_default('rand')}\")", dest="fields", const="rand")
+    exclus = parser.add_mutually_exclusive_group()
+    exclus.add_argument('-s', '--static-ue-ipv4-allocation', metavar="IPv4-address", type=ipaddress.IPv4Address, action=StoreAppendConst, help="UE IPv4 address statically allocated by HSS (not set if not provided)", dest="fields", const="static_ue_ipv4_allocation")
+    exclus.add_argument('-S', '--static-ue-ipv6-allocation', metavar="IPv6-address", type=ipaddress.IPv6Address, action=StoreAppendConst, help="UE IPv6 address statically allocated by HSS (not set if not provided)", dest="fields", const="static_ue_ipv6_allocation")
+    args = parser.parse_args()
+
+    if args.dump_json:
+        dump_json()
+        exit(0)
+
+    if not args.truncate and not args.imsi and not args.read_file:
+        parser.error("the following arguments are required: -I/--imsi or -v/--truncate or -f/--read-file")
+
+# connect to cluster
+    cl = args.cassandra_cluster
+    if cl == None:
+        cl = ['172.17.0.2']
+    cluster = Cluster(cl)
+    try:
+        session = cluster.connect()
+    except Exception as e:
+        print(f"could not connect to Cassandra cluster {cl}:\n{e}")
+        exit(1)
+
+    if args.truncate:
+        print("Truncate tables vhss.msisdn_imsi and vhss.users_imsi")
+        try_execute(session, "TRUNCATE vhss.msisdn_imsi")
+        try_execute(session, "TRUNCATE vhss.users_imsi")
+        if not args.imsi:
+            exit(0)
+
+    known_imsis = get_known_imsis(session)
+    update_imsis = []
+    for imsi in (args.imsi or []):
+        if imsi.isnumeric():
+            update_imsis += [imsi]
+        else:
+            m = re.search('^([0-9]+)-([0-9]+)$', imsi)
+            if m:
+                start = int(m.group(1))
+                end = int(m.group(2))
+                if start > end:
+                    print(f"start IMSI should be smaller then end in {imsi}")
+                    exit(1)
+                update_imsis += [str(x) for x in range(start, end+1)]
+            else:
+                m = imsi_regex_match(known_imsis, imsi) # imsi is a regex
+                if not m:
+                    print(f"Warning: did not match any IMSI with regex '{imsi}'")
+                update_imsis += m
+
+    if hasattr(args, "msisdn"):
+        update_msisdn = []
+        for msisdn in args.msisdn:
+            if msisdn.isnumeric():
+                update_msisdn += [int(msisdn)]
+            else:
+                m = re.search('^([0-9]+)-([0-9]+)$', msisdn)
+                if not m:
+                    parser.error(f"could not read MSISDN range {msisdn}")
+                start = int(m.group(1))
+                end = int(m.group(2))
+                if start > end:
+                    print(f"error: start MSISDN should be smaller then end in {msisdn}")
+                    exit(1)
+                update_msisdn += [x for x in range(start, end+1)]
+        if len(update_msisdn) > 1:
+            if len(update_msisdn) != len(update_imsis):
+                print(f"error: number of MSISDN needs to match number of IMSI: found {len(update_msisdn)}, need {len(update_imsis)} or 1")
+                exit(1)
+        else:
+            update_msisdn *= len(update_imsis)
+    else:
+        update_msisdn = None
+
+    for i in range(len(update_imsis)):
+        args.imsi = update_imsis[i]
+        if update_msisdn:
+            args.msisdn = update_msisdn[i]
+        handle_args(session, args, args.imsi in known_imsis)
+
+    if args.read_file:
+        try:
+            f = open(args.read_file, "r")
+        except Exception as e:
+            print(f"error while reading file {args.read_file}:\n{e}")
+            exit(1)
+        for args in read_json(f.read()):
+            handle_args(session, args, args.imsi in known_imsis)
+
+
+if __name__ == "__main__":
+    main()
