@@ -1,0 +1,65 @@
+#!/usr/bin/python3
+
+#Copyright (c) 2017 Sprint
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+### Add an entry to the mme_identity table ######
+
+import argparse
+import ipaddress
+from cassandra.cluster import Cluster
+import socket
+
+def try_execute(session, cmd):
+    try:
+        return session.execute(cmd)
+    except Exception as e:
+        print(f"could not execute statemend '{cmd}':\n{e}")
+        exit(1)
+
+hostname=socket.gethostname()
+parser = argparse.ArgumentParser()
+parser.add_argument('-C', '--cassandra-cluster', action='append', metavar="Cluster-IP-address", help="add a Cassandra node; can connect to multiple nodes (clusters)")
+parser.add_argument('-i', '--mme-isdn', default ="mme-isdn", help="MME ISDN")
+parser.add_argument('-I', '--id',   type=int, default=3, help="MME Id")
+parser.add_argument('-m', '--mme-identity', default=f"{socket.gethostname()}.openair4G.eur", help="Granted MME access to HSS")
+parser.add_argument('-r', '--realm', default='openair4G.eur', help="Realm of the CN")
+parser.add_argument('-R', '--ue-reachability',  type=int, default=1, help="UE reachability")
+parser.add_argument('-t', '--truncate', default=False, action='store_true', help="reset the DB")
+args = parser.parse_args()
+
+cl = args.cassandra_cluster
+if cl == None:
+    cl = ['172.17.0.2']
+cluster = Cluster(cl)
+try:
+    session = cluster.connect()
+except Exception as e:
+    print(f"could not connect to Cassandra cluster {cl}:\n{e}")
+    exit(1)
+
+if args.truncate:
+    print("Truncate tables vhss.mmeidentity and vhss.mmeidentity_host")
+    try_execute(session, "TRUNCATE vhss.mmeidentity")
+    try_execute(session, "TRUNCATE vhss.mmeidentity_host")
+
+try_execute(session,
+        f"INSERT INTO vhss.mmeidentity (idmmeidentity, mmeisdn, mmehost, mmerealm, ue_reachability) " +
+        f"VALUES ({args.id}, '{args.mme_isdn}', '{args.mme_identity}', '{args.realm}', {args.ue_reachability})",
+    )
+
+try_execute(session,
+        f"INSERT INTO vhss.mmeidentity_host (idmmeidentity, mmeisdn, mmehost, mmerealm, ue_reachability) " +
+        f"VALUES ({args.id}, '{args.mme_isdn}', '{args.mme_identity}', '{args.realm}', {args.ue_reachability})",
+    )
