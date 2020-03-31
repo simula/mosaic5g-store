@@ -33,8 +33,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-C', '--cassandra-cluster', action='append', metavar="Cluster-IP-address", help="add a Cassandra node; can connect to multiple nodes (clusters)")
 parser.add_argument('-i', '--mme-isdn', default ="mme-isdn", help="MME ISDN")
 parser.add_argument('-I', '--id',   type=int, default=3, help="MME Id")
-parser.add_argument('-m', '--mme-identity', default=f"{socket.gethostname()}.openair4G.eur", help="Granted MME access to HSS")
-parser.add_argument('-r', '--realm', default='openair4G.eur', help="Realm of the CN")
+parser.add_argument('-m', '--mme-identity', default=f"{socket.gethostname()}.openair5G.eur", help="Granted MME access to HSS")
+parser.add_argument('-r', '--realm', default='openair5G.eur', help="Realm of the CN")
 parser.add_argument('-R', '--ue-reachability',  type=int, default=1, help="UE reachability")
 parser.add_argument('-t', '--truncate', default=False, action='store_true', help="reset the DB")
 args = parser.parse_args()
@@ -54,12 +54,21 @@ if args.truncate:
     try_execute(session, "TRUNCATE vhss.mmeidentity")
     try_execute(session, "TRUNCATE vhss.mmeidentity_host")
 
+print("Insert new MME:")
+print(f"    ID: {args.id}")
+print(f"    ISDN: {args.mme_isdn}")
+print(f"    Host: {args.mme_identity}")
+print(f"    Realm: {args.realm}")
+print(f"    UE reachability: {args.ue_reachability}")
+
 try_execute(session,
         f"INSERT INTO vhss.mmeidentity (idmmeidentity, mmeisdn, mmehost, mmerealm, ue_reachability) " +
         f"VALUES ({args.id}, '{args.mme_isdn}', '{args.mme_identity}', '{args.realm}', {args.ue_reachability})",
     )
+print(f"into vhss.mmeidentity")
 
 try_execute(session,
         f"INSERT INTO vhss.mmeidentity_host (idmmeidentity, mmeisdn, mmehost, mmerealm, ue_reachability) " +
         f"VALUES ({args.id}, '{args.mme_isdn}', '{args.mme_identity}', '{args.realm}', {args.ue_reachability})",
     )
+print(f"into vhss.mmeidentity_host")

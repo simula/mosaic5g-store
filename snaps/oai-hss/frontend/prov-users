@@ -113,10 +113,10 @@ def build_update_subscription_string(session, args):
     if hasattr(args, 'apn2'):
         print("WARNING: cannot configure APN2 because of multiple APN-Configuration!?")
     if hasattr(args, "static_ue_ipv4_allocation"):
-        sd['Subscription-Data']['APN-Configuration-Profile']['APN-Configuration']['Served-Party-IP-Address'] = getattr(args, 'static_ue_ipv4_allocation')
+        sd['Subscription-Data']['APN-Configuration-Profile']['APN-Configuration']['Served-Party-IP-Address'] = [str(getattr(args, 'static_ue_ipv4_allocation'))]
         print(f"    subscription_data.static_ue_ipv4_allocation = {sd['Subscription-Data']['APN-Configuration-Profile']['APN-Configuration']['Served-Party-IP-Address']}")
     if hasattr(args, "static_ue_ipv6_allocation"):
-        sd['Subscription-Data']['APN-Configuration-Profile']['APN-Configuration']['Served-Party-IP-Address'] = getattr(args, 'static_ue_ipv6_allocation')
+        sd['Subscription-Data']['APN-Configuration-Profile']['APN-Configuration']['Served-Party-IP-Address'] = [str(getattr(args, 'static_ue_ipv6_allocation'))]
         print(f"    subscription_data.static_ue_ipv6_allocation = {sd['Subscription-Data']['APN-Configuration-Profile']['APN-Configuration']['Served-Party-IP-Address']}")
     return f"subscription_data = '{json.dumps(sd)}'"
 

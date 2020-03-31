@@ -38,7 +38,7 @@ def imsi_regex_match(session, regex):
     result = []
     for row in rows:
         if pattern.search(row[0]):
-            print(f"{row[0]} matches {regex}")
+            #print(f"{row[0]} matches {regex}")
             result += [row[0]]
     return result
 
@@ -97,7 +97,7 @@ if args.select_imsi:
         if imsi.isnumeric():
             imsis += [imsi]
         else:
-            imsis += [imsi_regex_match(session, imsi)] # imsi is a regex
+            imsis += imsi_regex_match(session, imsi) # imsi is a regex
     where += " WHERE imsi IN (" + ", ".join("'" + i + "'" for i in imsis) + ")"
 
 # get fields or set default
