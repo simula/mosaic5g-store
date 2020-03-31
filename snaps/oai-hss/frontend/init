@@ -16,7 +16,7 @@ case "$1" in
     "hss" )
 	shift 
 #	if [ ! -f $CONF_DIR/hss.conf ]; then
-	    cp $SNAP/etc/* $CONF_DIR
+	cp $SNAP/etc/* $CONF_DIR
 #	fi
 
 	# set the hss.conf

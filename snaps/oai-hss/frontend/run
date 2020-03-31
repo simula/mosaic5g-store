@@ -22,7 +22,7 @@ REALM=`cat $HSS_FD_CONF_FILE | grep  "Realm "  | cut -f2 -d'"'`
 USER_KEY=8BAF473F2F8FD09487CCCBD7097C6862
 SQN=000000000021
 OP_KEY=`cat $HSS_CONF_FILE | grep -m1 OPERATOR_key | cut -f2 -d '"'`
-OPC="8E27B6AF0E692E750F32667A3B14605D"
+OPC="8baf473f2f8fd09487cccbd7097c6862"
 
 HSS_APN_DEFAULT="default"
 HSS_APN_ALT="internet"
@@ -147,17 +147,29 @@ case "$1" in
 
 	echo ""
 	#provisin 208950000000001
-	echo "$SNAP/data_provisioning_users --apn $HSS_APN_OAI --apn2 $HSS_APN_DEFAULT --key $OPC --imsi-first $IMSI_FIRST5 --msisdn-first $MSISDN_FIRST --mme-identity $MME_IDENTITIY --no-of-users $HSS_NUM_USER --realm $REALM  --sqn $SQN --truncate True --cassandra-cluster $Cassandra_Server_IP"
+	#echo "$SNAP/data_provisioning_users --apn $HSS_APN_OAI --apn2 $HSS_APN_DEFAULT --key $OPC --imsi-first $IMSI_FIRST5 --msisdn-first $MSISDN_FIRST --mme-identity $MME_IDENTITIY --no-of-users $HSS_NUM_USER --realm $REALM  --sqn $SQN --truncate True --cassandra-cluster $Cassandra_Server_IP"
 	
-	python3 $SNAP/data_provisioning_users --apn $HSS_APN_OAI --apn2 $HSS_APN_DEFAULT --key $OPC --imsi-first $IMSI_FIRST5 --msisdn-first $MSISDN_FIRST --mme-identity $MME_IDENTITIY --no-of-users $HSS_NUM_USER --realm $REALM  --sqn $SQN --truncate True --cassandra-cluster $Cassandra_Server_IP
+	#python3 $SNAP/data_provisioning_users --apn $HSS_APN_OAI --apn2 $HSS_APN_DEFAULT --key $OPC --imsi-first $IMSI_FIRST5 --msisdn-first $MSISDN_FIRST --mme-identity $MME_IDENTITIY --no-of-users $HSS_NUM_USER --realm $REALM  --sqn $SQN --truncate True --cassandra-cluster $Cassandra_Server_IP
+
+	echo "prov-users -I208950000000001-208950000000010  -t --mme-identity $MME_IDENTITIY --cassandra-cluster $Cassandra_Server_IP" 
+	echo ""
+	python3 $SNAP/prov-users -I208950000000001-208950000000010  -t --mme-identity $MME_IDENTITIY --cassandra-cluster $Cassandra_Server_IP 
 
 	;;
 
     "clean-db" )
-	python3 $SNAP/data_provisioning_users -t True -n 0 
+	shift 
+	python3 $SNAP/prov-users -t 
+	;;
+
+    "add-users" )
+	check_cassandra_service
+	shift 
+	python3 $SNAP/prov-users -C  $Cassandra_Server_IP "$@"
+
 	;;
     
-    "add-users" )
+    "add-users-old" )
 	check_cassandra_service
 	
 	if [ $# -lt 1 ] ; then
@@ -199,7 +211,7 @@ case "$1" in
 	     
     "dump-users" )
 	shift 
-	python3 $SNAP/dump_users --cassandra-cluster $Cassandra_Server_IP "$@" 
+	python3 $SNAP/dump-users --cassandra-cluster $Cassandra_Server_IP "$@" 
 	;;
      
     "provision-mme-cassandra" )
