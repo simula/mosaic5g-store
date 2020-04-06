@@ -108,8 +108,8 @@ def cpsr_register():
     if (status == 201):
         #print(res_body)
         jsondata = json.loads(res_body)
-        adapter.log.info("[CPSR_Register] HeartbeatTimer: " + str(jsondata["heartbeatTimer"]))
-        adapter.heartbeat_timer = jsondata["heartbeatTimer"]
+        adapter.log.info("[CPSR_Register] HeartbeatTimer: " + str(jsondata["heartBeatTimer"]))
+        adapter.heartbeat_timer = jsondata["heartBeatTimer"]
         t = Timer(adapter.heartbeat_timer, cpsr_update,()).start() 
     else:
         #for the moment,try registratin after 10s
