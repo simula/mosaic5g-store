@@ -33,7 +33,7 @@ core_adapter_routes = {
 
 
 class adapter(object):
-    #for FlexRAN
+    #for LL-MEC
     url = ''
     port = ''
     op_mode = ''
@@ -365,7 +365,7 @@ def post_QoSOnCore(sliceId, userEqId, body, epsBearerId=-1):
     band_unit_scale = ''
     slice_id = -1   #LL-MEC's Slice ID
     
-    # check if the mapping between slicenetId and flexran sliceid exist! 
+    # check if the mapping between slicenetId and ll-mec sliceid exist! 
     with open('./inputs/mapping_slicenetid_sliceid_mec.json') as data_file:
         slice_mapping = json.load(data_file)
         data_file.close()        
@@ -375,7 +375,7 @@ def post_QoSOnCore(sliceId, userEqId, body, epsBearerId=-1):
             slice_id = int(slice_mapping[index]['sid'] )
     
     if slice_id == -1:
-        print 'FlexRAN sliceId corresponding to the SlicenetId ' + sliceId+ ' does not exist!'
+        print 'LL-MEC sliceId corresponding to the SlicenetId ' + sliceId+ ' does not exist!'
         return NoContent, 400 
     
     #verify the input
@@ -495,7 +495,7 @@ def post_redirect_traffic(sliceId, userEqId, body, epsBearerId=-1):
     """
     slice_id = -1   #LL-MEC's Slice ID
     
-    # check if the mapping between slicenetId and flexran sliceid exist! 
+    # check if the mapping between slicenetId and ll-mec sliceid exist! 
     with open('./inputs/mapping_slicenetid_sliceid_mec.json') as data_file:
         slice_mapping = json.load(data_file)
         data_file.close()        
@@ -554,3 +554,108 @@ def post_redirect_traffic(sliceId, userEqId, body, epsBearerId=-1):
 #TODO: should support also feature set slice mapping
 
 
+
+def post_SliceMapping(body):
+    """!@brief post_SliceMapping Set mapping between LL-MEC slice ID and Slicenet slice ID on MEC-Core Adapter        
+        @param body: body of "Post" message 
+    """
+    
+    """
+    Step 0: get information from the request and verify the input
+    """
+    adapter.log.info("Post_SliceMapping, received a request with body: \n" + str(body))
+    #print("Post_SliceMapping, received a request with body:")    
+    #print(body)
+    num_request = len(body)
+    #if (num_request > 2):
+    #    return NoContent, 400
+    
+    jsondata = body
+    slicenet_slice_ids = {}
+    llmec_slice_ids = {} 
+    
+     
+    for req in range (0, num_request):
+        try:
+            jsondata[req]['slicenetid'] = body[req]['slicenetid']
+            jsondata[req]['sid'] = body[req]['sid']             
+        except (ValueError, KeyError):
+            #print ('Bad request!')
+            adapter.log.info("Bad request!\n")
+            return NoContent, 400 
+             
+    #write the update information to the file
+    with open('./inputs/mapping_slicenetid_sliceid_mec.json', "w") as data_file:   
+        data_file.write(json.dumps(jsondata))
+        data_file.close()
+        
+    #update LL-MEC Adapter info
+    #read JSON file
+    with open('./inputs/core_adapter_cpsr.json') as data_file:
+        data = json.load(data_file)
+        data_file.close()  
+     
+     
+    for req in range (0, num_request):        
+        data["cpsServices"][req]["slicenetId"] = ipv4Addresses = body[req]['slicenetid']                        
+                              
+    #write the update information to the file
+    with open('./inputs/core_adapter_cpsr.json', "w") as data_file:
+        #json.dump(data,data_file)
+        data_file.write(json.dumps(data))
+        data_file.close()        
+    
+        
+    #register to CPSR 
+    cpsr_register()
+    
+def put_SliceMapping(body):
+    """!@brief put_SliceMapping Set mapping between LL-MEC slice ID and Slicenet slice ID on MEC-Core Adapter        
+        @param body: body of "Post" message 
+    """
+    
+    post_SliceMapping(body)
+    
+def delete_SliceMapping(sliceId):
+    """!@brief delete_SliceMapping Remove mapping between LL-MEC slice ID and Slicenet slice ID on MEC-Core Adapter        
+        @param body: body of "Delete" message 
+    """
+    
+    """
+    Step 0: get information from the request and verify the input
+    """
+    adapter.log.info("Delete_SliceMapping, received a request with sliceId: " + str(sliceId))
+        
+    # Update mapping
+    with open('./inputs/mapping_slicenetid_sliceid_mec.json') as data_file:
+        slice_mapping = json.load(data_file)
+        data_file.close()        
+    
+    found = False
+    
+    new_slice_mapping = []
+    
+    for index in range (0, len(slice_mapping)):
+        if slice_mapping[index]['slicenetid'] == sliceId:
+            adapter.log.info("Delete_SliceMapping, the mapping between slicenetId " + str(sliceId) + " and sid "+ str(slice_mapping[index]['sid']) + " will be removed \n")
+            slice_mapping[index]['sid'] = "-1"
+            found = True            
+        else:
+            new_slice_mapping.append({"slicenetid":slice_mapping[index]['slicenetid'], "sid": slice_mapping[index]['sid']})
+                                    
+    #write the update information to the file
+    with open('./inputs/mapping_slicenetid_sliceid_mec.json', "w") as data_file:   
+        data_file.write(json.dumps(new_slice_mapping))
+        data_file.close()
+    
+    #TODO: update MEC-Core Adapter info and send update to CPSR
+        
+    if (found == False):
+        adapter.log.info("No slice with id " + str(sliceId) + "\n")
+        return NoContent, 404
+    else:
+         return NoContent, 201     
+        
+    #register to CPSR
+    #TODO: should be verified 
+    #cpsr_register()
