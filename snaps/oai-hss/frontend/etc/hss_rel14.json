@@ -1,6 +1,6 @@
 {"common": {
     "fdcfg": "/var/snap/oai-hss/current/hss_rel14_fd.conf",
-    "originhost": "mineuse.openair5G.eur",
+    "originhost": "ubuntu.openair5G.eur",
     "originrealm": "openair5G.eur" 
  },
  "hss": {

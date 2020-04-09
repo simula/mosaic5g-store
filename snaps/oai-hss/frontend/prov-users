@@ -82,7 +82,7 @@ def imsi_regex_match(imsis, regex):
 def get_default(param):
     return {
         'access_restriction':            41,
-        'apn':                           'oai.ipv4',
+        'apn':                           'oai.openair5G.eur',
         'apn2':                          'internet',
         'key':                           '8baf473f2f8fd09487cccbd7097c6862',
         'mmehost':                      f'{socket.gethostname()}.openair5G.eur',

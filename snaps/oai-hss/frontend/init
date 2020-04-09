@@ -1,14 +1,7 @@
 #!/bin/sh
 
 . $SNAP/common
-
-CURRENT_PATH=$(dirname $(readlink -f $0))
-. $CURRENT_PATH/util
-
-REALM=`cat $HSS_FD_CONF_FILE | grep  "Realm "  | cut -f2 -d'"'`
-HOSTNAME=`hostname` # `cat /etc/hostname` #`hostname`
-cassandra_Server_IP=`cat $HSS_CONF_FILE | grep cassandra_Server_IP | cut -d "#" -f1 | tr -d ";" | cut -f3 -d' '`
-OP_KEY=`cat $HSS_CONF_FILE | grep -m1 OPERATOR_key | cut -f2 -d '"'`
+. $SNAP/util
 
 	
 case "$1" in
@@ -19,16 +12,19 @@ case "$1" in
 	cp $SNAP/etc/* $CONF_DIR
 #	fi
 
+	hss_set_vars
+	hss_print_vars
 	# set the hss.conf
 	echo "set-hss $CONF_DIR/hss.conf"
 	$SNAP/conf set-hss $CONF_DIR/hss_rel14.json
 	
-	sed -i -e "s/ubuntu/$HOSTNAME/g" $CONF_DIR/hss_rel14_fd.conf 
+	sed -i -e "s/ubuntu/$HOSTNAME/g" $HSS_FD_CONF_FILE
+	sed -i -e "s/ubuntu/$HOSTNAME/g" $HSS_CONF_FILE 
 	$SNAP/run hss-certificate
 		
 	# a copy for the user: with sudo, the user is root
 	echo "backup the config file into $SNAP_USER_DATA"
-	cp $CONF_DIR/hss_rel14.conf $SNAP_USER_DATA
+	cp $CONF_DIR/hss_rel14.json $SNAP_USER_DATA
 	cp $CONF_DIR/hss_rel14_fd.conf $SNAP_USER_DATA
 	cp $CONF_DIR/acl.conf $SNAP_USER_DATA
 	cp $CONF_DIR/oss.json $SNAP_USER_DATA
