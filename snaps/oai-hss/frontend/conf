@@ -5,16 +5,16 @@
 case "$1" in
     "set-hss" )
 	CONFIG_FILE=$2
-	if [ -f "$CONFIG_FILE" ]; then
+	if [  "$CONFIG_FILE" != "${CONFIG_FILE#/}" -a -f "$CONFIG_FILE" ]; then
 	    echo "Setting the default config file to: $CONFIG_FILE"
 	    
-	elif [ -f "$(dirname $(readlink -f $0))/$CONFIG_FILE" ]; then
-	    CONFIG_FILE=$(dirname $(readlink -f $0))/$CONFIG_FILE
-	    echo "Config file <$CONFIG_FILE> not found in the local directory!"
+	elif [ -f "$CONF_DIR/$CONFIG_FILE" ]; then
+	    CONFIG_FILE=$CONF_DIR/$CONFIG_FILE
+	    echo "Config file found in the $CONF_DIR!"
 	    echo "Resetting to the default config file: $CONFIG_FILE"
 	    
 	else
-	    echo "Config file <$CONFIG_FILE> not found!"
+	    echo "[ERR] Config file $CONFIG_FILE not found, please provide an absolute path!"
 	    echo "Resetting to the default config file: $HSS_CONF_FILE"
 	    CONFIG_FILE=$HSS_CONF_FILE
 	fi
@@ -31,7 +31,7 @@ case "$1" in
 	
 	# default config file is (unless set in above config)
 	HSS_CONFIG=${HSS_CONF_FILE2:-$HSS_CONF_FILE}
-	ls $(dirname $HSS_CONFIG)/hss*.conf
+	ls $(dirname $HSS_CONFIG)/*
 	;;
 
      "echo-hss" | "cat-hss" )

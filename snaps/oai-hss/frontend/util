@@ -2,6 +2,16 @@
 . $SNAP/common
 
 
+if_sudo(){
+
+    if [ "$(id -u)" -eq 0 ] ; then
+	return 0
+    else
+	echo "Please run as a sudoer!"
+	exit 1
+    fi
+}
+
 hss_set_vars(){
 
 HSS_FD_CONF_FILE=`cat $HSS_CONF_FILE | grep \"fdcfg\" | cut -f2 -d: | tr -d '"' | tr -d " " | tr -d ","`
@@ -13,6 +23,8 @@ HOSTNAME=`hostname` # `cat /etc/hostname` #`hostname`
 
 Cassandra_Server_IP=`cat $HSS_CONF_FILE | grep \"casssrv\" | cut -f2 -d: | tr -d '"' | tr -d " " | tr -d ","`
 OP_KEY=`cat $HSS_CONF_FILE | grep \"optkey\" | cut -f2 -d: | tr -d '"' | tr -d " " | tr -d ","`
+
+MME_IDENTITIY=$HOSTNAME"."$REALM
 
 }
 

@@ -13,7 +13,6 @@ case "$1" in
 #	fi
 
 	hss_set_vars
-	hss_print_vars
 	# set the hss.conf
 	echo "set-hss $CONF_DIR/hss.conf"
 	$SNAP/conf set-hss $CONF_DIR/hss_rel14.json

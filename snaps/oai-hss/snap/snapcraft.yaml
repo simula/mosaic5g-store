@@ -31,15 +31,15 @@ apps:
   debug:
     command: run gdb
   start:
-    command: run start
+    command: run start hssd
   stop:
-    command: run stop
+    command: run stop hssd
   restart:
-    command: run restart
+    command: run restart hssd
   status:
-    command: run status
+    command: run status hssd
   journal:
-    command: run journal
+    command: run journal hssd
   init:
     command: init hss
   conf-set:
@@ -64,6 +64,24 @@ apps:
     command: run dump-mme
   dump-vars:
     command: run dump-vars
+  api:
+    command: run openapi
+  apid:
+    command: run openapi
+    daemon: simple
+    stop-command: run stop
+    stop-timeout: 1s
+  api-start:
+    command: run start apid
+  api-stop:
+    command: run stop apid
+  api-restart:
+    command: run restart apid
+  api-status:
+    command: run status apid
+  api-journal:
+    command: run journal apid
+    
 hooks:
   install:
     plugs: [home, network, desktop]
@@ -181,3 +199,19 @@ parts:
     #stage-packages:
     #  -  python3-cassandra
     source: frontend
+  openapi:
+    plugin: python
+    python-version: python3
+    python-packages:
+      - flask
+      - itsdangerous
+      - werkzeug
+      - click
+      - jinja2
+      - markupsafe
+    stage:
+      - usr/lib/python3.6/*
+      - usr/*
+    prime:
+      - usr/lib/python3.6/*
+      - usr/*

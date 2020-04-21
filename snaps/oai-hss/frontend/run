@@ -3,8 +3,9 @@
 . $SNAP/common
 . $SNAP/util
 
-CURRENT_PATH=$(dirname $(readlink -f $0))
-. $CURRENT_PATH/util
+hss_set_vars
+
+export LD_LIBRARY_PATH="$SNAP/usr/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"
 
 if [ -r $SNAP_DATA/config_hss.sh ]; then
     . $SNAP_DATA/config_hss.sh
@@ -22,13 +23,12 @@ if [ ! -e $HSS_EXEC ]; then
     exit -1 
 fi		   	   
 
-hss_set_vars
-
-export LD_LIBRARY_PATH="$SNAP/usr/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"
-
 	 
 case "$1" in
-   
+    "openapi" )
+	python3 $SNAP/api.py 
+	
+	;;
     "gdb" )
 	echo "Running $2 with the gdb"
 	touch      $SNAP_DATA/.gdb_$2
@@ -55,22 +55,30 @@ case "$1" in
 	 ;;
      "start"  )
 	 #snap start $SNAP_NAME
-	 shift 
-	 snapctl start --enable $SNAP_NAME "$@"
+	 daemon=$2
+	 shift 2 
+	 if_sudo
+	 snapctl start --enable $SNAP_NAME.$daemon "$@"
+	 snapctl services $SNAP_NAME "$@"
 	 ;;
 
      "stop" )
 	#snap stop $SNAP_NAME
-	 shift 
-	 snapctl stop --disable $SNAP_NAME "$@"
+	 daemon=$2
+	 shift 2
+	 if_sudo
+	 snapctl stop --disable $SNAP_NAME.$daemon "$@"
+	 snapctl services $SNAP_NAME "$@"
 	 ;;
 
      "restart" )
 	 #snap restart $SNAP_NAME
-	 shift 
-	 snapctl stop --disable $SNAP_NAME "$@"
-	 snapctl start --enable $SNAP_NAME "$@"
-	 
+	 daemon=$2
+	 shift 2
+	 if_sudo
+	 snapctl stop --disable $SNAP_NAME.$daemon "$@"
+	 snapctl start --enable $SNAP_NAME.$daemon "$@"
+	 snapctl services $SNAP_NAME "$@"
 	;;
 
      "status" )
@@ -81,8 +89,9 @@ case "$1" in
 	 ;;
      
      "journal" )
-	 shift
-	 journalctl -u snap.$SNAP_NAME.hssd.service "$@"
+	 daemon=$2
+	 shift 2 
+	 journalctl -u snap.$SNAP_NAME.$daemon.service "$@"
 
 	 ;;
     
