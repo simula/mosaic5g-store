@@ -1,0 +1,103 @@
+name: oai-spgwc
+version: '1.0' 
+summary: OpenAirInterface spgwc entity with LL-MEC Agent
+description: |
+    OAI-SPGWC is the openairinterface-based SPGWC with LL-MEC agent allowing to connect a 4G-comptaible BS and UEs to the core network. It is one of the projects of Mosaic5G inititive.
+
+type: app
+license: Apache-2.0
+architectures:
+  - amd64
+  - i386
+confinement: devmode
+grade: stable
+base: core18
+
+apps:
+  test:
+    command : test
+  info:
+    command: run info
+  oai-spgwc:
+    command: run spgwc
+  spgwcd:
+    command: run spgwc
+    daemon: simple
+    stop-command: run stop
+    stop-timeout: 1s
+  start:
+    command: run start
+  stop:
+    command: run stop
+  restart:
+    command: run restart
+  status:
+    command: run status
+  journal:
+    command: run journal
+  init:
+    command: init spgwc
+  help:
+    command: run help
+  debug:
+    command: run gdb
+  conf-set:
+    command: conf set-spgwc
+  conf-get:
+    command: conf echo-spgwc
+  conf-show:
+    command: conf cat-spgwc
+  conf-list:
+    command: conf ls-spgwc
+  
+hooks:
+  install:
+    plugs: [home, network]
+  configure:
+    plugs: [home, network]
+    
+parts:
+  gdb:
+    plugin: nil
+    override-build: |
+      sudo apt install gdb -y
+      mkdir $SNAPCRAFT_PART_INSTALL/share 
+      cp -r /usr/share/gdb $SNAPCRAFT_PART_INSTALL/share
+      cp /usr/bin/gdb* $SNAPCRAFT_PART_INSTALL
+    prime:
+      - gdb*
+      - share/*
+      
+  spgwc:
+    plugin: cmake
+    source: https://github.com/OPENAIRINTERFACE/openair-cn-cups.git
+    source-branch: develop
+    build-packages: [build-essential, ]
+    stage-packages:
+      - libstdc++6
+      - libconfig++9v5
+      - libdouble-conversion1
+      - libgflags2.2
+      - libgoogle-glog0v5
+      - libunwind8
+    override-build: |
+      cd ../src/build/scripts
+      ./build_spgwc -I -f
+      ./build_spgwc -c -b Debug
+      cd ../..
+      mkdir -p $SNAPCRAFT_PART_INSTALL/spgwc
+      cp etc/spgw*  $SNAPCRAFT_PART_INSTALL/spgwc/
+      cp build/spgw_c/build/*.*  $SNAPCRAFT_PART_INSTALL/spgwc
+      cp build/spgw_c/build/spgwc  $SNAPCRAFT_PART_INSTALL/spgwc/
+    stage:
+      - spgwc/*
+      - usr/*
+      - lib/*
+    prime:
+      - spgwc/*
+      - usr/*
+      - lib/*
+      
+  frontend:
+    plugin: dump
+    source: frontend

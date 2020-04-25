@@ -1,0 +1,12 @@
+#!/bin/sh
+
+export DEBIAN_FRONTEND=noninteractive
+set -e
+
+
+CONF_DIR="$SNAP_DATA"
+
+
+SPGWC_DIR="$SNAP/spgwc"
+SPGWC_CONF_FILE="$CONF_DIR/spgwc.conf"
+SPGWC_EXEC="$SPGWC_DIR/spgwc"

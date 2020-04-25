@@ -1,6 +1,5 @@
 #!/bin/bash
 
+node_func=`cat $CHARM_DIR/.node_func`
 source $CHARM_DIR/utils/common
-stop_enb
-$CHARM_DIR/hooks/start
-
+restart_enb $node_func

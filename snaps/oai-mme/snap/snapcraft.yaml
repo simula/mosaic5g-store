@@ -1,0 +1,123 @@
+name: oai-mme
+version: '1.0' 
+summary: OpenAirInterface MME entity with LL-MEC Agent
+description: |
+    OAI-MME is the openairinterface-based MME entity with the LL-MEC agent allowing to connect a 4G-comptaible BS and UEs to the core network and monitor and control the UP with LL-MEC controller. It is one of the projects of Mosaic5G inititive.
+type: app
+license: Apache-2.0
+architectures:
+  - amd64
+  - i386
+confinement: devmode
+grade: stable
+base: core18
+
+apps:
+  test:
+    command : test mme-service
+  info:
+    command: run info
+  oai-mme:
+    command: run mme
+  mmed:
+    command: run mme
+    daemon: simple
+    stop-command: run stop
+    stop-timeout: 1s
+  debug:
+    command: run gdb
+  start:
+    command: run start
+  stop:
+    command: run stop
+  restart:
+    command: run restart
+  status:
+    command: run status
+  journal:
+    command: run journal
+  init:
+    command: init mme
+  conf-set:
+    command: conf set-mme
+  conf-get:
+    command: conf echo-mme
+  conf-show:
+    command: conf cat-mme
+  conf-list:
+    command: conf ls-mme
+ 
+hooks:
+  install:
+    plugs: [home, network]
+  configure:
+    plugs: [home, network]
+    
+parts:
+  gdb:
+    plugin: nil
+    override-build: |
+      sudo apt install gdb -y
+      mkdir $SNAPCRAFT_PART_INSTALL/share 
+      cp -r /usr/share/gdb $SNAPCRAFT_PART_INSTALL/share
+      cp /usr/bin/gdb* $SNAPCRAFT_PART_INSTALL
+    prime:
+      - gdb*
+      - share/*
+  #fd:
+  #  plugin: cmake
+  #  source: https://gitlab.eurecom.fr/oai/freediameter.git
+  # source-branch: eurecom-1.2.0
+  # stage-packages:
+  #   - libsctp1
+  # override-build: |
+  #   cd ../src
+  #   mkdir build
+  #   cd build
+  #   cmake -DCMAKE_INSTALL_PREFIX:PATH=$SNAPCRAFT_PART_INSTALL/usr/local ../
+  #   #cmake ../
+  #   make -j`nproc`
+  #   sudo -S -E make install
+  #   #mkdir -p $SNAPCRAFT_PART_INSTALL/usr/local/lib/freeDiameter/
+  #   #sudo cp -r /usr/local/lib/freeDiameter $SNAPCRAFT_PART_INSTALL/usr/local/lib
+  # stage:
+  #   - lib/*
+  #   - usr/local/*
+  # prime:
+  #   - lib/*
+  #   - usr/local/*
+
+  mme:
+    plugin: cmake
+    source: https://github.com/OPENAIRINTERFACE/openair-cn.git
+    source-branch: develop
+    build-packages: [build-essential, ]
+    stage-packages:
+      - libstdc++6
+      - libsctp1
+      - libconfig9
+    override-build: |
+      #export DEBIAN_FRONTEND=interactive
+      cd ../src/scripts
+      ./build_mme -i -f 
+      ./build_mme
+      cd ..
+      mkdir -p $SNAPCRAFT_PART_INSTALL/mme/
+      cp etc/mme*  $SNAPCRAFT_PART_INSTALL/mme/
+      cp build/mme/build/*.*  $SNAPCRAFT_PART_INSTALL/mme/
+      cp build/mme/build/mme  $SNAPCRAFT_PART_INSTALL/mme/
+      cp /usr/local/lib/libfd* $SNAPCRAFT_PART_INSTALL/usr/lib
+      cp /usr/local/lib/liblfds* $SNAPCRAFT_PART_INSTALL/usr/lib
+      cp -r /usr/local/lib/freeDiameter/  $SNAPCRAFT_PART_INSTALL/usr/lib
+    stage:
+      - mme/*
+      - usr/lib/*
+      - lib/*
+    prime:
+      - mme/*
+      - usr/lib/*
+      - lib/*
+
+  frontend:
+    plugin: dump
+    source: frontend

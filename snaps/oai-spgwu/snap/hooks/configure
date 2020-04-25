@@ -1,0 +1,6 @@
+#!/bin/sh
+set -e 
+
+snapctl stop --disable ${SNAP_NAME}  2>&1  || true
+
+$SNAP/init spgwu

@@ -1,0 +1,12 @@
+#!/bin/sh
+
+export DEBIAN_FRONTEND=noninteractive
+set -e
+
+
+CONF_DIR="$SNAP_DATA"
+
+MME_DIR="$SNAP/mme"
+MME_CONF_FILE="$CONF_DIR/mme.conf"
+MME_FD_CONF_FILE="$CONF_DIR/mme_fd.conf"
+MME_EXEC="$MME_DIR/mme"

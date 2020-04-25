@@ -178,7 +178,21 @@ td {
     color: #FFF;
     font-weight: bold;
     line-height: 3em;
-    margin-bottom: 1em;
+    margin-bottom: 0.5em;
+    overflow: hidden;
+}
+#logos {
+    line-height: 1em;
+    height: 3.5em;
+    float: right;
+    margin-left: 2em;
+}
+#logos img {
+    margin-right: 1em;
+    height: 3em;
+    /* vertical-align: middle; */
+    max-height: 80%;
+    max-width: 80%;
 }
 /* Show links within menubar with menubar colors */
 ul.menubar a {

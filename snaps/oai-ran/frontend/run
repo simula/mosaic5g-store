@@ -3,6 +3,7 @@
 . $SNAP/common
 
 export UHD_IMAGES_DIR=$SNAP/uhd_images
+export UHD_RFNOC_DIR=$SNAP/usr/share/uhd/rfnoc/blocks
 
 if [ ! -e $ENB_EXEC ]; then
     echo "Cannot find $ENB_EXEC executable"
@@ -18,7 +19,6 @@ if [ ! -e $RRU_EXEC ]; then
     echo "Cannot find $RRU_EXEC executable"
     exit 127
 fi		   	   
-   	   
 
 
 if [ -r $SNAP_DATA/config_enb.sh ]; then
@@ -67,39 +67,47 @@ case "$1" in
 	;;
     
     "info" )
-	snap info $SNAP_NAME
+	shift 
+	echo "Please manually run: snap info $SNAP_NAME "
 	;; 
-    "status-all" )
-	snap services $SNAP_NAME
-	;;
-    "stop-all" )
-	snap stop $SNAP_NAME
-	;;
     "start"  )
-	snap start $SNAP_NAME.$2
+	daemon=$2
+	shift 2
+	snapctl start --enable $SNAP_NAME.$daemon "$@"
+	#snap start $SNAP_NAME.$daemon  "$@"
 	;;
     "stop" )
-	snap stop $SNAP_NAME.$2
+	daemon=$2
+	shift 2
+	snapctl stop --disable $SNAP_NAME.$daemon "$@"
+	#snap stop $SNAP_NAME.$daemon  "$@"
 	;;
     "restart" )
-	snap restart $SNAP_NAME.$2
+	daemon=$2
+	shift 2
+	snapctl stop $SNAP_NAME.$daemon "$@"
+	snapctl start --enable $SNAP_NAME.$daemon "$@"
+	#snapctl restart $SNAP_NAME.$daemon "$@"
+	#snap restart $SNAP_NAME.$daemon  "$@"
 	;;
     "status" )
-	#echo "$SNAP_NAME.$2"
-	snap services $SNAP_NAME.$2
+	daemon=$2
+	shift 2
+	echo "Please manually run: snap services $SNAP_NAME.$daemon" 
+	snapctl services $SNAP_NAME.$daemon 
 	#systemctl status --lines 0 snap.$SNAP_NAME.$2.service
 	;;
     "journal" )
-	journalctl -u snap.$SNAP_NAME.$2.service
+	daemon=$2
+	shift 2
+	journalctl -u snap.$SNAP_NAME.$daemon.service "$@"
 	;;
     "help" )
 	echo "Usage:                    sudo $SNAP_NAME.[x] args"
 	echo "                          App [x] is enb, cudu, and rru"
 	echo "Note:                     root priviliage required"
 	echo "Options:"
-	echo "oai-ran.info              get the info for this snap"            
-	echo "oai-ran.status-all        status of all the services of this snap"
-	echo "oai-ran.stop-all          stop all the services of this snap"
+	echo "oai-ran.info              get the info for this snap"     
 	echo "oai-ran.test              test snap services" 
 	echo "oai-ran.init              initialize $SNAP_NAME (after the 1st installation)"
 	echo ""

@@ -28,6 +28,8 @@
 # Best practice suggests you execute the hooks/install and
 # hooks/config-changed to ensure all updates are processed
 status-set maintenance "Upgrade hook"
+source $CHARM_DIR/utils/common
+stop_enb $node_func
 $CHARM_DIR/hooks/install  
 
 

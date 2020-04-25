@@ -6,15 +6,21 @@ CONF_DIR="$SNAP_DATA"
 
 ENB_DIR="$SNAP/enb"
 ENB_CONF_FILE="$CONF_DIR/enb.band7.tm1.50PRB.usrpb210.conf"
+ENB_SIM_CONF_FILE="$CONF_DIR/rcc.band7.tm1.if4p5.50PRB.lo.conf"
 ENB_EXEC="$ENB_DIR/$SNAP_NAME"
 
 
-CUDU_DIR="$SNAP/cudu"
+CUDU_DIR="$SNAP/enb"
 CUDU_CONF_FILE="$CONF_DIR/rcc.band7.tm1.if4p5.50PRB.conf"
-CUDU_EXEC="$CUDU_DIR/$SNAP_NAME"
+CU_CONF_FILE="$CONF_DIR/cu.lte.conf"
+DU_CONF_FILE="$CONF_DIR/du.lte.band7.10MHz.if4p5.conf"
+CUDU_EXEC="$ENB_DIR/$SNAP_NAME"
 
 #use the same dir as cudu, but keep variables separated
-RRU_DIR="$SNAP/cudu"
+RRU_DIR="$SNAP/enb"
 RRU_CONF_FILE="$CONF_DIR/rru.conf"
-RRU_EXEC="$CUDU_DIR/$SNAP_NAME"
+RRU_EXEC="$ENB_DIR/$SNAP_NAME"
 
+LTEM_DIR="$SNAP/enb"
+LTEM_CONF_FILE="$CONF_DIR/enb.band13.tm1.50PRB.emtc.conf"
+LTEM_EXEC="$ENB_DIR/$SNAP_NAME"

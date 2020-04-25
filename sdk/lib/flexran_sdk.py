@@ -35,24 +35,18 @@ import io
 import requests
 import time
 import logging
+logging.getLogger("requests").setLevel(logging.WARNING)
+logging.getLogger("urllib3").setLevel(logging.WARNING)
 import argparse
 import os
 import pprint
 import yaml
+from datetime import datetime
 
 from lib.logger import *
 
 from enum import Enum
 
-
-class rrc_triggers(Enum):
-    """!@brief RRC Measurements trigger types
-    
-    """
-
-    ONE_SHOT = 0
-    PERIODICAL = 1
-    EVENT_DRIVEN= 2
 
 class cd_actions(Enum):
     """!@brief control delegation actions
@@ -94,7 +88,7 @@ class flexran_rest_api(object):
 
     
     """!@brief RRC API endpoit """ 
-    rrc_trigger='/rrc_trigger'
+    rrc_trigger='/rrc'
     """!@brief control delegation API endpoint for DL """ 
     cd_dl='/dl_sched'
     """!@brief control delegation API endpoint for DL """ 
@@ -136,10 +130,9 @@ class flexran_rest_api(object):
 class rrc_trigger_meas(object):
     """!@brief RRC trigger measurement class
 
-    This class is used to trigger measurement events in the UE for the reception of RSRP and RSRQ values of the neighboring cells.
-    The REST API end point is /rrc_trigger
-    @todo make the measurment trigger event reconfigurable and per UE basis 
-    @return RSRP/RSRQ : from the status manger
+    This class is used to configure RRC parameters and trigger handovers.
+    The REST API end point is /rrc
+    @return RSRP/RSRQ : from the status manager
     """
     def __init__(self, log, url='http://localhost', port='9999', op_mode='test'):
         """!@brief Class constructor """
@@ -150,50 +143,74 @@ class rrc_trigger_meas(object):
         self.status = ''
         self.op_mode = op_mode
         self.log = log
-
         self.rrc_trigger_api=flexran_rest_api.rrc_trigger
 
-        self.rrc_meas = {}
-        self.rrc_meas[rrc_triggers.ONE_SHOT]      = 'ONE_SHOT'
-        self.rrc_meas[rrc_triggers.PERIODICAL]       = 'PERIODICAL'
-        self.rrc_meas[rrc_triggers.EVENT_DRIVEN]  = 'EVENT_DRIVEN'
+    def trigger_ho(self, senb_id, ue_rnti, tenb_id):
+        """!@brief Trigger a HO. No checks are performed.
 
+        @param senb_id: the BS ID of the source eNB
+        @param ue_rnti: the RNTI of the UE to handover
+        @param tenb_id: the BS ID of the target eNB
+        """
+        # /rrc/ho/senb/:sid/ue/:ue/tenb/:tid
+        url = self.url + self.rrc_trigger_api + "/ho/"
+        url += "senb/" + str(senb_id) + "/"
+        url += "ue/" + str(ue_rnti) + "/"
+        url += "tenb/" + str(tenb_id)
+        if self.op_mode == "test":
+            self.log.info("TEST MODE: POST " + url)
+        elif self.op_mode == "sdk":
+            self.log.info("POST " + url)
+            try:
+                req = requests.post(url)
+                if req.status_code == 200:
+                    self.status = "connected"
+                else:
+                    self.status = "disconnected"
+                    self.log.error("Request failed. Error " + req.reason + "(code " + str(req.status_code) + ")")
+            except:
+                self.log.error("Exception in trigger_ho()")
+        else:
+            self.log.warn("Unknown operation mode " + op_mode)
+        return self.status    
+
+    def switch_x2_ho_net_control(self, enb_id, enable):
+        """!@brief Enable/Disable X2 HO net control, i.e. whether handover
+        requests initiated by a UE are ignored (true) or honored (false)
+
+        @param enb_id: The ID of the BS
+        @param enable: boolean
+        """
+        # /rrc/x2_ho_net_control/enb/:id/:bool
+        url = self.url + self.rrc_trigger_api + "/x2_ho_net_control/"
+        url += "enb/" + str(enb_id) + "/"
+        if enable:
+            url += "1"
+        else:
+            url += "0"
+        if self.op_mode == "test":
+            self.log.info("TEST MODE: POST " + url)
+        elif self.op_mode == "sdk":
+            self.log.info("POST " + url)
+            try:
+                req = requests.post(url)
+                if req.status_code == 200:
+                    status = "connected"
+                else:
+                    status = "disconnected"
+                    self.log.error("Request failed. Error " + req.reason + "(code " + str(req.status_code) + ")")
+            except:
+                self.log.error("Exception in switch_x2_ho_net_control()")
+        else:
+            self.log.warn("Unknown operation mode " + op_mode)
 
     def trigger_meas(self, type='EVENT_DRIVEN'):
-        """!@brief Set the type of RRC trigger measurments
-        
-        @param type: ONE_SHOT, PERIODICAL, and EVENT_DRIVEN
-        @note: this call enables RRC measurement for active/connected UEs
+        """!@brief Deprecated: Set the type of RRC trigger measurements,
+
+        @param type: any string
+        @note: This deprecated method does nothing
         """
-
-        if type == self.rrc_meas[rrc_triggers.ONE_SHOT] :
-            url = self.url+self.rrc_trigger_api+'/'+type.lower()
-        elif type == self.rrc_meas[rrc_triggers.PERIODICAL] :
-            url = self.url+self.rrc_trigger_api+'/'+type.lower()
-        elif type == self.rrc_meas[rrc_triggers.EVENT_DRIVEN] :
-            url = self.url+self.rrc_trigger_api+'/'+type.lower()
-        else:
-            self.log.error('Type ' + type + 'not supported')
-            return
-        
-        if self.op_mode == 'test' :
-            self.log.info('POST ' + str(url))
-
-        elif self.op_mode == 'sdk' : 
-            try :
-                req = requests.post(url)
-                self.log.info('POST ' + str(url))
-                if req.status_code == 200 :
-                    self.log.info('successfully send the RRC trigger measurment to the agent' )
-                    self.status='connected'
-                else :
-                    self.status='disconnected'
-                self.log.error('Request error code : ' + str(req.status_code))
-            except :
-                self.log.error('Failed to send the RRC trigger measurement to the agent' )
-
-        else :
-            self.log.warn('Unknown operation mode ' + op_mode )       
+        self.log.warn("trigger_meas() does nothing")
 
 class control_delegate(object):
     """!@brief Control delegation class
@@ -1039,10 +1056,8 @@ class stats_manager(object):
                     self.log.info('Reading the json file for test mode. This can take a while...')
                     with open(file) as data_file:
                         # get the entire file
-                        self.stats_data_log = json.load(data_file) 
+                        self.stats_data = json.load(data_file)
                     self.stats_data_index = 0
-                self.stats_data=self.stats_data_log[self.stats_data_index]  
-                self.stats_data_index = (self.stats_data_index + 1) % len(self.stats_data_log)
                 if self.recording:
                     self.stats_data_recorded.append(self.stats_data)
                 self.status='connected'
@@ -1060,7 +1075,7 @@ class stats_manager(object):
                 url = self.url+self.sm_enb_api
             
             
-            self.log.info('the request url is: ' + url)
+            self.log.debug('the request url is: ' + url)
             try :
                 req = requests.get(url)
                 if req.status_code == 200:
@@ -1081,6 +1096,11 @@ class stats_manager(object):
             self.log.debug('Stats Manager requested data')
             self.log.debug(json.dumps(self.stats_data, indent=2))
 
+    def get_date_time(self):
+        """!@brief Get the date time when this JSON file was returned
+        """
+        return datetime.strptime(self.stats_data['date_time'], '%Y-%m-%dT%H:%M:%S.%f')
+
     def get_enb_config(self,enb=0):
         """!@brief Get the entire eNB configuration
         
@@ -1093,17 +1113,23 @@ class stats_manager(object):
         
         @param enb: index of eNB
         """
-        if 'eNBId' in self.stats_data['eNB_config'][enb]['eNB']: 
-            return int(self.stats_data['eNB_config'][enb]['eNB']['eNBId'])
+        if 'bs_id' in self.stats_data['eNB_config'][enb]:
+            return int(self.stats_data['eNB_config'][enb]['bs_id'])
         else:
-            self.log.warn('eNB ID not available, sending the eNB index')
+            self.log.warn('BS ID not available, sending the eNB index')
             return enb;
+
+    def get_enb_id_list(self):
+        """!@brief Get a list of all BS identifiers
+        """
+        return [ self.get_enb_id(enb) for enb in range(0, self.get_num_enb()) ]
 
     def get_num_enb(self):
         """!@brief Get the number of connected eNB to this controller 
         
         """
-        
+        if self.stats_data == '': # if nothing received yet
+            return 0
         return len(self.stats_data['eNB_config'])
 
     def get_ue_config(self,enb=0,ue=0):
@@ -1228,6 +1254,21 @@ class stats_manager(object):
             return 16
         else :
             return 28
+
+    def get_phy_cell_id(self,enb=0,cc=0):
+        """!@brief Get the physical cell ID of the eNB
+        @param enb: index of eNB
+        @param cc: index of component carrier
+        @param dir: defines downlink and uplink direction
+        """
+        return self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['phyCellId']
+
+    def get_x2_ho_net_controlled(self, enb=0, cc=0):
+        """!@brief Return whether handover requests initiated by a UE are
+        ignored (true) or honored (false)
+        @param enb: index of eNB
+        """
+        return self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['x2HoNetControl']
     
     def get_lc_config(self,enb=0,lc=0):
         """!@brief Get a logical channel (LC) config for a given eNB and LC id
@@ -1254,6 +1295,26 @@ class stats_manager(object):
         """
 
         return len(self.stats_data['mac_stats'][enb]['ue_mac_stats'])
+
+    def get_ue_rnti(self, enb=0, ue=0):
+        """!@brief Get the RNTI of a UE
+        @param enb: index of eNB
+        @param ue: index of UE
+        """
+        return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['rnti']
+
+    def get_ue_imsi(self, enb=0, ue=0):
+        """!@brief Get the IMSI of a UE
+        @param enb: index of eNB
+        @param ue: index of UE
+        """
+        return self.stats_data['eNB_config'][enb]['UE']['ueConfig'][ue]['imsi']
+
+
+    def get_rnti_list(self, enb = 0):
+        """!@brief get a list of all RNTIs for a specific eNB
+        """
+        return [ self.get_ue_rnti(enb, u) for u in range(0, self.get_num_ue(enb)) ]
 
     def get_ue_mac_status(self,enb=0,ue=0):
         """!@brief Get the UE MAC layer status 
@@ -1556,6 +1617,19 @@ class stats_manager(object):
                 return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['rrcMeasurements']['pcellRsrp']
         return 0
 
+    def get_ue_neighboring_cells(self, enb=0, ue=0):
+        """!@brief Return the neighboring cell's physical IDs as seen by a
+        particular UE
+        @param enb: index of eNB
+        @param ue: index of UE
+        """
+        mac_stats = self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']
+        neigh = []
+        if 'rrcMeasurements' in mac_stats:
+            for meas in mac_stats['rrcMeasurements']['neighMeas']['eutraMeas']:
+                neigh += [meas['physCellId']]
+        return neigh
+
     def get_ue_tbs(self, enb=0, ue=0, dir='UL'):
         """!@brief Get the RRC RSRP value
         
@@ -1647,20 +1721,6 @@ class stats_manager(object):
             self.log.warning('unknown direction ' + dir + 'set to DL')
             return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['totalbytesSdusDl']
 
-    def get_ue_total_bytes_sdus(self, enb=0, ue=0, dir='UL'):
-        """!@brief Get the RRC RSRP value
-        
-        @param enb: index of eNB
-        @param ue: index of UE
-        """
-        if dir == 'dl' or dir == 'DL' :
-            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['totalbytesSdusDl']
-        elif dir == 'ul' or dir == 'UL' :
-            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['totalbytesSdusUl']
-        else :
-            self.log.warning('unknown direction ' + dir + 'set to DL')
-            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['totalbytesSdusDl']
-
     def get_ue_total_prb(self, enb=0, ue=0, dir='UL'):
         """!@brief Get the RRC RSRP value
         
@@ -1717,7 +1777,7 @@ class stats_manager(object):
             self.log.warning('unknown direction ' + dir + 'set to DL')
             return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['macSdusDl'][0]['lcid']
 
-    #TTN, new functions supporting slice
+    #new functions supporting slice
     def get_num_slices(self, enb=0, cc=0, dir='dl'):
         """!@brief Get the number of slices of this eNB 
         
@@ -1729,6 +1789,17 @@ class stats_manager(object):
         else :
             self.log.warning('unknown direction ' + dir + 'set to DL')
             return len(self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['sliceConfig']['dl'])
+
+    def get_ue_teid_sgw(self, enb=0, ue=0, erab=0):
+        """!!!@brief Get the SGw TEID for given UE and its erab (index)
+        """
+        return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['gtpStats'][erab]['teidSgw']
+
+    def get_ue_teid_enb(self, enb=0, ue=0, erab=0):
+        """!!!@brief Get the eNB TEID for given UE and its erab (index)
+        """
+        return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['gtpStats'][erab]['teidEnb']
+
 
     def get_slice_percentage(self, enb=0, cc=0, sid=0, dir='dl'):
         """!@brief Get the current percentage share for a slice 

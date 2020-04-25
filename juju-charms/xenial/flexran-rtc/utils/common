@@ -57,6 +57,20 @@ fi
 
 }
 
+start_flexran(){
+    snap start flexran
+}
+
+stop_flexran(){
+    snap stop flexran
+}
+restart_flexran(){
+    snap restart flexran
+}
+remove_flexran(){
+    snap remove flexran
+}
+
 # get from http://www.linuxjournal.com/content/validating-ip-address-bash-script
 validate_ip() {
 

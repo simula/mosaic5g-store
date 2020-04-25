@@ -5,14 +5,16 @@ options:
       snap indicates which channel to use for installation hook. 
      type: string
    sgw-eth:
-     default: "eth0"
+     default: "none"
      description: |
+       If the value of this interface is "none", the interface name will be detected authomatically
        This is usefull especially when you are in manual environment so you have your own machines. The default value is eth0. NO empty value.
      type: string
    pgw-eth:
-     default: "eth0"
+     default: "none"
      description: |
-       This is usefull especially when you are in manual environment so you have your own machines. The default value is eth0. NO empty value.
+        If the value of this interface is "none", the interface name will be detected authomatically
+        This is usefull especially when you are in manual environment so you have your own machines. The default value is eth0. NO empty value.
      type: string
    ipv4_list_start:
      default: "172.16.0.0/12"
@@ -35,8 +37,10 @@ options:
      description: set the LTE UE MTU
      type: int
    DEFAULT_DNS_IPV4_ADDRESS:
-     default: "8.8.8.8"
-     description: IPv4 address of primary default DNS that can be queried by UEs.
+     default: "127.0.0.1"
+     description: 
+        IPv4 address of primary default DNS that can be queried by UEs.
+        If the value of DEFAULT_DNS_IPV4_ADDRESS is 127.0.0.1, the DNS will be detected automatically
      type: string
    DEFAULT_DNS_SEC_IPV4_ADDRESS:
      default: "8.8.8.8"

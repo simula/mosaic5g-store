@@ -1,0 +1,30 @@
+#!/bin/sh
+
+. $SNAP/common
+
+echo "Test Snap MMED Service"
+
+waiting_time=2
+case "$1" in
+    "mme-service" )
+	$SNAP/run status  
+	sleep $waiting_time 
+	$SNAP/run start 
+	sleep $waiting_time 
+	$SNAP/run status
+	sleep $waiting_time 
+	$SNAP/run stop 
+	sleep $waiting_time
+	$SNAP/run status 
+	sleep $waiting_time 
+
+    ;;
+	
+    * )
+	echo "Unknown command: $1"
+	;;
+
+esac
+
+	
+

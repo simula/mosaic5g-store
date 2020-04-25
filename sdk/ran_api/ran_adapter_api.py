@@ -775,5 +775,71 @@ def delete_SliceMapping(sliceId):
     #TODO: should be verified 
     #cpsr_register()
  
-      
+def post_ho(body):
+    """!@brief Triggers a network-initiated handover request
+        @param body: body of post message including the parameters sid (Source BS Id), ueid (IMSI or RNTI) and tid (Target BS Id)
+    """
+
+    """
+    Step 0: get information from the request and verify the input
+    """
+    print(body)
+    
+    source_bs_id = -1;
+    dst_bs_id = -1;
+    ue_id  = {}
+    
+    try:
+        source_bs_id = int(body['sid'])
+        ue_id = int(body['ueid'])
+        dst_bs_id = int(body['tid'])
+    except (ValueError, KeyError):
+        print('Bad request!')
+        return NoContent, 400
+    
+    """
+    Step 1: collect the necessary information by relying on FlexRAN
+    """                
+    rrm = flexran_sdk.rrm_policy(log=adapter.log,
+                                 url=adapter.url,
+                                 port=adapter.port,
+                                 op_mode=adapter.op_mode)
+
+    sm = flexran_sdk.stats_manager(log=adapter.log,
+                                   url=adapter.url,
+                                   port=adapter.port,
+                                   op_mode=adapter.op_mode)
+    
+    rrc = flexran_sdk.rrc_trigger_meas(log = log,
+                                       url = args.url,
+                                       port = args.port,
+                                       op_mode = adapter.op_mode)
+        
+                   
+    adapter.log.info('[post_ho] Reading the status of the underlying eNBs')
+    sm.stats_manager('all')
+    adapter.log.info('[post_ho] Gather statistics')
+    get_statistics(sm)
+    
+    adapter.log.info('[post_ho] Enable X2 HO for all BS')
+    
+    for enb in range(0, sm.get_num_enb()) :
+        bs_id = sm.get_enb_id(enb)
+        if not bs_id in self.ue_load:
+            self.ue_load[bs_id] = {}
+            self.rrc.switch_x2_ho_net_control(bs_id, True)
+            self.log.info("new BS " + str(bs_id) + ", enable X2 HO NetControl")
+                
+                
+    
+    #Trigger HO
+    status = rrc.trigger_ho(source_bs_id, ue_id, dst_bs_id)
+
+    if (status == 'connected'):
+        return NoContent, 200
+    else:
+        return NoContent, 500           
+    
+        
+     
   

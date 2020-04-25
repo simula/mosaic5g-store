@@ -1,0 +1,25 @@
+#!/bin/sh
+
+. $SNAP/common
+
+case "$1" in
+    "spgwc" )
+
+#	if [ ! -f $CONF_DIR/spgwc.conf ] ; then
+	    cp $SNAP/etc/spgwc.conf $CONF_DIR
+#	fi
+	
+	$SNAP/conf set-spgwc $CONF_DIR/spgwc.conf
+
+	# a copy for the user
+	cp $CONF_DIR/spgwc.conf $SNAP_USER_DATA
+	echo""
+	echo "SPGWC is initialized"
+	echo "Now, configure the spgw.conf file (mainly the NETWORK_INTERFACES and P-GW sections)"
+	;;
+    * )
+	echo "Unknown command: $1"
+	;;
+
+esac
+

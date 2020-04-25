@@ -1,0 +1,217 @@
+name: oai-hss
+version: '1.0' 
+title: OpenAirInterface HSS module
+summary: OpenAirInterface HSS entity Rel. 14
+description: |
+    OAI-HSS is the openairinterface-based HSS entity allowing to connect a 4G-comptaible BS and UEs to the core network. It is one of the projects of Mosaic5G inititive.
+type: app
+license: Apache-2.0
+
+architectures:
+  - amd64
+  - i386
+confinement: devmode
+grade: stable
+base: core18
+
+apps:
+  test:
+    command : test hss-service
+  info:
+    command: run info
+  help:
+    command: run help 
+  oai-hss:
+    command: run hss
+  hssd:
+    command: run hss
+    daemon: simple
+    stop-command: run stop
+    stop-timeout: 1s
+  debug:
+    command: run gdb
+  start:
+    command: run start hssd
+  stop:
+    command: run stop hssd
+  restart:
+    command: run restart hssd
+  status:
+    command: run status hssd
+  journal:
+    command: run journal hssd
+  init:
+    command: init hss
+  conf-set:
+    command: conf set-hss
+  conf-get:
+    command: conf echo-hss
+  conf-show:
+    command: conf cat-hss
+  conf-list:
+    command: conf ls-hss
+  add-users:
+    command: run add-users
+  dump-users:
+    command: run dump-users
+  reset-db:
+    command: run reset-db
+  clean-db:
+    command: run clean-db
+  add-mme:
+    command: run add-mme
+  dump-mme:
+    command: run dump-mme
+  dump-vars:
+    command: run dump-vars
+  api:
+    command: run openapi
+  apid:
+    command: run openapi
+    daemon: simple
+    stop-command: run stop
+    stop-timeout: 1s
+  api-start:
+    command: run start apid
+  api-stop:
+    command: run stop apid
+  api-restart:
+    command: run restart apid
+  api-status:
+    command: run status apid
+  api-journal:
+    command: run journal apid
+    
+hooks:
+  install:
+    plugs: [home, network, desktop]
+  configure:
+    plugs: [home, network, desktop]
+    
+parts:
+  gdb:
+    plugin: nil
+    stage-packages:
+      - libbabeltrace1
+      - libdw1
+      - libmpfr6
+      - libpython3.6
+    override-build: |
+      sudo apt install gdb -y
+      mkdir $SNAPCRAFT_PART_INSTALL/share 
+      cp -r /usr/share/gdb $SNAPCRAFT_PART_INSTALL/share
+      cp /usr/bin/gdb* $SNAPCRAFT_PART_INSTALL
+    prime:
+      - gdb*
+      - share/*
+  #cassandra:
+  #  plugin: cmake
+  #  source: https://github.com/OPENAIRINTERFACE/openair-cn.git
+  #  source-branch: develop
+  #  build-packages: [build-essential, ]
+  #  override-build: |
+  #    #export DEBIAN_FRONTEND=interactive
+  #    cd ../src/scripts
+  #    ./build_cassandra -i -F  
+  #    cd ..
+  #  stage:
+  #    - usr/lib/*
+  #    - lib/*
+  #  prime:
+  #    - usr/lib/*
+  #    - lib/*
+  #fd:
+  #  plugin: cmake
+  #  source: https://gitlab.eurecom.fr/oai/freediameter.git
+  #  source-branch: eurecom-1.2.0
+  #  stage-packages:
+  #    - libsctp1
+  #  override-build: |
+  #    cd ../src
+  #    mkdir build
+  #    cd build
+  #    cmake -DCMAKE_INSTALL_PREFIX:PATH=$SNAPCRAFT_PART_INSTALL/usr/local ../
+  #    #cmake ../
+  #    make -j`nproc`
+  #    sudo -S -E make install
+  #    #mkdir -p $SNAPCRAFT_PART_INSTALL/usr/local/lib/freeDiameter/
+  #    #sudo cp -r /usr/local/lib/freeDiameter $SNAPCRAFT_PART_INSTALL/usr/local/lib
+  #  stage:
+  #    - lib/*
+  #    - usr/local/*
+  #  prime:
+  #    - lib/*
+  #    - usr/local/*
+  hss:
+    build-environment:
+    - LANG: C.UTF-8
+    - LC_ALL: C.UTF-8
+    plugin: cmake
+    source: https://github.com/OPENAIRINTERFACE/openair-cn.git
+    #source-branch: merge_ipv6_interfaces_en-dc
+    source-branch: develop
+    build-packages: [build-essential, ]
+    stage-packages:
+      - libstdc++6
+      - uvtool
+      - libuv1
+      - libsctp1
+    override-build: |
+      #export DEBIAN_FRONTEND=interactive
+      cd ../src/scripts
+      ./build_hss_rel14 -c -i -f 
+      ./build_hss_rel14	-c 
+      cd ..
+      pwd 
+      mkdir -p $SNAPCRAFT_PART_INSTALL/hss/
+      #mkdir -p $SNAPCRAFT_PART_INSTALL/etc/
+      mkdir -p $SNAPCRAFT_PART_INSTALL/scripts/
+      #cp  etc/*  $SNAPCRAFT_PART_INSTALL/etc/
+      cp  scripts/*  $SNAPCRAFT_PART_INSTALL/scripts/
+      cp build/hss_rel14/bin/hss  $SNAPCRAFT_PART_INSTALL/hss/
+      cp /usr/local/lib/libcare* $SNAPCRAFT_PART_INSTALL/usr/lib
+      cp /usr/local/lib/libfd* $SNAPCRAFT_PART_INSTALL/usr/lib
+      cp /usr/local/lib/liblfds* $SNAPCRAFT_PART_INSTALL/usr/lib
+      cp /usr/local/lib/libpist* $SNAPCRAFT_PART_INSTALL/usr/lib
+      cp -r /usr/local/lib/freeDiameter/  $SNAPCRAFT_PART_INSTALL/usr/lib
+      cp /usr/local/lib/x86_64-linux-gnu/libcassandra.so* $SNAPCRAFT_PART_INSTALL/usr/lib 
+    stage:
+      - hss/*
+      - scripts/*
+      - usr/lib/*
+      - usr/local/x86_64-linux-gnu/*
+      - lib/*
+    prime:
+      - hss/*
+      - scripts/*
+      - usr/lib/*
+      - usr/local/x86_64-linux-gnu/*
+      - lib/*
+    #organize:
+    #  /usr/local/lib/lib* : usr/lib
+    #  /usr/local/lib/freeDiameter : usr/lib
+    #  /usr/local/lib/x86_64-linux-gnu/lib* : usr/lib
+    #cp /usr/local/lib/lib* . 
+    #cp -r /usr/local/lib/freeDiameter/ . 
+    #cp /usr/local/lib/x86_64-linux-gnu/libcassandra.so* .
+  frontend:
+    plugin: dump
+    #stage-packages:
+    #  -  python3-cassandra
+    source: frontend
+  openapi:
+    plugin: python
+    python-version: python3
+    python-packages:
+      - flask
+      - itsdangerous
+      - werkzeug
+      - click
+      - jinja2
+      - markupsafe
+    stage:
+      - usr/lib/python3.6/*
+      - usr/*
+    prime:
+      - usr/lib/python3.6/*
+      - usr/*

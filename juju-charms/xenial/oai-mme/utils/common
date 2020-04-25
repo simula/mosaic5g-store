@@ -112,17 +112,18 @@ user_conf(){
   fi
   ID="tac-lb0$TAC.tac-hb00.tac.epc.mnc$MNC.mcc$MCC.3gppnetwork.org"
   
-  #update sgw
-  if [ "$spgw_s11_ipv4" != "" ]; then  
-    sed -r -i  "s/SGW_IPV4_ADDRESS_FOR_S11=.*;/SGW_IPV4_ADDRESS_FOR_S11=\"$spgw_s11_ipv4\/8\";/" $mme_conf
+  sed -r -i  "s/SGW_IPV4_ADDRESS_FOR_S11.*/SGW_IPV4_ADDRESS_FOR_S11=\"$spgw_s11_ipv4\/8\";/" $mme_conf
 
-    sed -r -i  "s/mnc...\.mcc.../mnc$MNC\.mcc$MCC/" $mme_conf
+# if [ "$spgw_s11_ipv4" != "" ]; then  
+#    sed -r -i  "s/SGW_IPV4_ADDRESS_FOR_S11.*/SGW_IPV4_ADDRESS_FOR_S11=\"$spgw_s11_ipv4\/8\";/" $mme_conf
+
+#    sed -r -i  "s/mnc...\.mcc.../mnc$MNC\.mcc$MCC/" $mme_conf
     # add a new element if hanvn't done before
     #if [ "$(egrep -c $ID $mme_conf_path/mme.conf)" -le 0 ]; then
     #  echo "adding ID=$ID; SPGW_IP=$spgw_s11_ipv4/24; to mme.conf"
     #  sed -r -i "/S-GW_LIST_SELECTION/a {ID=\"$ID\" ; SGW_IPV4_ADDRESS_FOR_S11=\"$spgw_s11_ipv4\/24\";}," $mme_conf_path/mme.conf
     #fi
-  fi
+ # fi
 #sed -r -i "/SGW_IPV4_ADDRESS_FOR_S11/ s-\".*\"-\"$spgw_s11_ipv4\"-" $mme_conf_path/mme.conf
 
   # update hss

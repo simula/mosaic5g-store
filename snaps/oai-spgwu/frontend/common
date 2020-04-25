@@ -1,0 +1,10 @@
+#!/bin/sh
+
+export DEBIAN_FRONTEND=noninteractive
+set -e
+
+CONF_DIR="$SNAP_DATA"
+
+SPGWU_DIR="$SNAP/spgwu"
+SPGWU_CONF_FILE="$CONF_DIR/spgwu.conf"
+SPGWU_EXEC="$SPGWU_DIR/spgwu"

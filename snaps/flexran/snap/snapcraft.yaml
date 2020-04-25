@@ -1,14 +1,16 @@
 name: flexran
-version: '1.3' 
+version: '2.2' 
 summary: FlexRAN SD-RAN platfrrom
 description: |
-   FlexRAN is a software-defined radio access network platform licensed under Apache License V2.0. It is one of the projects of Mosaic5G inititive.
+   FlexRAN is a software-defined radio access network platform on the top of OpenAirInterface, licensed under Apache License V2.0. It is one of the projects of Mosaic5G inititive.
 grade: stable
 type: app
 architectures:
   - amd64
   - i386
 confinement: devmode
+license: Apache-2.0
+base: core18
 
 apps:
   info:
@@ -48,6 +50,10 @@ hooks:
 parts:
   gdb:
     plugin: nil
+    stage-packages:
+      - libbabeltrace1
+      - libdw1
+      - libmpfr6
     override-build: |
       sudo apt install gdb -y
       mkdir $SNAPCRAFT_PART_INSTALL/share 
@@ -61,7 +67,9 @@ parts:
   pistache:
     plugin: cmake
     source:  https://github.com/oktal/pistache.git
+    source-commit: 2ef937c434810858e05d446e97acbdd6cc1a5a36
     override-build: |
+      cd ../src/
       mkdir -p build
       cd build
       cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ..
@@ -77,6 +85,7 @@ parts:
     source:  https://github.com/google/protobuf.git
     build-packages: [ autoconf, automake, libtool, curl, g++, unzip, ]
     override-build: |
+      cd ../src/
       ./autogen.sh
       mkdir -p $SNAPCRAFT_PART_INSTALL/lib
       #./configure --prefix=$SNAPCRAFT_PART_INSTALL/lib
@@ -85,10 +94,13 @@ parts:
       sudo make install
       sudo ldconfig
       #mkdir -p $SNAPCRAFT_PART_INSTALL/lib
-      #cp /usr/local/lib/libproto* $SNAPCRAFT_PART_INSTALL/lib
+      cp /usr/local/lib/libproto* $SNAPCRAFT_PART_INSTALL/lib
       mkdir -p $SNAPCRAFT_PART_INSTALL/bin
       cp /usr/local/bin/protoc* $SNAPCRAFT_PART_INSTALL/bin
     stage:
+      - lib/*
+      - bin/*
+    prime:
       - lib/*
       - bin/*
   flexran:
@@ -101,8 +113,10 @@ parts:
       - libboost-all-dev
       - liblog4cxx-dev
       - liblog4cxx10v5
+      - libcurl4-openssl-dev
     override-build: |
-      ./build_flexran_rtc.sh -r 
+      cd ../src/
+      ./build_flexran_rtc.sh 
       mkdir -p $SNAPCRAFT_PART_INSTALL/bin
       cp build/rt_controller $SNAPCRAFT_PART_INSTALL/bin/flexran
       #mv $SNAPCRAFT_PART_INSTALL/bin/rt_controller $SNAPCRAFT_PART_INSTALL/bin/flexran 	
@@ -110,17 +124,12 @@ parts:
       cp -r log_config/* $SNAPCRAFT_PART_INSTALL/log_config
     stage:
       - bin/flexran
-      - usr/lib/x86_64-linux-gnu/liblog4cxx*
-      - usr/lib/x86_64-linux-gnu/libboost*
-      - usr/lib/x86_64-linux-gnu/libapr*
+      - usr/lib/x86_64-linux-gnu/*
       - lib/*
       - log_config
     prime:
       - bin/flexran
-      - usr/lib/x86_64-linux-gnu/liblog4cxx*
-      - usr/lib/x86_64-linux-gnu/libboost*
-      - usr/lib/x86_64-linux-gnu/libapr*
-      #- usr/lib/*
+      - usr/lib/x86_64-linux-gnu/*
       - lib/*
       - log_config
 

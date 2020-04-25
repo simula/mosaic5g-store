@@ -1,0 +1,68 @@
+#!/bin/sh
+
+. $SNAP/common
+. $SNAP/util
+
+	
+case "$1" in
+
+    "hss" )
+	shift 
+#	if [ ! -f $CONF_DIR/hss.conf ]; then
+	cp $SNAP/etc/* $CONF_DIR
+#	fi
+
+	hss_set_vars
+	# set the hss.conf
+	echo "set-hss $CONF_DIR/hss.conf"
+	$SNAP/conf set-hss $CONF_DIR/hss_rel14.json
+	
+	sed -i -e "s/ubuntu/$HOSTNAME/g" $HSS_FD_CONF_FILE
+	sed -i -e "s/ubuntu/$HOSTNAME/g" $HSS_CONF_FILE 
+	$SNAP/run hss-certificate
+		
+	# a copy for the user: with sudo, the user is root
+	echo "backup the config file into $SNAP_USER_DATA"
+	cp $CONF_DIR/hss_rel14.json $SNAP_USER_DATA
+	cp $CONF_DIR/hss_rel14_fd.conf $SNAP_USER_DATA
+	cp $CONF_DIR/acl.conf $SNAP_USER_DATA
+	cp $CONF_DIR/oss.json $SNAP_USER_DATA
+
+	# this part needs sudo privilage 
+  	#service mysql restart || true 
+	
+	if [ -z "$(grep -o "$HOSTNAME.$REALM" /etc/hosts)" ]; then
+	    cp /etc/hosts /etc/hosts.$REALM.bkup
+	    #echo 127.0.0.1 localhost > /etc/hosts
+	    #echo 127.0.0.1 `hostname`.$REALM `hostname` hss >> /etc/hosts
+	    #echo 127.0.0.1 `hostname`.$REALM `hostname` mme >> /etc/hosts
+	    echo "Adding 127.0.0.1" $HOSTNAME.$REALM $HOSTNAME "hss to /etc/hosts"
+	    sed -i '/hss/d' /etc/hosts
+	    sed -i "1i127.0.0.1 $HOSTNAME.$REALM $HOSTNAME hss" /etc/hosts
+	    
+	    echo "Adding 127.0.0.1" $HOSTNAME.$REALM $HOSTNAME "mme to /etc/hosts"
+	    sed -i '/mme/d' /etc/hosts
+	    sed -i "1i127.0.0.1 $HOSTNAME.$REALM $HOSTNAME mme" /etc/hosts
+	fi
+	
+	check_cassandra_service
+	if [ $? -eq 0 ]; then
+	    $SNAP/run  provision-user-cassandra "$@" $*  || true 
+	    $SNAP/run  provision-mme-cassandra "$@" $*  || true
+
+	    echo ""
+	    echo "HSS is initialized"
+	    echo "Now, it is the time to configure the $CONF_DIR/hss_rel14_fd.conf"
+	else
+	    echo ""
+	    echo "Cassandra service is not yet active"
+	
+	fi
+	;;
+    
+    
+    * )
+	echo "Unknown command: $1"
+	;;
+    
+esac

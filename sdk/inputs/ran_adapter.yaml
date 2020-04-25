@@ -149,6 +149,51 @@ paths:
           description: Internal Server Error
         '404':
           description: Not Found
+
+  '/ho':
+
+    put:
+      summary: Triggers a network-initiated handover request
+      description: Triggers a network-initiated handover request to perform the handover of the given UE from a source BS to the target BS.
+      tags:
+        - Trigger Handover
+      operationId: ran_api.ran_adapter_api.put_ho
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/hoParameters'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+        '500':
+          description: Internal Server Error
+          
+    post:
+      summary: Triggers a network-initiated handover request
+      description: Triggers a network-initiated handover request to perform the handover of the given UE from a source BS to the target BS.
+      tags:
+        - Trigger Handover
+      operationId: ran_api.ran_adapter_api.post_ho
+      requestBody:
+        required: true
+        description: slice to add to the system
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/hoParameters'
+      responses:
+        '201':
+          description: Added
+        '400':
+          description: Bad Request
+        '500':
+          description: Internal Server Error        
+          
+
             
 components:
   schemas:
@@ -188,5 +233,17 @@ components:
         example:
             slicenetid: "f5b01594-520e-11e9-8647-d663bd873d93"
             sid: "1"                
-
+    hoParameters:
+        type: object
+        properties:
+          sid:
+            type: integer
+          ueid:
+            type: string 
+          tid:
+            type: integer           
+        example:
+            sid: 1234567
+            ueid: "208950000000003"
+            tid: 9876543  
             

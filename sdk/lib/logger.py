@@ -36,9 +36,10 @@ import logging
 
 class logger(object):
 
-    def __init__(self, log_level='info'):
+    def __init__(self, log_level='info', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'):
         super(logger, self).__init__()
         self.log_level=log_level
+        self.format = format
        
 
     def init_logger(self):
@@ -52,7 +53,7 @@ class logger(object):
         
         # define a Handler which writes INFO messages or higher to the sys.stderr
         self.console = logging.StreamHandler()
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter(self.format)
         self.console.setFormatter(formatter)
         # add the handler to the root logger
         

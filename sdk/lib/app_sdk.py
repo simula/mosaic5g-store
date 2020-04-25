@@ -49,7 +49,7 @@ import datetime
 
 class app_handler:
 
-    def __init__(self, app_name, log, callback=None, notification=None, init=None, save=None, load=None):
+    def __init__(self, app_name, log, callback=None, notification=None, init=None, save=None, load=None, term=None):
 	self.app_name = app_name
 	self.status_path = 'status_saves/'+str(self.app_name)+'.json'
 	self.clients = []
@@ -57,6 +57,7 @@ class app_handler:
 	self.callback = callback
 	self.notification = notification
 	self.init = init
+        self.term = term
 	self.load = load
 	self.save = save
 	
@@ -112,7 +113,7 @@ class app_handler:
 	else:
 	    self.log.info(str(self.app_name) + ' loads status but file does not exists')
 
-class client_handler(tornado.websocket.WebSocketHandler):
+class websocket_handler(tornado.websocket.WebSocketHandler):
 	
     def __init__(self, *args, **kwargs):
 	self.log = kwargs['handler'].log
@@ -122,7 +123,7 @@ class client_handler(tornado.websocket.WebSocketHandler):
 
 	del kwargs['handler']        
         
-        super(client_handler,self).__init__(*args, **kwargs)
+        super(websocket_handler,self).__init__(*args, **kwargs)
 
     def check_origin(self, origin):
         return True
@@ -178,6 +179,8 @@ class client_handler(tornado.websocket.WebSocketHandler):
 
     def on_close(self):
         self.handler.unregister(self, "you are unregistered")
+	if not self.handler.term is None:
+	    self.handler.term(self)
         self.log.info("app_handler: unregistered")
          
     def send(self, msg):
@@ -203,6 +206,30 @@ class client_handler(tornado.websocket.WebSocketHandler):
 	            'params': params
 		   })
 
+class request_handler(tornado.web.RequestHandler):
+    def initialize(self, **kwargs):
+        self.handlers = kwargs
+
+    def get(self, *args):
+        if self.handlers['get'] is None:
+            raise tornado.web.HTTPError(405)
+        self.handlers['get'](self, *args)
+
+    def post(self, *args):
+        if self.handlers['post'] is None:
+            raise tornado.web.HTTPError(405)
+        self.handlers['post'](self, *args)
+
+    def delete(self, *args):
+        if self.handlers['delete'] is None:
+            raise tornado.web.HTTPError(405)
+        self.handlers['delete'](self, *args)
+
+    def put(self, *args):
+        if self.handlers['put'] is None:
+            raise tornado.web.HTTPError(405)
+        self.handlers['put'](self, *args)
+
 class app_builder:
     
     def __init__(self, log, app="test",address="localhost", port=8080):
@@ -223,13 +250,31 @@ class app_builder:
         """
         
         """
-	self.handler_list.append(("/" + uri, client_handler, {'handler': handler}))
+	self.handler_list.append(("/" + uri, websocket_handler, {'handler': handler}))
 
     def add_runtime_options(self, uri, handler):
-	handler = ("/" + uri, client_handler, {'handler': handler})
+	handler = ("/" + uri, websocket_handler, {'handler': handler})
 	self.handler_list.append(handler)
 	self.app.add_handlers(self.address,[handler,])
-	
+
+    def add_http_handler(self, uri, get = None, post = None, delete = None, put = None):
+        """
+        adds a HTTP/REST endpoint. Cf. https://www.tornadoweb.org/en/stable/web.html
+
+        @param uri    the URI at which to install the handler: example with one
+                      parameter is "number/([0-9]+)" which captures one
+                      parameter
+        @param get    a Handler for the HTTP GET method. The handlers signature
+                      is h(client, *args) where client is a
+                      tornado.web.RequestHandler and args is an unnamed list of
+                      captured URL parameters
+        @param post   a Handler for the HTTP post method as get
+        @param delete a Handler for the HTTP delete method as get
+        @param put    a Handler for the HTTP put method as get
+        """
+        funcs = { 'get' : get, 'post' : post, 'delete' : delete, 'put' : put}
+        self.handler_list.append(("/" + uri, request_handler, funcs))
+
     def send_apps_list(self, client, message):
 	list_apps = []
 	for i in self.handler_list:

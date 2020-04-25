@@ -30,7 +30,10 @@ set_env
 
 check_spgw_process || true
 if [ $status -eq 1 ]; then
+    
     juju-log "OAI SPGW is not running"
+    juju-log "35 status=$status"
+    echo "35 status=$status"
     status-set blocked "Not Running"
     $CHARM_DIR/hooks/start
 else 

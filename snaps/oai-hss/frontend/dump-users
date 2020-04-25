@@ -1,0 +1,156 @@
+#!/usr/bin/python3
+
+# Copyright (c) 2017 Eurecom
+################################################################################
+# Licensed to the OpenAirInterface (OAI) Software Alliance under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The OpenAirInterface Software Alliance licenses this file to You under
+# the Apache License, Version 2.0  (the "License"); you may not use this file
+# except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#-------------------------------------------------------------------------------
+# For more information about the OpenAirInterface (OAI) Software Alliance:
+#      contact@openairinterface.org
+################################################################################
+# author Robert Schmidt
+
+import argparse
+import re
+import json
+from cassandra.cluster import Cluster
+
+def imsi_regex_match(session, regex):
+    try:
+        rows = session.execute('SELECT imsi FROM vhss.users_imsi')
+    except Exception as e:
+        print(f"could not execute statement '{command}':\n{e}")
+        exit(1)
+    pattern = re.compile(regex)
+    result = []
+    for row in rows:
+        if pattern.search(row[0]):
+            #print(f"{row[0]} matches {regex}")
+            result += [row[0]]
+    return result
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-C', '--cassandra-cluster', action='append',
+                    help="add a Cassandra node; can connect to multiple nodes (clusters)")
+parser.add_argument('-I', '--select-imsi', action='append',
+                    help="select an IMSI to show; can be a regex")
+parser.add_argument('-p', '--plain', default=False, action='store_true',
+                    help="do not pretty-print)")
+parser.add_argument('-s', '--subscription-data',
+                    help="show subscription_data and pretty print if not p",
+                    action='store_true', default=False)
+
+groupcol = parser.add_argument_group('column selection',
+        'select the db columns to show, respects order. -ikomrq is default')
+groupcol.add_argument('-i', '--imsi', help="show IMSI column",
+                    action='append_const', dest='fields', const="imsi")
+groupcol.add_argument('-k', '--key', help="show key column",
+                    action='append_const', dest='fields', const="key")
+groupcol.add_argument('-M', '--msisdn', help="show msisdn column",
+                    action='append_const', dest='fields', const="msisdn")
+groupcol.add_argument('-m', '--mme-identity', help="show mmehost column",
+                    action='append_const', dest='fields', const="mmehost")
+groupcol.add_argument('-d', '--mme-id', help="show mmeidentity_idmmeidentity column",
+                    action='append_const', dest='fields',
+                    const="mmeidentity_idmmeidentity")
+groupcol.add_argument('-o', '--opc', help="show opc column",
+                    action='append_const', dest='fields', const="opc")
+groupcol.add_argument('-q', '--sqn', help="show sqn column",
+                    action='append_const', dest='fields', const="sqn")
+groupcol.add_argument('-r', '--realm', help="show realm column",
+                    action='append_const', dest='fields', const="mmerealm")
+groupcol.add_argument('-R', '--rand', help="show rand column",
+                    action='append_const', dest='fields', const="rand")
+groupcol.add_argument('-a', '--access-restriction', help="show access_restriction column",
+                    action='append_const', dest='fields',
+                    const="access_restriction")
+args = parser.parse_args()
+
+# connect to cluster
+cl = args.cassandra_cluster
+if cl == None:
+    cl = ['172.17.0.2']
+cluster = Cluster(cl)
+try:
+    session = cluster.connect()
+except Exception as e:
+    print(f"could not connect to Cassandra cluster {cl}:\n{e}")
+    exit(1)
+
+where = ""
+if args.select_imsi:
+    imsis = []
+    for imsi in args.select_imsi:
+        if imsi.isnumeric():
+            imsis += [imsi]
+        else:
+            imsis += imsi_regex_match(session, imsi) # imsi is a regex
+    where += " WHERE imsi IN (" + ", ".join("'" + i + "'" for i in imsis) + ")"
+
+# get fields or set default
+if args.fields:
+    fields = args.fields
+else:
+    fields = ["imsi", "key", "opc", "mmehost", "mmerealm", "sqn"]
+if args.subscription_data:
+    fields += ["subscription_data"]
+f = ", ".join(fields)
+command = f"SELECT {f} FROM vhss.users_imsi{where}"
+
+try:
+    rows = session.execute(command)
+except Exception as e:
+    print(f"could not execute statement '{command}':\n{e}")
+    exit(1)
+
+# if it should be only the results, print and exit
+if args.plain:
+    for row in rows:
+        print(" ".join(str(r) for r in row))
+    exit(0)
+
+# otherwise, user wants pretty-printed output, so build it and output
+
+#print(f"Executing \"{command}\" @ Cassandra cluster {cl}:\n")
+
+# calculate max length of every column
+if len(rows.current_rows) == 0:
+    print("<no results>")
+    exit(0)
+
+length = [3] * len(rows[0])
+for i in range(len(fields)):
+    length[i] = max(len(fields[i]), length[i])
+for row in rows:
+    for i in range(len(row)):
+        length[i] = max(len(str(row[i])), length[i])
+if args.subscription_data:
+    length[len(fields)-1] = 30 # fix to width
+
+# build the format indication
+fmt = '   '.join('{:' + str(l) + '}' for l in length)
+title = fmt.format(*fields)
+print(title)
+print('-' * len(title))
+for row in rows:
+    t = [str(r) for r in row]
+    if args.subscription_data:
+        sd = t[len(t)-1]
+        if sd is None or sd == "None":
+            sd = "{}" # I don't know how to do this differently. I hate Python
+        t[len(t)-1] = json.dumps(json.loads(sd), indent=True)
+    s = fmt.format(*t)
+    print(s)

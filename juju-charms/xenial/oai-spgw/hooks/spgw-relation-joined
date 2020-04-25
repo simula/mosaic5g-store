@@ -37,7 +37,21 @@ fi
 
 
 sgw_iface=`config-get sgw-eth`
-sgw_ipv4=`get_eth_ip $sgw_iface`
+if [ "$sgw_iface" == "none" ] ; then
+    ip_addr=`unit-get public-address`
+    for interface in $(ls /sys/class/net); do
+        if [ `ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"` != "" ]; then      
+          sgw_ipv4=`ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
+          if [ $sgw_ipv4 == $ip_addr ] ; then
+              sgw_iface=$interface
+              
+              break
+          fi
+        fi
+    done
+else
+  sgw_ipv4=`get_eth_ip $sgw_iface`
+fi
 
 juju-log "Setting up SPGW relation info for MME"
 

@@ -1,0 +1,98 @@
+#!/usr/bin/python3
+
+# Copyright (c) 2017 Eurecom
+################################################################################
+# Licensed to the OpenAirInterface (OAI) Software Alliance under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The OpenAirInterface Software Alliance licenses this file to You under
+# the Apache License, Version 2.0  (the "License"); you may not use this file
+# except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#-------------------------------------------------------------------------------
+# For more information about the OpenAirInterface (OAI) Software Alliance:
+#      contact@openairinterface.org
+################################################################################
+# author Robert Schmidt
+
+### Add an entry to the mme_identity table ######
+import argparse
+from cassandra.cluster import Cluster
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-C', '--cassandra-cluster', action='append',
+                    help="add a Cassandra node; can connect to multiple nodes (clusters)")
+parser.add_argument('-p', '--plain', default=False, action='store_true',
+                    help="do not pretty-print")
+
+groupcol = parser.add_argument_group('column selection',
+        'select the db columns to show, respects order. -IimrR is default')
+groupcol.add_argument('-i', '--mme-isdn',     help="MME ISDN",
+                      action='append_const', dest='fields', const="mmeisdn")
+groupcol.add_argument('-I', '--id',   help="MME Id",
+                      action='append_const', dest='fields', const='idmmeidentity')
+groupcol.add_argument('-m', '--mme-identity', help="host name of MME",
+                      action='append_const', dest='fields', const='mmehost')
+groupcol.add_argument('-r', '--realm',        help="Realm of the CN",
+                      action='append_const', dest='fields', const='mmerealm')
+groupcol.add_argument('-R', '--ue-reachability',  help="UE reachability",
+                      action='append_const', dest='fields', const='ue_reachability')
+args = parser.parse_args()
+
+cl = args.cassandra_cluster
+if cl == None:
+    cl = ['172.17.0.2']
+cluster = Cluster(cl)
+try:
+    session = cluster.connect()
+except Exception as e:
+    print(f"could not connect to Cassandra cluster {cl}:\n{e}")
+    exit(1)
+
+if args.fields:
+    fields = args.fields
+else:
+    fields = ["idmmeidentity", "mmeisdn", "mmehost", "mmerealm", "ue_reachability"]
+command = f'SELECT {", ".join(fields)} FROM vhss.mmeidentity'
+
+try:
+    rows = session.execute(command)
+except Exception as e:
+    print(f"could not execute statement '{command}':\n{e}")
+    exit(1)
+
+
+# if it should be only the results, print and exit
+if args.plain:
+    for row in rows:
+        print(" ".join(str(r) for r in row))
+    exit(0)
+
+# calculate max length of every column
+if len(rows.current_rows) == 0:
+    print("<no results>")
+    exit(0)
+
+# calculate the maximum length we need in every column
+length = [3] * len(rows[0])
+for i in range(len(fields)): # header
+    length[i] = max(len(fields[i]), length[i])
+for row in rows:             # actual data
+    for i in range(len(row)):
+        length[i] = max(len(str(row[i])), length[i])
+
+# print header + data with common format
+fmt = '   '.join('{:<' + str(l) + '}' for l in length)
+title = fmt.format(*fields)
+print(title)
+print('-' * len(title))
+for row in rows:
+    print(fmt.format(*row))

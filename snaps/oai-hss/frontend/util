@@ -1,0 +1,90 @@
+#!/bin/sh
+. $SNAP/common
+
+
+if_sudo(){
+
+    if [ "$(id -u)" -eq 0 ] ; then
+	return 0
+    else
+	echo "Please run as a sudoer!"
+	exit 1
+    fi
+}
+
+hss_set_vars(){
+
+HSS_FD_CONF_FILE=`cat $HSS_CONF_FILE | grep \"fdcfg\" | cut -f2 -d: | tr -d '"' | tr -d " " | tr -d ","`
+
+REALM=`cat $HSS_FD_CONF_FILE | grep  "Realm "  | cut -f2 -d'"'`
+HOSTNAME=`hostname` # `cat /etc/hostname` #`hostname`
+#cassandra_Server_IP=`cat $HSS_CONF_FILE | grep cassandra_Server_IP | cut -d "#" -f1 | tr -d ";" | cut -f3 -d' '`
+#OP_KEY=`cat $HSS_CONF_FILE | grep -m1 OPERATOR_key | cut -f2 -d '"'`
+
+Cassandra_Server_IP=`cat $HSS_CONF_FILE | grep \"casssrv\" | cut -f2 -d: | tr -d '"' | tr -d " " | tr -d ","`
+OP_KEY=`cat $HSS_CONF_FILE | grep \"optkey\" | cut -f2 -d: | tr -d '"' | tr -d " " | tr -d ","`
+
+MME_IDENTITIY=$HOSTNAME"."$REALM
+
+}
+
+hss_print_vars(){
+
+echo "HSS_CONF_FILE:"     $HSS_CONF_FILE
+echo "HSS_FD_CONF_FILE: " $HSS_FD_CONF_FILE
+echo "REALM:"             $REALM
+echo "Cassandra IP:"      $Cassandra_Server_IP
+echo "MME_ID:"            $MME_IDENTITIY
+echo "OP KEY:"            $OP_KEY
+echo "Default USER KEY:"  $USER_KEY
+}
+
+check_cassandra_service(){
+
+    return 0
+    
+    cassandra_IP=$(docker inspect --format="{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}" cassandra-docker)
+
+    cassandra_config_IP=`cat $HSS_CONF_FILE | grep cassandra_Server_IP | cut -d "#" -f1 | tr -d ";" | cut -f3 -d' '`
+
+    if ( "$cassandra_IP" != "$cassandra_config_IP$" ) ; then
+	echo "cassandra_config_IP: $cassandra_config_IP different from cassandra_IP $cassandra_IP"
+	return 1
+    else
+	return 0
+    fi
+     
+}
+
+hss_conf(){
+
+    # prompt has been removed for easier Ctrl+C Ctrl+V
+    # cd $OPENAIRCN_DIR/scripts
+    # reset the config file 
+    cp /var/snap/oai-hss/current/hss_rel14_t.json /var/snap/oai-hss/current/hss_rel14.json
+    
+    PREFIX='/var/snap/oai-hss/current/'
+  
+    declare -A HSS_CONF
+    HSS_CONF[@PREFIX@]=$PREFIX
+    HSS_CONF[@REALM@]=$1
+    HSS_CONF[@HSS_FQDN@]="hss.${HSS_CONF[@REALM@]}"
+    HSS_CONF[@cassandra_Server_IP@]=$2 
+    HSS_CONF[@OP_KEY@]=$3
+    HSS_CONF[@ROAMING_ALLOWED@]='true'
+   
+
+    for K in "${!HSS_CONF[@]}"; do 
+	egrep -lRZ "$K" $PREFIX | xargs -0 -l sed -i -e "s|$K|${HSS_CONF[$K]}|g"
+    done
+    sed -i -e 's/#ListenOn/ListenOn/g' $PREFIX/hss_rel14_fd.conf
+
+    $SNAP/run hss -j $PREFIX/hss_rel14.json --onlyloadkey
+	
+    ### freeDiameter certificate
+    #../src/hss_rel14/bin/make_certs.sh hss ${HSS_CONF[@REALM@]} $PREFIX
+
+    # Finally customize the listen address of FD server
+    # set in $PREFIX/freeDiameter/hss_rel14_fd.conf and uncomment the following line
+    #sed -i -e 's/#ListenOn/ListenOn/g' $PREFIX/freeDiameter/hss_rel14_fd.conf
+}

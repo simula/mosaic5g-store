@@ -29,24 +29,24 @@ source $CHARM_DIR/utils/common
 set_env
 status-set maintenance "RTC-relation-changed hook"
 
-rel_ids=`relation-ids rtc`
+#rel_ids=`relation-ids rtc`
 
-if [ -z "$rel_ids" ];then
-   juju-log "Data not available yet, exit silently"
-   exit 0
-fi
+#if [ -z "$rel_ids" ];then
+#   juju-log "Data not available yet, exit silently"
+#   exit 0
+#fi
 
-agent_active=`relation-get -r $rel_ids AGENT_ACTIVE`
+#agent_active=`relation-get -r $rel_ids AGENT_ACTIVE`
 
-if [ -z "$agent_active" ]; then
-   juju-log "Agent is not active yet, exit silently"
-   exit 0
-fi
+#if [ -z "$agent_active" ]; then
+#   juju-log "Agent is not active yet, exit silently"
+#   exit 0
+#fi
 
 
-if [ "$agent_active" == "yes" ]; then  
+#if [ "$agent_active" == "yes" ]; then  
 
-    echo "$agent_active" >  $CHARM_DIR/.agent_active
+ #   echo "$agent_active" >  $CHARM_DIR/.agent_active
     relation-set RTC_PORT=`config-get bind_sbi_port`
     
     rtc_public_ip=`unit-get public-address`
@@ -65,4 +65,4 @@ if [ "$agent_active" == "yes" ]; then
 
 #else 
 #    status-set blocked "RAN/eNB Agent is not yet active"
-fi
+#fi

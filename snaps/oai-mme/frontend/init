@@ -1,0 +1,49 @@
+#!/bin/sh
+
+. $SNAP/common
+
+REALM=`cat $MME_FD_CONF_FILE | grep  "Realm "  | cut -f2 -d'"'`
+HOSTNAME=`hostname` # `cat /etc/hostname` #`hostname`
+
+case "$1" in
+
+    "mme" )
+	
+	#if [ ! -f $CONF_DIR/mme.conf ] ; then
+	    cp $SNAP/etc/* $CONF_DIR
+
+	#fi
+	# set the mme.conf
+	$SNAP/conf set-mme $CONF_DIR/mme.conf
+	
+	sed -i -e "s/hss/$HOSTNAME/g" $CONF_DIR/mme.conf 
+	sed -i -e "s/ubuntu/$HOSTNAME/g" $CONF_DIR/mme_fd.conf 
+	$SNAP/run mme-certificate
+	
+	# a copy for the user
+	cp $CONF_DIR/mme.conf $SNAP_USER_DATA
+	cp $CONF_DIR/mme_fd.conf $SNAP_USER_DATA
+	
+	#/sbin/ifconfig lo:s1c 127.0.1.1/24 up
+	#/sbin/ifconfig lo:s11 127.0.11.1/24 up
+	#/sbin/ifconfig lo:s10 127.0.10.1/24 up
+	
+	if [ -z "$(grep -o "`hostname`.$REALM" /etc/hosts)" ]; then
+	    cp /etc/hosts /etc/hosts.$REALM.bkup
+	    
+	    echo "Adding 127.0.0.1" $HOSTNAME.$REALM $HOSTNAME "mme to /etc/hosts"
+	    sed -i '/mme/d' /etc/hosts
+	    sed -i "1i127.0.0.1 $HOSTNAME.$REALM $HOSTNAME mme" /etc/hosts
+
+	    
+	fi
+	echo ""
+	echo "MME is initialized"
+	echo "Now, it is the time to configure the mme.conf and mme_fd.conf"
+	;;
+    
+    * )
+	echo "Unknown command: $1"
+	;;
+    
+esac

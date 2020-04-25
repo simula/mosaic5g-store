@@ -25,6 +25,7 @@
 # author  navid.nikaein@eurecom.fr and A. B. Molini   
 
 install_packages(){
+    apt update 
     #status-set maintenance "Installing some dependencies"
      gitAlreadyInstalled=$(dpkg --get-selections snapd 2>/dev/null | grep -c 'install') || true
     if [ ! $gitAlreadyInstalled -eq 1 ]; then # If git is NOT installed
@@ -45,6 +46,28 @@ install_packages(){
     if [ ! $virtwhatAlreadyInstalled -eq 1 ]; then 
 	apt-get install -y --force-yes virt-what
     fi
+}
+
+check_install_kernel(){
+    check_current_kernel "4.8"
+    if [ "$REQUIRED_KERNEL_IS_INSTALLED" == "no" ]; then
+    
+	if [ "$machine_type"  == "lxc" -o "$machine_type" == "docker" ]; then
+	    
+	    juju-log "Can't install the required kernel in $machine_type env. Proceed with the current kernel."
+	    juju-log "Please install kerenel version 4.8 or higher with GTP module enabled on the HOST machine"
+	else
+	    if [ "$(cat $CHARM_DIR/.reboot)" != "reboot" ]; then  
+		juju-log "installing the required kernel and reboot"
+		status-set maintenance "installing the required kernel and rebooting"
+		install_required_kernel
+  		echo "reboot" > $CHARM_DIR/.reboot 
+		juju-reboot --now
+	    else 
+		juju-log "Can't install the required kernel. Proceeding with the current kernel."
+	    fi 
+	fi
+    fi 
 }
 
 clone_repo(){
@@ -114,10 +137,10 @@ configure_network(){
   sed -i -e "s/eth1/$eth/g" $file
 
   #prevent dhcp gateway
-  local hook=/etc/dhcp/dhclient-enter-hooks.d/net-${eth}
-  cp ./files/dhclient_hook_tpl $hook
-  sed -i -e "s/eth1/$eth/g" $hook
-  chmod +x $hook
+  #local hook=/etc/dhcp/dhclient-enter-hooks.d/net-${eth}
+  #cp ./files/dhclient_hook_tpl $hook
+  #sed -i -e "s/eth1/$eth/g" $hook
+  #chmod +x $hook
 }
 init_spgw(){
     
@@ -142,8 +165,30 @@ echo "$snap"           >  $CHARM_DIR/.snap
 
 update_hostname
 
-configure_network `config-get sgw-eth`
-configure_network `config-get pgw-eth`
+sgw_iface=`config-get sgw-eth`
+pgw_iface=`config-get pgw-eth`
+#sgw_iface="none"
+#pgw_iface="none"
+if [ "$sgw_iface" == "none" ] || [ "$pgw_iface" == "none" ]; then
+    ip_addr=`unit-get public-address`
+    for interface in $(ls /sys/class/net); do
+        if [ `ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"` != "" ]; then
+            ipv4=`ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
+            if [ $ipv4 == $ip_addr ] ; then
+                if [ "$sgw_iface" == "none" ] ; then
+                    sgw_iface=$interface
+                fi
+                if [ "$pgw_iface" == "none" ] ; then
+                    pgw_iface=$interface  
+                fi
+                break
+            fi
+        fi
+    done
+fi
+
+configure_network $sgw_iface
+configure_network $pgw_iface
 
 install_packages
 machine_type=`virt-what`
@@ -151,6 +196,8 @@ machine_type=`virt-what`
 #clone_repo
 
 configure_hosts
+
+check_install_kernel
 
 build_spgw
 

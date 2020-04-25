@@ -29,9 +29,11 @@ source $CHARM_DIR/utils/common
 set_env
 
 status-set maintenance "Config-Changed hook"
+stop_flexran
 
 if [ "$(config-get snap)" != "$(cat $CHARM_DIR/.snap)" ]; then
     juju-log "Snap channel changed"
+    echo "$(config-get snap)" > $CHARM_DIR/.snap
     $CHARM_DIR/hooks/upgrade-charm
 fi
 
@@ -72,5 +74,4 @@ if [ -n "$iface" ]; then
 
 fi
 
-$CHARM_DIR/hooks/start
 

@@ -1,0 +1,97 @@
+#!/bin/sh
+
+. $SNAP/common
+
+if [ ! -e $SPGWU_EXEC ]; then
+    echo "Cannot find $SPGWU_EXEC executable"
+    exit -1
+fi
+
+if [ -r $SNAP_DATA/config_spgwu.sh ]; then
+    . $SNAP_DATA/config_spgwu.sh
+fi
+
+SPGWU_CONFIG=${SPGWU_CONF_FILE2:-$SPGWU_CONF_FILE}
+SPGWU_EXEC_ARGS=" -c $SPGWU_CONFIG -o "
+
+case "$1" in
+    "gdb" )
+	echo "Running $2 with the gdb"
+	touch      $SNAP_DATA/.gdb_$2
+	chmod 777  $SNAP_DATA/.gdb_$2
+	echo "file ${2^^}_EXEC"        > $SNAP_DATA/.gdb_$2
+	echo "set args ${2^^}_EXEC_ARGS" >> $SNAP_DATA/.gdb_$2
+	echo "run"                     >> $SNAP_DATA/.gdb_$2
+	cat $SNAP_DATA/.gdb_$2
+	exec $SNAP/gdb --data-directory=$SNAP_DATA  -n -x $SNAP_DATA/.gdb_$2
+	;;
+
+    "info" )
+	#snap info $SNAP_NAME
+	shift 
+	echo "Please manually run: snap info $SNAP_NAME "
+	;; 
+    
+     "start"  )
+	 #snap start $SNAP_NAME
+	 shift 
+	 snapctl start --enable $SNAP_NAME "$@"
+	 ;;
+
+     "stop" )
+	#snap stop $SNAP_NAME
+	 shift 
+	 snapctl stop --disable $SNAP_NAME "$@"
+	 ;;
+
+     "restart" )
+	 #snap restart $SNAP_NAME
+	 shift 
+	 snapctl stop --disable $SNAP_NAME "$@"
+	 snapctl start --enable $SNAP_NAME "$@"
+	 
+	;;
+
+     "status" )
+	 #snap services $SNAP_NAME
+	 shift
+	 snapctl services $SNAP_NAME "$@"
+	 ;;
+
+     "journal" )
+	 shift
+	 journalctl -u snap.$SNAP_NAME.spgwud.service "$@"
+	 ;;
+    
+    
+    "help" )
+	echo "Usage:   sudo  $SNAP_NAME.[options] args"
+	echo "Note:    need root priviliage"
+	echo "Options:"
+	echo "  start:       start the $SNAP_NAME.spgwud daemon"
+	echo "  stop:        stop the $SNAP_NAME.spgwud daemon"
+	echo "  restart:     restart the $SNAP_NAME.spgwd daemon"
+	echo "  status:      get the $SNAP_NAME.spgwud status"
+	echo "  journal:     get the $SNAP_NAME.spgwud logs"
+	echo ""
+	echo "  init:       initialize SPGWU"
+	echo "  conf-set:   set the SPGWU configuration file"
+	echo "  conf-get:   get the current SPGWU configuration file (spgwu.conf)"
+	echo "  conf-show:  show the path to the SPGWU configuration file (spgwu.conf)"
+	echo "  conf-list:  list all the SPGWU configuration files (spgwu.conf)"
+	echo ""
+	echo "  help:       print this help"
+	echo "  Example:    sudo oai-spgwu.init; sudo oai-spgwu;"
+	
+	;;
+    
+    "spgwu" | * )
+	
+	
+        echo "$SPGWU_EXEC  $SPGWU_EXEC_ARGS" 
+	$SPGWU_EXEC  `echo $SPGWU_EXEC_ARGS` "$@"
+        ;;
+
+esac
+
+

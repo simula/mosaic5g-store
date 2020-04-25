@@ -33,9 +33,24 @@ if [ $status -eq 1 ]; then
     echo "no"  > $CHARM_DIR/.enb_running
     juju-log "OAI eNB is not running"
     status-set blocked "Not Running"
+    
+    if [ "$(cat $CHARM_DIR/.node_func)"  == "du" ]; then
+        echo "yes"  > $CHARM_DIR/.du_active
+    fi
+    if [ "$(cat $CHARM_DIR/.node_func)"  == "rru" ]; then
+        echo "yes"  > $CHARM_DIR/.rru_active
+    fi
+    
     $CHARM_DIR/hooks/start
 else 
-    status-set active "Running"
+    if [ "$(cat $CHARM_DIR/.node_func)"  == "cu" ]; then
+       status-set active "Running"
+       set_cu_running_state
+    fi 
+    if [ "$(cat $CHARM_DIR/.node_func)"  == "rcc" ]; then
+       status-set active "Running"
+       set_rcc_running_state
+    fi 
     #application-version-set oai-enb-version
 fi
 

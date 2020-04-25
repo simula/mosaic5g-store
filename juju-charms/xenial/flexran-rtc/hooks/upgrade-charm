@@ -25,4 +25,5 @@
 # contents have been unpacked
 # author  navid.nikaein@eurecom.fr
 status-set maintenance "Upgrade hook"
+stop_flexran
 $CHARM_DIR/hooks/install  
