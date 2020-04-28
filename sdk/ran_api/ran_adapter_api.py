@@ -775,7 +775,7 @@ def delete_SliceMapping(sliceId):
     #TODO: should be verified 
     #cpsr_register()
  
-def post_ho(body):
+def post_trigger_ho(sliceId, body):
     """!@brief Triggers a network-initiated handover request
         @param body: body of post message including the parameters sid (Source BS Id), ueid (IMSI or RNTI) and tid (Target BS Id)
     """
@@ -841,10 +841,10 @@ def post_ho(body):
         return NoContent, 500           
     
         
-def put_ho(body):
+def put_trigger_ho(sliceId, body):
     """!@brief Triggers a network-initiated handover request
         @param body: body of post message including the parameters sid (Source BS Id), ueid (IMSI or RNTI) and tid (Target BS Id)
     """
     
-    post_ho(body) 
+    post_trigger_ho(body) 
   

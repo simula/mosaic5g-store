@@ -150,14 +150,22 @@ paths:
         '404':
           description: Not Found
 
-  '/ho':
+  '/trigger_ho/{sliceId}':
 
     put:
       summary: Triggers a network-initiated handover request
       description: Triggers a network-initiated handover request to perform the handover of the given UE from a source BS to the target BS.
       tags:
         - Trigger Handover
-      operationId: ran_api.ran_adapter_api.put_ho
+      operationId: ran_api.ran_adapter_api.put_trigger_ho
+      parameters:
+        - name: sliceId
+          in: path
+          description: ID of the slice associated to RanAdapter
+          required: true
+          schema:
+            type: string
+            format: uuid
       requestBody:
         required: true
         content:
@@ -177,7 +185,15 @@ paths:
       description: Triggers a network-initiated handover request to perform the handover of the given UE from a source BS to the target BS.
       tags:
         - Trigger Handover
-      operationId: ran_api.ran_adapter_api.post_ho
+      operationId: ran_api.ran_adapter_api.post_trigger_ho
+      parameters:
+        - name: sliceId
+          in: path
+          description: ID of the slice associated to RanAdapter
+          required: true
+          schema:
+            type: string
+            format: uuid
       requestBody:
         required: true
         description: slice to add to the system
