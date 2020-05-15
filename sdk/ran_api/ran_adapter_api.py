@@ -825,11 +825,8 @@ def post_trigger_ho(sliceId, body):
     
     for enb in range(0, sm.get_num_enb()) :
         bs_id = sm.get_enb_id(enb)
-        if not bs_id in self.ue_load:
-            self.ue_load[bs_id] = {}
-            self.rrc.switch_x2_ho_net_control(bs_id, True)
-            self.log.info("new BS " + str(bs_id) + ", enable X2 HO NetControl")
-                
+        rrc.switch_x2_ho_net_control(bs_id, True)
+        adapter.log.info("new BS " + str(bs_id) + ", enable X2 HO NetControl")              
                 
     
     #Trigger HO
@@ -847,4 +844,89 @@ def put_trigger_ho(sliceId, body):
     """
     
     post_trigger_ho(body) 
+
+def post_SetSlicePriority(sliceId, body):
+    """!@brief SetSlicePriority 
+        @param body: body of post message including the parameters: priority of ul, and priority of dl
+    """
+    
+    put_SetSlicePriority(body) 
+      
   
+def put_SetSlicePriority(sliceId, body):
+    """!@brief SetSlicePriority 
+        @param body: body of post message including the parameters: priority of ul, and priority of dl
+    """
+
+    """
+    Step 0: get information from the request and verify the input
+    """
+    print(body)
+    
+    ul_priority = -1;
+    dl_priority = -1;
+    ue_id  = {}
+    
+    try:
+        ul_priority = int(body['ul'])
+        dl_priority = int(body['dl'])
+    except (ValueError, KeyError):
+        print('Bad request!')
+        return NoContent, 400
+    
+    """
+    Step 1: collect the necessary information by relying on FlexRAN
+    """                
+    rrm = flexran_sdk.rrm_policy(log=adapter.log,
+                                 url=adapter.url,
+                                 port=adapter.port,
+                                 op_mode=adapter.op_mode)
+
+    sm = flexran_sdk.stats_manager(log=adapter.log,
+                                   url=adapter.url,
+                                   port=adapter.port,
+                                   op_mode=adapter.op_mode)
+    
+    rrc = flexran_sdk.rrc_trigger_meas(log = adapter.log,
+                                       url = adapter.url,
+                                       port = adapter.port,
+                                       op_mode = adapter.op_mode)
+        
+                   
+    adapter.log.info('[post_SetSlicePriority] Reading the status of the underlying eNBs')
+    sm.stats_manager('all')
+    adapter.log.info('[post_SetSlicePriority] Gather statistics')
+    get_statistics(sm)
+    
+
+    slice_config={"intrasliceShareActive":"true","intersliceShareActive":"true","ul":[{"id":0,"priority":1}], "dl":[{"id":0,"priority":1}] }
+
+
+    for enb in range(0, sm.get_num_enb()) :
+        adapter.log.info('Send command to FlexRAN to set slice configuration')                            
+        data_dl  = sm.get_slice_config(sid=slice_id, dir='dl')
+        slice_config['dl'][0]['id'] = slice_id
+        if (dl_priority == -1): 
+            slice_config['dl'][0]['priority'] = data_dl["priority"]
+        else: 
+            slice_config['dl'][0]['priority'] = dl_priority    
+            adapter.log.info("Apply slice priority for DL: " +str(dl_priority)) 
+        data_ul  = sm.get_slice_config(sid=slice_id, dir='ul')
+        slice_config['ul'][0]['id'] = slice_id
+        if (ul_priority == -1): 
+            slice_config['ul'][0]['priority'] = data_ul["priority"]
+        else: 
+            slice_config['ul'][0]['priority'] = ul_priority    
+            adapter.log.info("Apply slice priority for UL: " +str(ul_priority)) 
+
+           
+        adapter.log.info("Slice Configuration will be pushed to FlexRAN: \n" + str(slice_config)) 
+        status = rrm.rrm_apply_policy(slice=slice_id, policy=slice_config)
+
+        
+            
+    if (status == 'connected'):
+        return NoContent, 201
+    else:
+        return NoContent, 500      
+    
