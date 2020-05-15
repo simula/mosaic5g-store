@@ -850,7 +850,7 @@ def post_SetSlicePriority(sliceId, body):
         @param body: body of post message including the parameters: priority of ul, and priority of dl
     """
     
-    put_SetSlicePriority(body) 
+    put_SetSlicePriority(sliceId, body) 
       
   
 def put_SetSlicePriority(sliceId, body):
@@ -901,6 +901,7 @@ def put_SetSlicePriority(sliceId, body):
 
     slice_config={"intrasliceShareActive":"true","intersliceShareActive":"true","ul":[{"id":0,"priority":1}], "dl":[{"id":0,"priority":1}] }
 
+    status = 'connected'
 
     for enb in range(0, sm.get_num_enb()) :
         adapter.log.info('Send command to FlexRAN to set slice configuration')                            
