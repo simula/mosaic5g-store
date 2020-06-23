@@ -1,19 +1,23 @@
 #!/bin/bash
 
 . $SNAP/common
+. $SNAP/util
+
+export LD_LIBRARY_PATH="$SNAP/usr/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"
+
 
 if [ ! -e $MME_EXEC ]; then
-    echo "Cannot find $MME_EXEC executable"
+    echo_error "Cannot find $MME_EXEC executable"
     exit -1 
 fi		   	   
 
 if [ ! -e $SPGW_EXEC ]; then
-    echo "Cannot find $SPGW_EXEC executable"
+    echo_error "Cannot find $SPGW_EXEC executable"
     exit -1
 fi
 
 if [ ! -e $HSS_EXEC ]; then
-    echo "Cannot find $HSS_EXEC executable"
+    echo_error "Cannot find $HSS_EXEC executable"
     exit -1
 fi
 
@@ -21,7 +25,7 @@ kern=`uname -r`
 kern_version=`echo $kern | cut -d '.' -f1`
 kern_major_revision=`echo $kern | cut -d '.' -f2`
 if [ $kern_version -lt 4 ] && [ $kern_major_revision -le 10 ]; then
-    echo "[Warn] Kernel $kern does not support GTP"
+    echo_warn "Kernel $kern does not support GTP"
 fi
 
 
@@ -52,21 +56,11 @@ REALM=`cat $HSS_FD_CONFIG | grep  "Realm "  | cut -f2 -d'"'`
 USER_KEY=8BAF473F2F8FD09487CCCBD7097C6862
 SQN=000000000021
 OP=`cat $HSS_CONFIG | grep  -m1 OPERATOR_key  | cut -f2 -d'"'`
+APN="oai.ipv4"
 OPC="8E27B6AF0E692E750F32667A3B14605D"
 
 HSS_EXEC_ARGS=" -c $HSS_CONFIG "
 
-
-check_mysql_service(){
-
-    if [ -z "$($HSS_DIR/mysql -u $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER -e status;)" ] ; then
-	echo "HSS DB can not be initialized. Check if the mysql servie is running and that the credentials are correct in hss.conf."
-	return 1
-    else
-	return 0
-    fi
-    
-}
 
 case "$1" in
     "gdb" )
@@ -91,31 +85,36 @@ case "$1" in
 	;;
     "info" )
 	shift 
-	snap info $SNAP_NAME "$@"
+	echo_info "Please manually run: snap info $SNAP_NAME "
 	;; 
     
     "start-all")
 	shift
+	if_sudo
         #snap start $SNAP_NAME
-	snap start $SNAP_NAME.hssd "$@"
-	sleep 3
-	snap start $SNAP_NAME.mmed "$@"
-	sleep 3
-	snap start $SNAP_NAME.spgwd "$@"
-	
+	snapctl start --enable $SNAP_NAME.hssd "$@"
+	sleep 1
+	snapctl start --enable $SNAP_NAME.mmed "$@"
+	sleep 1
+	snapctl start --enable $SNAP_NAME.spgwd "$@"
+	snapctl services $SNAP_NAME "$@"
         ;;
     
     "stop-all")
-	shift 
-        snap stop $SNAP_NAME "$@"
+	shift
+	if_sudo
+        snapctl stop --disable $SNAP_NAME "$@"
+	snapctl services $SNAP_NAME "$@"
 	#snap stop $SNAP_NAME.hssd
         #snap stop $SNAP_NAME.mmed
         #snap stop $SNAP_NAME.spgwd
         ;;
     
     "restart-all")
-	shift 
-	snap restart $SNAP_NAME "$@"
+	shift
+	if_sudo
+	snapctl start --enable  $SNAP_NAME "$@"
+	snapctl services $SNAP_NAME "$@"
         ;;
     
     "status-all")
@@ -123,36 +122,42 @@ case "$1" in
 	# systemctl status  --lines 0 snap.$SNAP_NAME.hssd.service  || true
 	# systemctl status  --lines 0 snap.$SNAP_NAME.mmed.service  || true 
 	# systemctl status  --lines 0 snap.$SNAP_NAME.spgwd.service || true
-	snap services $SNAP_NAME  "$@"
+	snapctl services $SNAP_NAME  "$@"
 	
 	;;
       
     "start"  )
-	#[ -z "${2^^}_EXEC" ] || ( snap start $SNAP_NAME.$3 )
-	#	echo "snap start $SNAP_NAME.$2"
 	daemon=$2
 	shift 2
-	snap start $SNAP_NAME.$daemon  "$@"
-	
+	if_sudo 
+	snapctl start --enable $SNAP_NAME.$daemon  "$@"
+	 snapctl services $SNAP_NAME "$@"
 	;;
     "stop" )
 	#	echo "snap stop $SNAP_NAME.$2"
 	daemon=$2
 	shift 2
-	snap stop $SNAP_NAME.$daemon  "$@"
+	if_sudo
+	snapctl stop --disable $SNAP_NAME.$daemon  "$@"
+	snapctl services $SNAP_NAME "$@"
 	;;
+    
     "restart" )
 	daemon=$2
 	shift 2
-	snap restart $SNAP_NAME.$daemon  "$@"
+	if_sudo
+	snapctl stop $SNAP_NAME.$daemon  "$@"
+	snapctl start --enable $SNAP_NAME.$daemon  "$@"
+	snapctl services $SNAP_NAME "$@"
 	;;
     "status" )
 #	echo "systemctl status  snap.$SNAP_NAME.$2.service"
 	#systemctl status  snap.$SNAP_NAME.$2.service
 	daemon=$2
 	shift 2
-	snap services $SNAP_NAME.$daemon "$@" 
+	snapctl services $SNAP_NAME.$daemon "$@" 
 	;;
+
     "journal" )
 	daemon=$2
 	shift 2
@@ -174,9 +179,10 @@ case "$1" in
 	echo "  hss-conf-get:     get the current HSS configuration file (hss.conf)"
 	echo "  hss-conf-show:    show the path to the HSS configuration file (hss.conf)"
 	echo "  hss-conf-list:    list all the HSS configuration files (hss.conf, hss_fd)"
-	echo "  hss-add-user:     IMSI [USER_KEY] [SQN] [MMEIDENTITY] [OPC]  Add a user to HSS DB (operator key is taken from hss.conf, default user key, sqn, and mmeid will be taken if not provided)"
+	echo "  hss-add-user:     IMSI [APN] [USER_KEY] [SQN] [MMEIDENTITY] [OPC]  Add a user to HSS DB (operator key is taken from hss.conf, default user key, sqn, and mmeid will be taken if not provided)"
 	echo "  hss-remove-user:  IMSI Remove a user identified by its IMSI from HSS DB"
-	echo "  hss-dump-users:   dump the current user base"
+	echo "  hss-dump-users:   dump all the users in the DB (both user and pdn tables)"
+	echo "  hss-get-user:     IMSI get the user info identified by IMSI in the DB (both user and pdn tables)"
 	echo "  hss-add-mme:      [MME_FQDN]  Add a MME identified by its FQDN (default is the local FQDN)"
 	echo "  hss-dump-mmeid:   dump the current authenticated mme hosts"
 	echo "  hss-reset-db:     reset the oai_db to its initial values"
@@ -211,43 +217,25 @@ case "$1" in
 	echo "  status-al        status of all services"          
 	echo "  stop-all         stop all services"          
 	echo "  start-all        start of all services"          
-	echo "  debug            [x] debug service x, where x is mme, hss, or spgw"          
+#	echo "  debug            [x] debug service x, where x is mme, hss, or spgw"          
 	echo ""
 	echo "  help:            print this help"
 	echo "  Example:         sudo oai-cn.hss-init; sudo oai-cn.hss;"
-	echo "                   oai-cn.hss-add-user 208950000000010; oai-cn.hss-dump-users; "
+	echo "                   oai-cn.hss-add-user 208950000000010 oai.ipv4; oai-cn.hss-dump-users; "
 	
 	;;
     "mme" )
-	if [ -n "$LD_LIBRARY_PATH" ]; then
-	    LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$SNAP/lib:$SNAP/usr/lib:$SNAP/usr/local/lib:$SNAP/usr/local/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
-	else
-	    LD_LIBRARY_PATH=$SNAP/lib:$SNAP/usr/lib:$SNAP/usr/local/lib:$SNAP/usr/local/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu
-	fi
-	export LD_LIBRARY_PATH
 	shift 
 	echo "$MME_EXEC  $MME_EXEC_ARGS"
 	$MME_EXEC  `echo $MME_EXEC_ARGS` "$@"
 	;;
     "spgw" )
-	if [ -n "$LD_LIBRARY_PATH" ]; then
-	    LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$SNAP/lib:$SNAP/usr/lib:$SNAP/usr/local/lib:$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
-	else
-	    LD_LIBRARY_PATH=$SNAP/lib:$SNAP/usr/lib:$SNAP/usr/local/lib:$SNAP/usr/local/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu
-	fi
-	export LD_LIBRARY_PATH
 	shift 
         echo "$SPGW_EXEC  $SPGW_EXEC_ARGS" 
 	$SPGW_EXEC  `echo $SPGW_EXEC_ARGS` "$@"
         ;;
 
     "hss" )
-	if [ -n "$LD_LIBRARY_PATH" ]; then
-	    LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$SNAP/lib:$SNAP/usr/lib:$SNAP/usr/local/lib:$SNAP/usr/local/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
-	else
-	    LD_LIBRARY_PATH=$SNAP/lib:$SNAP/usr/lib:$SNAP/usr/local/lib:$SNAP/usr/local/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu
-	fi
-	export LD_LIBRARY_PATH
 	shift
         echo "$HSS_EXEC  $HSS_EXEC_ARGS"
 	$HSS_EXEC  `echo $HSS_EXEC_ARGS`  "$@" $*
@@ -260,7 +248,7 @@ case "$1" in
 	    return 1
 	fi
 	    
-	echo "using: MYSQL_SERVER=$MYSQL_SERVER, MYSQL_USER=$MYSQL_USER, MYSQL_PASS=$MYSQL_PW"    HSS_DB_Q1="DROP DATABASE IF EXISTS oai_db;"
+	echo_info "using: MYSQL_SERVER=$MYSQL_SERVER, MYSQL_USER=$MYSQL_USER, MYSQL_PASS=$MYSQL_PW"    HSS_DB_Q1="DROP DATABASE IF EXISTS oai_db;"
 	
 	HSS_DB_Q2="CREATE DATABASE IF NOT EXISTS oai_db;"
 	
@@ -269,10 +257,10 @@ case "$1" in
 	$HSS_DIR/mysql -h  $MYSQL_SERVER -u  $MYSQL_USER -p$MYSQL_PW oai_db < $HSS_DB 
 	
 	if [ $? -gt 0 ] ; then
-	    echo "failed to import HSS DB"
+	    echo_error "failed to import HSS DB"
 	    rm -rf $SNAP_DATA/hss_db_import.sh
 	else
-	    echo "Successfully Imported the OAI HSS DB to mysql"
+	    echo_info "Successfully Imported the OAI HSS DB to mysql"
 	    echo "$HSS_DB_IMPORT" > $SNAP_DATA/hss_db_import.sh
 	fi
        
@@ -283,15 +271,20 @@ case "$1" in
 	 if [ $? -gt 0 ] ; then
 	     return 1
 	 fi
-	 
+ 	 if [ "$2" == "-h" -o "$2" == "--help" -o "$2" == "-help"  -o  "$2" == "h" -o "$2" == "help"  ]; then
+	     remove_mme_help
+	     exit 0 
+	 fi
+
 	 if [ $# -ge 2 ] ; then 
 	     mmeid=$2
 	 else
-	     echo "MMEID is missing"
+	     echo_error "MMEID is missing"
+	     remove_mme_help
 	     exit 0
-  fi
+	 fi
 
-	 echo "Removing the user with IMSI=$2 from the oai_db database"
+	 echo_info "Removing the user with IMSI=$2 from the oai_db database"
 	 #$HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER oai_db -e "delete from users where imsi='$IMSI';")
 	 $HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER oai_db <<EOF
 DELETE FROM mmeidentity WHERE idmmeidentity=$mmeid;
@@ -305,11 +298,14 @@ EOF
 	if [ $? -gt 0 ] ; then
 	    return 1
 	fi
-	    
+	fqdn=`hostname --fqdn`
+	if [ "$2" == "-h" -o "$2" == "--help" -o "$2" == "-help"  -o  "$2" == "h" -o "$2" == "help"  ]; then
+	    add_mme_help $fqdn
+	    exit 0 
+	 fi 
+
 	if [ $# -ge 2 ] ; then 
 	    fqdn=$2
-	else
-	    fqdn=`hostname --fqdn`
 	fi
 	
 	if [ -z "$($HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h  $MYSQL_SERVER oai_db -e "select mmehost from mmeidentity where mmehost='$fqdn'";)" ]; then
@@ -322,18 +318,18 @@ EOF
 
 	    echo "$primary_key"  > $SNAP_USER_DATA/.mmeidentity
 	    
-	    echo "Inserting MME FQDN=$fqdn, REALM=$REALM, and idmmeidentity=$primary_key in the mmeidentity table of oai_db database"
+	    echo_info "Inserting MME FQDN=$fqdn, REALM=$REALM, and idmmeidentity=$primary_key in the mmeidentity table of oai_db database"
 	    
 	    #Inserting the mme in the database to let epc connect to hss
 	    $HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER oai_db << EOF 
 INSERT INTO mmeidentity (\`idmmeidentity\`, \`mmehost\`, \`mmerealm\`, \`UE-Reachability\`) VALUES ('$primary_key', '$fqdn', '$REALM', 0);
 EOF
 	 else
-	     echo "The requested FQDN $fqdn is already provisioned"
+	     echo_info "The requested FQDN $fqdn is already provisioned"
 	fi
 	 ;;
 
-     "hss-dump-mmeid" )
+     "hss-dump-mmeid" | "hss-dump-mme" )
 	 check_mysql_service
 	 if [ $? -gt 0 ] ; then
 	     return 1
@@ -351,29 +347,85 @@ EOF
 	     return 1
 	 fi
 
-	 echo "imsi | mmeidentity_idmmeidentity | hex(users.key) | sqn | hex(rand) | hex(OPc)"
+
+	 echo ""
+	 echo_info "User table"
+	 #echo_info "      imsi     | mmeidentity |      hex(users.key)    |     sqn      |      hex(rand)    |      hex(OPc)      |"
 	 $HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER oai_db << EOF 
 SELECT imsi,mmeidentity_idmmeidentity,hex(users.key),sqn,hex(rand),hex(OPc) FROM users;
+
+EOF
+	 echo      ""
+	 echo_info "PDN table"
+	 echo_info "      imsi     | id  |  apn  |  pdn_type  |  qci | aggregate_ambr_ul | aggregate_ambr_dl  |"
+	 $HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER oai_db << EOF 
+
+SELECT users_imsi,id,apn,pdn_type,qci,aggregate_ambr_ul,aggregate_ambr_dl FROM pdn;
 EOF
 	 ;;
+     
+      "hss-get-user" )
+	 check_mysql_service
+	 if [ $? -gt 0 ] ; then
+	     return 1
+	 fi
+	 	
+	 if [ "$2" == "-h" -o "$2" == "--help" -o "$2" == "-help"  -o  "$2" == "h" -o "$2" == "help"  ]; then
+	     get_user_help
+	     exit 0 
+	fi
+	
+	 if [ $# -ge 2 ] ; then 
+	     IMSI=$2
+	 else
+	     echo_error "IMSI is missing"
+	     get_user_help
+	     exit 0
+  	 fi
+	 echo ""
+	 echo_info "User table"
+	 #echo_info "      imsi       | mmeidentity |      hex(users.key)    |     sqn      |      hex(rand)    |      hex(OPc)      |"
+	 $HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER oai_db << EOF 
+SELECT imsi,mmeidentity_idmmeidentity,hex(users.key),sqn,hex(rand),hex(OPc) FROM users WHERE imsi LIKE "$IMSI%";
 
+EOF
+	 echo ""
+	 echo_info "PDN table"
+	 # echo_info "      imsi       | id  |  apn  |  pdn_type  |  qci | aggregate_ambr_ul | aggregate_ambr_dl | "
+	 $HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER oai_db << EOF 
+
+SELECT users_imsi,id,apn,pdn_type,qci,aggregate_ambr_ul,aggregate_ambr_dl FROM pdn WHERE users_imsi LIKE "$IMSI%";
+EOF
+
+	 
+	 ;;
+     # SELECT * FROM `pdn` WHERE `pdn`.`users_imsi`=310300000000001 LIMIT 10; 
      "hss-remove-user" )
 	 check_mysql_service
 	 if [ $? -gt 0 ] ; then
 	     return 1
 	 fi
+
+	 if [ "$2" == "-h" -o "$2" == "--help" -o "$2" == "-help"  -o  "$2" == "h" -o "$2" == "help"  ]; then
+	     remove_user_help
+	     exit 0 
+	fi
+
 	 
 	 if [ $# -ge 2 ] ; then 
 	     IMSI=$2
 	 else
-	     echo "IMSI is missing"
+	     echo_error "IMSI is missing"
+	     remove_user_help
 	     exit 0
   	 fi
 
-	 echo "Removing the user with IMSI=$2 from the oai_db database"
+	 echo_info "Removing the user with IMSI=$2 from the oai_db database"
 	 #$HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER oai_db -e "delete from users where imsi='$IMSI';")
 	 $HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER oai_db <<EOF
-DELETE FROM users WHERE imsi=$IMSI;
+DELETE FROM users WHERE imsi like "$IMSI%";
+
+DELETE FROM pdn WHERE users_imsi like "$IMSI%";
  
 EOF
 	 ;;
@@ -384,30 +436,41 @@ EOF
 	     return 1
 	 fi
 
+	 if [ "$2" == "-h" -o "$2" == "--help" -o "$2" == "-help"  -o  "$2" == "h" -o "$2" == "help"  ]; then
+	     add_user_help
+	     exit 0 
+	 fi
 	 
 	 if [ $# -ge 2 ] ; then 
 	     IMSI=$2
 	 else
-	     echo "IMSI is missing"
+	     echo_error "IMSI is missing"
+	     add_user_help
 	     exit 0
   	 fi
-	 if [ $# -ge 3 ] ; then
-	     USER_KEY=$3
+
+	 if [ $# -ge 3 ] ; then 
+	     APN=$3
+  	 fi
+	 
+	 if [ $# -ge 4 ] ; then
+	     USER_KEY=$4
 	 fi
-	 if [ $# -ge 4 ] ; then 
-	     SQN=$4
+	 if [ $# -ge 5 ] ; then 
+	     SQN=$5
 	 fi
-	 if [ $# -ge 5 ] ; then
-	     mmeidentity_idmmeidentity=$5
+	 if [ $# -ge 6 ] ; then
+	     mmeidentity_idmmeidentity=$6
 	 else
 	   if [ -f $SNAP_USER_DATA/.mmeidentity ] ; then  
         mmeidentity_idmmeidentity=`cat $SNAP_USER_DATA/.mmeidentity`
 	   else
         mmeidentity_idmmeidentity=`$HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER oai_db -e "select max(idmmeidentity) from mmeidentity;" | egrep [0-9]+`
-     fi
-   fi
-	 if [ $# -ge 6 ] ; then
-	     OPC=$6
+	   fi
+	 fi
+	 
+	 if [ $# -ge 7 ] ; then
+	     OPC=$7
 	 fi
 	 
 	 msisdn=33638050036
@@ -420,7 +483,12 @@ EOF
 	 urrp_mme=1
 	 rand=33353336363633303332333633313634
 
-	 echo "Inserting a user with IMSI=$2, USER-KEY=$USER_KEY, SQN=$SQN, OPC=$OPC, MMEIdentity=$mmeidentity_idmmeidentity into the oai_db database"
+	 PDN_ID=`$HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -s -N  -h $MYSQL_SERVER oai_db -e "SELECT max(id) FROM pdn"`
+	 
+	 PDN_ID=$(($PDN_ID+1))
+	 
+	 echo_info "Inserting a user into the oai_db database: user and pdn tables"
+	 echo_info "IMSI=$2, APN=$APN, USER-KEY=$USER_KEY, SQN=$SQN, OPC=$OPC, PDN_ID=$PDN_ID, MMEIdentity=$mmeidentity_idmmeidentity" 
 
 	 #Inserting the mme in the database to let epc connect to hss
 	 $HSS_DIR/mysql -u  $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER oai_db << EOF 
@@ -428,6 +496,10 @@ INSERT INTO users
 (imsi,msisdn,imei,imei_sv,ms_ps_status,rau_tau_timer,ue_ambr_ul,ue_ambr_dl,access_restriction,mme_cap,mmeidentity_idmmeidentity,users.key,\`RFSP-Index\`,urrp_mme,sqn,rand,OPc)
 VALUES
 ($IMSI,$msisdn,$imei,NULL,"PURGED",$rau_tau_timer,$ue_ambr_ul,$ue_ambr_dl,$access_restriction,$mme_cap,$mmeidentity_idmmeidentity,unhex("$USER_KEY"),1,$urrp_mme,$SQN,unhex("$rand"),unhex("$OPC"));
+
+insert into pdn (id, apn, pdn_type, pdn_ipv4, pdn_ipv6, aggregate_ambr_ul, aggregate_ambr_dl, pgw_id, users_imsi, qci, priority_level, pre_emp_cap, pre_emp_vul, \`LIPA-Permissions\`) 
+VALUES 
+($PDN_ID, "$APN", "IPv4", "0.0.0.0", "0:0:0:0:0:0:0:0",50000000, 100000000, 3, $IMSI, 9, 15, "DISABLED", "ENABLED", "LIPA-only");
 EOF
 	 ;;
     "hss-certificate"  )
@@ -474,7 +546,7 @@ EOF
 	;;
     
     * )
-       echo "unknow run command"
+       echo_error "unknow run command"
        ;;
 
 esac

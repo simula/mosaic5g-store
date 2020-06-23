@@ -4,16 +4,28 @@
 
 echo "Init $1"
 
+HOSTNAME=`hostname` # `cat /etc/hostname` #`hostname`
+SANP_PREV_RV=$SNAP_REVISION-1
+
 case "$1" in
     "hss" )
+	#MYSQL_PW=`cat $CONF_DIR/hss.conf | grep  MYSQL_pass  | cut -f2 -d'"'`
+	#MYSQL_USER=`cat $CONF_DIR/hss.conf | grep  MYSQL_user  | cut -f2 -d'"'`
+
 	if [ ! -f $CONF_DIR/hss.conf ] ; then
 	    cp $SNAP/etc/hss.conf $CONF_DIR
 	    cp $SNAP/etc/hss_fd.conf $CONF_DIR
 	    cp $SNAP/etc/acl.conf $CONF_DIR
 	fi
+		
 	# set the hss.conf
 	echo "set-hss $CONF_DIR/hss.conf"
 	$SNAP/conf set-hss $CONF_DIR/hss.conf
+
+	if [ ! -z "$MYSQL_PW" ] ; then
+	    sed -i -e "s/linux/$MYSQL_PW/g" $CONF_DIR/hss.conf
+	fi
+	sed -i -e "s/ubuntu/$HOSTNAME/g" $HSS_FD_CONF_FILE
 	
 	$SNAP/run hss-certificate
 	
@@ -57,6 +69,9 @@ case "$1" in
 	# set the mme.conf
 	$SNAP/conf set-mme $CONF_DIR/mme.conf
 
+	sed -i -e "s/ubuntu/$HOSTNAME/g" $MME_CONF_FILE
+	sed -i -e "s/ubuntu/$HOSTNAME/g" $MME_FD_CONF_FILE 
+
 	$SNAP/run mme-certificate
 	
 	# a copy for the user
@@ -90,6 +105,7 @@ case "$1" in
 	if [ ! -f $CONF_DIR/spgw.conf ] ; then
 	    cp $SNAP/etc/spgw.conf $CONF_DIR
 	fi
+	
 	# set the hss.conf
 	$SNAP/conf set-spgw $CONF_DIR/spgw.conf
 

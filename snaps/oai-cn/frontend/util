@@ -1,0 +1,97 @@
+#!/bin/sh
+. $SNAP/common
+
+if_sudo(){
+
+    if [ "$(id -u)" -eq 0 ] ; then
+	return 0
+    else
+	echo "Please run as a sudoer!"
+	exit 1
+    fi
+}
+
+
+check_mysql_service(){
+
+    if [ -z "$($HSS_DIR/mysql -u $MYSQL_USER --password=$MYSQL_PW -h $MYSQL_SERVER -e status;)" ] ; then
+	echo "HSS DB can not be initialized. Check if the mysql servie is running and that the credentials are correct in hss.conf."
+	return 1
+    else
+	return 0
+    fi
+    
+}
+
+
+
+black='\E[30m'
+red='\E[31m'
+green='\E[32m'
+yellow='\E[33m'
+blue='\E[1;34m'
+magenta='\E[35m'
+cyan='\E[36m'
+white='\E[37m'
+reset_color='\E[00m'
+COLORIZE=1
+
+cecho()  {  
+    # Color-echo
+    # arg1 = message
+    # arg2 = color
+    local default_msg="No Message."
+    message=${1:-$default_msg}
+    color=${2:-$green}
+    [ "$COLORIZE" = "1" ] && message="$color$message$reset_color"
+    echo -e "$message"
+    return
+}
+
+echo_error()   { cecho "$*" $red          ;}
+echo_fatal()   { cecho "$*" $red; exit -1 ;}
+echo_warn()    { cecho "$*" $yellow       ;}
+echo_success() { cecho "$*" $green        ;}
+echo_info()    { cecho "$*" $blue         ;}
+
+
+
+function add_user_help (){
+    echo_info 'Usage:  oai-cn.hss-add-user IMSI [APN] [USER_KEY] [SQN] [MMEIDENTITY] [OPC]	
+    
+    Add a user given its IMSI to the user and PDN tables. Default parameters are 
+    APN: oai.ipv4
+    USER_KEY:8BAF473F2F8FD09487CCCBD7097C6862
+    SQN=000000000021	 
+    OPC= 8E27B6AF0E692E750F32667A3B14605D '
+}
+
+function get_user_help(){
+    echo_info 'Usage: oai-cn.hss-get-user IMSI
+    
+    Get the user info given the IMSI'	 
+}
+
+function remove_mme_help(){
+    echo_info 'Usage: oai-cn.hss-remove-mme MMEID
+    
+    Remove a MME from the table given its ID
+    Note: get mmeid using "oai-cn.hss-dump-mmeid"'	 
+
+}
+
+function add_mme_help(){
+    echo_info "Usage: oai-cn.hss-add-mme MME_FQDN
+    
+    MME_FQDN: $1
+    Note: Add a MME to the list of authenticated MME. 			 
+	  Get mmeid using oai-cn.hss-dump-mmeid"	 
+	
+}
+
+function remove_user_help (){
+    echo_info 'Usage:  oai-cn.hss-remove-user IMSI 
+     
+    Remove one or multiple users from the user and pdn tables given the IMSIlongest prefix match' 
+    
+}
