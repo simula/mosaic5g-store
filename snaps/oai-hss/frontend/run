@@ -267,6 +267,12 @@ case "$1" in
 	shift
 	hss_print_vars
 	;;
+
+    "db-ip")
+	#get_cassandra_ip
+	echo "$Cassandra_Server_IP"
+	;;
+
     "hss-certificate" )
 
 	cd /tmp

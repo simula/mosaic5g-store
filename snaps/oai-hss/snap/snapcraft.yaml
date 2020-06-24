@@ -1,5 +1,5 @@
 name: oai-hss
-version: '1.0' 
+version: '1.0'  
 title: OpenAirInterface HSS module
 summary: OpenAirInterface HSS entity Rel. 14
 description: |
@@ -209,6 +209,7 @@ parts:
       - click
       - jinja2
       - markupsafe
+      - request
     stage:
       - usr/lib/python3.6/*
       - usr/*
