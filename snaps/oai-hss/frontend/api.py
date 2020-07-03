@@ -1,7 +1,10 @@
 from flask import Flask, render_template, request, jsonify, json, url_for
 from werkzeug.utils import secure_filename
 import subprocess
-import os, logging                                                                  
+import os, logging   
+import argparse
+
+
 app = Flask(__name__)                                                          
 
 
@@ -558,4 +561,15 @@ def oai_hss_endpoints():
 
 if __name__ == "__main__":                                                     
     
-    app.run(host="0.0.0.0", port=1234, debug=True)
+    parser = argparse.ArgumentParser(description='Pass host and port for flask api of hss')
+        
+    parser.add_argument('--hss-host', metavar='[option]', action='store', type=str,
+                        required=False, default='0.0.0.0', 
+                        help='Set OpenAPI-HSS IP address to bind to, 0.0.0.0 (default)')
+    
+    parser.add_argument('--hss-port', metavar='[option]', action='store', type=str,
+                        required=False, default='1234', 
+                        help='Set hss port number: 1234 (default)')
+    args = parser.parse_args()
+    app.run(host=args.hss_host, port=args.hss_port, debug=True)
+

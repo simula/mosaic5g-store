@@ -26,7 +26,8 @@ fi
 	 
 case "$1" in
     "openapi" )
-	python3 $SNAP/api.py 
+	shift
+	python3 $SNAP/api.py "$@"
 	
 	;;
     "gdb" )
