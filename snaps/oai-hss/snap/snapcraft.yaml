@@ -216,3 +216,7 @@ parts:
     prime:
       - usr/lib/python3.6/*
       - usr/*
+
+layout:
+  /usr/share/parameters:
+    bind: $SNAP_DATA/usr/share/parameters
