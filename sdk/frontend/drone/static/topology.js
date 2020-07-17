@@ -823,6 +823,7 @@ function topology(sources) {
 		    // enb->ue link.
 		    var lbls = {};
 		    var pdcp = get(stats, ['mac_stats', 'pdcpStats'], {});
+		    var mac = get(stats, ['mac_stats', 'macStats'], {});
 		    lbls.arrow = [''+pdcp.pktRxBytesW];
 		    GRAPH.relation(ue, enb, 'oai', lbls, style, GRAPH.MARKER.END);
 		    lbls.end = l;
@@ -830,7 +831,7 @@ function topology(sources) {
 		    GRAPH.relation(enb, ue, 'oai', lbls, style, GRAPH.MARKER.END);
 		    
 		    if (ue.timechart && !ue.error) {
-			var bytes = [ pdcp.pktTxBytes, pdcp.pktRxBytes ];
+			var bytes = [ mac.totalTbsDl, mac.totalTbsUl ];
 			var stamp = Date.now() / 1000;
 			if (ue.timechart.bytes !== undefined) {
 			    ue.timechart.chart.append(
