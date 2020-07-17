@@ -738,6 +738,7 @@ function topology(sources) {
 		enb.config = {
                     agentInfo: config.agent_info,
 		    cellConfig: config.eNB.cellConfig,
+        s1ap: config.eNB.s1ap,
 		    ueConfig: config.UE.ueConfig,
 		    lcUeConfig: config.LC.lcUeConfig
 		};
@@ -1116,8 +1117,8 @@ function topology(sources) {
 		.select("text.stats")
 		.attr("y", +GRAPH.NODE.R+8)
 		.selectAll("tspan")
-		//.data(['imsi', 'dlSliceId', 'ulSliceId']);
-		.data(['teidSgw', 'teidEnb', 'neighPhyCellId', 'imsi']);
+		.data(['imsi', 'mmeS1Ip', 'selectedPlmn', 'dlSliceId']);
+		//.data(['teidSgw', 'teidEnb', 'neighPhyCellId', 'imsi']);
 	stats.enter()
 	    .append("tspan")
 	    .attr("x", GRAPH.NODE.R)
@@ -1136,6 +1137,12 @@ function topology(sources) {
                     var neighMeas = stats.mac_stats.rrcMeasurements.neighMeas;
                     var meas = neighMeas ? neighMeas.eutraMeas : [];
                     return d + '=' + meas.map(x => x.physCellId);
+                  case 'mmeS1Ip':
+                    return stats ? d + '=' + stats.mac_stats.s1apStats[d] : '';
+                  case 'selectedPlmn':
+                    if (stats == null) return '';
+                    p = stats.mac_stats.s1apStats[d];
+                    return d + '=' + p.mcc + p.mnc;
                   default:
                     return config ?  d + '=' + config[d] : '';
                 }
@@ -1146,7 +1153,7 @@ function topology(sources) {
 		.selectAll("tspan")
 	// The following fields from cellConfig[0] will be show on
 	// right of the eNB icon. Generated below...
-		.data(['eutraBand', 'dlFreq', 'dlBandwidth', 'plmnId', 'phyCellId', 'x2HoNetControl']);
+		.data(['eutraBand', 'dlFreq', 'dlBandwidth', 'plmnId', 's1ip', 'mme', 'sliceAlgorithm']);
 	stats.enter()
 	    .append("tspan")
 	    .attr("x", GRAPH.NODE.R+5)
@@ -1167,6 +1174,14 @@ function topology(sources) {
                   var agents = [];
                   for (var a in as) agents.push(as[a].agent_id);
                   return d + "=" + agents;
+                } else if (d == 'sliceAlgorithm') {
+                  return d + "=" + config.cellConfig[0]['sliceConfig']['algorithm'];
+                } else if (d == 's1ip') {
+                  return d + "=" + config.s1ap.enbS1Ip;
+                } else if (d == 'mme') {
+                  var mmes = [];
+                  for (var m in config.s1ap.mme) mmes.push(config.s1ap.mme[m].s1Ip);
+                  return d + "=" + mmes;
                 } else {
                   return d + "=" + config.cellConfig[0][d];
                 }
