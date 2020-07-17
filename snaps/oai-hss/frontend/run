@@ -158,6 +158,11 @@ case "$1" in
 	python3 $SNAP/prov-users -t -C  $Cassandra_Server_IP
 	;;
 
+	"probe-db" )
+		shift 
+		python3 $SNAP/probe-db.py -C  $Cassandra_Server_IP
+	;;
+
     "add-users" )
 	check_cassandra_service
 	shift 
