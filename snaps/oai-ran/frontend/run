@@ -4,6 +4,8 @@
 
 export UHD_IMAGES_DIR=$SNAP/uhd_images
 export UHD_RFNOC_DIR=$SNAP/usr/share/uhd/rfnoc/blocks
+export LD_LIBRARY_PATH="$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"
+
 
 if [ ! -e $ENB_EXEC ]; then
     echo "Cannot find $ENB_EXEC executable"
@@ -44,6 +46,16 @@ RRU_CONFIG=${RRU_CONF_FILE2:-$RRU_CONF_FILE}
 RRU_EXEC_ARGS=" -O $RRU_CONFIG"
 
 
+if_sudo(){
+
+    if [ "$(id -u)" -eq 0 ] ; then
+	return 0
+    else
+	echo "Please run as a sudoer!"
+	exit 1
+    fi
+}
+
 case "$1" in
     "gdb-enb" )
 	echo "Running $SNAP_NAME-ENB with the gdb"
@@ -73,22 +85,27 @@ case "$1" in
     "start"  )
 	daemon=$2
 	shift 2
+	if_sudo
 	snapctl start --enable $SNAP_NAME.$daemon "$@"
+	snapctl services $SNAP_NAME.$daemon
 	#snap start $SNAP_NAME.$daemon  "$@"
 	;;
     "stop" )
 	daemon=$2
 	shift 2
+	if_sudo
 	snapctl stop --disable $SNAP_NAME.$daemon "$@"
+	snapctl services $SNAP_NAME.$daemon
 	#snap stop $SNAP_NAME.$daemon  "$@"
 	;;
     "restart" )
 	daemon=$2
 	shift 2
+	if_sudo
 	snapctl stop $SNAP_NAME.$daemon "$@"
 	snapctl start --enable $SNAP_NAME.$daemon "$@"
-	#snapctl restart $SNAP_NAME.$daemon "$@"
-	#snap restart $SNAP_NAME.$daemon  "$@"
+	snapctl services $SNAP_NAME.$daemon
+	
 	;;
     "status" )
 	daemon=$2

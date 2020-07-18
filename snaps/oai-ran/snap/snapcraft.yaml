@@ -1,5 +1,5 @@
 name: oai-ran
-version: '1.5' 
+version: '1.6' 
 summary: OpenAirInterface RAN entity with FlexRAN Agent/Runtime 
 description: |
     OAI RAN is an openairinterface-based 4G BS with different deployment flavors (eNB,C-RAN, CU,DU, RRU) allowing to connect any commercial UEs with the band of your choice. It is one of the projects of Mosaic5G inititive and includes FlexRAN agent.
@@ -32,7 +32,7 @@ apps:
     command: run enb
     daemon: simple
     stop-command: run stop enbd
-    stop-timeout: 7s
+    stop-timeout: 1s
   cudud:
     command: run cudu
     daemon: simple
@@ -127,10 +127,8 @@ parts:
       - usr/bin/gdb*
   enb:
     plugin: cmake
-    source: https://gitlab.eurecom.fr/schmidtr/openairinterface5g.git
-    source-branch: flexran-snaps
-    #source: https://gitlab.eurecom.fr/oai/openairinterface5g.git
-    #source-branch: 2019.w21
+    source: https://gitlab.eurecom.fr/oai/openairinterface5g.git
+    source-branch: master
     build-packages: [build-essential, ]
     override-build: |
       cd ../src/cmake_targets
@@ -158,7 +156,9 @@ parts:
       enb/libcoding.so: usr/lib/libcoding.so
       enb/libparams_libconfig.so: usr/lib/libparams_libconfig.so
       enb/lte-softmodem.Rel14: enb/oai-ran
-
+      enb/librfsimulator.so.Rel14: usr/lib/librfsimulator.so.Rel14
+      enb/libtcp_bridge_oai.so.Rel14: usr/lib/libtcp_bridge_oai.so.Rel14
+   
   frontend:
     plugin: dump
     source: frontend

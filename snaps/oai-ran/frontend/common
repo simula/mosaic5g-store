@@ -16,6 +16,8 @@ CU_CONF_FILE="$CONF_DIR/cu.lte.conf"
 DU_CONF_FILE="$CONF_DIR/du.lte.band7.10MHz.if4p5.conf"
 CUDU_EXEC="$ENB_DIR/$SNAP_NAME"
 
+L2SIM_CONF_FILE="rcc.band7.tm1.50PRB.nfapi.conf"
+
 #use the same dir as cudu, but keep variables separated
 RRU_DIR="$SNAP/enb"
 RRU_CONF_FILE="$CONF_DIR/rru.conf"
