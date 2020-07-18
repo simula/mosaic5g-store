@@ -6,31 +6,24 @@ case "$1" in
 
     "set-spgwc" )
 	CONFIG_FILE=$2
-	if [ -f $(dirname $(readlink -f $0))/$CONFIG_FILE ]; then
-	    CONFIG_FILE=$(dirname $(readlink -f $0))/$CONFIG_FILE
+	if [  "$CONFIG_FILE" != "${CONFIG_FILE#/}" -a -f "$CONFIG_FILE" ]; then
 	    echo "Setting the default config file to: $CONFIG_FILE"
+	    
+	elif [ -f "$CONF_DIR/$CONFIG_FILE" ]; then
+	    CONFIG_FILE=$CONF_DIR/$CONFIG_FILE
+	    echo "Config file found in the $CONF_DIR!"
+	    echo "Resetting to the default config file: $CONFIG_FILE"
+
 	else
-	    # may be absolute path 
-	    if [ -f "$CONFIG_FILE" ]; then
-		# $CONFIG_FILE already exist in the $SNAP_DATA
-		if [ -f $SNAP_DATA/$(basename $CONFIG_FILE) ] ; then 
-		    echo "Reset the config file to: $SNAP_DATA/$(basename $CONFIG_FILE)"
-		else 
-		    #echo "$SNAP_DATA/$CONFIG_FILE"
-		    cp $CONFIG_FILE $SNAP_DATA/
-		    echo "Adding and setting a new config file : $SNAP_DATA/$(basename $CONFIG_FILE)"
-		fi
-		CONFIG_FILE=$SNAP_DATA/$(basename $CONFIG_FILE)
-	    else
-		echo "Config file <$CONFIG_FILE> not found in $SNAP/current directory"
-		echo "Reset to default config file: $SPGWC_CONF_FILE"
-		CONFIG_FILE=$SPGWC_CONF_FILE
-	    fi
+	    echo "[ERR] Config file $CONFIG_FILE not found, please provide an absolute path!"
+	    echo "Reset to default config file: $SPGWC_CONF_FILE"
+	    CONFIG_FILE=$SPGWC_CONF_FILE
 	fi
+
 	echo "SPGWC_CONF_FILE2=$CONFIG_FILE" > $SNAP_DATA/config_spgwc.sh
-	#copy for the user
 	echo "SPGWC_CONF_FILE2=$CONFIG_FILE" > $SNAP_USER_DATA/config_spgwc.sh
 	;;
+    
      "ls-spgwc" )
         if [ -r $SNAP_DATA/config_spgwc.sh ]; then
 	    . $SNAP_DATA/config_spgwc.sh
@@ -38,7 +31,7 @@ case "$1" in
 	
 	# default config file is (unless set in above config)
 	SPGWC_CONFIG=${SPGWC_CONF_FILE2:-$SPGWC_CONF_FILE}
-	ls $(dirname $SPGWC_CONFIG)/spgw*.conf
+	ls $(dirname $SPGWC_CONFIG)/*
 	;;
      
       "echo-spgwc" | "cat-spgwc" )

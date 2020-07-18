@@ -14,6 +14,17 @@ fi
 SPGWU_CONFIG=${SPGWU_CONF_FILE2:-$SPGWU_CONF_FILE}
 SPGWU_EXEC_ARGS=" -c $SPGWU_CONFIG -o "
 
+if_sudo(){
+
+    if [ "$(id -u)" -eq 0 ] ; then
+	return 0
+    else
+	echo "Please run as a sudoer!"
+	exit 1
+    fi
+}
+
+
 case "$1" in
     "gdb" )
 	echo "Running $2 with the gdb"
@@ -35,21 +46,26 @@ case "$1" in
      "start"  )
 	 #snap start $SNAP_NAME
 	 shift 
+	 if_sudo
 	 snapctl start --enable $SNAP_NAME "$@"
+	 snapctl services $SNAP_NAME "$@"
 	 ;;
 
      "stop" )
 	#snap stop $SNAP_NAME
 	 shift 
+	 if_sudo
 	 snapctl stop --disable $SNAP_NAME "$@"
+	 snapctl services $SNAP_NAME "$@"
 	 ;;
 
      "restart" )
 	 #snap restart $SNAP_NAME
 	 shift 
+	 if_sudo
 	 snapctl stop --disable $SNAP_NAME "$@"
 	 snapctl start --enable $SNAP_NAME "$@"
-	 
+	 snapctl services $SNAP_NAME "$@"
 	;;
 
      "status" )
