@@ -1,19 +1,20 @@
 name: oai-tracer
-version: '1.5' 
+version: '1.6' 
 summary: OpenAirInterface RAN tracer and visualizer 
 description: |
     OAI RAN tracer is the openairinterface-based RAN tracer and visualizer tool that can be used to debug or monitor the proper operation of RAN. It could be run locally (same machine as RAN) or remotely. It requires Ubuntu desktop enviroment for a proper operation.
     
-grade: stable
 type: app
+license: Apache-2.0
+
 architectures:
   - amd64
   - i386
 confinement: devmode
+grade: stable
+base: core18
 
 apps:
-  info:
-    command: run info
   init:
     command: init
   help:
@@ -38,7 +39,7 @@ parts:
   tracer:
     plugin: make
     source: https://gitlab.eurecom.fr/oai/openairinterface5g.git
-    source-branch: 2019.w21
+    source-branch: develop
     build-packages: [build-essential, ]
     stage-packages:
       - libxft-dev

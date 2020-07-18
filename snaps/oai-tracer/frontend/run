@@ -11,6 +11,8 @@ if [ -r $SNAP_DATA/config.sh ]; then
     . $SNAP_DATA/config.sh
 fi
 
+export LD_LIBRARY_PATH="$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"
+
 T_CONFIG=${T_CONF_FILE2:-$T_CONF_FILE}
 T_EXEC_ARGS=" -d $T_CONFIG"
 
@@ -22,7 +24,7 @@ case "$1" in
     "help" )
 	echo "Usage:                   $SNAP_NAME [-ip IP@OAI-RAN]"
 	echo "Options:"
-	echo "oai-tracer.info          get the info for this snap"            
+	#echo "oai-tracer.info          get the info for this snap"            
 	echo "oai-tracer.init          initialize $SNAP_NAME (after the 1st installation)"
 	echo ""
 	echo "oai-tracer               run $SNAP_NAME manually. Run with option -h for available execution options."

@@ -2,9 +2,8 @@
 
 . $SNAP/common
 
-if [ ! -f $CONF_DIR/T_messages.txt ] ; then
-    cp $SNAP/etc/* $CONF_DIR
-fi
+cp $SNAP/T/tracer/T_messages.txt  $CONF_DIR
+#cp $SNAP/etc/* $CONF_DIR
 
 
 $SNAP/conf set-tracer $CONF_DIR/T_messages.txt
