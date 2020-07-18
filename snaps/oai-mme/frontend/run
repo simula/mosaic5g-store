@@ -2,7 +2,7 @@
 
 . $SNAP/common
 
-
+export LD_LIBRARY_PATH="$SNAP/usr/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"
 
 if [ ! -e $MME_EXEC ]; then
     echo "Cannot find $MME_EXEC executable"
@@ -17,7 +17,16 @@ fi
 MME_CONFIG=${MME_CONF_FILE2:-$MME_CONF_FILE}
 MME_EXEC_ARGS=" -c $MME_CONFIG"
 
-export LD_LIBRARY_PATH="$SNAP/usr/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"
+
+if_sudo(){
+
+    if [ "$(id -u)" -eq 0 ] ; then
+	return 0
+    else
+	echo "Please run as a sudoer!"
+	exit 1
+    fi
+}
 
 case "$1" in
     "gdb" )
@@ -40,20 +49,26 @@ case "$1" in
      "start"  )
 	 #snap start $SNAP_NAME
 	 shift 
+	 if_sudo
 	 snapctl start --enable $SNAP_NAME "$@"
+	 snapctl services $SNAP_NAME "$@"
 	 ;;
 
      "stop" )
 	#snap stop $SNAP_NAME
 	 shift 
+	 if_sudo
 	 snapctl stop --disable $SNAP_NAME "$@"
+	 snapctl services $SNAP_NAME "$@"
 	 ;;
 
      "restart" )
 	 #snap restart $SNAP_NAME
 	 shift 
+	 if_sudo
 	 snapctl stop  --disable $SNAP_NAME "$@"
 	 snapctl start --enable  $SNAP_NAME "$@"
+	 snapctl services $SNAP_NAME "$@"
 	;;
 
      "status" )

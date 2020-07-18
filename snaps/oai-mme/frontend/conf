@@ -4,30 +4,22 @@
 
 case "$1" in
     "set-mme" )
-	CONFIG_FILE=$2
-	if [ -f $(dirname $(readlink -f $0))/$CONFIG_FILE ]; then
-	    CONFIG_FILE=$(dirname $(readlink -f $0))/$CONFIG_FILE
+	CONFIG_FILE=$2	
+	if [ "$CONFIG_FILE" != "${CONFIG_FILE#/}" -a -f "$CONFIG_FILE" ]; then
 	    echo "Setting the default config file to: $CONFIG_FILE"
+	    
+	elif [ -f "$CONF_DIR/$CONFIG_FILE" ]; then
+	    CONFIG_FILE=$CONF_DIR/$CONFIG_FILE
+	    echo "Config file found in the $CONF_DIR!"
+	    echo "Resetting to the default config file: $CONFIG_FILE"
+	    
 	else
-	    # may be absolute path 
-	    if [ -f "$CONFIG_FILE" ]; then
-		# $CONFIG_FILE already exist in the $SNAP_DATA
-		if [ -f $SNAP_DATA/$(basename $CONFIG_FILE) ] ; then 
-		    echo "Reset the config file to: $SNAP_DATA/$(basename $CONFIG_FILE)"
-		else 
-		    #echo "$SNAP_DATA/$CONFIG_FILE"
-		    cp $CONFIG_FILE $SNAP_DATA/
-		    echo "Adding and setting a new config file : $SNAP_DATA/$(basename $CONFIG_FILE)"
-		fi
-		CONFIG_FILE=$SNAP_DATA/$(basename $CONFIG_FILE)
-	    else
-		echo "Config file <$CONFIG_FILE> not found in $SNAP/current directory"
-		echo "Reset to default config file: $MME_CONF_FILE"
-		CONFIG_FILE=$MME_CONF_FILE
-	    fi
+	    echo "[ERR] Config file $CONFIG_FILE not found, please provide an absolute path!"
+	    echo "Reset to default config file: $MME_CONF_FILE"
+	    CONFIG_FILE=$MME_CONF_FILE
 	fi
+
 	echo "MME_CONF_FILE2=$CONFIG_FILE" > $SNAP_DATA/config_mme.sh
-	#copy for the user
 	echo "MME_CONF_FILE2=$CONFIG_FILE" > $SNAP_USER_DATA/config_mme.sh
 	;;
 
@@ -39,7 +31,7 @@ case "$1" in
 	
 	# default config file is (unless set in above config)
 	MME_CONFIG=${MME_CONF_FILE2:-$MME_CONF_FILE}
-	ls $(dirname $MME_CONFIG)/mme*.conf
+	ls $(dirname $MME_CONFIG)/*
 	;;
 
      "echo-mme" | "cat-mme" )
