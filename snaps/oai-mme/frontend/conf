@@ -31,10 +31,12 @@ case "$1" in
 	
 	# default config file is (unless set in above config)
 	MME_CONFIG=${MME_CONF_FILE2:-$MME_CONF_FILE}
-	ls $(dirname $MME_CONFIG)/*
+	ls $(dirname $MME_CONFIG)/*mme*.conf
 	;;
 
      "echo-mme" | "cat-mme" )
+	show_file=$2
+	
 	
 	if [ -r $SNAP_DATA/config_mme.sh ]; then
 	    . $SNAP_DATA/config_mme.sh
@@ -43,7 +45,21 @@ case "$1" in
 	# default config file is (unless set in above config)
 	MME_CONFIG=${MME_CONF_FILE2:-$MME_CONF_FILE}
 	# echo (get), cat (show)
-        `echo $1 | cut -d"-" -f1` $MME_CONFIG
+        # `echo $1 | cut -d"-" -f1` $MME_CONFIG
+	
+	if [ "$show_file" != "" ]; then
+		# echo "File to show $SNAP_DATA/$show_file"
+		absolute_show_file=$SNAP_DATA/$show_file
+		if [ ! -e $absolute_show_file ]; then
+			echo "The file $absolute_show_file does not exist"
+		else
+			`echo $1 | cut -d"-" -f1` $absolute_show_file
+		fi
+	else
+		# echo "File to show $MME_CONFIG"
+		`echo $1 | cut -d"-" -f1` $MME_CONFIG
+	fi
+
 	;;
       *)
        echo "unknown command $1"

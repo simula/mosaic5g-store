@@ -1,6 +1,7 @@
 #!/bin/sh
 
 . $SNAP/common
+. $SNAP/util
 
 export LD_LIBRARY_PATH="$SNAP/usr/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"
 
@@ -29,6 +30,11 @@ if_sudo(){
 }
 
 case "$1" in
+	"openapi" )
+	shift
+	python3 $SNAP/api.py "$@"
+	
+	;;
     "gdb" )
 	echo "Running $2 with the gdb"
 	touch      $SNAP_DATA/.gdb_$2
@@ -71,14 +77,16 @@ case "$1" in
 	 snapctl services $SNAP_NAME "$@"
 	;;
 
-     "status" )
-	 #snap services $SNAP_NAME
-	 shift
-	 snapctl services $SNAP_NAME "$@"
-	 ;;
-    "journal" )
+	"status" )
+	#snap services $SNAP_NAME
 	shift
-	journalctl -u snap.$SNAP_NAME.mmed.service "$@"
+	snapctl services $SNAP_NAME "$@"
+	 
+	;;
+    "journal" )
+	daemon=$2
+	shift 2 
+	journalctl -u snap.$SNAP_NAME.$daemon.service "$@"
 	
 	;;
     
