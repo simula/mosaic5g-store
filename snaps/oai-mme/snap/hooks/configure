@@ -3,6 +3,8 @@ set -e
 echo "Configure hook "
 
 snapctl stop --disable ${SNAP_NAME}  2>&1  || true
+sleep 1 
+snapctl start --enable ${SNAP_NAME}.apid  2>&1  || true
 
 $SNAP/init mme
 

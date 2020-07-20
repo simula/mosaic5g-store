@@ -33,6 +33,7 @@ import json
 def probe_db(cassandra_cluster):
 
     cluster = Cluster([cassandra_cluster])
+    status = list()
     try:
         session = cluster.connect()
         strCQL = "SELECT cluster_name FROM system.local"
@@ -41,23 +42,21 @@ def probe_db(cassandra_cluster):
         db_name = ""
         for row in rows:
             db_name = row[0]
-            break
-        status = {
-            "{}".format(db_name):{
+            status_current_db = {
+                "name": "{}".format(db_name),
                 "ip": cassandra_cluster,
                 "status": "alive",
                 "reason": ""
             }
-        }
+            status.append(status_current_db)
     except Exception as e:
-        # e = e.__dict__
-        status = {
-            "db-cassandra":{
-                "ip": cassandra_cluster,
-                "status": 'not alive',
-                "reason": str(e) #str([*e.values()][0])
-            }
+        status_current_db = {
+            "name":"",
+            "ip": cassandra_cluster,
+            "status": 'not alive',
+            "reason": str(e)
         }
+        status.append(status_current_db)
     print(json.dumps(status, sort_keys=False, indent=2))
     
 if __name__ == "__main__":                                                     

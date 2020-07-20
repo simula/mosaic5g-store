@@ -1,6 +1,7 @@
 #!/bin/sh
 
 . $SNAP/common
+. $SNAP/util
 
 
 
@@ -20,6 +21,11 @@ MME_EXEC_ARGS=" -c $MME_CONFIG"
 export LD_LIBRARY_PATH="$SNAP/usr/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"
 
 case "$1" in
+	"openapi" )
+	shift
+	python3 $SNAP/api.py "$@"
+	
+	;;
     "gdb" )
 	echo "Running $2 with the gdb"
 	touch      $SNAP_DATA/.gdb_$2
@@ -39,31 +45,42 @@ case "$1" in
     
      "start"  )
 	 #snap start $SNAP_NAME
-	 shift 
-	 snapctl start --enable $SNAP_NAME "$@"
+	 daemon=$2
+	 shift 2
+	 if_sudo
+	 snapctl start --enable $SNAP_NAME.$daemon "$@"
+	 snapctl services $SNAP_NAME "$@"
+	 
 	 ;;
-
      "stop" )
-	#snap stop $SNAP_NAME
-	 shift 
-	 snapctl stop --disable $SNAP_NAME "$@"
+	 daemon=$2
+	 shift 2
+	 if_sudo
+	 snapctl stop --disable $SNAP_NAME.$daemon "$@"
+	 snapctl services $SNAP_NAME "$@"
+
 	 ;;
 
-     "restart" )
-	 #snap restart $SNAP_NAME
-	 shift 
-	 snapctl stop  --disable $SNAP_NAME "$@"
-	 snapctl start --enable  $SNAP_NAME "$@"
+	"restart" )
+	daemon=$2
+	shift 2
+	if_sudo
+	snapctl stop --disable $SNAP_NAME.$daemon "$@"
+	snapctl start --enable $SNAP_NAME.$daemon "$@"
+	snapctl services $SNAP_NAME "$@"
+
 	;;
 
-     "status" )
-	 #snap services $SNAP_NAME
-	 shift
-	 snapctl services $SNAP_NAME "$@"
-	 ;;
-    "journal" )
+	"status" )
+	#snap services $SNAP_NAME
 	shift
-	journalctl -u snap.$SNAP_NAME.mmed.service "$@"
+	snapctl services $SNAP_NAME "$@"
+	 
+	;;
+    "journal" )
+	daemon=$2
+	shift 2 
+	journalctl -u snap.$SNAP_NAME.$daemon.service "$@"
 	
 	;;
     

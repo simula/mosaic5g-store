@@ -34,16 +34,30 @@ case "$1" in
 	ls $(dirname $HSS_CONFIG)/*
 	;;
 
-     "echo-hss" | "cat-hss" )
-	
+	"echo-hss" | "cat-hss" )
+	show_file=$2
+
 	if [ -r $SNAP_DATA/config_hss.sh ]; then
 	    . $SNAP_DATA/config_hss.sh
 	fi
 	
 	# default config file is (unless set in above config)
 	HSS_CONFIG=${HSS_CONF_FILE2:-$HSS_CONF_FILE}
-	# echo (get), cat (show)
-        `echo $1 | cut -d"-" -f1` $HSS_CONFIG
+	# # echo (get), cat (show)
+    #     `echo $1 | cut -d"-" -f1` $HSS_CONFIG
+	
+	if [ "$show_file" != "" ]; then
+		absolute_show_file=$SNAP_DATA/$show_file
+		if [ ! -e $absolute_show_file ]; then
+			echo "The file $absolute_show_file does not exist"
+		else
+			`echo $1 | cut -d"-" -f1` $absolute_show_file
+		fi
+	else
+		`echo $1 | cut -d"-" -f1` $HSS_CONFIG
+	fi
+	
+	
 	;;
       *)
        echo "unknown command $1"
