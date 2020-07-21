@@ -31,11 +31,12 @@ case "$1" in
 	
 	# default config file is (unless set in above config)
 	SPGWU_CONFIG=${SPGWU_CONF_FILE2:-$SPGWU_CONF_FILE}
-	ls $(dirname $SPGWU_CONFIG)/*
+	ls $(dirname $SPGWU_CONFIG)/*spgw*.conf
 	;;
      
-      "echo-spgwu" | "cat-spgwu" )
-	
+	"echo-spgwu" | "cat-spgwu" )
+	show_file=$2
+
 	if [ -r $SNAP_DATA/config_spgwu.sh ]; then
 	    . $SNAP_DATA/config_spgwu.sh
 	fi
@@ -43,7 +44,21 @@ case "$1" in
 	# default config file is (unless set in above config)
 	SPGWU_CONFIG=${SPGWU_CONF_FILE2:-$SPGWU_CONF_FILE}
 	# echo (get), cat (show)
-	`echo $1 | cut -d"-" -f1` $SPGWU_CONFIG
+	# `echo $1 | cut -d"-" -f1` $SPGWU_CONFIG
+
+	if [ "$show_file" != "" ]; then
+		# echo "File to show $SNAP_DATA/$show_file"
+		absolute_show_file=$SNAP_DATA/$show_file
+		if [ ! -e $absolute_show_file ]; then
+			echo "The file $absolute_show_file does not exist"
+		else
+			`echo $1 | cut -d"-" -f1` $absolute_show_file
+		fi
+	else
+		# echo "File to show $SPGWU_CONFIG"
+		`echo $1 | cut -d"-" -f1` $SPGWU_CONFIG
+	fi
+	
 	;;
       
       *)
