@@ -1,6 +1,7 @@
 #!/bin/sh
 
 . $SNAP/common
+. $SNAP/util
 
 if [ ! -e $SPGWU_EXEC ]; then
     echo "Cannot find $SPGWU_EXEC executable"
@@ -15,6 +16,11 @@ SPGWU_CONFIG=${SPGWU_CONF_FILE2:-$SPGWU_CONF_FILE}
 SPGWU_EXEC_ARGS=" -c $SPGWU_CONFIG -o "
 
 case "$1" in
+	"openapi" )
+	shift
+	python3 $SNAP/api.py "$@"
+
+	;;
     "gdb" )
 	echo "Running $2 with the gdb"
 	touch      $SNAP_DATA/.gdb_$2
@@ -34,21 +40,32 @@ case "$1" in
     
      "start"  )
 	 #snap start $SNAP_NAME
-	 shift 
-	 snapctl start --enable $SNAP_NAME "$@"
-	 ;;
+	# shift 
+	# snapctl start --enable $SNAP_NAME "$@"
+	daemon=$2
+	shift 2
+	if_sudo
+	snapctl start --enable $SNAP_NAME.$daemon "$@"
+	snapctl services $SNAP_NAME "$@"
+	;;
 
      "stop" )
 	#snap stop $SNAP_NAME
-	 shift 
-	 snapctl stop --disable $SNAP_NAME "$@"
-	 ;;
+	daemon=$2
+	shift 2
+	if_sudo
+	snapctl stop --disable $SNAP_NAME.$daemon "$@"
+	snapctl services $SNAP_NAME "$@"
+	;;
 
-     "restart" )
+	"restart" )
 	 #snap restart $SNAP_NAME
-	 shift 
-	 snapctl stop --disable $SNAP_NAME "$@"
-	 snapctl start --enable $SNAP_NAME "$@"
+	daemon=$2
+	shift 2
+	if_sudo
+	snapctl stop --disable $SNAP_NAME.$daemon "$@"
+	snapctl start --enable $SNAP_NAME.$daemon "$@"
+	snapctl services $SNAP_NAME "$@"
 	 
 	;;
 
@@ -58,9 +75,12 @@ case "$1" in
 	 snapctl services $SNAP_NAME "$@"
 	 ;;
 
-     "journal" )
-	 shift
-	 journalctl -u snap.$SNAP_NAME.spgwud.service "$@"
+	"journal" )
+	#  shift
+	#  journalctl -u snap.$SNAP_NAME.spgwud.service "$@"
+	daemon=$2
+	shift 2 
+	journalctl -u snap.$SNAP_NAME.$daemon.service "$@"
 	 ;;
     
     

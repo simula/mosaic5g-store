@@ -8,7 +8,7 @@ python_files="zipp.py six.py"
 
 for package in $python_packages; do
     echo $package
-    cp -r $HOME/.local/lib/python3.6/site-packages/$package \
+    cp -r -p $HOME/.local/lib/python3.6/site-packages/$package \
         $curred_DIR/prime/
 done
 for file in $python_files; do

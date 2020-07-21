@@ -38,11 +38,12 @@ case "$1" in
 	
 	# default config file is (unless set in above config)
 	SPGWC_CONFIG=${SPGWC_CONF_FILE2:-$SPGWC_CONF_FILE}
-	ls $(dirname $SPGWC_CONFIG)/spgw*.conf
+	ls $(dirname $SPGWC_CONFIG)/*spgw*.conf
 	;;
      
-      "echo-spgwc" | "cat-spgwc" )
-	
+	"echo-spgwc" | "cat-spgwc" )
+	show_file=$2
+
 	if [ -r $SNAP_DATA/config_spgwc.sh ]; then
 	    . $SNAP_DATA/config_spgwc.sh
 	fi
@@ -50,7 +51,22 @@ case "$1" in
 	# default config file is (unless set in above config)
 	SPGWC_CONFIG=${SPGWC_CONF_FILE2:-$SPGWC_CONF_FILE}
 	# echo (get), cat (show)
-	`echo $1 | cut -d"-" -f1` $SPGWC_CONFIG
+	# `echo $1 | cut -d"-" -f1` $SPGWC_CONFIG
+	#####################################
+	if [ "$show_file" != "" ]; then
+		# echo "File to show $SNAP_DATA/$show_file"
+		absolute_show_file=$SNAP_DATA/$show_file
+		if [ ! -e $absolute_show_file ]; then
+			echo "The file $absolute_show_file does not exist"
+		else
+			`echo $1 | cut -d"-" -f1` $absolute_show_file
+		fi
+	else
+		# echo "File to show $MME_CONFIG"
+		`echo $1 | cut -d"-" -f1` $SPGWC_CONFIG
+	fi
+	#####################################
+	
 	;;
       
       *)
