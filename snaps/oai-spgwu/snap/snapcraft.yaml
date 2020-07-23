@@ -87,7 +87,7 @@ parts:
       
   spgwu:
     plugin: cmake
-    source: https://github.com/OPENAIRINTERFACE/openair-cn-cups.git
+    source: https://github.com/OPENAIRINTERFACE/openair-spgwu-tiny.git
     source-branch: develop
     build-packages: [build-essential, ]
     stage-packages:

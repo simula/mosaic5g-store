@@ -28,8 +28,8 @@ apps:
     daemon: simple
     stop-command: run stop
     stop-timeout: 1s
-  debug:
-    command: run gdb
+#  debug:
+#    command: run gdb
   start:
     command: run start hssd
   stop:
@@ -91,21 +91,21 @@ hooks:
     plugs: [home, network, desktop]
     
 parts:
-  gdb:
-    plugin: nil
-    stage-packages:
-      - libbabeltrace1
-      - libdw1
-      - libmpfr6
-      - libpython3.6
-    override-build: |
-      sudo apt install gdb -y
-      mkdir $SNAPCRAFT_PART_INSTALL/share 
-      cp -r /usr/share/gdb $SNAPCRAFT_PART_INSTALL/share
-      cp /usr/bin/gdb* $SNAPCRAFT_PART_INSTALL
-    prime:
-      - gdb*
-      - share/*
+#  gdb:
+#    plugin: nil
+#    stage-packages:
+#      - libbabeltrace1
+#      - libdw1
+#      - libmpfr6
+#      - libpython3.6
+#    override-build: |
+#      sudo apt install gdb -y
+#      mkdir $SNAPCRAFT_PART_INSTALL/share 
+#      cp -r /usr/share/gdb $SNAPCRAFT_PART_INSTALL/share
+#      cp /usr/bin/gdb* $SNAPCRAFT_PART_INSTALL
+#    prime:
+#      - gdb*
+#      - share/*
   #cassandra:
   #  plugin: cmake
   #  source: https://github.com/OPENAIRINTERFACE/openair-cn.git
@@ -149,8 +149,8 @@ parts:
     - LANG: C.UTF-8
     - LC_ALL: C.UTF-8
     plugin: cmake
-    source: https://github.com/OPENAIRINTERFACE/openair-cn.git
-    #source-branch: merge_ipv6_interfaces_en-dc
+    source: https://github.com/OPENAIRINTERFACE/openair-hss.git
+    #source-branch: develop
     source-branch: develop
     build-packages: [build-essential, ]
     stage-packages:

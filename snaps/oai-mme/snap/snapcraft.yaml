@@ -106,7 +106,7 @@ parts:
 
   mme:
     plugin: cmake
-    source: https://github.com/OPENAIRINTERFACE/openair-cn.git
+    source: https://github.com/OPENAIRINTERFACE/openair-mme.git
     source-branch: develop
     build-packages: [build-essential, ]
     stage-packages:

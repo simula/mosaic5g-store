@@ -86,8 +86,8 @@ parts:
       
   spgwc:
     plugin: cmake
-    source: https://github.com/OPENAIRINTERFACE/openair-cn-cups.git
-    source-branch: develop
+    source: https://github.com/OPENAIRINTERFACE/openair-spgwc.git
+    source-branch: ll-mec-v1
     build-packages: [build-essential, ]
     stage-packages:
       - libstdc++6
