@@ -25,6 +25,14 @@ apps:
     daemon: simple
     stop-command: run stop
     stop-timeout: 1s
+  start-all:
+    command: run start-all
+  stop-all:
+    command: run stop-all
+  restart-all:
+    command: run restart-all
+  status-all:
+    command: run status-all
   start:
     command: run start spgwcd
   stop:
@@ -66,6 +74,24 @@ apps:
     command: run status apid
   api-journal:
     command: run journal apid
+  apiman:
+    command: run openapiman
+  apidman:
+    command: run openapiman
+    daemon: simple
+    stop-command: run stop apidman
+    stop-timeout: 1s
+  apiman-start:
+    command: run start apidman
+  apiman-stop:
+    command: run stop apidman
+  apiman-restart:
+    command: run restart apidman
+  apiman-status:
+    command: run status apidman
+  apiman-journal:
+    command: run journal apidman
+
 hooks:
   install:
     plugs: [home, network]

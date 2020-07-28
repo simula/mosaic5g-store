@@ -57,6 +57,16 @@ if_sudo(){
 }
 
 case "$1" in
+    "openapi" )
+	shift
+	python3 $SNAP/api.py "$@"
+	;;
+
+	"openapiman" )
+	shift
+	python3 $SNAP/api-manager.py "$@"
+	;;
+	
     "gdb-enb" )
 	echo "Running $SNAP_NAME-ENB with the gdb"
 	touch      $SNAP_DATA/.gdb_$SNAP_NAME
@@ -89,6 +99,16 @@ case "$1" in
 	snapctl start --enable $SNAP_NAME.$daemon "$@"
 	snapctl services $SNAP_NAME.$daemon
 	#snap start $SNAP_NAME.$daemon  "$@"
+	
+	# start-all
+	;; 
+    "start-all"  )
+	daemon=$2
+	shift
+	if_sudo
+	snapctl start --enable $SNAP_NAME "$@"
+	snapctl services $SNAP_NAME	
+	
 	;;
     "stop" )
 	daemon=$2
@@ -96,13 +116,21 @@ case "$1" in
 	if_sudo
 	snapctl stop --disable $SNAP_NAME.$daemon "$@"
 	snapctl services $SNAP_NAME.$daemon
-	#snap stop $SNAP_NAME.$daemon  "$@"
+	
+	;;
+    "stop-all" )
+	daemon=$2
+	shift
+	if_sudo
+	snapctl stop --disable $SNAP_NAME "$@"
+	snapctl services $SNAP_NAME
+
 	;;
     "restart" )
 	daemon=$2
 	shift 2
 	if_sudo
-	snapctl stop $SNAP_NAME.$daemon "$@"
+	snapctl stop --disable $SNAP_NAME.$daemon "$@"
 	snapctl start --enable $SNAP_NAME.$daemon "$@"
 	snapctl services $SNAP_NAME.$daemon
 	
@@ -110,9 +138,18 @@ case "$1" in
     "status" )
 	daemon=$2
 	shift 2
-	echo "Please manually run: snap services $SNAP_NAME.$daemon" 
+	# echo "Please manually run: snap services $SNAP_NAME.$daemon" 
 	snapctl services $SNAP_NAME.$daemon 
 	#systemctl status --lines 0 snap.$SNAP_NAME.$2.service
+
+		;; 
+    "status-all"  )
+	daemon=$2
+	shift
+	if_sudo
+	snapctl services $SNAP_NAME
+
+
 	;;
     "journal" )
 	daemon=$2

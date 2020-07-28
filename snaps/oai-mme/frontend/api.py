@@ -32,6 +32,25 @@ import argparse
 from werkzeug.utils import cached_property
 from werkzeug.datastructures import FileStorage
 
+snap_name = "oai-mme"
+
+api_host_default = '0.0.0.0'
+api_port_default = 5552
+
+api_manager_host_default = '0.0.0.0'
+api_manager_port_default = 6662
+
+
+SNAP="/snap/{}/current".format(snap_name)
+
+UPLOAD_FOLDER="/var/snap/{}/current/".format(snap_name)
+# PARAMETER_FOLDER="/var/snap/{}/common/".format(snap_name)
+PARAMETER_FOLDER="/var/snap/{}/common/".format(snap_name)
+CONFIG_OPEN_API = "api_conf.json"
+CONFIG_OPEN_API_MANAGER = "api_manager_conf.json"
+# DIR for testing
+# UPLOAD_FOLDER="/home/cigarier/Downloads/tmp/oai-mme/"
+# PARAMETER_FOLDER="/home/cigarier/Downloads/tmp/oai-mme/parameters/"
 
 flask_app = Flask(__name__.split('.')[0])                                                        
 flask_api = Api(flask_app, 
@@ -42,42 +61,39 @@ flask_api = Api(flask_app,
           terms_url= "https://www.openairinterface.org/?page_id=698",
           contact = "arouk@eurecom.fr, navid.nikaein@eurecom.fr")
 
-mme_space = flask_api.namespace('mme', description='Management of mme')
-db_space = flask_api.namespace('mme/db', description='Management of Database')
-api_space = flask_api.namespace('mme/api', description='Management of API')
+mme_space = flask_api.namespace('mme', description='Management of oai-mme')
+api_space = flask_api.namespace('mme/api', description='Management of OpenAPI')
+api_manager_space = flask_api.namespace('mme/api-manager', description='Management of the manager of OpenAPI')
 
 
 upload_conf_file = mme_space.parser()
 upload_conf_file.add_argument('file', location='files', type=FileStorage, required=False)
 
 
-upload_set_conf_file = db_space.parser()
+upload_set_conf_file = mme_space.parser()
 upload_set_conf_file.add_argument('set-conf-file', type=inputs.boolean, default=True, required=True)
 upload_set_conf_file.add_argument('config-file', type=str , required=False)
 upload_set_conf_file.add_argument('file', location='files', type=FileStorage, required=False)
 
 
-conf_show_file = db_space.parser()
+conf_show_file = mme_space.parser()
 conf_show_file.add_argument('show-config-file', type=inputs.boolean, default=True, required=True)
 conf_show_file.add_argument('file-name', type=str , required=False)
 
+api_change_host_port = api_space.parser()
+api_change_host_port.add_argument('mme-host', type=str, default="{}".format(api_host_default), required=True)
+api_change_host_port.add_argument('mme-port', type=str , default="{}".format(api_port_default), required=True)
 
-snap_name = "oai-mme"
 
-
-SNAP="/snap/{}/current".format(snap_name)
-
-UPLOAD_FOLDER="/var/snap/{}/current/".format(snap_name)
-PARAMETER_FOLDER="/var/snap/{}/common/usr/share/parameters/".format(snap_name)
-
-# DIR for testing
-# UPLOAD_FOLDER="/home/cigarier/Downloads/tmp/oai-mme/"
-# PARAMETER_FOLDER="/home/cigarier/Downloads/tmp/oai-mme/parameters/"
-# 
+api_manager_change_host_port = api_manager_space.parser()
+api_manager_change_host_port.add_argument('mme-host', type=str, default="{}".format(api_manager_host_default), required=True)
+api_manager_change_host_port.add_argument('mme-port', type=str , default="{}".format(api_manager_port_default), required=True)
 
 flask_app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 ALLOWED_EXTENSIONS = {'json', 'conf'}
 flask_app.config['PARAMETER_FOLDER'] = PARAMETER_FOLDER
+flask_app.config['CONFIG_OPEN_API'] = CONFIG_OPEN_API
+flask_app.config['CONFIG_OPEN_API_MANAGER'] = CONFIG_OPEN_API_MANAGER
 flask_app.config['JSON_SORT_KEYS'] = False
 
 ## log
@@ -272,7 +288,7 @@ class MainClassMmeStatus(Resource):
         """
         Get the status of mme and api
         """        
-        proc = subprocess.Popen(["$SNAP/run status"], stdout=subprocess.PIPE, shell=True)
+        proc = subprocess.Popen(["$SNAP/run status mmed"], stdout=subprocess.PIPE, shell=True)
         # proc = subprocess.Popen(["oai-mme.status"], stdout=subprocess.PIPE, shell=True)
         
         (out, err) = proc.communicate() 
@@ -299,7 +315,23 @@ class MainClassMmeStatus(Resource):
         response = make_response(jsonify(service_status))
         response.headers.set("Content-Type", "application/json")
         return response
+@mme_space.route("/status-all")
+class MainClassMmeStatusAll(Resource):
+    @mme_space.produces(["application/json"])
+    def get(self):
+        """
+        Get the status of all the services
+        """        
+        proc = subprocess.Popen(["$SNAP/run status-all"], stdout=subprocess.PIPE, shell=True)
+        # proc = subprocess.Popen(["oai-mme.status"], stdout=subprocess.PIPE, shell=True)
+        
+        (out, err) = proc.communicate() 
+        service_status = serialize_service_status(out)
+        response = make_response(jsonify(service_status))
+        response.headers.set("Content-Type", "application/json")
+        return response
 
+        
 @mme_space.route("/start")
 class MainClassMmeStart(Resource):
     @mme_space.produces(["text"])
@@ -355,6 +387,41 @@ class MainClassMmeJournal(Resource):
         response.headers.set("Content-Type", "text")
         return response
 
+# API
+@api_space.route("/conf")
+class MainClassMmeConf(Resource):
+    @api_space.produces(["application/json"])
+    def get(self):
+        """
+        Get configuration file of OpenAPI
+        """
+        config_file = '{}{}'.format(PARAMETER_FOLDER, CONFIG_OPEN_API)
+
+        if os.path.exists(config_file) and os.path.isfile(config_file):
+            try:
+                with open(config_file) as f:
+                    api_config_param = json.load(f)
+                    """
+                    # config file is of the form
+                    api_config_param = {
+                        'mme-host': host_mme,
+                        'mme-port': port_mme
+                    }
+                    """
+            except:
+                api_config_param = {
+                    'mme-host': api_host_default,
+                    'mme-port': api_port_default
+                }  
+        else:
+            api_config_param = {
+                    'mme-host': api_host_default,
+                    'mme-port': api_port_default
+                }            
+        response = make_response(jsonify(api_config_param))
+        response.headers.set("Content-Type", "application/json")
+        return response
+        
 @api_space.route("/journal")
 class MainClassMmeApiJournal(Resource):
     @mme_space.produces(["text"])
@@ -368,25 +435,228 @@ class MainClassMmeApiJournal(Resource):
         response = make_response(out)
         response.headers.set("Content-Type", "text")
         return response
+
+## Manager of OpenAPI of oai-mme
+@api_manager_space.route("/conf")
+class MainClassMmeConf(Resource):
+    @api_manager_space.produces(["application/json"])
+    def get(self):
+        """
+        Get configuration file of OpenAPI
+        """
+        config_file = '{}{}'.format(PARAMETER_FOLDER, CONFIG_OPEN_API_MANAGER)
+
+        if os.path.exists(config_file) and os.path.isfile(config_file):
+            try:
+                with open(config_file) as f:
+                    api_config_param = json.load(f)
+                    """
+                    # config file is of the form
+                    api_config_param = {
+                        'mme-host': host_mme,
+                        'mme-port': port_mme
+                    }
+                    """
+            except:
+                api_config_param = {
+                    'mme-host': api_manager_host_default,
+                    'mme-port': api_manager_port_default
+                }  
+        else:
+            api_config_param = {
+                    'mme-host': api_manager_host_default,
+                    'mme-port': api_manager_port_default
+                }            
+        response = make_response(jsonify(api_config_param))
+        response.headers.set("Content-Type", "application/json")
+        return response
+
+@api_manager_space.route("/start")
+class MainClassMmeApiManagerStart(Resource):
+    @api_manager_space.produces(["text"])
+    @api_manager_space.expect(api_manager_change_host_port)
+    @api_manager_space.doc(params={
+                "mme-host": "Valid IP address of oai-mme",
+                "mme-port": "Valid port of oai-mme"
+    })
+    def put(self):
+        """
+        Start the manager of OpenAPI oai-mme
+        WARNING: you may loose the connection if you enter non valid parameters
+        """     
+        args = api_manager_change_host_port.parse_args()
+        host_mme = args['mme-host']
+        port_mme =  args['mme-port']
+        # Write the config parameters to json file to be used when starting up the flask service
+        config_file = os.path.join(flask_app.config['PARAMETER_FOLDER'], flask_app.config['CONFIG_OPEN_API_MANAGER'])
+        with open(config_file, 'w') as f:
+            config_parameters = {
+                "mme-host": host_mme,
+                "mme-port": port_mme
+            }
+            json.dump(config_parameters, f)
+        str_1 = request.url
+        str_2 = request.path
+        current_url = str(request.url).split(request.path)
+        current_url = current_url[0]
+        new_url = str(current_url).split("//")
+        new_url = '{}//{}:{}'.format(new_url[0], host_mme, port_mme)
+        proc = subprocess.Popen(["$SNAP/run start apidman"], stdout=subprocess.PIPE, shell=True)
+        (out, err) = proc.communicate()
+        service_status = serialize_service_status(out)
+
+        message = {
+            'openapi': current_url,
+            'openapi-manager': new_url,
+            'note': "OpenAPI manager of {} will be available at {}".format(snap_name,new_url),
+            'status': service_status,
+            'error': str(err)
+        }
+        response = make_response(message)
+        response.headers.set("Content-Type", "text")
+        return response
+@api_manager_space.route("/stop")
+class MainClassMmeApiManagerStop(Resource):
+    @api_manager_space.produces(["application/json"])
+    def get(self):
+        """
+        Stop the manager of OpenAPI oai-mme
+        """        
+        proc = subprocess.Popen(["$SNAP/run stop apidman"], stdout=subprocess.PIPE, shell=True)
+        (out, err) = proc.communicate() 
+
+        service_status = serialize_service_status(out)
+        response = make_response(jsonify(service_status))
+        response.headers.set("Content-Type", "application/json")
+        return response
+
+        # response = make_response(out)
+        # response.headers.set("Content-Type", "text")
+        # return response
+
+@api_manager_space.route("/restart")
+class MainClassMmeApiManagerRestart(Resource):
+    @api_manager_space.produces(["text"])
+    @api_manager_space.expect(api_manager_change_host_port)
+    @api_manager_space.doc(params={
+                "mme-host": "Valid IP address of oai-mme",
+                "mme-port": "Valid port of oai-mme"
+    })
+    def put(self):
+        """
+        Restart the manager of OpenAPI oai-mme
+        WARNING: you may loose the connection if you enter non valid parameters
+        """     
+        args = api_manager_change_host_port.parse_args()
+        host_mme = args['mme-host']
+        port_mme =  args['mme-port']
+        # Write the config parameters to json file to be used when starting up the flask service
+        config_file = os.path.join(flask_app.config['PARAMETER_FOLDER'], flask_app.config['CONFIG_OPEN_API_MANAGER'])
+        with open(config_file, 'w') as f:
+            config_parameters = {
+                "mme-host": host_mme,
+                "mme-port": port_mme
+            }
+            json.dump(config_parameters, f)
+        str_1 = request.url
+        str_2 = request.path
+        current_url = str(request.url).split(request.path)
+        current_url = current_url[0]
+        new_url = str(current_url).split("//")
+        new_url = '{}//{}:{}'.format(new_url[0], host_mme, port_mme)
+        proc = subprocess.Popen(["$SNAP/run restart apidman"], stdout=subprocess.PIPE, shell=True)
+        (out, err) = proc.communicate()
+        service_status = serialize_service_status(out)
+        message = {
+            'openapi': current_url,
+            'openapi-manager': new_url,
+            'note': "OpenAPI manager of {} will be available at {}".format(snap_name,new_url),
+            'status': service_status,
+            'error': str(err)
+        }
+        response = make_response(message)
+        response.headers.set("Content-Type", "text")
+        return response
+
+@api_manager_space.route("/status")
+class MainClassMmeApiManagerStatus(Resource):
+    @api_manager_space.produces(["application/json"])
+    def get(self):
+        """
+        Get the status of the manager of OpenAPI oai-mme
+        """        
+        proc = subprocess.Popen(["$SNAP/run status apidman"], stdout=subprocess.PIPE, shell=True)
+        # proc = subprocess.Popen(["oai-mme.apiman-journal"], stdout=subprocess.PIPE, shell=True)
+        
+        (out, err) = proc.communicate() 
+        service_status = serialize_service_status(out)
+        response = make_response(jsonify(service_status))
+        response.headers.set("Content-Type", "application/json")
+        return response
+@api_manager_space.route("/journal")
+class MainClassMmeApiManagerJournal(Resource):
+    @api_manager_space.produces(["text"])
+    def get(self):
+        """
+        Get the journal of the manager of OpenAPI oai-mme
+        """        
+        proc = subprocess.Popen(["$SNAP/run journal apidman"], stdout=subprocess.PIPE, shell=True)
+        (out, err) = proc.communicate() 
+        response = make_response(out)
+        response.headers.set("Content-Type", "text")
+        return response
+
+
+def serialize_service_status(status):
+    status_decoded = status.decode("utf-8")
+    status_split = (status_decoded).split('\n')
+    service_status = list()
+    for item in status_split:
+        if ('Service' in item) and ('Startup' in item) and ('Current' in item) and ('Notes' in item):
+            pass
+        else:
+            if ('' != item):
+                item_split = item.split(" ")
+                current_service_status = list()
+                for val in item_split:
+                    if ('' != val):
+                        current_service_status.append(val)
+                svc_stat = {
+                    "service": current_service_status[0],
+                    "startup": current_service_status[1],
+                    "current": current_service_status[2],
+                    "notes": current_service_status[3]
+                }
+                service_status.append(svc_stat)
+    return service_status
+
+
 if __name__ == "__main__":                                                     
     
-    parser = argparse.ArgumentParser(description='Pass host and port for flask api of mme')
+    parser = argparse.ArgumentParser(description='provide host and port for flask api of oai-mme')
         
     parser.add_argument('--mme-host', metavar='[option]', action='store', type=str,
-                        required=False, default='0.0.0.0', 
-                        help='Set OpenAPI-MME IP address to bind to, 0.0.0.0 (default)')
+                        required=False, default='{}'.format(api_host_default), 
+                        help='Set OpenAPI-MME IP address to bind to, {} (default)'.format(api_host_default))
     
     parser.add_argument('--mme-port', metavar='[option]', action='store', type=str,
-                        required=False, default='5552', 
-                        help='Set mme port number: 5552 (default)')
+                        required=False, default='{}'.format(api_port_default), 
+                        help='Set oai-mme port number: {} (default)'.format(api_port_default))
     args = parser.parse_args()
-    flask_app.run(host=args.mme_host, port=args.mme_port, debug=True)
-    #############################
-    # # new way to change the config of api by taking them from config file. like the config file of mme
-    # config_file = '{}{}'.format(PARAMETER_FOLDER, "api_conf.json")
-    # try:
-    #     with open(config_file) as f:
-    #         config_param = json.load(f)
-    #         flask_app.run(host=config_param["mme-host"], port=config_param["mme-port"], debug=True)
-    # except:
-    #     flask_app.run(host='0.0.0.0', port='5551', debug=True)
+
+    config_file = '{}{}'.format(PARAMETER_FOLDER, CONFIG_OPEN_API)
+
+    if os.path.exists(config_file) and os.path.isfile(config_file):
+        with open(config_file) as f:
+            config_param = json.load(f)
+            """
+            # config file is of the form
+            config_param = {
+                'mme-host': host_mme,
+                'mme-port': port_mme
+            }
+            """
+            flask_app.run(host=config_param["mme-host"], port=config_param["mme-port"], debug=True)
+    else:
+        flask_app.run(host='{}'.format(api_host_default), port='{}'.format(api_port_default), debug=True)
+

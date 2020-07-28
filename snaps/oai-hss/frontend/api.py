@@ -32,6 +32,23 @@ import argparse
 from werkzeug.utils import cached_property
 from werkzeug.datastructures import FileStorage
 
+snap_name = "oai-hss"
+
+api_host_default = '0.0.0.0'
+api_port_default = 5551
+
+api_manager_host_default = '0.0.0.0'
+api_manager_port_default = 6661
+
+UPLOAD_FOLDER="/var/snap/{}/current/".format(snap_name)
+# PARAMETER_FOLDER="/var/snap/{}/common/".format(snap_name)
+PARAMETER_FOLDER="/var/snap/{}/common/".format(snap_name)
+CONFIG_OPEN_API = "api_conf.json"
+CONFIG_OPEN_API_MANAGER = "api_manager_conf.json"
+# DIR for testing
+# UPLOAD_FOLDER="/home/cigarier/Downloads/tmp/oai-hss/"
+# PARAMETER_FOLDER="/home/cigarier/Downloads/tmp/oai-hss/parameters/"
+# 
 
 flask_app = Flask(__name__.split('.')[0])                                                        
 flask_api = Api(flask_app, 
@@ -45,42 +62,42 @@ flask_api = Api(flask_app,
 hss_space = flask_api.namespace('hss', description='Management of hss')
 db_space = flask_api.namespace('hss/db', description='Management of Database')
 api_space = flask_api.namespace('hss/api', description='Management of API')
+api_manager_space = flask_api.namespace('hss/api-manager', description='Management of the manager of OpenAPI')
 
 
 upload_json_file = hss_space.parser()
 upload_json_file.add_argument('file', location='files', type=FileStorage, required=False)
 
-upload_set_conf_file = db_space.parser()
+
+upload_set_conf_file = hss_space.parser()
 upload_set_conf_file.add_argument('set-conf-file', type=inputs.boolean, default=True, required=True)
 upload_set_conf_file.add_argument('config-file', type=str , required=False)
 upload_set_conf_file.add_argument('file', location='files', type=FileStorage, required=False)
 
 
-conf_show_file = db_space.parser()
+conf_show_file = hss_space.parser()
 conf_show_file.add_argument('show-config-file', type=inputs.boolean, default=True, required=True)
 conf_show_file.add_argument('file-name', type=str , required=False)
 
-model = flask_api.model('Name Model', 
-				  {'name': fields.String(required = True, 
-    					  				 description="Name of the person", 
-    					  				 help="Name cannot be blank.")})
-
-snap_name = "oai-hss"
+api_change_host_port = api_space.parser()
+api_change_host_port.add_argument('hss-host', type=str, default="{}".format(api_host_default), required=True)
+api_change_host_port.add_argument('hss-port', type=str , default="{}".format(api_port_default), required=True)
 
 
-SNAP="/snap/{}/current".format(snap_name)
+api_manager_change_host_port = api_manager_space.parser()
+api_manager_change_host_port.add_argument('hss-host', type=str, default="{}".format(api_manager_host_default), required=True)
+api_manager_change_host_port.add_argument('hss-port', type=str , default="{}".format(api_manager_port_default), required=True)
 
-UPLOAD_FOLDER="/var/snap/{}/current/".format(snap_name)
-PARAMETER_FOLDER="/var/snap/{}/common/usr/share/parameters/".format(snap_name)
-
-# DIR for testing
-# UPLOAD_FOLDER="/home/cigarier/Downloads/tmp/oai-hss/"
-# PARAMETER_FOLDER="/home/cigarier/Downloads/tmp/oai-hss/parameters/"
-# 
+# model = flask_api.model('Name Model', 
+# 				  {'name': fields.String(required = True, 
+#     					  				 description="Name of the person", 
+#     					  				 help="Name cannot be blank.")})
 
 flask_app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 ALLOWED_EXTENSIONS = {'json', 'conf'}
 flask_app.config['PARAMETER_FOLDER'] = PARAMETER_FOLDER
+flask_app.config['CONFIG_OPEN_API'] = CONFIG_OPEN_API
+flask_app.config['CONFIG_OPEN_API_MANAGER'] = CONFIG_OPEN_API_MANAGER
 flask_app.config['JSON_SORT_KEYS'] = False
 
 # database ip
@@ -732,40 +749,36 @@ class MainClassHssStatus(Resource):
     @hss_space.produces(["application/json"])
     def get(self):
         """
-        Get the status of hss and api
+        Get the status of oai-hss
         """        
-        proc = subprocess.Popen(["$SNAP/run status"], stdout=subprocess.PIPE, shell=True)
+        proc = subprocess.Popen(["$SNAP/run status hssd"], stdout=subprocess.PIPE, shell=True)
         # proc = subprocess.Popen(["oai-hss.status"], stdout=subprocess.PIPE, shell=True)
         
         (out, err) = proc.communicate() 
-        out_decoded = out.decode("utf-8")
-        out_split = (out_decoded).split('\n')
-        service_status = list()
-        for item in out_split:
-            if ('Service' in item) and ('Startup' in item) and ('Current' in item) and ('Notes' in item):
-                pass
-            else:
-                if ('' != item):
-                    item_split = item.split(" ")
-                    current_service_status = list()
-                    for val in item_split:
-                        if ('' != val):
-                            current_service_status.append(val)
-                    svc_stat = {
-                        "service": current_service_status[0],
-                        "startup": current_service_status[1],
-                        "current": current_service_status[2],
-                        "notes": current_service_status[3]
-                    }
-                    service_status.append(svc_stat)
+        service_status = serialize_service_status(out)
+        response = make_response(jsonify(service_status))
+        response.headers.set("Content-Type", "application/json")
+        return response
 
+@hss_space.route("/status-all")
+class MainClassHssStatusAll(Resource):
+    @hss_space.produces(["application/json"])
+    def get(self):
+        """
+        Get the status of all the services
+        """        
+        proc = subprocess.Popen(["$SNAP/run status-all"], stdout=subprocess.PIPE, shell=True)
+        # proc = subprocess.Popen(["oai-hss.status"], stdout=subprocess.PIPE, shell=True)
+        
+        (out, err) = proc.communicate() 
+        service_status = serialize_service_status(out)
         response = make_response(jsonify(service_status))
         response.headers.set("Content-Type", "application/json")
         return response
 
 @hss_space.route("/start")
 class MainClassHssStart(Resource):
-    @hss_space.produces(["text"])
+    @hss_space.produces(["application/json"])
     def get(self):
         """
         Start the service oai-hss in deamon mode
@@ -773,13 +786,14 @@ class MainClassHssStart(Resource):
         proc = subprocess.Popen(["$SNAP/run start hssd"], stdout=subprocess.PIPE, shell=True)
         (out, err) = proc.communicate() 
 
-        response = make_response(out)
-        response.headers.set("Content-Type", "text")
+        service_status = serialize_service_status(out)
+        response = make_response(jsonify(service_status))
+        response.headers.set("Content-Type", "application/json")
         return response
 
 @hss_space.route("/stop")
 class MainClassHssStop(Resource):
-    @hss_space.produces(["text"])
+    @hss_space.produces(["application/json"])
     def get(self):
         """
         Stop the service oai-hss in deamon mode
@@ -787,12 +801,13 @@ class MainClassHssStop(Resource):
         proc = subprocess.Popen(["$SNAP/run stop hssd"], stdout=subprocess.PIPE, shell=True)
         (out, err) = proc.communicate() 
 
-        response = make_response(out)
-        response.headers.set("Content-Type", "text")
+        service_status = serialize_service_status(out)
+        response = make_response(jsonify(service_status))
+        response.headers.set("Content-Type", "application/json")
         return response
 @hss_space.route("/restart")
 class MainClassHssReStart(Resource):
-    @hss_space.produces(["text"])
+    @hss_space.produces(["application/json"])
     def get(self):
         """
         Restart the service oai-hss in deamon mode
@@ -800,8 +815,9 @@ class MainClassHssReStart(Resource):
         proc = subprocess.Popen(["$SNAP/run restart hssd"], stdout=subprocess.PIPE, shell=True)
         (out, err) = proc.communicate() 
 
-        response = make_response(out)
-        response.headers.set("Content-Type", "text")
+        service_status = serialize_service_status(out)
+        response = make_response(jsonify(service_status))
+        response.headers.set("Content-Type", "application/json")
         return response
 
 @hss_space.route("/journal")
@@ -818,6 +834,40 @@ class MainClassHssJournal(Resource):
         response.headers.set("Content-Type", "text")
         return response
 
+# API
+@api_space.route("/conf")
+class MainClassHssConf(Resource):
+    @api_space.produces(["application/json"])
+    def get(self):
+        """
+        Get configuration file of OpenAPI
+        """
+        config_file = '{}{}'.format(PARAMETER_FOLDER, CONFIG_OPEN_API)
+
+        if os.path.exists(config_file) and os.path.isfile(config_file):
+            try:
+                with open(config_file) as f:
+                    api_config_param = json.load(f)
+                    """
+                    # config file is of the form
+                    api_config_param = {
+                        'hss-host': host_hss,
+                        'hss-port': port_hss
+                    }
+                    """
+            except:
+                api_config_param = {
+                    'hss-host': api_host_default,
+                    'hss-port': api_port_default
+                }  
+        else:
+            api_config_param = {
+                    'hss-host': api_host_default,
+                    'hss-port': api_port_default
+                }            
+        response = make_response(jsonify(api_config_param))
+        response.headers.set("Content-Type", "application/json")
+        return response
 @api_space.route("/journal")
 class MainClassHssApiJournal(Resource):
     @hss_space.produces(["text"])
@@ -831,16 +881,227 @@ class MainClassHssApiJournal(Resource):
         response = make_response(out)
         response.headers.set("Content-Type", "text")
         return response
+
+## Manager of OpenAPI of oai-hss
+@api_manager_space.route("/conf")
+class MainClassHssConf(Resource):
+    @api_manager_space.produces(["application/json"])
+    def get(self):
+        """
+        Get configuration file of OpenAPI
+        """
+        config_file = '{}{}'.format(PARAMETER_FOLDER, CONFIG_OPEN_API_MANAGER)
+
+        if os.path.exists(config_file) and os.path.isfile(config_file):
+            try:
+                with open(config_file) as f:
+                    api_config_param = json.load(f)
+                    """
+                    # config file is of the form
+                    api_config_param = {
+                        'hss-host': host_hss,
+                        'hss-port': port_hss
+                    }
+                    """
+            except:
+                api_config_param = {
+                    'hss-host': api_manager_host_default,
+                    'hss-port': api_manager_port_default
+                }  
+        else:
+            api_config_param = {
+                    'hss-host': api_manager_host_default,
+                    'hss-port': api_manager_port_default
+                }            
+        response = make_response(jsonify(api_config_param))
+        response.headers.set("Content-Type", "application/json")
+        return response
+
+@api_manager_space.route("/start")
+class MainClassHssApiManagerStart(Resource):
+    @api_manager_space.produces(["text"])
+    @api_manager_space.expect(api_manager_change_host_port)
+    @api_manager_space.doc(params={
+                "hss-host": "Valid IP address of oai-hss",
+                "hss-port": "Valid port of oai-hss"
+    })
+    def put(self):
+        """
+        Start the manager of OpenAPI oai-hss
+        WARNING: you may loose the connection if you enter non valid parameters
+        """     
+        args = api_manager_change_host_port.parse_args()
+        host_hss = args['hss-host']
+        port_hss =  args['hss-port']
+        # Write the config parameters to json file to be used when starting up the flask service
+        config_file = os.path.join(flask_app.config['PARAMETER_FOLDER'], flask_app.config['CONFIG_OPEN_API_MANAGER'])
+        with open(config_file, 'w') as f:
+            config_parameters = {
+                "hss-host": host_hss,
+                "hss-port": port_hss
+            }
+            json.dump(config_parameters, f)
+        str_1 = request.url
+        str_2 = request.path
+        current_url = str(request.url).split(request.path)
+        current_url = current_url[0]
+        new_url = str(current_url).split("//")
+        new_url = '{}//{}:{}'.format(new_url[0], host_hss, port_hss)
+        proc = subprocess.Popen(["$SNAP/run start apidman"], stdout=subprocess.PIPE, shell=True)
+        (out, err) = proc.communicate()
+        service_status = serialize_service_status(out)
+
+        message = {
+            'openapi': current_url,
+            'openapi-manager': new_url,
+            'note': "OpenAPI manager of {} will be available at {}".format(snap_name,new_url),
+            'status': service_status,
+            'error': str(err)
+        }
+        response = make_response(message)
+        response.headers.set("Content-Type", "text")
+        return response
+
+@api_manager_space.route("/stop")
+class MainClassHssApiManagerStop(Resource):
+    @api_manager_space.produces(["application/json"])
+    def get(self):
+        """
+        Stop the manager of OpenAPI oai-hss
+        """        
+        proc = subprocess.Popen(["$SNAP/run stop apidman"], stdout=subprocess.PIPE, shell=True)
+        (out, err) = proc.communicate() 
+
+        service_status = serialize_service_status(out)
+        response = make_response(jsonify(service_status))
+        response.headers.set("Content-Type", "application/json")
+        return response
+
+        # response = make_response(out)
+        # response.headers.set("Content-Type", "text")
+        # return response
+
+@api_manager_space.route("/restart")
+class MainClassHssApiManagerRestart(Resource):
+    @api_manager_space.produces(["text"])
+    @api_manager_space.expect(api_manager_change_host_port)
+    @api_manager_space.doc(params={
+                "hss-host": "Valid IP address of oai-hss",
+                "hss-port": "Valid port of oai-hss"
+    })
+    def put(self):
+        """
+        Restart the manager of OpenAPI oai-hss
+        WARNING: you may loose the connection if you enter non valid parameters
+        """     
+        args = api_manager_change_host_port.parse_args()
+        host_hss = args['hss-host']
+        port_hss =  args['hss-port']
+        # Write the config parameters to json file to be used when starting up the flask service
+        config_file = os.path.join(flask_app.config['PARAMETER_FOLDER'], flask_app.config['CONFIG_OPEN_API_MANAGER'])
+        with open(config_file, 'w') as f:
+            config_parameters = {
+                "hss-host": host_hss,
+                "hss-port": port_hss
+            }
+            json.dump(config_parameters, f)
+        str_1 = request.url
+        str_2 = request.path
+        current_url = str(request.url).split(request.path)
+        current_url = current_url[0]
+        new_url = str(current_url).split("//")
+        new_url = '{}//{}:{}'.format(new_url[0], host_hss, port_hss)
+        proc = subprocess.Popen(["$SNAP/run restart apidman"], stdout=subprocess.PIPE, shell=True)
+        (out, err) = proc.communicate()
+        service_status = serialize_service_status(out)
+        message = {
+            'openapi': current_url,
+            'openapi-manager': new_url,
+            'note': "OpenAPI manager of {} will be available at {}".format(snap_name,new_url),
+            'status': service_status,
+            'error': str(err)
+        }
+        response = make_response(message)
+        response.headers.set("Content-Type", "text")
+        return response
+
+@api_manager_space.route("/status")
+class MainClassHssApiManagerStatus(Resource):
+    @api_manager_space.produces(["application/json"])
+    def get(self):
+        """
+        Get the status of the manager of OpenAPI oai-hss
+        """        
+        proc = subprocess.Popen(["$SNAP/run status apidman"], stdout=subprocess.PIPE, shell=True)
+        # proc = subprocess.Popen(["oai-hss.apiman-journal"], stdout=subprocess.PIPE, shell=True)
+        
+        (out, err) = proc.communicate() 
+        service_status = serialize_service_status(out)
+        response = make_response(jsonify(service_status))
+        response.headers.set("Content-Type", "application/json")
+        return response
+@api_manager_space.route("/journal")
+class MainClassHssApiManagerJournal(Resource):
+    @api_manager_space.produces(["text"])
+    def get(self):
+        """
+        Get the journal of the manager of OpenAPI oai-hss
+        """        
+        proc = subprocess.Popen(["$SNAP/run journal apidman"], stdout=subprocess.PIPE, shell=True)
+        (out, err) = proc.communicate() 
+        response = make_response(out)
+        response.headers.set("Content-Type", "text")
+        return response
+
+
+def serialize_service_status(status):
+    status_decoded = status.decode("utf-8")
+    status_split = (status_decoded).split('\n')
+    service_status = list()
+    for item in status_split:
+        if ('Service' in item) and ('Startup' in item) and ('Current' in item) and ('Notes' in item):
+            pass
+        else:
+            if ('' != item):
+                item_split = item.split(" ")
+                current_service_status = list()
+                for val in item_split:
+                    if ('' != val):
+                        current_service_status.append(val)
+                svc_stat = {
+                    "service": current_service_status[0],
+                    "startup": current_service_status[1],
+                    "current": current_service_status[2],
+                    "notes": current_service_status[3]
+                }
+                service_status.append(svc_stat)
+    return service_status
+    
 if __name__ == "__main__":                                                     
     
     parser = argparse.ArgumentParser(description='Pass host and port for flask api of hss')
         
     parser.add_argument('--hss-host', metavar='[option]', action='store', type=str,
-                        required=False, default='0.0.0.0', 
-                        help='Set OpenAPI-HSS IP address to bind to, 0.0.0.0 (default)')
+                        required=False, default='{}'.format(api_host_default), 
+                        help='Set OpenAPI-HSS IP address to bind to, {} (default)'.format(api_host_default))
     
     parser.add_argument('--hss-port', metavar='[option]', action='store', type=str,
-                        required=False, default='5551', 
-                        help='Set hss port number: 5551 (default)')
+                        required=False, default='{}'.format(api_port_default), 
+                        help='Set oai-hss port number: {} (default)'.format(api_port_default))
     args = parser.parse_args()
-    flask_app.run(host=args.hss_host, port=args.hss_port, debug=True)
+
+    config_file = '{}{}'.format(PARAMETER_FOLDER, CONFIG_OPEN_API)
+
+    if os.path.exists(config_file) and os.path.isfile(config_file):
+        with open(config_file) as f:
+            config_param = json.load(f)
+            """
+            # config file is of the form
+            config_param = {
+                'hss-host': host_hss,
+                'hss-port': port_hss
+            }
+            """
+            flask_app.run(host=config_param["hss-host"], port=config_param["hss-port"], debug=True)
+    else:
+        flask_app.run(host='{}'.format(api_host_default), port='{}'.format(api_port_default), debug=True)

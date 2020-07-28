@@ -32,6 +32,24 @@ import argparse
 from werkzeug.utils import cached_property
 from werkzeug.datastructures import FileStorage
 
+snap_name = "oai-spgwc"
+
+api_host_default = '0.0.0.0'
+api_port_default = 5553
+
+api_manager_host_default = '0.0.0.0'
+api_manager_port_default = 6663
+
+SNAP="/snap/{}/current".format(snap_name)
+
+UPLOAD_FOLDER="/var/snap/{}/current/".format(snap_name)
+# PARAMETER_FOLDER="/var/snap/{}/common/".format(snap_name)
+PARAMETER_FOLDER="/var/snap/{}/common/".format(snap_name)
+CONFIG_OPEN_API = "api_conf.json"
+CONFIG_OPEN_API_MANAGER = "api_manager_conf.json"
+# DIR for testing
+# UPLOAD_FOLDER="/home/cigarier/Downloads/tmp/oai-spgwc/"
+# PARAMETER_FOLDER="/home/cigarier/Downloads/tmp/oai-spgwc/parameters/"
 
 flask_app = Flask(__name__.split('.')[0])                                                        
 flask_api = Api(flask_app, 
@@ -45,39 +63,35 @@ flask_api = Api(flask_app,
 spgwc_space = flask_api.namespace('spgwc', description='Management of spgwc')
 db_space = flask_api.namespace('spgwc/db', description='Management of Database')
 api_space = flask_api.namespace('spgwc/api', description='Management of API')
+api_manager_space = flask_api.namespace('spgwc/api-manager', description='Management of the manager of OpenAPI')
 
 
 upload_conf_file = spgwc_space.parser()
 upload_conf_file.add_argument('file', location='files', type=FileStorage, required=False)
 
-
-upload_set_conf_file = db_space.parser()
+upload_set_conf_file = spgwc_space.parser()
 upload_set_conf_file.add_argument('set-conf-file', type=inputs.boolean, default=True, required=True)
 upload_set_conf_file.add_argument('config-file', type=str , required=False)
 upload_set_conf_file.add_argument('file', location='files', type=FileStorage, required=False)
 
-
-conf_show_file = db_space.parser()
+conf_show_file = spgwc_space.parser()
 conf_show_file.add_argument('show-config-file', type=inputs.boolean, default=True, required=True)
 conf_show_file.add_argument('file-name', type=str , required=False)
 
+api_change_host_port = api_space.parser()
+api_change_host_port.add_argument('spgwc-host', type=str, default="{}".format(api_host_default), required=True)
+api_change_host_port.add_argument('spgwc-port', type=str , default="{}".format(api_port_default), required=True)
 
-snap_name = "oai-spgwc"
 
-
-SNAP="/snap/{}/current".format(snap_name)
-
-UPLOAD_FOLDER="/var/snap/{}/current/".format(snap_name)
-PARAMETER_FOLDER="/var/snap/{}/common/usr/share/parameters/".format(snap_name)
-
-# DIR for testing
-# UPLOAD_FOLDER="/home/cigarier/Downloads/tmp/oai-spgwc/"
-# PARAMETER_FOLDER="/home/cigarier/Downloads/tmp/oai-spgwc/parameters/"
-# 
+api_manager_change_host_port = api_manager_space.parser()
+api_manager_change_host_port.add_argument('spgwc-host', type=str, default="{}".format(api_manager_host_default), required=True)
+api_manager_change_host_port.add_argument('spgwc-port', type=str , default="{}".format(api_manager_port_default), required=True)
 
 flask_app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 ALLOWED_EXTENSIONS = {'json', 'conf'}
 flask_app.config['PARAMETER_FOLDER'] = PARAMETER_FOLDER
+flask_app.config['CONFIG_OPEN_API'] = CONFIG_OPEN_API
+flask_app.config['CONFIG_OPEN_API_MANAGER'] = CONFIG_OPEN_API_MANAGER
 flask_app.config['JSON_SORT_KEYS'] = False
 
 ## log
@@ -272,7 +286,7 @@ class MainClassSpgwcStatus(Resource):
         """
         Get the status of spgwc and api
         """        
-        proc = subprocess.Popen(["$SNAP/run status"], stdout=subprocess.PIPE, shell=True)
+        proc = subprocess.Popen(["$SNAP/run status spgwcd"], stdout=subprocess.PIPE, shell=True)
         # proc = subprocess.Popen(["oai-spgwc.status"], stdout=subprocess.PIPE, shell=True)
         
         (out, err) = proc.communicate() 
@@ -296,6 +310,22 @@ class MainClassSpgwcStatus(Resource):
                         "notes": current_service_status[3]
                     }
                     service_status.append(svc_stat)
+        response = make_response(jsonify(service_status))
+        response.headers.set("Content-Type", "application/json")
+        return response
+
+@spgwc_space.route("/status-all")
+class MainClassSpgwcStatusAll(Resource):
+    @spgwc_space.produces(["application/json"])
+    def get(self):
+        """
+        Get the status of all the services
+        """        
+        proc = subprocess.Popen(["$SNAP/run status-all"], stdout=subprocess.PIPE, shell=True)
+        # proc = subprocess.Popen(["oai-spgwc.status"], stdout=subprocess.PIPE, shell=True)
+        
+        (out, err) = proc.communicate() 
+        service_status = serialize_service_status(out)
         response = make_response(jsonify(service_status))
         response.headers.set("Content-Type", "application/json")
         return response
@@ -355,6 +385,41 @@ class MainClassSpgwcJournal(Resource):
         response.headers.set("Content-Type", "text")
         return response
 
+# API
+@api_space.route("/conf")
+class MainClassSpgwcConf(Resource):
+    @api_space.produces(["application/json"])
+    def get(self):
+        """
+        Get configuration file of OpenAPI
+        """
+        config_file = '{}{}'.format(PARAMETER_FOLDER, CONFIG_OPEN_API)
+
+        if os.path.exists(config_file) and os.path.isfile(config_file):
+            try:
+                with open(config_file) as f:
+                    api_config_param = json.load(f)
+                    """
+                    # config file is of the form
+                    api_config_param = {
+                        'spgwc-host': host_spgwc,
+                        'spgwc-port': port_spgwc
+                    }
+                    """
+            except:
+                api_config_param = {
+                    'spgwc-host': api_host_default,
+                    'spgwc-port': api_port_default
+                }  
+        else:
+            api_config_param = {
+                    'spgwc-host': api_host_default,
+                    'spgwc-port': api_port_default
+                }            
+        response = make_response(jsonify(api_config_param))
+        response.headers.set("Content-Type", "application/json")
+        return response
+
 @api_space.route("/journal")
 class MainClassSpgwcApiJournal(Resource):
     @api_space.produces(["text"])
@@ -368,25 +433,226 @@ class MainClassSpgwcApiJournal(Resource):
         response = make_response(out)
         response.headers.set("Content-Type", "text")
         return response
+
+
+## Manager of OpenAPI of oai-spgwc
+@api_manager_space.route("/conf")
+class MainClassSpgwcConf(Resource):
+    @api_manager_space.produces(["application/json"])
+    def get(self):
+        """
+        Get configuration file of OpenAPI
+        """
+        config_file = '{}{}'.format(PARAMETER_FOLDER, CONFIG_OPEN_API_MANAGER)
+
+        if os.path.exists(config_file) and os.path.isfile(config_file):
+            try:
+                with open(config_file) as f:
+                    api_config_param = json.load(f)
+                    """
+                    # config file is of the form
+                    api_config_param = {
+                        'spgwc-host': host_spgwc,
+                        'spgwc-port': port_spgwc
+                    }
+                    """
+            except:
+                api_config_param = {
+                    'spgwc-host': api_manager_host_default,
+                    'spgwc-port': api_manager_port_default
+                }  
+        else:
+            api_config_param = {
+                    'spgwc-host': api_manager_host_default,
+                    'spgwc-port': api_manager_port_default
+                }            
+        response = make_response(jsonify(api_config_param))
+        response.headers.set("Content-Type", "application/json")
+        return response
+
+@api_manager_space.route("/start")
+class MainClassSpgwcApiManagerStart(Resource):
+    @api_manager_space.produces(["text"])
+    @api_manager_space.expect(api_manager_change_host_port)
+    @api_manager_space.doc(params={
+                "spgwc-host": "Valid IP address of oai-spgwc",
+                "spgwc-port": "Valid port of oai-spgwc"
+    })
+    def put(self):
+        """
+        Start the manager of OpenAPI oai-spgwc
+        WARNING: you may loose the connection if you enter non valid parameters
+        """     
+        args = api_manager_change_host_port.parse_args()
+        host_spgwc = args['spgwc-host']
+        port_spgwc =  args['spgwc-port']
+        # Write the config parameters to json file to be used when starting up the flask service
+        config_file = os.path.join(flask_app.config['PARAMETER_FOLDER'], flask_app.config['CONFIG_OPEN_API_MANAGER'])
+        with open(config_file, 'w') as f:
+            config_parameters = {
+                "spgwc-host": host_spgwc,
+                "spgwc-port": port_spgwc
+            }
+            json.dump(config_parameters, f)
+        str_1 = request.url
+        str_2 = request.path
+        current_url = str(request.url).split(request.path)
+        current_url = current_url[0]
+        new_url = str(current_url).split("//")
+        new_url = '{}//{}:{}'.format(new_url[0], host_spgwc, port_spgwc)
+        proc = subprocess.Popen(["$SNAP/run start apidman"], stdout=subprocess.PIPE, shell=True)
+        (out, err) = proc.communicate()
+        service_status = serialize_service_status(out)
+
+        message = {
+            'openapi': current_url,
+            'openapi-manager': new_url,
+            'note': "OpenAPI manager of {} will be available at {}".format(snap_name,new_url),
+            'status': service_status,
+            'error': str(err)
+        }
+        response = make_response(message)
+        response.headers.set("Content-Type", "text")
+        return response
+@api_manager_space.route("/stop")
+class MainClassSpgwcApiManagerStop(Resource):
+    @api_manager_space.produces(["application/json"])
+    def get(self):
+        """
+        Stop the manager of OpenAPI oai-spgwc
+        """        
+        proc = subprocess.Popen(["$SNAP/run stop apidman"], stdout=subprocess.PIPE, shell=True)
+        (out, err) = proc.communicate() 
+
+        service_status = serialize_service_status(out)
+        response = make_response(jsonify(service_status))
+        response.headers.set("Content-Type", "application/json")
+        return response
+
+        # response = make_response(out)
+        # response.headers.set("Content-Type", "text")
+        # return response
+
+@api_manager_space.route("/restart")
+class MainClassSpgwcApiManagerRestart(Resource):
+    @api_manager_space.produces(["text"])
+    @api_manager_space.expect(api_manager_change_host_port)
+    @api_manager_space.doc(params={
+                "spgwc-host": "Valid IP address of oai-spgwc",
+                "spgwc-port": "Valid port of oai-spgwc"
+    })
+    def put(self):
+        """
+        Restart the manager of OpenAPI oai-spgwc
+        WARNING: you may loose the connection if you enter non valid parameters
+        """     
+        args = api_manager_change_host_port.parse_args()
+        host_spgwc = args['spgwc-host']
+        port_spgwc =  args['spgwc-port']
+        # Write the config parameters to json file to be used when starting up the flask service
+        config_file = os.path.join(flask_app.config['PARAMETER_FOLDER'], flask_app.config['CONFIG_OPEN_API_MANAGER'])
+        with open(config_file, 'w') as f:
+            config_parameters = {
+                "spgwc-host": host_spgwc,
+                "spgwc-port": port_spgwc
+            }
+            json.dump(config_parameters, f)
+        str_1 = request.url
+        str_2 = request.path
+        current_url = str(request.url).split(request.path)
+        current_url = current_url[0]
+        new_url = str(current_url).split("//")
+        new_url = '{}//{}:{}'.format(new_url[0], host_spgwc, port_spgwc)
+        proc = subprocess.Popen(["$SNAP/run restart apidman"], stdout=subprocess.PIPE, shell=True)
+        (out, err) = proc.communicate()
+        service_status = serialize_service_status(out)
+        message = {
+            'openapi': current_url,
+            'openapi-manager': new_url,
+            'note': "OpenAPI manager of {} will be available at {}".format(snap_name,new_url),
+            'status': service_status,
+            'error': str(err)
+        }
+        response = make_response(message)
+        response.headers.set("Content-Type", "text")
+        return response
+
+@api_manager_space.route("/status")
+class MainClassSpgwcApiManagerStatus(Resource):
+    @api_manager_space.produces(["application/json"])
+    def get(self):
+        """
+        Get the status of the manager of OpenAPI oai-spgwc
+        """        
+        proc = subprocess.Popen(["$SNAP/run status apidman"], stdout=subprocess.PIPE, shell=True)
+        # proc = subprocess.Popen(["oai-spgwc.apiman-journal"], stdout=subprocess.PIPE, shell=True)
+        
+        (out, err) = proc.communicate() 
+        service_status = serialize_service_status(out)
+        response = make_response(jsonify(service_status))
+        response.headers.set("Content-Type", "application/json")
+        return response
+@api_manager_space.route("/journal")
+class MainClassSpgwcApiManagerJournal(Resource):
+    @api_manager_space.produces(["text"])
+    def get(self):
+        """
+        Get the journal of the manager of OpenAPI oai-spgwc
+        """        
+        proc = subprocess.Popen(["$SNAP/run journal apidman"], stdout=subprocess.PIPE, shell=True)
+        (out, err) = proc.communicate() 
+        response = make_response(out)
+        response.headers.set("Content-Type", "text")
+        return response
+
+def serialize_service_status(status):
+    status_decoded = status.decode("utf-8")
+    status_split = (status_decoded).split('\n')
+    service_status = list()
+    for item in status_split:
+        if ('Service' in item) and ('Startup' in item) and ('Current' in item) and ('Notes' in item):
+            pass
+        else:
+            if ('' != item):
+                item_split = item.split(" ")
+                current_service_status = list()
+                for val in item_split:
+                    if ('' != val):
+                        current_service_status.append(val)
+                svc_stat = {
+                    "service": current_service_status[0],
+                    "startup": current_service_status[1],
+                    "current": current_service_status[2],
+                    "notes": current_service_status[3]
+                }
+                service_status.append(svc_stat)
+    return service_status
 if __name__ == "__main__":                                                     
     
-    parser = argparse.ArgumentParser(description='Pass host and port for flask api of spgwc')
+    parser = argparse.ArgumentParser(description='provide host and port for flask api of oai-spgwc')
         
     parser.add_argument('--spgwc-host', metavar='[option]', action='store', type=str,
-                        required=False, default='0.0.0.0', 
-                        help='Set OpenAPI-SPGWC IP address to bind to, 0.0.0.0 (default)')
+                        required=False, default='{}'.format(api_host_default), 
+                        help='Set OpenAPI-SPGWC IP address to bind to, {} (default)'.format(api_host_default))
     
     parser.add_argument('--spgwc-port', metavar='[option]', action='store', type=str,
-                        required=False, default='5553', 
-                        help='Set spgwc port number: 5553 (default)')
+                        required=False, default='{}'.format(api_port_default), 
+                        help='Set oai-spgwc port number: {} (default)'.format(api_port_default))
     args = parser.parse_args()
-    flask_app.run(host=args.spgwc_host, port=args.spgwc_port, debug=True)
-    #############################
-    # # new way to change the config of api by taking them from config file. like the config file of spgwc
-    # config_file = '{}{}'.format(PARAMETER_FOLDER, "api_conf.json")
-    # try:
-    #     with open(config_file) as f:
-    #         config_param = json.load(f)
-    #         flask_app.run(host=config_param["spgwc-host"], port=config_param["spgwc-port"], debug=True)
-    # except:
-    #     flask_app.run(host='0.0.0.0', port='5553', debug=True)
+
+    config_file = '{}{}'.format(PARAMETER_FOLDER, CONFIG_OPEN_API)
+
+    if os.path.exists(config_file) and os.path.isfile(config_file):
+        with open(config_file) as f:
+            config_param = json.load(f)
+            """
+            # config file is of the form
+            config_param = {
+                'spgwc-host': host_spgwc,
+                'spgwc-port': port_spgwc
+            }
+            """
+            flask_app.run(host=config_param["spgwc-host"], port=config_param["spgwc-port"], debug=True)
+    else:
+        flask_app.run(host='{}'.format(api_host_default), port='{}'.format(api_port_default), debug=True)
+

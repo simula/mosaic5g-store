@@ -32,13 +32,14 @@ import argparse
 from werkzeug.utils import cached_property
 from werkzeug.datastructures import FileStorage
 
-snap_name = "oai-spgwu"
+snap_name = "oai-ran"
 
 api_host_default = '0.0.0.0'
-api_port_default = 5554
+api_port_default = 5550
 
 api_manager_host_default = '0.0.0.0'
-api_manager_port_default = 6664
+api_manager_port_default = 6660
+
 
 SNAP="/snap/{}/current".format(snap_name)
 
@@ -48,44 +49,47 @@ PARAMETER_FOLDER="/var/snap/{}/common/".format(snap_name)
 CONFIG_OPEN_API = "api_conf.json"
 CONFIG_OPEN_API_MANAGER = "api_manager_conf.json"
 # DIR for testing
-# UPLOAD_FOLDER="/home/cigarier/Downloads/tmp/oai-spgwu/"
-# PARAMETER_FOLDER="/home/cigarier/Downloads/tmp/oai-spgwu/parameters/"
+# UPLOAD_FOLDER="/home/cigarier/Downloads/tmp/oai-ran/"
+# PARAMETER_FOLDER="/home/cigarier/Downloads/tmp/oai-ran/parameters/"
 
 flask_app = Flask(__name__.split('.')[0])                                                        
 flask_api = Api(flask_app, 
 		  version = "1.0", 
-		  title = "OpenAPI of oai-spgwu", 
-		  description = "Manage the core network entity oai-spgwu throught OpenAPI ",
+		  title = "OpenAPI of oai-ran", 
+		  description = "Manage the core network entity oai-ran throught OpenAPI ",
           ordered = True,
           terms_url= "https://www.openairinterface.org/?page_id=698",
           contact = "arouk@eurecom.fr, navid.nikaein@eurecom.fr")
 
-spgwu_space = flask_api.namespace('spgwu', description='Management of spgwu')
-db_space = flask_api.namespace('spgwu/db', description='Management of Database')
-api_space = flask_api.namespace('spgwu/api', description='Management of API')
-api_manager_space = flask_api.namespace('spgwu/api-manager', description='Management of the manager of OpenAPI')
+ran_space = flask_api.namespace('ran', description='Management of oai-ran')
+api_space = flask_api.namespace('ran/api', description='Management of OpenAPI')
+api_manager_space = flask_api.namespace('ran/api-manager', description='Management of the manager of OpenAPI')
 
 
-upload_conf_file = spgwu_space.parser()
+upload_conf_file = ran_space.parser()
 upload_conf_file.add_argument('file', location='files', type=FileStorage, required=False)
 
-upload_set_conf_file = spgwu_space.parser()
+
+upload_set_conf_file = ran_space.parser()
 upload_set_conf_file.add_argument('set-conf-file', type=inputs.boolean, default=True, required=True)
 upload_set_conf_file.add_argument('config-file', type=str , required=False)
 upload_set_conf_file.add_argument('file', location='files', type=FileStorage, required=False)
 
-conf_show_file = spgwu_space.parser()
+
+conf_show_file = ran_space.parser()
 conf_show_file.add_argument('show-config-file', type=inputs.boolean, default=True, required=True)
 conf_show_file.add_argument('file-name', type=str , required=False)
 
+
+
 api_change_host_port = api_space.parser()
-api_change_host_port.add_argument('spgwu-host', type=str, default="{}".format(api_host_default), required=True)
-api_change_host_port.add_argument('spgwu-port', type=str , default="{}".format(api_port_default), required=True)
+api_change_host_port.add_argument('ran-host', type=str, default="{}".format(api_host_default), required=True)
+api_change_host_port.add_argument('ran-port', type=str , default="{}".format(api_port_default), required=True)
 
 
 api_manager_change_host_port = api_manager_space.parser()
-api_manager_change_host_port.add_argument('spgwu-host', type=str, default="{}".format(api_manager_host_default), required=True)
-api_manager_change_host_port.add_argument('spgwu-port', type=str , default="{}".format(api_manager_port_default), required=True)
+api_manager_change_host_port.add_argument('ran-host', type=str, default="{}".format(api_manager_host_default), required=True)
+api_manager_change_host_port.add_argument('ran-port', type=str , default="{}".format(api_manager_port_default), required=True)
 
 flask_app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 ALLOWED_EXTENSIONS = {'json', 'conf'}
@@ -95,9 +99,9 @@ flask_app.config['CONFIG_OPEN_API_MANAGER'] = CONFIG_OPEN_API_MANAGER
 flask_app.config['JSON_SORT_KEYS'] = False
 
 ## log
-logger = logging.getLogger('spgwu.openapi')
+logger = logging.getLogger('ran.openapi')
 logging.basicConfig(level=logging.DEBUG)
-logger.info('Starting Open API of {}'.format(snap_name))
+logger.info('Starting OpenAPI of {}'.format(snap_name))
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -105,18 +109,18 @@ def allowed_file(filename):
 
 """
 Example Usage:
-GET: curl http://0.0.0.0:5553/spgwu/conf
-POST: curl http://0.0.0.0:5553/spgwu/conf  -X POST -F file=@spgwu.conf
+GET: curl http://0.0.0.0:5550/ran/conf
+POST: curl http://0.0.0.0:5550/ran/conf  -X POST -F file=@enb.conf
 """
-@spgwu_space.route("/conf")
-class MainClassSpgwuConf(Resource):
-    @spgwu_space.produces(["text"])
+@ran_space.route("/conf")
+class MainClassRanConf(Resource):
+    @ran_space.produces(["text"])
     def get(self):
         """
-        Get configuration file of oai-spgwu
+        Get configuration file of oai-ran
         """
-        # proc = subprocess.Popen(["oai-spgwu.conf-get"], stdout=subprocess.PIPE, shell=True)
-        proc = subprocess.Popen(["$SNAP/conf echo-spgwu"], stdout=subprocess.PIPE, shell=True)
+        # proc = subprocess.Popen(["oai-ran.conf-get"], stdout=subprocess.PIPE, shell=True)
+        proc = subprocess.Popen(["$SNAP/conf echo-enb"], stdout=subprocess.PIPE, shell=True)
         (out, err) = proc.communicate() 
 
         response = make_response(out)
@@ -124,15 +128,15 @@ class MainClassSpgwuConf(Resource):
         return response
 
 
-    @spgwu_space.doc(params={
-                "set-conf-file": "Set the uploaded file (or chosen file via 'config-file') as config file if it is True, otherwise just upload the file. Default: True",
+    @ran_space.doc(params={
+                "set-conf-file": "Set the uploaded file (or chosen file via 'config-file') as config file if 'set-conf-file' is True. Otherwise just upload the file",
                 "config-file": "Name of already existing file to set it as config file",
-                "file": "upload file and set it as new config file if 'set-conf-file' is true"
+                "file": "upload file and set it as new config file if 'set-conf-file' is True"
     })
-    @spgwu_space.expect(upload_set_conf_file)
+    @ran_space.expect(upload_set_conf_file)
     def post(self):
         """
-        Upload/Set config file to oai-spgwu
+        Upload/Set config file to oai-ran
         """
         args = upload_set_conf_file.parse_args()
         set_conf_file = args['set-conf-file']
@@ -153,8 +157,8 @@ class MainClassSpgwuConf(Resource):
                         # Set alrteady existing file as config file UPLOAD_FOLDER
                         if os.path.exists(file_absolute):
                             if os.path.isfile(file_absolute):
-                                logger.debug("command to set config file= {} {}".format("$SNAP/conf set-spgwu", file_absolute))
-                                proc = subprocess.Popen(["$SNAP/conf set-spgwu {}".format(file_absolute)], stdout=subprocess.PIPE, shell=True)
+                                logger.debug("command to set config file= {} {}".format("$SNAP/conf set-enb", file_absolute))
+                                proc = subprocess.Popen(["$SNAP/conf set-enb {}".format(file_absolute)], stdout=subprocess.PIPE, shell=True)
                                 (out, err) = proc.communicate()
                                 
                                 logger.debug("program out: {}".format(out))
@@ -178,16 +182,16 @@ class MainClassSpgwuConf(Resource):
                     if os.path.exists(file_absolute):            
                         if os.path.isfile(file_absolute):
                             status_code = 200
-                            return "Nothing to do. Set 'set-conf-file' to true if you want to set already existing file as config file", status_code
+                            return "Nothing to do. Set 'set-conf-file' to True if you want to set already existing file as config file", status_code
                         else:
                             status_code = 400
-                            return "The chosen file {} is not valid. Choose valid and already existing file and set 'set-conf-file' to true if you want to set it as config file".format(file_absolute), status_code    
+                            return "The chosen file {} is not valid. Choose valid and already existing file and set 'set-conf-file' to True if you want to set it as config file".format(file_absolute), status_code    
                     else:
                         status_code = 400
-                        return "The chosen file {} does not exist. Choose valid and already existing file and set 'set-conf-file' to true if you want to set it as config file".format(file_absolute), status_code    
+                        return "The chosen file {} does not exist. Choose valid and already existing file and set 'set-conf-file' to True if you want to set it as config file".format(file_absolute), status_code    
 
             else:
-                # Upload file and set it as config file if 'set_conf_file' is true
+                # Upload file and set it as config file if 'set_conf_file' is True
                 config_parameters = (uploaded_file.read()).decode("utf-8")
                 if uploaded_file and allowed_file(uploaded_file.filename):
                     logger.info("file={}".format(os.path.join(flask_app.config['UPLOAD_FOLDER'], secure_filename(uploaded_file.filename))))
@@ -196,8 +200,8 @@ class MainClassSpgwuConf(Resource):
                             conf_file.write(config_parameters)
 
                     if set_conf_file:
-                        logger.debug("command to set config file= {} {}".format("$SNAP/conf set-spgwu", file_absolute))
-                        proc = subprocess.Popen(["$SNAP/conf set-spgwu {}".format(file_absolute)], stdout=subprocess.PIPE, shell=True)
+                        logger.debug("command to set config file= {} {}".format("$SNAP/conf set-enb", file_absolute))
+                        proc = subprocess.Popen(["$SNAP/conf set-enb {}".format(file_absolute)], stdout=subprocess.PIPE, shell=True)
                         (out, err) = proc.communicate()
                         
                         logger.debug("program out: {}".format(out))
@@ -214,32 +218,32 @@ class MainClassSpgwuConf(Resource):
                     status_code = 400
                     return 'The file {} is not supported as config file\n'.format(uploaded_file.filename), status_code
 
-@spgwu_space.route("/conf/list")
-class MainClassSpgwuConfList(Resource):
-    @spgwu_space.produces(["text"])
+@ran_space.route("/conf/list")
+class MainClassRanConfList(Resource):
+    @ran_space.produces(["text"])
     def get(self):
         """
-        Get list of configuration files of oai-spgwu
+        Get list of configuration files of oai-ran
         """        
-        # proc = subprocess.Popen(["oai-spgwu.conf-list"], stdout=subprocess.PIPE, shell=True)
-        proc = subprocess.Popen(["$SNAP/conf ls-spgwu"], stdout=subprocess.PIPE, shell=True)
+        # proc = subprocess.Popen(["oai-ran.conf-list"], stdout=subprocess.PIPE, shell=True)
+        proc = subprocess.Popen(["$SNAP/conf ls-enb"], stdout=subprocess.PIPE, shell=True)
         (out, err) = proc.communicate() 
 
         response = make_response(out)
         response.headers.set("Content-Type", "text")
         return response
 
-@spgwu_space.route("/conf/show")
-class MainClassSpgwuConfShow(Resource):
-    @spgwu_space.expect(conf_show_file)
-    @spgwu_space.doc(params={"show-config-file": "Boolean value to indicate to show config file (true) of 'file-name' file (false). Default: True",
-    "file-name": "File name to show if 'show-config-file'"
+@ran_space.route("/conf/show")
+class MainClassRanConfShow(Resource):
+    @ran_space.expect(conf_show_file)
+    @ran_space.doc(params={"show-config-file": "Boolean value to indicate whether to show the config file (True) or to show the already existing file 'file-name' file (False)",
+    "file-name": "File name to show if 'show-config-file' is False"
     
     })
-    @spgwu_space.produces(["text"])
+    @ran_space.produces(["text"])
     def get(self):
         """
-        Show the config of oai-spgwu
+        Show the configuration file of oai-ran
         """ 
         args = conf_show_file.parse_args()
         chosen_file = args['file-name']
@@ -247,16 +251,16 @@ class MainClassSpgwuConfShow(Resource):
             
             if type(chosen_file) == type(None):
                 status_code = 400
-                return "Either choose file to show or set 'show-config-file' to true to show the config file", status_code  
+                return "Either choose file to show or set 'show-config-file' to True to show the config file", status_code  
             else:
-                proc = subprocess.Popen(["$SNAP/conf cat-spgwu {}".format(chosen_file)], stdout=subprocess.PIPE, shell=True)
+                proc = subprocess.Popen(["$SNAP/conf cat-enb {}".format(chosen_file)], stdout=subprocess.PIPE, shell=True)
         else:
             if type(chosen_file) == type(None):
-                # proc = subprocess.Popen(["oai-spgwu.conf-show"], stdout=subprocess.PIPE, shell=True)
-                proc = subprocess.Popen(["$SNAP/conf cat-spgwu"], stdout=subprocess.PIPE, shell=True)
+                # proc = subprocess.Popen(["oai-ran.conf-show"], stdout=subprocess.PIPE, shell=True)
+                proc = subprocess.Popen(["$SNAP/conf cat-enb"], stdout=subprocess.PIPE, shell=True)
             else:
                 status_code = 400
-                return "Either choose file and set 'show-config-file' to false to show the chosen file, or set 'show-config-file' to true to show the config file", status_code      
+                return "Either choose file and set 'show-config-file' to False to show the chosen file, or set 'show-config-file' to True to show the config file", status_code      
         (out, err) = proc.communicate() 
 
         response = make_response(out)
@@ -265,64 +269,29 @@ class MainClassSpgwuConfShow(Resource):
         return response
 
 
-@spgwu_space.route("/init")
-class MainClassSpgwuInit(Resource):
-    @spgwu_space.produces(["text"])
+@ran_space.route("/init")
+class MainClassRanInit(Resource):
+    @ran_space.produces(["text"])
     def get(self):
         """
-        Initialize the oai-spgwu to the default values
+        Initialize the oai-ran to the default values
         """        
-        proc = subprocess.Popen(["$SNAP/init spgwu"], stdout=subprocess.PIPE, shell=True)
+        proc = subprocess.Popen(["$SNAP/init enb"], stdout=subprocess.PIPE, shell=True)
         (out, err) = proc.communicate() 
 
         response = make_response(out)
         response.headers.set("Content-Type", "text")
         return response
 
-@spgwu_space.route("/status")
-class MainClassSpgwuStatus(Resource):
-    @spgwu_space.produces(["application/json"])
+@ran_space.route("/status")
+class MainClassRanStatus(Resource):
+    @ran_space.produces(["application/json"])
     def get(self):
         """
-        Get the status of spgwu and api
+        Get the status of oai-ran
         """        
-        proc = subprocess.Popen(["$SNAP/run status spgwud"], stdout=subprocess.PIPE, shell=True)
-        # proc = subprocess.Popen(["oai-spgwu.status"], stdout=subprocess.PIPE, shell=True)
-        
-        (out, err) = proc.communicate() 
-        out_decoded = out.decode("utf-8")
-        out_split = (out_decoded).split('\n')
-        service_status = list()
-        for item in out_split:
-            if ('Service' in item) and ('Startup' in item) and ('Current' in item) and ('Notes' in item):
-                pass
-            else:
-                if ('' != item):
-                    item_split = item.split(" ")
-                    current_service_status = list()
-                    for val in item_split:
-                        if ('' != val):
-                            current_service_status.append(val)
-                    svc_stat = {
-                        "service": current_service_status[0],
-                        "startup": current_service_status[1],
-                        "current": current_service_status[2],
-                        "notes": current_service_status[3]
-                    }
-                    service_status.append(svc_stat)
-        response = make_response(jsonify(service_status))
-        response.headers.set("Content-Type", "application/json")
-        return response
-
-@spgwu_space.route("/status-all")
-class MainClassSpgwuStatusAll(Resource):
-    @spgwu_space.produces(["application/json"])
-    def get(self):
-        """
-        Get the status of all the services
-        """        
-        proc = subprocess.Popen(["$SNAP/run status-all"], stdout=subprocess.PIPE, shell=True)
-        # proc = subprocess.Popen(["oai-spgwu.status"], stdout=subprocess.PIPE, shell=True)
+        proc = subprocess.Popen(["$SNAP/run status enbd"], stdout=subprocess.PIPE, shell=True)
+        # proc = subprocess.Popen(["oai-ran.status"], stdout=subprocess.PIPE, shell=True)
         
         (out, err) = proc.communicate() 
         service_status = serialize_service_status(out)
@@ -330,55 +299,85 @@ class MainClassSpgwuStatusAll(Resource):
         response.headers.set("Content-Type", "application/json")
         return response
 
-@spgwu_space.route("/start")
-class MainClassSpgwuStart(Resource):
-    @spgwu_space.produces(["text"])
+@ran_space.route("/status-all")
+class MainClassRanStatusAll(Resource):
+    @ran_space.produces(["application/json"])
     def get(self):
         """
-        Start the service oai-spgwu in deamon mode
+        Get the status of all the services
         """        
-        proc = subprocess.Popen(["$SNAP/run start spgwud"], stdout=subprocess.PIPE, shell=True)
+        proc = subprocess.Popen(["$SNAP/run status-all"], stdout=subprocess.PIPE, shell=True)
+        # proc = subprocess.Popen(["oai-ran.status"], stdout=subprocess.PIPE, shell=True)
+        
         (out, err) = proc.communicate() 
-
-        response = make_response(out)
-        response.headers.set("Content-Type", "text")
+        service_status = serialize_service_status(out)
+        response = make_response(jsonify(service_status))
+        response.headers.set("Content-Type", "application/json")
         return response
 
-@spgwu_space.route("/stop")
-class MainClassSpgwuStop(Resource):
-    @spgwu_space.produces(["text"])
+@ran_space.route("/start")
+class MainClassRanStart(Resource):
+    @ran_space.produces(["application/json"])
     def get(self):
         """
-        Stop the service oai-spgwu in deamon mode
+        Start the service oai-ran in deamon mode
         """        
-        proc = subprocess.Popen(["$SNAP/run stop spgwud"], stdout=subprocess.PIPE, shell=True)
+        proc = subprocess.Popen(["$SNAP/run start enbd"], stdout=subprocess.PIPE, shell=True)
         (out, err) = proc.communicate() 
 
-        response = make_response(out)
-        response.headers.set("Content-Type", "text")
+        service_status = serialize_service_status(out)
+        response = make_response(jsonify(service_status))
+        response.headers.set("Content-Type", "application/json")
         return response
-@spgwu_space.route("/restart")
-class MainClassSpgwuReStart(Resource):
-    @spgwu_space.produces(["text"])
+
+        # response = make_response(out)
+        # response.headers.set("Content-Type", "text")
+        # return response
+
+@ran_space.route("/stop")
+class MainClassRanStop(Resource):
+    @ran_space.produces(["application/json"])
     def get(self):
         """
-        Restart the service oai-spgwu in deamon mode
+        Stop the service oai-ran in deamon mode
         """        
-        proc = subprocess.Popen(["$SNAP/run restart spgwud"], stdout=subprocess.PIPE, shell=True)
+        proc = subprocess.Popen(["$SNAP/run stop enbd"], stdout=subprocess.PIPE, shell=True)
         (out, err) = proc.communicate() 
 
-        response = make_response(out)
-        response.headers.set("Content-Type", "text")
+        service_status = serialize_service_status(out)
+        response = make_response(jsonify(service_status))
+        response.headers.set("Content-Type", "application/json")
         return response
 
-@spgwu_space.route("/journal")
-class MainClassSpgwuJournal(Resource):
-    @spgwu_space.produces(["text"])
+        # response = make_response(out)
+        # response.headers.set("Content-Type", "text")
+        # return response
+@ran_space.route("/restart")
+class MainClassRanReStart(Resource):
+    @ran_space.produces(["application/json"])
     def get(self):
         """
-        Get the journal of oai-spgwu
+        Restart the service oai-ran in deamon mode
         """        
-        proc = subprocess.Popen(["$SNAP/run journal spgwud"], stdout=subprocess.PIPE, shell=True)
+        proc = subprocess.Popen(["$SNAP/run restart enbd"], stdout=subprocess.PIPE, shell=True)
+        (out, err) = proc.communicate() 
+
+        service_status = serialize_service_status(out)
+        response = make_response(jsonify(service_status))
+        response.headers.set("Content-Type", "application/json")
+        return response
+
+        # response = make_response(out)
+        # response.headers.set("Content-Type", "text")
+        # return response
+@ran_space.route("/journal")
+class MainClassRanJournal(Resource):
+    @ran_space.produces(["text"])
+    def get(self):
+        """
+        Get the journal of oai-ran
+        """        
+        proc = subprocess.Popen(["$SNAP/run journal enbd"], stdout=subprocess.PIPE, shell=True)
         (out, err) = proc.communicate() 
 
         response = make_response(out)
@@ -387,7 +386,7 @@ class MainClassSpgwuJournal(Resource):
 
 # API
 @api_space.route("/conf")
-class MainClassSpgwuConf(Resource):
+class MainClassRanConf(Resource):
     @api_space.produces(["application/json"])
     def get(self):
         """
@@ -402,42 +401,42 @@ class MainClassSpgwuConf(Resource):
                     """
                     # config file is of the form
                     api_config_param = {
-                        'spgwu-host': host_spgwu,
-                        'spgwu-port': port_spgwu
+                        'ran-host': host_ran,
+                        'ran-port': port_ran
                     }
                     """
             except:
                 api_config_param = {
-                    'spgwu-host': api_host_default,
-                    'spgwu-port': api_port_default
+                    'ran-host': api_host_default,
+                    'ran-port': api_port_default
                 }  
         else:
             api_config_param = {
-                    'spgwu-host': api_host_default,
-                    'spgwu-port': api_port_default
+                    'ran-host': api_host_default,
+                    'ran-port': api_port_default
                 }            
         response = make_response(jsonify(api_config_param))
         response.headers.set("Content-Type", "application/json")
         return response
 
 @api_space.route("/journal")
-class MainClassSpgwuApiJournal(Resource):
+class MainClassRanApiJournal(Resource):
     @api_space.produces(["text"])
     def get(self):
         """
-        Get the journal of API
+        Get the journal of OpenAPI
         """        
         proc = subprocess.Popen(["$SNAP/run journal apid"], stdout=subprocess.PIPE, shell=True)
         (out, err) = proc.communicate() 
-
         response = make_response(out)
         response.headers.set("Content-Type", "text")
         return response
 
 
-## Manager of OpenAPI of oai-spgwu
+
+## Manager of OpenAPI of oai-ran
 @api_manager_space.route("/conf")
-class MainClassSpgwuConf(Resource):
+class MainClassRanConf(Resource):
     @api_manager_space.produces(["application/json"])
     def get(self):
         """
@@ -452,46 +451,46 @@ class MainClassSpgwuConf(Resource):
                     """
                     # config file is of the form
                     api_config_param = {
-                        'spgwu-host': host_spgwu,
-                        'spgwu-port': port_spgwu
+                        'ran-host': host_ran,
+                        'ran-port': port_ran
                     }
                     """
             except:
                 api_config_param = {
-                    'spgwu-host': api_manager_host_default,
-                    'spgwu-port': api_manager_port_default
+                    'ran-host': api_manager_host_default,
+                    'ran-port': api_manager_port_default
                 }  
         else:
             api_config_param = {
-                    'spgwu-host': api_manager_host_default,
-                    'spgwu-port': api_manager_port_default
+                    'ran-host': api_manager_host_default,
+                    'ran-port': api_manager_port_default
                 }            
         response = make_response(jsonify(api_config_param))
         response.headers.set("Content-Type", "application/json")
         return response
 
 @api_manager_space.route("/start")
-class MainClassSpgwuApiManagerStart(Resource):
+class MainClassRanApiManagerStart(Resource):
     @api_manager_space.produces(["text"])
     @api_manager_space.expect(api_manager_change_host_port)
     @api_manager_space.doc(params={
-                "spgwu-host": "Valid IP address of oai-spgwu",
-                "spgwu-port": "Valid port of oai-spgwu"
+                "ran-host": "Valid IP address of oai-ran",
+                "ran-port": "Valid port of oai-ran"
     })
     def put(self):
         """
-        Start the manager of OpenAPI oai-spgwu
+        Start the manager of OpenAPI oai-ran
         WARNING: you may loose the connection if you enter non valid parameters
         """     
         args = api_manager_change_host_port.parse_args()
-        host_spgwu = args['spgwu-host']
-        port_spgwu =  args['spgwu-port']
+        host_ran = args['ran-host']
+        port_ran =  args['ran-port']
         # Write the config parameters to json file to be used when starting up the flask service
         config_file = os.path.join(flask_app.config['PARAMETER_FOLDER'], flask_app.config['CONFIG_OPEN_API_MANAGER'])
         with open(config_file, 'w') as f:
             config_parameters = {
-                "spgwu-host": host_spgwu,
-                "spgwu-port": port_spgwu
+                "ran-host": host_ran,
+                "ran-port": port_ran
             }
             json.dump(config_parameters, f)
         str_1 = request.url
@@ -499,7 +498,7 @@ class MainClassSpgwuApiManagerStart(Resource):
         current_url = str(request.url).split(request.path)
         current_url = current_url[0]
         new_url = str(current_url).split("//")
-        new_url = '{}//{}:{}'.format(new_url[0], host_spgwu, port_spgwu)
+        new_url = '{}//{}:{}'.format(new_url[0], host_ran, port_ran)
         proc = subprocess.Popen(["$SNAP/run start apidman"], stdout=subprocess.PIPE, shell=True)
         (out, err) = proc.communicate()
         service_status = serialize_service_status(out)
@@ -515,11 +514,11 @@ class MainClassSpgwuApiManagerStart(Resource):
         response.headers.set("Content-Type", "text")
         return response
 @api_manager_space.route("/stop")
-class MainClassSpgwuApiManagerStop(Resource):
+class MainClassRanApiManagerStop(Resource):
     @api_manager_space.produces(["application/json"])
     def get(self):
         """
-        Stop the manager of OpenAPI oai-spgwu
+        Stop the manager of OpenAPI oai-ran
         """        
         proc = subprocess.Popen(["$SNAP/run stop apidman"], stdout=subprocess.PIPE, shell=True)
         (out, err) = proc.communicate() 
@@ -534,27 +533,27 @@ class MainClassSpgwuApiManagerStop(Resource):
         # return response
 
 @api_manager_space.route("/restart")
-class MainClassSpgwuApiManagerRestart(Resource):
+class MainClassRanApiManagerRestart(Resource):
     @api_manager_space.produces(["text"])
     @api_manager_space.expect(api_manager_change_host_port)
     @api_manager_space.doc(params={
-                "spgwu-host": "Valid IP address of oai-spgwu",
-                "spgwu-port": "Valid port of oai-spgwu"
+                "ran-host": "Valid IP address of oai-ran",
+                "ran-port": "Valid port of oai-ran"
     })
     def put(self):
         """
-        Restart the manager of OpenAPI oai-spgwu
+        Restart the manager of OpenAPI oai-ran
         WARNING: you may loose the connection if you enter non valid parameters
         """     
         args = api_manager_change_host_port.parse_args()
-        host_spgwu = args['spgwu-host']
-        port_spgwu =  args['spgwu-port']
+        host_ran = args['ran-host']
+        port_ran =  args['ran-port']
         # Write the config parameters to json file to be used when starting up the flask service
         config_file = os.path.join(flask_app.config['PARAMETER_FOLDER'], flask_app.config['CONFIG_OPEN_API_MANAGER'])
         with open(config_file, 'w') as f:
             config_parameters = {
-                "spgwu-host": host_spgwu,
-                "spgwu-port": port_spgwu
+                "ran-host": host_ran,
+                "ran-port": port_ran
             }
             json.dump(config_parameters, f)
         str_1 = request.url
@@ -562,7 +561,7 @@ class MainClassSpgwuApiManagerRestart(Resource):
         current_url = str(request.url).split(request.path)
         current_url = current_url[0]
         new_url = str(current_url).split("//")
-        new_url = '{}//{}:{}'.format(new_url[0], host_spgwu, port_spgwu)
+        new_url = '{}//{}:{}'.format(new_url[0], host_ran, port_ran)
         proc = subprocess.Popen(["$SNAP/run restart apidman"], stdout=subprocess.PIPE, shell=True)
         (out, err) = proc.communicate()
         service_status = serialize_service_status(out)
@@ -578,14 +577,14 @@ class MainClassSpgwuApiManagerRestart(Resource):
         return response
 
 @api_manager_space.route("/status")
-class MainClassSpgwuApiManagerStatus(Resource):
+class MainClassRanApiManagerStatus(Resource):
     @api_manager_space.produces(["application/json"])
     def get(self):
         """
-        Get the status of the manager of OpenAPI oai-spgwu
+        Get the status of the manager of OpenAPI oai-ran
         """        
         proc = subprocess.Popen(["$SNAP/run status apidman"], stdout=subprocess.PIPE, shell=True)
-        # proc = subprocess.Popen(["oai-spgwu.apiman-journal"], stdout=subprocess.PIPE, shell=True)
+        # proc = subprocess.Popen(["oai-ran.apiman-journal"], stdout=subprocess.PIPE, shell=True)
         
         (out, err) = proc.communicate() 
         service_status = serialize_service_status(out)
@@ -593,17 +592,18 @@ class MainClassSpgwuApiManagerStatus(Resource):
         response.headers.set("Content-Type", "application/json")
         return response
 @api_manager_space.route("/journal")
-class MainClassSpgwuApiManagerJournal(Resource):
+class MainClassRanApiManagerJournal(Resource):
     @api_manager_space.produces(["text"])
     def get(self):
         """
-        Get the journal of the manager of OpenAPI oai-spgwu
+        Get the journal of the manager of OpenAPI oai-ran
         """        
         proc = subprocess.Popen(["$SNAP/run journal apidman"], stdout=subprocess.PIPE, shell=True)
         (out, err) = proc.communicate() 
         response = make_response(out)
         response.headers.set("Content-Type", "text")
         return response
+
 
 def serialize_service_status(status):
     status_decoded = status.decode("utf-8")
@@ -629,15 +629,15 @@ def serialize_service_status(status):
     return service_status
 if __name__ == "__main__":                                                     
     
-    parser = argparse.ArgumentParser(description='provide host and port for flask api of oai-spgwu')
+    parser = argparse.ArgumentParser(description='provide host and port for flask api of oai-ran')
         
-    parser.add_argument('--spgwu-host', metavar='[option]', action='store', type=str,
+    parser.add_argument('--ran-host', metavar='[option]', action='store', type=str,
                         required=False, default='{}'.format(api_host_default), 
-                        help='Set OpenAPI-SPGWC IP address to bind to, {} (default)'.format(api_host_default))
+                        help='Set OpenAPI-RAN IP address to bind to, {} (default)'.format(api_host_default))
     
-    parser.add_argument('--spgwu-port', metavar='[option]', action='store', type=str,
+    parser.add_argument('--ran-port', metavar='[option]', action='store', type=str,
                         required=False, default='{}'.format(api_port_default), 
-                        help='Set oai-spgwu port number: {} (default)'.format(api_port_default))
+                        help='Set oai-ran port number: {} (default)'.format(api_port_default))
     args = parser.parse_args()
 
     config_file = '{}{}'.format(PARAMETER_FOLDER, CONFIG_OPEN_API)
@@ -648,11 +648,11 @@ if __name__ == "__main__":
             """
             # config file is of the form
             config_param = {
-                'spgwu-host': host_spgwu,
-                'spgwu-port': port_spgwu
+                'ran-host': host_ran,
+                'ran-port': port_ran
             }
             """
-            flask_app.run(host=config_param["spgwu-host"], port=config_param["spgwu-port"], debug=True)
+            flask_app.run(host=config_param["ran-host"], port=config_param["ran-port"], debug=True)
     else:
         flask_app.run(host='{}'.format(api_host_default), port='{}'.format(api_port_default), debug=True)
 

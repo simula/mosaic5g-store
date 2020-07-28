@@ -30,6 +30,11 @@ case "$1" in
 	python3 $SNAP/api.py "$@"
 	
 	;;
+	"openapiman" )
+	shift
+	python3 $SNAP/api-manager.py "$@"
+	
+	;;
     "gdb" )
 	echo "Running $2 with the gdb"
 	touch      $SNAP_DATA/.gdb_$2
@@ -52,41 +57,70 @@ case "$1" in
      "get" )
 	 shift
 	 snapctl get $SNAP_NAME "$@"
-
-	 ;;
-     "start"  )
-	 #snap start $SNAP_NAME
-	 daemon=$2
-	 shift 2 
-	 if_sudo
-	 snapctl start --enable $SNAP_NAME.$daemon "$@"
-	 snapctl services $SNAP_NAME "$@"
 	 ;;
 
-     "stop" )
-	#snap stop $SNAP_NAME
-	 daemon=$2
-	 shift 2
-	 if_sudo
-	 snapctl stop --disable $SNAP_NAME.$daemon "$@"
-	 snapctl services $SNAP_NAME "$@"
-	 ;;
-
-     "restart" )
-	 #snap restart $SNAP_NAME
-	 daemon=$2
-	 shift 2
-	 if_sudo
-	 snapctl stop --disable $SNAP_NAME.$daemon "$@"
-	 snapctl start --enable $SNAP_NAME.$daemon "$@"
-	 snapctl services $SNAP_NAME "$@"
+	"start-all"  )
+	shift
+	if_sudo
+	snapctl start --enable $SNAP_NAME "$@"
+	snapctl services $SNAP_NAME "$@"
 	;;
 
-     "status" )
+	"start"  )
+	#snap start $SNAP_NAME
+	daemon=$2
+	shift 2 
+	if_sudo
+	snapctl start --enable $SNAP_NAME.$daemon "$@"
+	snapctl services $SNAP_NAME.$daemon "$@"
+	;;
+
+	"stop-all" )
+	#snap stop $SNAP_NAME
+	shift
+	if_sudo
+	snapctl stop --disable $SNAP_NAME "$@"
+	snapctl services $SNAP_NAME "$@"
+	;;
+
+	"stop" )
+	#snap stop $SNAP_NAME
+	daemon=$2
+	shift 2
+	if_sudo
+	snapctl stop --disable $SNAP_NAME.$daemon "$@"
+	snapctl services $SNAP_NAME.$daemon "$@"
+	;;
+
+	"restart-all" )
+	shift
+	if_sudo
+	snapctl stop --disable $SNAP_NAME "$@"
+	snapctl start --enable $SNAP_NAME "$@"
+	snapctl services $SNAP_NAME "$@"
+	;;
+
+	"restart" )
+	#snap restart $SNAP_NAME
+	daemon=$2
+	shift 2
+	if_sudo
+	snapctl stop --disable $SNAP_NAME.$daemon "$@"
+	snapctl start --enable $SNAP_NAME.$daemon "$@"
+	snapctl services $SNAP_NAME.$daemon "$@"
+	;;
+
+	"status-all" )
 	 #snap services $SNAP_NAME
 	 shift
 	 snapctl services $SNAP_NAME "$@"
+	 ;;
 
+	 "status" )
+	 #snap services $SNAP_NAME
+	 daemon=$2
+	 shift 2
+	 snapctl services $SNAP_NAME.$daemon "$@"
 	 ;;
      
      "journal" )
