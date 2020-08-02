@@ -1,21 +1,24 @@
 name: oai-ue
-version: '1.5' 
+version: '1.6' 
 summary: OpenAirInterface UE entity 
 description: |
     OAI UE is the openairinterface-based UE that allows you to connect to any commercial eNB. 
-grade: stable
 type: app
+license: Apache-2.0
+
 architectures:
   - amd64
   - i386
 confinement: devmode
+grade: stable
+base: core18
 
 apps:
   test:
     command: test all
   info:
     command: run info
-  ue:
+  oai-ue:
     command: run ue
   uesim:
     command: run uesim
@@ -33,21 +36,21 @@ apps:
     command: run ue 
     daemon: simple
     stop-command: run stop
-    stop-timeout: 7s
+    stop-timeout: 1s
   uesimd:
     command: run uesim
     daemon: simple
     stop-command: run stop uesimd
-    stop-timeout: 7s
-  ue-start:
+    stop-timeout: 1s
+  start:
     command: run start ued
-  ue-stop:
+  stop:
     command: run stop ued
-  ue-restart:
+  restart:
     command: run restart ued
-  ue-status:
+  status:
     command: run status ued
-  ue-journal:
+  journal:
     command: run journal ued
   uesim-start:
     command: run start uesimd
@@ -63,21 +66,21 @@ apps:
     command: run help
   debug:
     command: run gdb
-  ue-conf-set:
+  conf-set:
     command: conf set-ue
-  ue-conf-get:
+  conf-get:
     command: conf echo-ue
-  ue-conf-show:
+  conf-show:
     command: conf cat-ue
-  ue-conf-list:
+  conf-list:
     command: conf ls-ue
-  ue-cmd-set:
+  cmd-set:
     command: conf set-ue-cmd
-  ue-cmd-get:
+  cmd-get:
     command: conf echo-ue-cmd
-  ue-cmd-show:
+  cmd-show:
     command: conf cat-ue-cmd
-  ue-cmd-list:
+  cmd-list:
     command: conf ls-ue-cmd
   uesim-cmd-set:
     command: conf set-uesim-cmd
@@ -146,11 +149,27 @@ parts:
       - usr/lib/*
       - lib/*
       
-  oai-ue:
+  ue:
     plugin: cmake
     source: https://gitlab.eurecom.fr/oai/openairinterface5g.git
-    source-branch: 2019.w21
+    source-branch: master
     build-packages: [build-essential, ]
+    stage-packages:
+      - libatlas3-base
+      - libboost-date-time1.65.1
+      - libboost-filesystem1.65.1
+      - libboost-regex1.65.1
+      - libboost-serialization1.65.1
+      - libboost-system1.65.1
+      - libboost-thread1.65.1
+      - libconfig9
+      - libgfortran4
+      - libicu60
+      - liblapacke
+      - libquadmath0
+      - libsctp1
+      - libuhd3.14.1
+      - libusb-1.0-0
     override-build: |
       cd ../src/cmake_targets
       ./build_oai -I -w USRP --uhd-images-dir ../common/uhd_images
@@ -163,19 +182,21 @@ parts:
       cp cmake_targets/snap_environment.sh $SNAPCRAFT_PART_INSTALL/ue
     stage:
       - ue/*
-      - usr/lib/*
+      - usr/*
       - lib/*
       - uhd_images/*
     prime:
       - ue/*
-      - usr/lib/*
+      - usr/*
       - lib/*
       - uhd_images/*
     organize:
       ue/liboai_usrpdevif.so.Rel14: usr/lib/liboai_device.so
       ue/libcoding.so: usr/lib/libcoding.so
       ue/libparams_libconfig.so: usr/lib/libparams_libconfig.so
-      ue/liboai_eth_transpro.so.Rel14: usr/lib/liboai_transpro.so  
+      ue/liboai_eth_transpro.so.Rel14: usr/lib/liboai_transpro.so
+      ue/librfsimulator.so.Rel14: usr/lib/librfsimulator.so.Rel14
+      ue/libtcp_bridge_oai.so.Rel14: usr/lib/libtcp_bridge_oai.so.Rel14
       #ue/lte-uesoftmodem.Rel14: ue/oai-ue
       #usr/lib/lapack/liblapack.so.3: usr/lib/liblapack.so.3 
 

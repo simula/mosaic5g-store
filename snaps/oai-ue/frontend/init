@@ -16,12 +16,16 @@
 #fi
 
 # set the UE conf
-$SNAP/conf set-ue $CONF_DIR/UE_config.xml
-$SNAP/conf set-ue-cmd $CONF_DIR/ue.band7.25PRB.usrp210.cmd
+#$SNAP/conf set-ue $CONF_DIR/UE_config.xml
+$SNAP/conf set-ue $UE_CONF_FILE
+$SNAP/conf set-ue-cmd $UE_CMD_FILE
 
-#set the UE SIM  conf
-$SNAP/conf set-uesim $CONF_DIR/uesim.conf
-$SNAP/conf set-uesim-cmd $CONF_DIR/uesim.25PRB.cmd
+#set the UE SIM  conf for L1+L2 sim
+#$SNAP/conf set-uesim $CONF_DIR/uesim.conf
+#$SNAP/conf set-uesim-cmd $CONF_DIR/uesim.25PRB.cmd
+
+$SNAP/conf set-uesim $UESIM_L2SIM_CONF_FILE 
+$SNAP/conf set-uesim-cmd $UESIM_L2SIM_CMD_FILE
 
 #set the USIM conf
 $SNAP/conf set-usim $CONF_DIR/usim_default.conf

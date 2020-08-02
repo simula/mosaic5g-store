@@ -4,6 +4,8 @@
 
 export UHD_IMAGES_DIR=$SNAP/uhd_images
 export UHD_RFNOC_DIR=$SNAP/usr/share/uhd/rfnoc/blocks
+export LD_LIBRARY_PATH="$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"
+
 
 if [ ! -e $UE_EXEC ]; then
     echo "Cannot find $UE_EXEC executable"
@@ -65,6 +67,16 @@ UESIM_EXEC_ARGS="`cat $UESIM_CMD` -O $UESIM_CONFIG"
 UE_USIM=${UE_USIM_CONF_FILE2:-$UE_USIM_CONF_FILE}
 UE_USIM_EXEC_ARGS=" -c $UE_USIM -o $CONF_DIR"
 
+if_sudo(){
+
+    if [ "$(id -u)" -eq 0 ] ; then
+	return 0
+    else
+	echo "Please run as a sudoer!"
+	exit 1
+    fi
+}
+
 case "$1" in
     "gdb" )
 	echo "Running $SNAP_NAME with the gdb"
@@ -76,36 +88,60 @@ case "$1" in
 	cat $SNAP_DATA/.gdb_$SNAP_NAME
 	exec $SNAP/gdb --data-directory=$SNAP_DATA  -n -x $SNAP_DATA/.gdb_$SNAP_NAME
 	;;
+
     "info" )
-	shift
-	snap info $SNAP_NAME "$@"
+	#snap info $SNAP_NAME
+	 shift
+	 echo "This command shall manually be run, try: snap info $SNAP_NAME "
+
 	;; 
-    "start"  )
-	daemon=$2
-	shift 2
-	snap start $SNAP_NAME.$daemon  "$@"
+
+     "get" )
+	 shift
+	 snapctl get $SNAP_NAME "$@"
+	 ;;
+     
+     "start" | "uesim-start" )
+	 #snap start $SNAP_NAME
+	 daemon=$2
+	 shift 2
+	 if_sudo
+	 snapctl start --enable $SNAP_NAME.$daemon "$@"
+	 snapctl services $SNAP_NAME "$@"
+	 ;;
+
+     "stop" | "uesim-stop" )
+	#snap stop $SNAP_NAME
+	 daemon=$2
+	 shift 2
+	 if_sudo
+	 snapctl stop --disable $SNAP_NAME.$daemon "$@"
+	 snapctl services $SNAP_NAME "$@"
+	 ;;
+
+     "restart" | "uesim-restart" )
+	 #snap restart $SNAP_NAME
+	 daemon=$2
+	 shift 2
+	 if_sudo
+	 snapctl stop --disable $SNAP_NAME.$daemon "$@"
+	 snapctl start --enable $SNAP_NAME.$daemon "$@"
+	 snapctl services $SNAP_NAME "$@"
 	;;
-    "stop" )
-	daemon=$2
-	shift 2
-	snap stop $SNAP_NAME.$daemon  "$@"
-	;;
-    "restart" )
-	daemon=$2
-	shift 2
-	snap restart $SNAP_NAME.$daemon  "$@"
-	;;
-    "status" )
-	daemon=$2
-	shift 2
-	snap services $SNAP_NAME.$daemon "$@"
-	#systemctl status  snap.$SNAP_NAME.daemon.service
-	;;
-    "journal" )
-	daemon=$2
-	shift 2
-	journalctl -u snap.$SNAP_NAME.$daemon.service "$@"
-	;;
+
+     "status" | "uesim-status" )
+	 #snap services $SNAP_NAME
+	 shift
+	 snapctl services $SNAP_NAME "$@"
+	 ;;
+     
+     "journal" | "uesim-journal" )
+	 daemon=$2
+	 shift 2
+	 journalctl -u snap.$SNAP_NAME.$daemon.service "$@"
+	 ;;
+
+
     "help" )
 	echo "Usage:                sudo  $SNAP_NAME or $SNAP_NAME.[x] args"
 	echo "                      App [x] is ue or uesim"
@@ -160,7 +196,7 @@ case "$1" in
 		fi
 	    else
 		echo "OAI IP module is not supported for this kernel version $kern"
-		echo "Build manually as follows: cd $SNAP_USER_DATA/ue_ip; make; ./oip add ./ue_ip.ko ;"
+		echo "Build manually as follows: cd /var/snap/oai-ue/current/ue_ip/; make; ./oip add ./ue_ip.ko ;"
 	    fi    
 	else
 	    echo "OAI IP module is not supported for this kernel version $kern"

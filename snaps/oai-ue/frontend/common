@@ -10,9 +10,13 @@ USIM_EXEC="$UE_DIR/usim"
 USIM_MULTI_EXEC="$UE_DIR/conf2uedata"
 NVRAM_EXEC="$UE_DIR/nvram"
 
-UE_CONF_FILE="$CONF_DIR/UE_config.xml"
+UE_CONF_FILE="$CONF_DIR/ue.conf"
 UE_CMD_FILE="$CONF_DIR/ue.band7.25PRB.usrp210.cmd"
+UESIM_CONF_FILE="$CONF_DIR/uesim.conf"
 UESIM_CMD_FILE="$CONF_DIR/uesim.25PRB.cmd"
+UESIM_L2SIM_CONF_FILE="$CONF_DIR/uesim.nfapi.conf"
+UESIM_L2SIM_CMD_FILE="$CONF_DIR/uesim.50PRB.nfapi.cmd"
+
 UE_USIM_CONF_FILE="$CONF_DIR/usim_default.conf"
 
 UESIM_DIR="$SNAP/ue"

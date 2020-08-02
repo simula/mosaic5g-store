@@ -23,6 +23,16 @@ else
     cp $SNAP/etc/llmec_config.json $SNAP_USER_DATA
 fi
 
+if_sudo(){
+
+    if [ "$(id -u)" -eq 0 ] ; then
+	return 0
+    else
+	echo "Please run as a sudoer!"
+	exit 1
+    fi
+}
+
 case "$1" in
     "gdb" )
 	echo "Running $SNAP_NAME with the gdb"

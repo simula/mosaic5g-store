@@ -1,1 +1,1 @@
--C2660000000 -r50 --ue-scan-carrier --ue-txgain 15 --ue-rxgain 110 --ue-max-power 0 
+-C2660000000 -r50 --ue-scan-carrier --ue-txgain 10 --ue-rxgain 125 --ue-max-power -6 

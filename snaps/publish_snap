@@ -6,10 +6,10 @@ if [ "$1" == "" ] ; then
 fi
 
 declare -a snaps=("oai-cn" "oai-ran" "oai-ue" "oai-tracer" "flexran" "ll-mec")
-declare -a snaps=("oai-cn")
-declare -a snaps=("oai-ue")
-declare -a snaps=("oai-hss" "oai-mme" "oai-spgwc" "oai-spgwu")
-#declare -a snaps=("oai-hss")
+declare -a snaps=("oai-ue" "oai-tracer" "oai-hss" "oai-spgwc" "oai-spgwu" "oai-mme" "flexran" "oai-ran")
+declare -a snaps=("oai-spgwc" "oai-spgwu" "oai-mme" "oai-ran" "oai-tracer" "oai-ue")
+declare -a snaps=("oai-mme" "oai-hss")
+
 declare -a channels=("edge,beta")
 
 for s in "${channels[@]}"
@@ -34,6 +34,3 @@ do
         fi
     done
 done
-
-
-
