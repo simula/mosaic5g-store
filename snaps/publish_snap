@@ -8,7 +8,7 @@ fi
 declare -a snaps=("oai-cn" "oai-ran" "oai-ue" "oai-tracer" "flexran" "ll-mec")
 declare -a snaps=("oai-ue" "oai-tracer" "oai-hss" "oai-spgwc" "oai-spgwu" "oai-mme" "flexran" "oai-ran")
 declare -a snaps=("oai-spgwc" "oai-spgwu" "oai-mme" "oai-ran" "oai-tracer" "oai-ue")
-declare -a snaps=("oai-mme" "oai-hss")
+declare -a snaps=("oai-ran")
 
 declare -a channels=("edge,beta")
 
@@ -18,11 +18,11 @@ do
     do
 	if [ -d $k ] ; then
           cd $k
-          echo "Publshing $k snap, version $version, to channels: $s"
-	  version=$(grep -m1 version: snap/snapcraft.yaml | cut -f2 -d: | tr -d "'" | tr -d " ")
+          version=$(grep -m1 version: snap/snapcraft.yaml | cut -f2 -d: | tr -d "'" | tr -d " ")
 	  snap=$k"_"$version"_multi.snap"
-          echo "snapcraft push $snap --release $s"
-          rev=`snapcraft push $snap --release $s | grep -m1 Revision | cut -f2 -d' '`
+          #echo "Publshing $k snap, version $version, to channels: $s"
+	  echo "snapcraft upload $snap --release $s"
+          rev=`snapcraft upload $snap --release $s | grep -m1 Revision | cut -f2 -d' '`
           echo "snapcraft release $k $rev $s"
 	  if [ -z "$rev" ] ; then 
 	      read -p "what is the revision of the snap to release (e.g. $rev)? " rev
