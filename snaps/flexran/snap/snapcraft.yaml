@@ -13,6 +13,8 @@ license: Apache-2.0
 base: core18
 
 apps:
+  init:
+    command: run init
   info:
     command: run info
   flexran:
@@ -28,6 +30,14 @@ apps:
     daemon: simple
     stop-command: run stop
     stop-timeout: 1s
+  start-all:
+    command: run start-all
+  stop-all:
+    command: run stop-all
+  restart-all:
+    command: run restart-all
+  status-all:
+    command: run status-all
   start:
     command: run start flexrand
   stop:
@@ -40,6 +50,40 @@ apps:
     command: run journal flexrand
   help:
     command: run help
+  api:
+    command: run openapi
+  apid:
+    command: run openapi
+    daemon: simple
+    stop-command: run stop apid
+    stop-timeout: 1s  
+  api-start:
+    command: run start apid
+  api-stop:
+    command: run stop apid
+  api-restart:
+    command: run restart apid
+  api-status:
+    command: run status apid
+  api-journal:
+    command: run journal apid
+  apiman:
+    command: run openapiman
+  apidman:
+    command: run openapiman
+    daemon: simple
+    stop-command: run stop apidman
+    stop-timeout: 1s
+  apiman-start:
+    command: run start apidman
+  apiman-stop:
+    command: run stop apidman
+  apiman-restart:
+    command: run restart apidman
+  apiman-status:
+    command: run status apidman
+  apiman-journal:
+    command: run journal apidman
 #  debug:
 #    command: run gdb
 hooks:
@@ -137,3 +181,32 @@ parts:
   frontend:
     plugin: dump
     source: frontend
+  openapi:
+    plugin: python
+    python-version: python3
+    python-packages:
+      - flask
+      - itsdangerous
+      - Werkzeug==0.16.1
+      - click
+      - jinja2
+      - MarkupSafe
+      - requests
+      - argparse
+      - flask_restplus==0.13.0
+      - aniso8601==8.0.0
+      - pytz==2020.1
+      - jsonschema==3.2.0
+      - attrs==19.3.0
+      - pyrsistent==0.16.0
+      - importlib-metadata==1.7.0
+      - importlib-resources==1.5.0
+      - zipp==3.1.0
+      # - pyrsistent==0.16.0
+      # - cassandra-driver==3.24.0
+    stage:
+      - usr/lib/python3.6/*
+      - usr/*
+    prime:
+      - usr/lib/python3.6/*
+      - usr/*

@@ -1,8 +1,12 @@
 #!/bin/sh
 set -e
-
-snapctl stop --disable ${SNAP_NAME}  2>&1  || true
+echo "Configure hook "
 
 $SNAP/init
+
+snapctl stop --disable ${SNAP_NAME}  2>&1  || true
+sleep 1 
+snapctl start --enable ${SNAP_NAME}.apid  2>&1  || true
+
 
 #snapctl set-health --code=ready blocked "FlexRAN ready to be run"

@@ -28,6 +28,16 @@ FLEXRAN_EXEC_ARGS=" -p $SBI_PORT -n $NBI_PORT"
 
 
 case "$1" in
+    "openapi" )
+	shift
+	python3 $SNAP/api.py "$@"
+	;;
+
+	"openapiman" )
+	shift
+	python3 $SNAP/api-manager.py "$@"
+	;;
+	
     "gdb" )
         cd $SNAP/bin
 	echo "Running $SNAP_NAME with the gdb"
@@ -49,40 +59,86 @@ case "$1" in
 	echo "For more information, run: snap info $SNAP_NAME"
 	;; 
     
-     "start"  )
-	 #snap start $SNAP_NAME
-	 daemon=$2
-	 shift 2
-	 if_sudo
-	 snapctl start --enable $SNAP_NAME.$daemon "$@"
-	 snapctl services $SNAP_NAME.$daemon "$@"
-	 ;;
-
-     "stop" )
-	#snap stop $SNAP_NAME
-	 daemon=$2
-	 shift 2
-	 if_sudo
-	 snapctl stop --disable $SNAP_NAME.$daemon "$@"
-	 snapctl services $SNAP_NAME.$daemon "$@"
-	 ;;
-
-     "restart" )
-	 #snap restart $SNAP_NAME
-	 daemon=$2
-	 shift 2 
-	 if_sudo
-	 snapctl stop  --disable $SNAP_NAME.$daemon "$@"
-       	 snapctl start --enable  $SNAP_NAME.$daemon "$@"
-	 snapctl services $SNAP_NAME.$daemon "$@"
+	"init"  )
+	daemon="flexrand"
+	shift 
+	# if_sudo
+	snapctl stop --disable $SNAP_NAME.$daemon "$@"
+	snapctl set port.sbi=2210 port.nbi=9999
+	sbi="$(snapctl get port.sbi)"
+	nbi="$(snapctl get port.nbi)"
+	if [ -z "$sbi" -o -z "$nbi" ]; then
+		echo "SBI and NBI are not set!"
+	else
+		$SNAP/conf sbi $sbi
+		$SNAP/conf nbi $nbi
+		$SNAP/conf ports
+		snapctl start --enable $SNAP_NAME.$daemon "$@"
+		snapctl services $SNAP_NAME.$daemon "$@"
+	fi
 	;;
 
-     "status" )
-	 #snap services $SNAP_NAME
-	 daemon=$2
-	 shift 2 
-	 snapctl services $SNAP_NAME.$daemon "$@"
-	 ;;
+	"start"  )
+	#snap start $SNAP_NAME
+	daemon=$2
+	shift 2
+	if_sudo
+	snapctl start --enable $SNAP_NAME.$daemon "$@"
+	snapctl services $SNAP_NAME.$daemon "$@"
+	;;
+
+	"start-all"  )
+	shift
+	if_sudo
+	snapctl start --enable $SNAP_NAME "$@"
+	snapctl services $SNAP_NAME "$@"
+	;;
+
+	"stop" )
+	#snap stop $SNAP_NAME
+	daemon=$2
+	shift 2
+	if_sudo
+	snapctl stop --disable $SNAP_NAME.$daemon "$@"
+	snapctl services $SNAP_NAME.$daemon "$@"
+	;;
+
+	"stop-all" )
+	shift
+	if_sudo
+	snapctl stop --disable $SNAP_NAME "$@"
+	snapctl services $SNAP_NAME "$@"
+	;;
+
+	"restart" )
+	#snap restart $SNAP_NAME
+	daemon=$2
+	shift 2 
+	if_sudo
+	snapctl stop  --disable $SNAP_NAME.$daemon "$@"
+	snapctl start --enable  $SNAP_NAME.$daemon "$@"
+	snapctl services $SNAP_NAME.$daemon "$@"
+	;;
+
+	"restart-all" )
+	shift
+	if_sudo
+	snapctl stop  --disable $SNAP_NAME "$@"
+	snapctl start --enable  $SNAP_NAME "$@"
+	snapctl services $SNAP_NAME "$@"
+	;;
+
+	"status" )
+	#snap services $SNAP_NAME
+	daemon=$2
+	shift 2 
+	snapctl services $SNAP_NAME.$daemon "$@"
+	;;
+
+	"status-all" )
+	shift 
+	snapctl services $SNAP_NAME "$@"
+	;;
      
     "journal" )
 	daemon=$2
