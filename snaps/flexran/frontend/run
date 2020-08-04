@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 . $SNAP/common
 . $SNAP/util
@@ -6,7 +6,7 @@
 export LD_LIBRARY_PATH="$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"
 
 if [ ! -e $FLEXRAN_EXEC ]; then
-    echo "Command $FLEXRAN_EXEC not found"
+    echo_error "Command $FLEXRAN_EXEC not found"
     exit 127
 fi		   	   
 
@@ -51,12 +51,12 @@ case "$1" in
 	;;
     "info" )
 	shift 
-	echo "Snap Name: $SNAP_NAME"
-	echo "Snap Instance Name: $SNAP_INSTANCE_NAME"
-	echo "Sanp Version: $SNAP_VERSION"
-	echo "Sanp Revision: $SNAP_REVISION"
+	echo_info "Snap Name: $SNAP_NAME"
+	echo_info "Snap Instance Name: $SNAP_INSTANCE_NAME"
+	echo_info "Sanp Version: $SNAP_VERSION"
+	echo_info "Sanp Revision: $SNAP_REVISION"
 	echo ""
-	echo "For more information, run: snap info $SNAP_NAME"
+	echo_info "For more information, run: snap info $SNAP_NAME"
 	;; 
     
 	"init"  )
@@ -147,7 +147,7 @@ case "$1" in
 	;;
     
      "help" )
-	echo "Usage:            sudo $SNAP_NAME or $SNAP_NAME.[options]"
+	echo_info "Usage:            sudo $SNAP_NAME or $SNAP_NAME.[options]"
 	echo "Note:             root priviliage required"
 	echo "Options:"
 	echo "  info:           get $SNAP_NAME info"
@@ -159,6 +159,7 @@ case "$1" in
 	echo "  journal:        get the $SNAP_NAME logs"
 	echo ""
 	echo "  flexran:        run FLEXRAN as a process "
+	echo "  init:           reset the ports to their default values"
 	echo "  sbi-port [port]:set the FLEXRAN SBI port  "
 	echo "  nbi-port [port]:set the FLEXRAN NBI port"
 	echo "  ports           get the FLEXRAN SBI and NBI ports"
@@ -167,7 +168,7 @@ case "$1" in
 	;;	
     *)
 	export FLEXRAN_RTC_HOME=$FLEXRAN_DIR
-	echo "$FLEXRAN_EXEC  $FLEXRAN_EXEC_ARGS"
+	echo_info "$FLEXRAN_EXEC  $FLEXRAN_EXEC_ARGS"
 	$FLEXRAN_EXEC  `echo $FLEXRAN_EXEC_ARGS` "$@"
 	;;
 esac

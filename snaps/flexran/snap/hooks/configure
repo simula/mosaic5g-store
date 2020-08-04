@@ -2,11 +2,18 @@
 set -e
 echo "Configure hook "
 
-$SNAP/init
-
 snapctl stop --disable ${SNAP_NAME}  2>&1  || true
 sleep 1 
 snapctl start --enable ${SNAP_NAME}.apid  2>&1  || true
 
+sbi="$(snapctl get port.sbi)"
+if [ ! -z "$sbi" ] ; then 
+    $SNAP/conf sbi $sbi
+fi
+
+nbi="$(snapctl get port.nbi)"
+if [ ! -z "$nbi" ]; then
+    $SNAP/conf nbi $nbi
+fi
 
 #snapctl set-health --code=ready blocked "FlexRAN ready to be run"

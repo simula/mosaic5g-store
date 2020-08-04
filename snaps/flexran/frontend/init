@@ -1,6 +1,7 @@
-#!/bin/sh -e
+#!/bin/bash
 
 . $SNAP/common
+. $SNAP/util
 
 snapctl set port.sbi=2210 port.nbi=9999
 
@@ -8,12 +9,10 @@ sbi="$(snapctl get port.sbi)"
 nbi="$(snapctl get port.nbi)"
 
 if [ -z "$sbi" -o -z "$nbi" ]; then
-    echo "SBI and NBI are not set!"
+    echo_error "SBI or NBI are not set!"
     exit -1 
 fi
 
-
-echo "SBI $sbi and NBI $nbi are properly set!"
 $SNAP/conf sbi $sbi
 $SNAP/conf nbi $nbi
     
@@ -22,4 +21,4 @@ $SNAP/conf nbi $nbi
 $SNAP/conf ports
 
 
-echo "FlexRAN init: done "
+echo_success "FlexRAN init: done "

@@ -1,37 +1,40 @@
-#!/bin/sh
+#!/bin/bash
 
 . $SNAP/common
+. $SNAP/util
 
 case "$1" in
     "sbi" )
 	if [ "$2" != "" ]; then
-        . $CONF_DIR/nbi_config.sh
-		if [ "$2" != "$NBI_PORT" ]; then
-			echo "SBI_PORT=$2" > $CONF_DIR/sbi_config.sh
-			echo "SBI $2 is properly set!. restart flexran to take the new configuration"
-		else
-			# prevent the user to set the same port for nbi and sbi
-			echo "Error: can not set the same port $2 for SBI and NBI"
-		fi
+            . $CONF_DIR/nbi_config.sh
+	    if [ "$2" != "$NBI_PORT" ]; then
+		snapctl set port.sbi=$2
+		echo "SBI_PORT=$2" > $CONF_DIR/sbi_config.sh
+		echo_info "SBI $2 is properly set!. restart flexran to take the new configuration"
+	    else
+		# prevent the user to set the same port for nbi and sbi
+		echo "Error: can not set the same port $2 for SBI and NBI"
+	    fi
 	else
-		echo "No SBI port provided"
+	    echo_warn "No SBI port provided"
 	fi
-
+	
 	# echo "SBI_PORT=$2" > $CONF_DIR/sbi_config.sh
 	# echo "SBI_PORT=$2" > $SNAP_USER_DATA/sbi_config.sh
 	;;
     "nbi" )
 	if [ "$2" != "" ]; then
-        . $CONF_DIR/sbi_config.sh
-		if [ "$2" != "$SBI_PORT" ]; then
-			echo "NBI_PORT=$2" > $CONF_DIR/nbi_config.sh
-			echo "NBI $2 is properly set!. restart flexran to take the new configuration"
-		else
-			# prevent the user to set the same port for nbi and sbi
-			echo "Error: can not set the same port $2 for SBI and NBI"
-		fi
+            . $CONF_DIR/sbi_config.sh
+	    if [ "$2" != "$SBI_PORT" ]; then
+		snapctl set port.nbi=$2
+		echo "NBI_PORT=$2" > $CONF_DIR/nbi_config.sh
+		echo_info "NBI $2 is properly set!. restart flexran to take the new configuration"
+	    else
+		# prevent the user to set the same port for nbi and sbi
+		echo_error "Error: can not set the same port $2 for SBI and NBI"
+	    fi
 	else
-		echo "No NBI port provided"
+	    echo_warn "No NBI port provided"
 	fi
 	# echo "NBI_PORT=$2" > $CONF_DIR/nbi_config.sh
 	# echo "NBI_PORT=$2" > $SNAP_USER_DATA/nbi_config.sh
@@ -40,11 +43,11 @@ case "$1" in
     "ports" )
 	. $CONF_DIR/sbi_config.sh
 	. $CONF_DIR/nbi_config.sh
-	echo "SBI_PORT:  $SBI_PORT"
-	echo "NBI_PORT:  $NBI_PORT"
+	echo_info "SBI_PORT:  $SBI_PORT"
+	echo_info "NBI_PORT:  $NBI_PORT"
  	;;
     * )
-	echo "unknow option: $1"
+	echo_error "unknow option: $1"
 	;;
     
 esac

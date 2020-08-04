@@ -1,3 +1,3 @@
-#!/bin/sh
-set -e 
-echo "Install hook"
+#!/bin/sh -e 
+
+$SNAP/init

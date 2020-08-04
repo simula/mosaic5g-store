@@ -1,7 +1,5 @@
 #!/bin/sh
 
-set -e
-
 . $SNAP/common
 
 
@@ -21,7 +19,7 @@ set_health(){
     case "$status" in
 	*inactive*)
 	    #echo "Service inactive"
-	    snapctl set-health --code=ready blocked "FlexRAN ready to be run"
+	    snapctl set-health --code=ready blocked "$SNAP_NAME ready to be run"
 	    ;;
 	*active*)
 	    #echo "Service active"
