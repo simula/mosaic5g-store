@@ -1,24 +1,25 @@
-#!/bin/sh
+#!/bin/bash
 
 . $SNAP/common
+. $SNAP/util
 
 case "$1" in
     "set-enb" )
 	CONFIG_FILE=$2
 	if [ "$CONFIG_FILE" != "${CONFIG_FILE#/}" -a  -f "$CONFIG_FILE" ]; then
-	    echo "Setting the default config file to: $CONFIG_FILE"
+	    echo_success "Setting the default config file to: $CONFIG_FILE"
 	    
 	elif [ -f "$CONF_DIR/$CONFIG_FILE" ]; then
 	    CONFIG_FILE=$CONF_DIR/$CONFIG_FILE
-	    echo "Config file found in the $CONF_DIR!"
-	    echo "Resetting to the default config file: $CONFIG_FILE"
+	    echo_info "Config file found in the $CONF_DIR!"
+	    echo_info "Resetting to the default config file: $CONFIG_FILE"
 
 	else
-	    echo "[ERR] Config file $CONFIG_FILE not found, please provide an absolute path!"
-	    echo "Reset to default config file: $ENB_CONF_FILE"
+	    echo_error "[ERR] Config file $CONFIG_FILE not found, please provide an absolute path!"
+	    echo_info "Reset to default config file: $ENB_CONF_FILE"
 	    CONFIG_FILE=$ENB_CONF_FILE
 	fi
-
+	snapctl set conf.enb=$CONFIG_FILE
 	echo "ENB_CONF_FILE2=$CONFIG_FILE" > $SNAP_DATA/config_enb.sh
 	echo "ENB_CONF_FILE2=$CONFIG_FILE"  > $SNAP_USER_DATA/config_enb.sh
 	;;
@@ -26,19 +27,19 @@ case "$1" in
     "set-cudu" )
 	CONFIG_FILE=$2
 	if [ "$CONFIG_FILE" != "${CONFIG_FILE#/}" -a  -f "$CONFIG_FILE" ]; then
-	    echo "Setting the default config file to: $CONFIG_FILE"
+	    echo_success "Setting the default config file to: $CONFIG_FILE"
 	    
 	elif [ -f "$CONF_DIR/$CONFIG_FILE" ]; then
 	    CONFIG_FILE=$CONF_DIR/$CONFIG_FILE
-	    echo "Config file found in the $CONF_DIR!"
-	    echo "Resetting to the default config file: $CONFIG_FILE"
+	    echo_info "Config file found in the $CONF_DIR!"
+	    echo_info "Resetting to the default config file: $CONFIG_FILE"
 
 	else
-	    echo "[ERR] Config file $CONFIG_FILE not found, please provide an absolute path!"
-	    echo "Reset to default config file: $CUDU_CONF_FILE"
+	    echo_error "[ERR] Config file $CONFIG_FILE not found, please provide an absolute path!"
+	    echo_info "Reset to default config file: $CUDU_CONF_FILE"
 	    CONFIG_FILE=$CUDU_CONF_FILE
 	fi
-
+	snapctl set conf.cudu=$CONFIG_FILE
 	echo "CUDU_CONF_FILE2=$CONFIG_FILE" > $SNAP_DATA/config_cudu.sh
 	echo "CUDU_CONF_FILE2=$CONFIG_FILE"  > $SNAP_USER_DATA/config_cudu.sh
 	;;
@@ -46,19 +47,19 @@ case "$1" in
     "set-rru" )
 	CONFIG_FILE=$2
 	if [ "$CONFIG_FILE" != "${CONFIG_FILE#/}" -a  -f "$CONFIG_FILE" ]; then
-	    echo "Setting the default config file to: $CONFIG_FILE"
+	    echo_success "Setting the default config file to: $CONFIG_FILE"
 	    
 	elif [ -f "$CONF_DIR/$CONFIG_FILE" ]; then
 	    CONFIG_FILE=$CONF_DIR/$CONFIG_FILE
-	    echo "Config file found in the $CONF_DIR!"
-	    echo "Resetting to the default config file: $CONFIG_FILE"
+	    echo_info "Config file found in the $CONF_DIR!"
+	    echo_info "Resetting to the default config file: $CONFIG_FILE"
 
 	else
-	    echo "[ERR] Config file $CONFIG_FILE not found, please provide an absolute path!"
-	    echo "Reset to default config file: $RRU_CONF_FILE"
+	    echo_error "[ERR] Config file $CONFIG_FILE not found, please provide an absolute path!"
+	    echo_info "Reset to default config file: $RRU_CONF_FILE"
 	    CONFIG_FILE=$RRU_CONF_FILE
 	fi
-
+	snapctl set conf.rru=$CONFIG_FILE
 	echo "RRU_CONF_FILE2=$CONFIG_FILE" > $SNAP_DATA/config_rru.sh
 	echo "RRU_CONF_FILE2=$CONFIG_FILE"  > $SNAP_USER_DATA/config_rru.sh
 	;;
@@ -133,7 +134,7 @@ case "$1" in
 	;;
 
      *)
-	 echo "unknown command $1"
+	 echo_error "unknown command $1"
 	 
 	;;
 esac

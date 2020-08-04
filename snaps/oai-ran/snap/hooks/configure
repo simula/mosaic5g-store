@@ -1,15 +1,23 @@
 #!/bin/sh
 set -e 
-echo "Configure hook "
-# if [ -n "$LD_LIBRARY_PATH" ]; then
-#     LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$SNAP/lib:$SNAP/usr/lib:$SNAP/usr/local/lib:$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
-# else
-#     LD_LIBRARY_PATH=$SNAP/lib:$SNAP/usr/lib:$SNAP/usr/local/lib:$SNAP/usr/local/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu
-# fi
-# export LD_LIBRARY_PATH
-
-$SNAP/init
 
 snapctl stop --disable ${SNAP_NAME}  2>&1  || true
 sleep 1 
 snapctl start --enable ${SNAP_NAME}.apid  2>&1  || true
+
+enb="$(snapctl get conf.enb)"
+if [ ! -z "$enb" ] ; then 
+    $SNAP/conf set-enb $enb
+fi
+
+
+cudu="$(snapctl get conf.cudu)"
+if [ ! -z "$cudu" ] ; then 
+    $SNAP/conf set-cudu $cudu
+fi
+
+
+rru="$(snapctl get conf.rru)"
+if [ ! -z "$rru" ] ; then 
+    $SNAP/conf set-rru $rru
+fi

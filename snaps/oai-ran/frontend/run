@@ -1,6 +1,7 @@
-#!/bin/sh
+#!/bin/bash
 
 . $SNAP/common
+. $SNAP/util
 
 export UHD_IMAGES_DIR=$SNAP/uhd_images
 export UHD_RFNOC_DIR=$SNAP/usr/share/uhd/rfnoc/blocks
@@ -8,17 +9,17 @@ export LD_LIBRARY_PATH="$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"
 
 
 if [ ! -e $ENB_EXEC ]; then
-    echo "Cannot find $ENB_EXEC executable"
+    echo_error "Cannot find $ENB_EXEC executable"
     exit 127
 fi		   	   
 
 if [ ! -e $CUDU_EXEC ]; then
-    echo "Cannot find $CUDU_EXEC executable"
+    echo_error "Cannot find $CUDU_EXEC executable"
     exit 127
 fi		   	   
 
 if [ ! -e $RRU_EXEC ]; then
-    echo "Cannot find $RRU_EXEC executable"
+    echo_error "Cannot find $RRU_EXEC executable"
     exit 127
 fi		   	   
 
@@ -45,16 +46,6 @@ CUDU_EXEC_ARGS=" -O $CUDU_CONFIG"
 RRU_CONFIG=${RRU_CONF_FILE2:-$RRU_CONF_FILE}
 RRU_EXEC_ARGS=" -O $RRU_CONFIG"
 
-
-if_sudo(){
-
-    if [ "$(id -u)" -eq 0 ] ; then
-	return 0
-    else
-	echo "Please run as a sudoer!"
-	exit 1
-    fi
-}
 
 case "$1" in
     "openapi" )
@@ -90,8 +81,14 @@ case "$1" in
     
     "info" )
 	shift 
-	echo "Please manually run: snap info $SNAP_NAME "
+	echo_info "Snap Name: $SNAP_NAME"
+	echo_info "Snap Instance Name: $SNAP_INSTANCE_NAME"
+	echo_info "Sanp Version: $SNAP_VERSION"
+	echo_info "Sanp Revision: $SNAP_REVISION"
+	echo ""
+	echo_info "For more information, run: snap info $SNAP_NAME"
 	;; 
+
     "start"  )
 	daemon=$2
 	shift 2
@@ -182,23 +179,25 @@ case "$1" in
 
     "cudu")
 	shift 
-	echo "$CUDU_EXEC  $CUDU_EXEC_ARGS $@"
+	echo_info "$CUDU_EXEC  $CUDU_EXEC_ARGS $@"
 	$CUDU_EXEC  `echo $CUDU_EXEC_ARGS` "$@"
 	;;
     
     "rru")
 	shift 
-	echo "$RRU_EXEC  $RRU_EXEC_ARGS $@"
+	echo_info "$RRU_EXEC  $RRU_EXEC_ARGS $@"
 	$RRU_EXEC  `echo $RRU_EXEC_ARGS` "$@"
 	;;
     
     "enb")
 	shift 
-	echo "$ENB_EXEC  $ENB_EXEC_ARGS $@"
+	echo_info "$ENB_EXEC  $ENB_EXEC_ARGS $@"
 	$ENB_EXEC  `echo $ENB_EXEC_ARGS` "$@"
 	;;
      * )
-	echo "unknow run command $1"
+	echo_warn "unknow run command $1"
 	;;
 
 esac
+
+set_health

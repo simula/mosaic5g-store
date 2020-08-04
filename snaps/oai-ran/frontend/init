@@ -1,6 +1,7 @@
-#!/bin/sh
+#!/bin/bash
 
 . $SNAP/common
+. $SNAP/util
 
 if [ ! -f $CONF_DIR/rru.conf ] ; then
     cp $SNAP/etc/* $CONF_DIR
@@ -11,18 +12,23 @@ fi
 
 # set the conf
 #echo "set conf to  $CONF_DIR/enb.band7.tm1.50PRB.usrpb210.conf"
-$SNAP/conf set-enb $CONF_DIR/enb.band7.tm1.50PRB.usrpb210.conf
-$SNAP/conf get-enb 
+snapctl set conf.enb=$CONF_DIR/enb.band7.tm1.50PRB.usrpb210.conf
+$SNAP/conf set-enb $(snapctl get conf.enb) # $CONF_DIR/enb.band7.tm1.50PRB.usrpb210.conf
+echo_info "default eNB conf:" $SNAP/conf echo-enb 
 
-$SNAP/conf set-cudu $CONF_DIR/rcc.band7.tm1.if4p5.50PRB.conf
-$SNAP/conf get-cudu
+snapctl set conf.cudu=$CONF_DIR/rcc.band7.tm1.if4p5.50PRB.conf
+$SNAP/conf set-cudu $(snapctl get conf.cudu) #$CONF_DIR/rcc.band7.tm1.if4p5.50PRB.conf
+echo_info "default CUDU conf:"  $SNAP/conf echo-cudu
 
-$SNAP/conf set-rru $CONF_DIR/rru.conf
-$SNAP/conf get-rru 
+
+snapctl set conf.rru=$CONF_DIR/rru.conf
+$SNAP/conf set-rru $(snapctl get conf.rru) #$CONF_DIR/rru.conf
+echo_info "default RRU conf:"  $SNAP/conf echo-rru
+
 
 
 # a copy all the config files for the user
 cp $CONF_DIR/* $SNAP_USER_DATA
 
-echo "OAI_RAN init: done "
-echo "Now, configure the enb, cudu, or rru conf file (mainly the NETWORK_INTERFACES)"
+echo_success "OAI_RAN init: done "
+echo_info "Now, configure the enb, cudu, or rru conf file (mainly the NETWORK_INTERFACES)"
