@@ -1,4 +1,0 @@
-call config_lookup_string for 'loader.oai_device.shlibpath' 0x7f148aa54188
-[LIBCONFIG] loader.oai_device.shlibpath not found in /var/snap/oai-ran/x1/enb.band7.tm1.50PRB.usrpb210.conf 
-call config_lookup_string for 'loader.oai_device.shlibversion' 0x7f148aa54188
-[LIBCONFIG] loader.oai_device: 1/2 parameters successfully set, (1 to default value):
