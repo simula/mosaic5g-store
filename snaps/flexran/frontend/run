@@ -26,18 +26,17 @@ fi
     
 FLEXRAN_EXEC_ARGS=" -p $SBI_PORT -n $NBI_PORT"
 
-
 case "$1" in
     "openapi" )
 	shift
 	python3 $SNAP/api.py "$@"
 	;;
-
-	"openapiman" )
+    
+    "openapiman" )
 	shift
 	python3 $SNAP/api-manager.py "$@"
 	;;
-	
+    
     "gdb" )
         cd $SNAP/bin
 	echo "Running $SNAP_NAME with the gdb"
@@ -59,26 +58,8 @@ case "$1" in
 	echo_info "For more information, run: snap info $SNAP_NAME"
 	;; 
     
-	"init"  )
-	daemon="flexrand"
-	shift 
-	# if_sudo
-	snapctl stop --disable $SNAP_NAME.$daemon "$@"
-	snapctl set port.sbi=2210 port.nbi=9999
-	sbi="$(snapctl get port.sbi)"
-	nbi="$(snapctl get port.nbi)"
-	if [ -z "$sbi" -o -z "$nbi" ]; then
-		echo "SBI and NBI are not set!"
-	else
-		$SNAP/conf sbi $sbi
-		$SNAP/conf nbi $nbi
-		$SNAP/conf ports
-		snapctl start --enable $SNAP_NAME.$daemon "$@"
-		snapctl services $SNAP_NAME.$daemon "$@"
-	fi
-	;;
 
-	"start"  )
+    "start"  )
 	#snap start $SNAP_NAME
 	daemon=$2
 	shift 2
@@ -86,15 +67,15 @@ case "$1" in
 	snapctl start --enable $SNAP_NAME.$daemon "$@"
 	snapctl services $SNAP_NAME.$daemon "$@"
 	;;
-
-	"start-all"  )
+    
+    "start-all"  )
 	shift
 	if_sudo
 	snapctl start --enable $SNAP_NAME "$@"
 	snapctl services $SNAP_NAME "$@"
 	;;
-
-	"stop" )
+    
+    "stop" )
 	#snap stop $SNAP_NAME
 	daemon=$2
 	shift 2
@@ -103,14 +84,14 @@ case "$1" in
 	snapctl services $SNAP_NAME.$daemon "$@"
 	;;
 
-	"stop-all" )
+    "stop-all" )
 	shift
 	if_sudo
 	snapctl stop --disable $SNAP_NAME "$@"
 	snapctl services $SNAP_NAME "$@"
 	;;
-
-	"restart" )
+    
+    "restart" )
 	#snap restart $SNAP_NAME
 	daemon=$2
 	shift 2 
@@ -120,26 +101,26 @@ case "$1" in
 	snapctl services $SNAP_NAME.$daemon "$@"
 	;;
 
-	"restart-all" )
+    "restart-all" )
 	shift
 	if_sudo
 	snapctl stop  --disable $SNAP_NAME "$@"
 	snapctl start --enable  $SNAP_NAME "$@"
 	snapctl services $SNAP_NAME "$@"
 	;;
-
-	"status" )
+    
+    "status" )
 	#snap services $SNAP_NAME
 	daemon=$2
 	shift 2 
 	snapctl services $SNAP_NAME.$daemon "$@"
 	;;
-
-	"status-all" )
+    
+    "status-all" )
 	shift 
 	snapctl services $SNAP_NAME "$@"
 	;;
-     
+    
     "journal" )
 	daemon=$2
 	shift 2 

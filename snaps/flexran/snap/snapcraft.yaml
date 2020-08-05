@@ -14,7 +14,7 @@ base: core18
 
 apps:
   init:
-    command: run init
+    command: init
   info:
     command: run info
   flexran:
