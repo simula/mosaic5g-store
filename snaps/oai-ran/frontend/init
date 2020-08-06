@@ -14,18 +14,38 @@ fi
 #echo "set conf to  $CONF_DIR/enb.band7.tm1.50PRB.usrpb210.conf"
 snapctl set conf.enb=$CONF_DIR/enb.band7.tm1.50PRB.usrpb210.conf
 $SNAP/conf set-enb $(snapctl get conf.enb) # $CONF_DIR/enb.band7.tm1.50PRB.usrpb210.conf
-echo_info "default eNB conf:" $SNAP/conf echo-enb 
+echo_info "Default eNB conf:" $SNAP/conf echo-enb 
 
 snapctl set conf.cudu=$CONF_DIR/rcc.band7.tm1.if4p5.50PRB.conf
 $SNAP/conf set-cudu $(snapctl get conf.cudu) #$CONF_DIR/rcc.band7.tm1.if4p5.50PRB.conf
-echo_info "default CUDU conf:"  $SNAP/conf echo-cudu
-
+echo_info "Default CUDU conf:"  $SNAP/conf echo-cudu
 
 snapctl set conf.rru=$CONF_DIR/rru.conf
 $SNAP/conf set-rru $(snapctl get conf.rru) #$CONF_DIR/rru.conf
-echo_info "default RRU conf:"  $SNAP/conf echo-rru
+echo_info "Default RRU conf:"  $SNAP/conf echo-rru
 
 
+snapctl set conf.usrp=UHD_IMAGES_DIR=$SNAP/uhd_images
+snapctl set conf.rfnoc=UHD_RFNOC_DIR=$SNAP/usr/share/uhd/rfnoc/blocks
+echo_info "Default USRP images:"  $(snapctl get conf.usrp)
+echo_info "Default USRP RFNOC:"  $(snapctl get conf.rfnoc)
+
+apiport=$(grep -m1 api_port_default $SNAP/apivars.py | cut -f3 -d " ")
+mgrport=$(grep -m1 api_manager_port_default $SNAP/apivars.py | cut -f3 -d " ")
+
+if [ ! -z "$apiport" ] ; then 
+    snapctl set conf.apiport=$(grep -m1 api_port_default frontend/apivars.py | cut -f3 -d " ")
+    echo_info "Default API port :"  $(snapctl get conf.apiport)
+else
+    echo_error "Could not read api_port_default in apivars.py!"
+fi
+
+if [ ! -z "$mgrport" ] ; then 
+    snapctl set conf.mgrport=$(grep -m1 api_manager_port_default frontend/apivars.py | cut -f3 -d " ")
+    echo_info "Default MGR port :"  $(snapctl get conf.mgrport)
+else
+    echo_error "Could not read  api_manager_port_default in apivars.py!"
+fi
 
 # a copy all the config files for the user
 cp $CONF_DIR/* $SNAP_USER_DATA

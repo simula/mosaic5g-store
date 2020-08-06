@@ -3,8 +3,8 @@
 . $SNAP/common
 . $SNAP/util
 
-export UHD_IMAGES_DIR=$SNAP/uhd_images
-export UHD_RFNOC_DIR=$SNAP/usr/share/uhd/rfnoc/blocks
+export UHD_IMAGES_DIR=$(snapctl get conf.usrp) # $SNAP/uhd_images
+export UHD_RFNOC_DIR=$(snapctl get conf.rfnoc) #$SNAP/usr/share/uhd/rfnoc/blocks
 export LD_LIBRARY_PATH="$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"
 
 
@@ -53,7 +53,7 @@ case "$1" in
 	python3 $SNAP/api.py "$@"
 	;;
 
-	"openapiman" )
+    "openapiman" )
 	shift
 	python3 $SNAP/api-manager.py "$@"
 	;;
@@ -81,12 +81,7 @@ case "$1" in
     
     "info" )
 	shift 
-	echo_info "Snap Name: $SNAP_NAME"
-	echo_info "Snap Instance Name: $SNAP_INSTANCE_NAME"
-	echo_info "Sanp Version: $SNAP_VERSION"
-	echo_info "Sanp Revision: $SNAP_REVISION"
-	echo ""
-	echo_info "For more information, run: snap info $SNAP_NAME"
+	snap_info
 	;; 
 
     "start"  )
@@ -95,10 +90,8 @@ case "$1" in
 	if_sudo
 	snapctl start --enable $SNAP_NAME.$daemon "$@"
 	snapctl services $SNAP_NAME.$daemon
-	#snap start $SNAP_NAME.$daemon  "$@"
-	
-	# start-all
 	;; 
+
     "start-all"  )
 	daemon=$2
 	shift
@@ -143,7 +136,6 @@ case "$1" in
     "status-all"  )
 	daemon=$2
 	shift
-	if_sudo
 	snapctl services $SNAP_NAME
 
 
@@ -153,28 +145,9 @@ case "$1" in
 	shift 2
 	journalctl -u snap.$SNAP_NAME.$daemon.service "$@"
 	;;
+
     "help" )
-	echo "Usage:                    sudo $SNAP_NAME.[x] args"
-	echo "                          App [x] is enb, cudu, and rru"
-	echo "Note:                     root priviliage required"
-	echo "Options:"
-	echo "oai-ran.info              get the info for this snap"     
-	echo "oai-ran.test              test snap services" 
-	echo "oai-ran.init              initialize $SNAP_NAME (after the 1st installation)"
-	echo ""
-	echo "oai-ran.[x]               run the App [x] manually"
-	echo "oai-ran.[x]-conf-get      get the current $SNAP_NAME.[X] configuration file"
-	echo "oai-ran.[x]-conf-list     list the $SNAP_NAME.[x] configuration files"
-	echo "oai-ran.[x]-conf-set      set the $SNAP_NAME.[x] configuration file"
-	echo "oai-ran.[x]-conf-show     show the path to the $SNAP_NAME.[x] configuration file"
-	echo "oai-ran.[x]-debug         debug the $SNAP_NAME.[x] with gdb, only valid for enb and cudu"
-	echo "oai-ran.[x]-journal       get the $SNAP_NAME.[x] daemon logs"
-	echo "oai-ran.[x]-restart       restart the $SNAP_NAME.[x] daemon"
-	echo "oai-ran.[x]-start         start the $SNAP_NAME.[x] daemon"
-	echo "oai-ran.[x]-status        status the $SNAP_NAME.[x] daemon"
-	echo "oai-ran.[x]-stop          stop the $SNAP_NAME.[x] daemon"
-	echo ""
-	echo "  help:                   print this help"
+	snap_help
 	;;
 
     "cudu")

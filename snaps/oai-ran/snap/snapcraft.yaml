@@ -12,7 +12,7 @@ confinement: devmode
 base: core18
 
 apps:
-  test:
+  check:
     command: test all
   info:
     command: run info

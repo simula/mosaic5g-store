@@ -32,13 +32,7 @@ import argparse
 from werkzeug.utils import cached_property
 from werkzeug.datastructures import FileStorage
 
-snap_name = "oai-ran"
-
-api_host_default = '0.0.0.0'
-api_port_default = 5550
-
-api_manager_host_default = '0.0.0.0'
-api_manager_port_default = 6660
+from apivars import *
 
 flask_app = Flask(__name__.split('.')[0])                                                        
 flask_api = Api(flask_app, 

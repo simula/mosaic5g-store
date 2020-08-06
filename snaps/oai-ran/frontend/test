@@ -1,36 +1,53 @@
-#!/bin/sh
+#!/bin/bash
 
 . $SNAP/common
+. $SNAP/util
 
-echo "Test Snap Service $1"
-
-waiting_time=2
+waiting_time=1
 case "$1" in
 
     "all" )
 	$SNAP/run status-all
 	sleep $waiting_time 
-	$SNAP/run start cudud
-	$SNAP/run start rrud
-	sleep $waiting_time 
-	$SNAP/run status-all
-	sleep $waiting_time 
-	$SNAP/run stop-all
+	echo_info "Start enbd"
+	$SNAP/run start enbd 
 	sleep $waiting_time
-	$SNAP/run start enbd
+	echo_info "Stop enbd"
+	$SNAP/run stop enbd
+	sleep $waiting_time
+	$SNAP/run status-all
+	
 	sleep $waiting_time 
 	$SNAP/run status-all
-
 	sleep $waiting_time 
-	$SNAP/run status-all
-	sleep $waiting_time 
+	
+	echo_info "Stop All"
 	$SNAP/run stop-all
 	sleep $waiting_time 
 
+	echo_info "Check and set eNB conf"
 	$SNAP/conf ls-enb
-	$SNAP/conf ls-cudu
-	$SNAP/conf ls-rru
+	$SNAP/conf set-enb /var/snap/oai-ran/current/enb.band38.tm1.100PRB.usrpx310.conf
+	snapctl get conf.enb
+
+	echo_info "Init"
+	$SNAP/init
 	
+	echo_info "Start OpenAPI"
+	$SNAP/run start apid
+	#echo "curl -Is localhost:$(snapctl get conf.apiport)"
+	#curl -Is localhost:$(snapctl get conf.apiport) | head -n 1
+
+	echo_info "Snap Info"
+	$SNAP/run info
+
+	echo_info "Check eNB exec"
+	$SNAP/run enb | grep "No USRP Device Found" > /dev/null 2>&1
+	if [ $? -eq 0 ] ; then
+	    echo_success "eNB Exec: passed"
+	else
+	    echo_error   "eNB exec: failed"
+	fi
 	
 	;;
 
