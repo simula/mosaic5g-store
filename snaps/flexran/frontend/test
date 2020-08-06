@@ -1,0 +1,64 @@
+#!/bin/bash
+
+. $SNAP/common
+. $SNAP/util
+
+waiting_time=1
+check_string="Listening on port"
+d="d"
+case "$1" in
+    "api" )
+
+    ;;
+    
+    "flexran")
+	
+	$SNAP/run status-all
+	sleep $waiting_time 
+	echo_info "Start $1$d"
+	$SNAP/run start "$1$d" 
+	sleep $waiting_time
+	echo_info "Stop $1$d"
+	$SNAP/run stop "$1$d"
+	sleep $waiting_time
+	$SNAP/run status-all
+	
+	sleep $waiting_time 
+	$SNAP/run status-all
+	sleep $waiting_time 
+	
+	echo_info "Stop All"
+	$SNAP/run stop-all
+	sleep $waiting_time
+
+	echo_info "Check and set $1 conf"
+	$SNAP/conf sbi 1234
+	$SNAP/conf nbi 4321
+	snapctl get ports
+
+	echo_info "Init"
+	$SNAP/init
+	
+	echo_info "Start OpenAPI"
+	$SNAP/run start apid
+	#echo "curl -Is localhost:$(snapctl get conf.apiport)"
+	#curl -Is localhost:$(snapctl get conf.apiport) | head -n 1
+
+	echo_info "Snap Info"
+	$SNAP/run info
+
+	echo_info "Check $1 exec"
+	$SNAP/run journal $1$d -e -n10 | grep "$check_string" > /dev/null 2>&1
+	if [ $? -eq 0 ] ; then
+	    echo_success "$1 Exec: passed"
+	else
+	    echo_error   "$1 exec: failed"
+	fi
+	
+	;;
+
+   
+esac
+
+	
+

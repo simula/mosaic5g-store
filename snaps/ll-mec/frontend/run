@@ -1,9 +1,12 @@
-#!/bin/sh
+#!/bin/bash
 
 . $SNAP/common
+. $SNAP/util
+
+export LD_LIBRARY_PATH="$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"
 
 if [ ! -e $LLMEC_EXEC  ]; then
-    echo "Command $LLMEC_EXEC not found"
+    echo_error "Command $LLMEC_EXEC not found"
     exit 127
 fi		   	   
 
@@ -23,15 +26,6 @@ else
     cp $SNAP/etc/llmec_config.json $SNAP_USER_DATA
 fi
 
-if_sudo(){
-
-    if [ "$(id -u)" -eq 0 ] ; then
-	return 0
-    else
-	echo "Please run as a sudoer!"
-	exit 1
-    fi
-}
 
 case "$1" in
     "gdb" )
@@ -45,45 +39,81 @@ case "$1" in
 	exec $SNAP/gdb --data-directory=$SNAP_DATA  -n -x $SNAP_DATA/.gdb_$SNAP_NAME
 	;;
     "info" )
-	snap info $SNAP_NAME
+	shift 
+	snap_info
 	;;
+
     "start"  )
-	snap start $SNAP_NAME
+	daemon=$2
+	shift 2
+	if_sudo
+	snapctl start --enable $SNAP_NAME.$daemon "$@"
+	snapctl services $SNAP_NAME.$daemon
+	;; 
+
+    "start-all"  )
+	daemon=$2
+	shift
+	if_sudo
+	snapctl start --enable $SNAP_NAME "$@"
+	snapctl services $SNAP_NAME	
+	
 	;;
     "stop" )
-	snap stop $SNAP_NAME
+	daemon=$2
+	shift 2
+	if_sudo
+	snapctl stop --disable $SNAP_NAME.$daemon "$@"
+	snapctl services $SNAP_NAME.$daemon
+	
+	;;
+    "stop-all" )
+	daemon=$2
+	shift
+	if_sudo
+	snapctl stop --disable $SNAP_NAME "$@"
+	snapctl services $SNAP_NAME
+
 	;;
     "restart" )
-	snap restart $SNAP_NAME
+	daemon=$2
+	shift 2
+	if_sudo
+	snapctl stop --disable $SNAP_NAME.$daemon "$@"
+	snapctl start --enable $SNAP_NAME.$daemon "$@"
+	snapctl services $SNAP_NAME.$daemon
 	;;
+
     "status" )
-	snap services $SNAP_NAME
-	#systemctl status  snap.$SNAP_NAME.daemon.service
+	daemon=$2
+	shift 2
+	# echo "Please manually run: snap services $SNAP_NAME.$daemon" 
+	snapctl services $SNAP_NAME.$daemon 
+	#systemctl status --lines 0 snap.$SNAP_NAME.$2.service
+
+		;; 
+    "status-all"  )
+	daemon=$2
+	shift
+	if_sudo
+	snapctl services $SNAP_NAME
 	;;
+
     "journal" )
-	journalctl -u snap.$SNAP_NAME.daemon.service
+	daemon=$2
+	shift 2
+	journalctl -u snap.$SNAP_NAME.$daemon.service "$@"
 	;;
+
+
     "help" )
-	echo "Usage:            sudo $SNAP_NAME or $SNAP_NAME.[options]"
-	echo "Note:             root priviliage required"
-	echo "Options:"
-	echo "  info:           Get the $SNAP_NAME information"
-	echo "  debug:          debug the $SNAP_NAME with gdb"
-	echo "  start:          start the $SNAP_NAME daemon"
-	echo "  stop:           stop the $SNAP_NAME daemon"
-	echo "  restart:        restart the $SNAP_NAME daemon"
-	echo "  status:         get the $SNAP_NAME status"
-	echo "  journal:        get the $SNAP_NAME logs"
-	echo ""
-	echo "  ll-mec:         run LLMEC as a process"
-	echo "  init:           initialize LLMEC (after the 1st installation)"
-	echo "  set-conf:       set the LLMEC configuration file"
-	echo "  get-conf:       get the current LLMEC configuration file"
-	echo "  show-conf:      show the path to the LLMEC configuration file"		
-	echo "  help:           print this help"
+	snap_help
 	;;
     *)
-	echo "$LLMEC_EXEC  `echo $LLMEC_EXEC_ARGS` "$@"" 
+	echo_info "$LLMEC_EXEC  `echo $LLMEC_EXEC_ARGS` "$@"" 
 	$LLMEC_EXEC  `echo $LLMEC_EXEC_ARGS` "$@"
 	;;
 esac
+
+
+set_health
