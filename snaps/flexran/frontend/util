@@ -2,6 +2,34 @@
 
 . $SNAP/common
 
+black='\E[30m'
+red='\E[31m'
+green='\E[32m'
+yellow='\E[33m'
+blue='\E[1;34m'
+magenta='\E[35m'
+cyan='\E[36m'
+white='\E[37m'
+reset_color='\E[00m'
+COLORIZE=1
+
+cecho()  {  
+    # Color-echo
+    # arg1 = message
+    # arg2 = color
+    local default_msg="No Message."
+    message=${1:-$default_msg}
+    color=${2:-$green}
+    [ "$COLORIZE" = "1" ] && message="$color$message$reset_color"
+    echo -e "$message"
+    return
+}
+
+echo_error()   { cecho "$*" $red          ;}
+echo_fatal()   { cecho "$*" $red; exit -1 ;}
+echo_warn()    { cecho "$*" $yellow       ;}
+echo_success() { cecho "$*" $green        ;}
+echo_info()    { cecho "$*" $blue         ;}
 
 if_sudo(){
 
@@ -33,32 +61,36 @@ set_health(){
     
 }
 
-
-black='\E[30m'
-red='\E[31m'
-green='\E[32m'
-yellow='\E[33m'
-blue='\E[1;34m'
-magenta='\E[35m'
-cyan='\E[36m'
-white='\E[37m'
-reset_color='\E[00m'
-COLORIZE=1
-
-cecho()  {  
-    # Color-echo
-    # arg1 = message
-    # arg2 = color
-    local default_msg="No Message."
-    message=${1:-$default_msg}
-    color=${2:-$green}
-    [ "$COLORIZE" = "1" ] && message="$color$message$reset_color"
-    echo -e "$message"
-    return
+snap_info(){
+    echo_info "Snap Name: $SNAP_NAME"
+    echo_info "Snap Instance Name: $SNAP_INSTANCE_NAME"
+    echo_info "Sanp Version: $SNAP_VERSION"
+    echo_info "Sanp Revision: $SNAP_REVISION"
+    echo_info "Snap Data: $SNAP_DATA"
+    echo_info "Snap Conf : "
+    snapctl get port
+    echo ""
+    echo_info "For more information, run: snap info $SNAP_NAME"
 }
 
-echo_error()   { cecho "$*" $red          ;}
-echo_fatal()   { cecho "$*" $red; exit -1 ;}
-echo_warn()    { cecho "$*" $yellow       ;}
-echo_success() { cecho "$*" $green        ;}
-echo_info()    { cecho "$*" $blue         ;}
+snap_help(){
+    echo_info "Usage:            sudo $SNAP_NAME or $SNAP_NAME.[options]"
+    echo "Note:             root priviliage required"
+    echo "Options:"
+    echo "  info:           get $SNAP_NAME info"
+    #	echo "  debug:          debug the $SNAP_NAME with gdb"
+    echo "  start:          start the $SNAP_NAME daemon"
+    echo "  stop:           stop the $SNAP_NAME daemon"
+    echo "  restart:        restart the $SNAP_NAME daemon"
+    echo "  status:         get the $SNAP_NAME status"
+    echo "  journal:        get the $SNAP_NAME logs"
+    echo ""
+    echo "  flexran:        run FLEXRAN as a process "
+    echo "  init:           reset the ports to their default values"
+    echo "  sbi-port [port]:set the FLEXRAN SBI port  "
+    echo "  nbi-port [port]:set the FLEXRAN NBI port"
+    echo "  ports           get the FLEXRAN SBI and NBI ports"
+    
+    echo "  help:           print this help"
+}
+

@@ -13,6 +13,8 @@ license: Apache-2.0
 base: core18
 
 apps:
+  check:
+    command: test flexran
   init:
     command: init
   info:
@@ -153,7 +155,7 @@ parts:
     after: [ pistache, protobuf]
     plugin: cmake
     source: https://gitlab.eurecom.fr/flexran/flexran-rtc.git
-    source-branch: develop
+    source-branch: master
     build-packages: [build-essential, ]
     stage-packages:
       - libboost-all-dev

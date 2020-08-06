@@ -50,12 +50,7 @@ case "$1" in
 	;;
     "info" )
 	shift 
-	echo_info "Snap Name: $SNAP_NAME"
-	echo_info "Snap Instance Name: $SNAP_INSTANCE_NAME"
-	echo_info "Sanp Version: $SNAP_VERSION"
-	echo_info "Sanp Revision: $SNAP_REVISION"
-	echo ""
-	echo_info "For more information, run: snap info $SNAP_NAME"
+	snap_info
 	;; 
     
 
@@ -128,24 +123,7 @@ case "$1" in
 	;;
     
      "help" )
-	echo_info "Usage:            sudo $SNAP_NAME or $SNAP_NAME.[options]"
-	echo "Note:             root priviliage required"
-	echo "Options:"
-	echo "  info:           get $SNAP_NAME info"
-#	echo "  debug:          debug the $SNAP_NAME with gdb"
-	echo "  start:          start the $SNAP_NAME daemon"
-	echo "  stop:           stop the $SNAP_NAME daemon"
-	echo "  restart:        restart the $SNAP_NAME daemon"
-	echo "  status:         get the $SNAP_NAME status"
-	echo "  journal:        get the $SNAP_NAME logs"
-	echo ""
-	echo "  flexran:        run FLEXRAN as a process "
-	echo "  init:           reset the ports to their default values"
-	echo "  sbi-port [port]:set the FLEXRAN SBI port  "
-	echo "  nbi-port [port]:set the FLEXRAN NBI port"
-	echo "  ports           get the FLEXRAN SBI and NBI ports"
-	
-	echo "  help:           print this help"
+	 snap_help
 	;;	
     *)
 	export FLEXRAN_RTC_HOME=$FLEXRAN_DIR

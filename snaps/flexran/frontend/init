@@ -12,6 +12,8 @@ if [ -z "$sbi" -o -z "$nbi" ]; then
     echo_error "SBI or NBI are not set!"
     exit -1 
 fi
+echo "NBI_PORT=$nbi" > $CONF_DIR/nbi_config.sh
+echo "SBI_PORT=$sbi" > $CONF_DIR/sbi_config.sh
 
 $SNAP/conf sbi $sbi
 $SNAP/conf nbi $nbi
@@ -21,4 +23,4 @@ $SNAP/conf nbi $nbi
 $SNAP/conf ports
 
 
-echo_success "FlexRAN init: done "
+echo_success "FlexRAN init: done"
