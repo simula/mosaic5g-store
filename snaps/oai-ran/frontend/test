@@ -4,16 +4,23 @@
 . $SNAP/util
 
 waiting_time=1
+check_string="No USRP Device Found"
+conf="/var/snap/oai-ran/current/enb.band38.tm1.100PRB.usrpx310.conf"
+d="d"
 case "$1" in
+    "api" )
 
-    "all" )
+    ;;
+    
+    "enb")
+	
 	$SNAP/run status-all
 	sleep $waiting_time 
-	echo_info "Start enbd"
-	$SNAP/run start enbd 
+	echo_info "Start $1$d"
+	$SNAP/run start "$1$d" 
 	sleep $waiting_time
-	echo_info "Stop enbd"
-	$SNAP/run stop enbd
+	echo_info "Stop $1$d"
+	$SNAP/run stop "$1$d"
 	sleep $waiting_time
 	$SNAP/run status-all
 	
@@ -23,12 +30,12 @@ case "$1" in
 	
 	echo_info "Stop All"
 	$SNAP/run stop-all
-	sleep $waiting_time 
+	sleep $waiting_time
 
-	echo_info "Check and set eNB conf"
-	$SNAP/conf ls-enb
-	$SNAP/conf set-enb /var/snap/oai-ran/current/enb.band38.tm1.100PRB.usrpx310.conf
-	snapctl get conf.enb
+	echo_info "Check and set $1 conf"
+	$SNAP/conf ls-$1
+	$SNAP/conf set-$1 $conf
+	snapctl get conf.$1
 
 	echo_info "Init"
 	$SNAP/init
@@ -41,33 +48,17 @@ case "$1" in
 	echo_info "Snap Info"
 	$SNAP/run info
 
-	echo_info "Check eNB exec"
-	$SNAP/run enb | grep "No USRP Device Found" > /dev/null 2>&1
+	echo_info "Check $1 exec"
+	$SNAP/run $1 | grep "$check_string" > /dev/null 2>&1
 	if [ $? -eq 0 ] ; then
-	    echo_success "eNB Exec: passed"
+	    echo_success "$1 Exec: passed"
 	else
-	    echo_error   "eNB exec: failed"
+	    echo_error   "$1 exec: failed"
 	fi
 	
 	;;
 
-    "enbd" | "cudud" | "rrud" )
-	$SNAP/run status $1 
-	sleep $waiting_time 
-	$SNAP/run start $1
-	sleep $waiting_time 
-	$SNAP/run status $1
-	sleep $waiting_time 
-	$SNAP/run stop $1
-	sleep $waiting_time
-	$SNAP/run status $1 
-	sleep $waiting_time 
-
-	;;
-    * )
-	echo "Unknown command: $1"
-	;;
-    
+   
 esac
 
 	

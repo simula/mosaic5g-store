@@ -13,7 +13,7 @@ base: core18
 
 apps:
   check:
-    command: test all
+    command: test enb
   info:
     command: run info
   start-all:
