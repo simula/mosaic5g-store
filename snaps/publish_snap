@@ -8,7 +8,7 @@ fi
 declare -a snaps=("oai-cn" "oai-ran" "oai-ue" "oai-tracer" "flexran" "ll-mec")
 declare -a snaps=("oai-ue" "oai-tracer" "oai-hss" "oai-spgwc" "oai-spgwu" "oai-mme" "flexran" "oai-ran")
 declare -a snaps=("oai-spgwc" "oai-spgwu" "oai-mme" "oai-ran" "oai-tracer" "oai-ue")
-declare -a snaps=("oai-ran")
+declare -a snaps=("oai-mme")
 
 declare -a channels=("edge,beta")
 

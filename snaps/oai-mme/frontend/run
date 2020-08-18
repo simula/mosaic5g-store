@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 . $SNAP/common
 . $SNAP/util
@@ -6,7 +6,7 @@
 export LD_LIBRARY_PATH="$SNAP/usr/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"
 
 if [ ! -e $MME_EXEC ]; then
-    echo "Cannot find $MME_EXEC executable"
+    echo_error "Cannot find $MME_EXEC executable"
     exit -1 
 fi		   	   
 
@@ -42,13 +42,8 @@ case "$1" in
 
      "info" )
 	 #snap info $SNAP_NAME
-	 shift 
-	 echo_info "Snap Name: $SNAP_NAME"
-	 echo_info "Snap Instance Name: $SNAP_INSTANCE_NAME"
-	 echo_info "Sanp Version: $SNAP_VERSION"
-	 echo_info "Sanp Revision: $SNAP_REVISION"
-	 echo ""
-	 echo_info "For more information, run: snap info $SNAP_NAME"
+	 shift
+	 snap_info
 	 
 	 ;; 
      
@@ -125,55 +120,21 @@ case "$1" in
 	 ;;    
     
     "help" )
-	echo "Usage:   sudo  $SNAP_NAME.[options] args"
-	echo "Note:    need root priviliage"
-	echo "Options:"
-	echo "  start:        start the $SNAP_NAME.mmed daemon"
-	echo "  stop:         stop the $SNAP_NAME.mmed daemon"
-	echo "  restart:      restart the $SNAP_NAME.mmed daemon"
-	echo "  status:       get the $SNAP_NAME.mmed status"
-	echo "  journal:      get the $SNAP_NAME.mmed logs"
-	echo ""
-	echo "  init:         initialize MME"
-	echo "  conf-set:     set the MME configuration file"
-	echo "  conf-get:     get the current MME configuration file (mme.conf)"
-	echo "  conf-show:    show the path to the MME configuration file (mme.conf)"
-	echo "  conf-list:    list all the SPGW configuration files (mme.conf, mme_fd)"
-	echo ""
-	echo "  help:         print this help"
-	echo "  Example:      sudo oai-mme.init; sudo oai-mme;"
+	snap_help
 	
 	;;
         
     "mme-certificate"  )
-	cd /tmp
-	rm -rf ./demoCA
-	mkdir ./demoCA
-	echo 01 > ./demoCA/serial
-	touch ./demoCA/index.txt
-	touch ./demoCA/index.txt.attr
-	
-	fqdn=`hostname --fqdn`
-	echo "Creating MME certificate for user $CONF_DIR $fqdn"
-	# Create a Root Certification Authority Certificate
-	openssl req  -new -batch -x509 -days 3650 -nodes -newkey rsa:1024 -out mme.cacert.pem -keyout mme.cakey.pem -subj /CN=$fqdn/C=FR/ST=PACA/L=Aix/O=Eurecom/OU=CM
-	# Generate a Private Key
-	openssl genrsa -out mme.key.pem 1024
-	# Generate a CSR (Certificate Signing Request) that will be self-signed
-	openssl req -new -batch -out mme.csr.pem -key mme.key.pem -subj /CN=$fqdn/C=FR/ST=PACA/L=Aix/O=Eurecom/OU=CM
-	#certificate authority
-	openssl ca -cert mme.cacert.pem -keyfile mme.cakey.pem -in mme.csr.pem -out mme.cert.pem -outdir . -batch
-	mkdir -p $CONF_DIR/
-	mv mme.cakey.pem mme.cert.pem mme.cacert.pem mme.key.pem  $CONF_DIR
-	cd - 
+	echo_info "Creating MME certificate for user $CONF_DIR $fqdn"
+	mme_cert
 	;;
     
     "mme" | * )
 	shift 
-	echo "$MME_EXEC  $MME_EXEC_ARGS"
+	echo_info "$MME_EXEC  $MME_EXEC_ARGS"
 	$MME_EXEC  `echo $MME_EXEC_ARGS` "$@" $*
 	;;
     
 esac
 
-
+set_health

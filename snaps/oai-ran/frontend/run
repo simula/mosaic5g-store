@@ -5,7 +5,7 @@
 
 export UHD_IMAGES_DIR=$(snapctl get conf.usrp) # $SNAP/uhd_images
 export UHD_RFNOC_DIR=$(snapctl get conf.rfnoc) #$SNAP/usr/share/uhd/rfnoc/blocks
-export LD_LIBRARY_PATH="$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"
+export LD_LIBRARY_PATH="$SNAP/usr/lib/x86_64-linux-gnu:$SNAP/usr/lib:$LD_LIBRARY_PATH"
 
 
 if [ ! -e $ENB_EXEC ]; then

@@ -2,6 +2,4 @@
 set -e 
 echo "Install hook"
 
-#$SNAP/init hss
-#$SNAP/init mme
-#$SNAP/init spgw
+$SNAP/init mme

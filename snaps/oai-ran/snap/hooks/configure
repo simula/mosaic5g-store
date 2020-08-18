@@ -5,17 +5,17 @@ snapctl stop --disable ${SNAP_NAME}  2>&1  || true
 sleep 1 
 snapctl start --enable ${SNAP_NAME}.apid  2>&1  || true
 
-enb="$(snapctl get conf.enb)"
+enb=$(snapctl get conf.enb)
 if [ ! -z "$enb" ] ; then 
     $SNAP/conf set-enb $enb
 fi
 
-cudu="$(snapctl get conf.cudu)"
+cudu=$(snapctl get conf.cudu)
 if [ ! -z "$cudu" ] ; then 
     $SNAP/conf set-cudu $cudu
 fi
 
-rru="$(snapctl get conf.rru)"
+rru=$(snapctl get conf.rru)
 if [ ! -z "$rru" ] ; then 
     $SNAP/conf set-rru $rru
 fi
@@ -32,10 +32,10 @@ fi
 
 usrp=$(snapctl get conf.usrp)
 if [ -z "$usrp" ] ; then
-    snapctl set conf.usrp=UHD_IMAGES_DIR=$SNAP/uhd_images
+    snapctl set conf.usrp=$SNAP/uhd_images
 fi
 
 rfnoc=$(snapctl get conf.rfnoc)
 if [ -z "$rfnoc" ] ; then
-    snapctl set conf.rfnoc=UHD_RFNOC_DIR=$SNAP/usr/share/uhd/rfnoc/blocks
+    snapctl set conf.rfnoc=$SNAP/usr/share/uhd/rfnoc/blocks
 fi

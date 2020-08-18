@@ -6,14 +6,24 @@ snapctl stop --disable ${SNAP_NAME}  2>&1  || true
 sleep 1 
 snapctl start --enable ${SNAP_NAME}.apid  2>&1  || true
 
-sbi="$(snapctl get port.sbi)"
+sbi=$(snapctl get conf.sbi)
 if [ ! -z "$sbi" ] ; then 
     $SNAP/conf sbi $sbi
 fi
 
-nbi="$(snapctl get port.nbi)"
+nbi=$(snapctl get conf.nbi)
 if [ ! -z "$nbi" ]; then
     $SNAP/conf nbi $nbi
+fi
+
+apiport=$(snapctl get conf.apiport)
+if [ ! -z "$apiport" ] ; then 
+    snapctl set conf.apiport=$apiport
+fi
+
+mgrport=$(snapctl get conf.mgrport)
+if [ ! -z "$mgrport" ] ; then 
+    snapctl set conf.apiport=$mgrport
 fi
 
 #snapctl set-health --code=ready blocked "FlexRAN ready to be run"

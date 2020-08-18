@@ -1,24 +1,52 @@
-#!/bin/sh
+#!/bin/bash
 
 . $SNAP/common
+. $SNAP/util
 
-REALM=`cat $MME_FD_CONF_FILE | grep  "Realm "  | cut -f2 -d'"'`
-HOSTNAME=`hostname` # `cat /etc/hostname` #`hostname`
+# `cat /etc/hostname` #`hostname`
+
+HOSTNAME=`hostname`
+FQDN=`hostname --fqdn`
+
+apiport=$(grep -m1 "api_port_default" $SNAP/apivars.py | cut -f3 -d " ")
+mgrport=$(grep -m1 "api_manager_port_default" $SNAP/apivars.py | cut -f3 -d " ")
+
+if [ ! -z "$apiport" ] ; then 
+    snapctl set conf.apiport=$apiport
+    echo_info "Default API port :"  $(snapctl get conf.apiport)
+else
+    echo_error "Could not read api_port_default in apivars.py!"
+fi
+
+if [ ! -z "$mgrport" ] ; then 
+    snapctl set conf.mgrport=$mgrport
+    echo_info "Default MGR port :"  $(snapctl get conf.mgrport)
+else
+    echo_error "Could not read  api_manager_port_default in apivars.py!"
+fi
+
 
 case "$1" in
 
     "mme" )
+	mkdir -p $CONF_DIR/run
+	chmod -R 777 $CONF_DIR/run
+	#chown $USER:$USER $CONF_DIR/run
 	
 	#if [ ! -f $CONF_DIR/mme.conf ] ; then
-	    cp $SNAP/etc/* $CONF_DIR
+	cp $SNAP/etc/* $CONF_DIR
 
 	#fi
 	# set the mme.conf
-	$SNAP/conf set-mme $CONF_DIR/mme.conf
+	    # set the conf
+	snapctl set conf.mme=$CONF_DIR/mme.conf
+	snapctl set conf.mmefd=$CONF_DIR/mme_fd.conf
+	$SNAP/conf set-mme $(snapctl get conf.mme) # $CONF_DIR/enb.band7.tm1.50PRB.usrpb210.conf
+	echo_info "Default MME conf:" $SNAP/conf echo-mme 
+
 	
 	sed -i -e "s/hss/$HOSTNAME/g" $CONF_DIR/mme.conf 
 	sed -i -e "s/ubuntu/$HOSTNAME/g" $CONF_DIR/mme_fd.conf 
-	$SNAP/run mme-certificate
 	
 	# a copy for the user
 	cp $CONF_DIR/mme.conf $SNAP_USER_DATA
@@ -27,16 +55,22 @@ case "$1" in
 	#/sbin/ifconfig lo:s1c 127.0.1.1/24 up
 	#/sbin/ifconfig lo:s11 127.0.11.1/24 up
 	#/sbin/ifconfig lo:s10 127.0.10.1/24 up
+
+	REALM=`cat $MME_FD_CONF_FILE | grep  "Realm "  | cut -f2 -d'"'`
+	snapctl set conf.realm="$REALM"
+	snapctl set conf.host="$HOSTNAME"
 	
-	if [ -z "$(grep -o "`hostname`.$REALM" /etc/hosts)" ]; then
+	if [ -z "$(grep -o "$HOSTNAME.$REALM" /etc/hosts)" ]; then
 	    cp /etc/hosts /etc/hosts.$REALM.bkup
 	    
 	    echo "Adding 127.0.0.1" $HOSTNAME.$REALM $HOSTNAME "mme to /etc/hosts"
 	    sed -i '/mme/d' /etc/hosts
 	    sed -i "1i127.0.0.1 $HOSTNAME.$REALM $HOSTNAME mme" /etc/hosts
-
 	    
 	fi
+
+	$SNAP/run mme-certificate
+
 	echo ""
 	echo "MME is initialized"
 	echo "Now, it is the time to configure the mme.conf and mme_fd.conf"

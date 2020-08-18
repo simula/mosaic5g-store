@@ -3,10 +3,10 @@
 . $SNAP/common
 . $SNAP/util
 
-snapctl set port.sbi=2210 port.nbi=9999
+snapctl set conf.sbi=2210 conf.nbi=9999
 
-sbi="$(snapctl get port.sbi)"
-nbi="$(snapctl get port.nbi)"
+sbi="$(snapctl get conf.sbi)"
+nbi="$(snapctl get conf.nbi)"
 
 if [ -z "$sbi" -o -z "$nbi" ]; then
     echo_error "SBI or NBI are not set!"
@@ -22,5 +22,21 @@ $SNAP/conf nbi $nbi
 # show the conf
 $SNAP/conf ports
 
+apiport=$(grep -m1 "api_port_default" $SNAP/apivars.py | cut -f3 -d " ")
+mgrport=$(grep -m1 "api_manager_port_default" $SNAP/apivars.py | cut -f3 -d " ")
+
+if [ ! -z "$apiport" ] ; then 
+    snapctl set conf.apiport=$apiport
+    echo_info "Default API port :"  $(snapctl get conf.apiport)
+else
+    echo_error "Could not read api_port_default in apivars.py!"
+fi
+
+if [ ! -z "$mgrport" ] ; then 
+    snapctl set conf.mgrport=$mgrport
+    echo_info "Default MGR port :"  $(snapctl get conf.mgrport)
+else
+    echo_error "Could not read  api_manager_port_default in apivars.py!"
+fi
 
 echo_success "FlexRAN init: done"

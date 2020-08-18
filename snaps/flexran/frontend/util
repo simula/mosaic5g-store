@@ -68,7 +68,7 @@ snap_info(){
     echo_info "Sanp Revision: $SNAP_REVISION"
     echo_info "Snap Data: $SNAP_DATA"
     echo_info "Snap Conf : "
-    snapctl get port
+    snapctl get conf
     echo ""
     echo_info "For more information, run: snap info $SNAP_NAME"
 }

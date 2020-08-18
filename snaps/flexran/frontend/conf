@@ -8,7 +8,7 @@ case "$1" in
 	if [ "$2" != "" ]; then
             . $CONF_DIR/nbi_config.sh
 	    if [ "$2" != "$NBI_PORT" ]; then
-		snapctl set port.sbi=$2
+		snapctl set conf.sbi=$2
 		echo "SBI_PORT=$2" > $CONF_DIR/sbi_config.sh
 		echo_info "SBI $2 is properly set!. restart flexran to take the new configuration"
 	    else
@@ -26,7 +26,7 @@ case "$1" in
 	if [ "$2" != "" ]; then
             . $CONF_DIR/sbi_config.sh
 	    if [ "$2" != "$SBI_PORT" ]; then
-		snapctl set port.nbi=$2
+		snapctl set conf.nbi=$2
 		echo "NBI_PORT=$2" > $CONF_DIR/nbi_config.sh
 		echo_info "NBI $2 is properly set!. restart flexran to take the new configuration"
 	    else

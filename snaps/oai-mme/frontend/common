@@ -10,3 +10,5 @@ MME_DIR="$SNAP/mme"
 MME_CONF_FILE="$CONF_DIR/mme.conf"
 MME_FD_CONF_FILE="$CONF_DIR/mme_fd.conf"
 MME_EXEC="$MME_DIR/mme"
+
+export LD_LIBRARY_PATH="$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"

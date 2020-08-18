@@ -175,6 +175,7 @@ parts:
       cd ../ 
       mkdir -p $SNAPCRAFT_PART_INSTALL/enb
       cp  targets/bin/* $SNAPCRAFT_PART_INSTALL/enb
+      cp -rp /usr/share/uhd/rfnoc/blocks/ $SNAPCRAFT_PART_INSTALL/usr
       cp -r common/uhd_images $SNAPCRAFT_PART_INSTALL/ 
       cp targets/PROJECTS/GENERIC-LTE-EPC/CONF/* $SNAPCRAFT_PART_INSTALL/enb
       cp cmake_targets/snap_environment.sh $SNAPCRAFT_PART_INSTALL/enb
@@ -201,35 +202,35 @@ parts:
     plugin: dump
     source: frontend
 
-  openapi:
-    plugin: python
-    python-version: python3
-    python-packages:
-      - flask
-      - itsdangerous
-      - Werkzeug==0.16.1
-      - click
-      - jinja2
-      - MarkupSafe
-      - requests
-      - argparse
-      - flask_restplus==0.13.0
-      - aniso8601==8.0.0
-      - pytz==2020.1
-      - jsonschema==3.2.0
-      - attrs==19.3.0
-      - pyrsistent==0.16.0
-      - importlib-metadata==1.7.0
-      - importlib-resources==1.5.0
-      - zipp==3.1.0
+  #openapi:
+  #  plugin: python
+  #  python-version: python3
+  #  python-packages:
+  #    - flask
+  #    - itsdangerous
+  #    - Werkzeug==0.16.1
+  #    - click
+  #    - jinja2
+  #    - MarkupSafe
+  #    - requests
+  #    - argparse
+  #    - flask_restplus==0.13.0
+  #    - aniso8601==8.0.0
+  #    - pytz==2020.1
+  #    - jsonschema==3.2.0
+  #    - attrs==19.3.0
+  #    - pyrsistent==0.16.0
+  #    - importlib-metadata==1.7.0
+  #    - importlib-resources==1.5.0
+  #    - zipp==3.1.0
       # - pyrsistent==0.16.0
       # - cassandra-driver==3.24.0
-    stage:
-      - usr/lib/python3.6/*
-      - usr/*
-    prime:
-      - usr/lib/python3.6/*
-      - usr/*
+  #  stage:
+  #    - usr/lib/python3.6/*
+  #    - usr/*
+  #  prime:
+  #    - usr/lib/python3.6/*
+  #    - usr/*
 
 # layout:
 #   /usr/share/parameters:

@@ -1,0 +1,5 @@
+#!/bin/sh
+set -e
+
+. $SNAP/util
+set_health
