@@ -64,7 +64,13 @@ class file_store_app(object):
         f = open(self.dir + name, 'wb')
         f.write(body)
         f.close()
-        f = open(self.file_list, 'a')
+        f = open(self.file_list, 'r+')
+        for line in f.readlines():
+            if line == name + "\n":
+                f.close()
+                client.write("updated\n")
+                return
+        # did not find, add it
         f.write(name)
         f.write("\n")
         f.close()
