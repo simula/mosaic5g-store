@@ -34,7 +34,7 @@ import argparse
 import json
 import random
 
-#from pythonping import ping
+from pythonping import ping
 
 # webserver
 import tornado
@@ -119,22 +119,25 @@ class ping_app(object):
             client.send_notification('ue_info', { 'bs_id': int(bs), 'rnti': int(rnti), 'text': msg, 'app': 'ping' } )
 
     def send_ping(self, bs_id, rnti, ip, interval):
-        ip = '8.8.8.8'
-        #rl = ping(ip, verbose=True, size=100, count=1)
-        rl = [{'success': True, 'rtt_max_ms': random.randint(1,100)}]
-        if not rl[0]['success']:
-            stop_cb(bs_id, rnti, rl[0].error_message)
+        try:
+            rl = ping(ip, verbose=True, size=100, count=1)
+        except Exception as error:
+            self.stop_cb(bs_id, rnti, 'Exception: {}'.format(error))
             return
-        rtt = rl[0]['rtt_max_ms']
-        num = 5/interval
+        if not rl.success:
+            self.stop_cb(bs_id, rnti, rl.error_message)
+            return
+        rtt = rl.rtt_max_ms
+        num = 3/interval
+        alpha = 2/(num+1)
         name = str(bs_id)+'-'+str(rnti)
         avg = self.pings[name]['avg']
-        avg = (1-1/num) * avg + 1/num * rtt
+        avg = (1-alpha) * avg + alpha * rtt
         self.pings[name]['avg'] = avg
         params = {
             'bs_id': bs_id,
             'rnti': rnti,
-            'text': 'ping to ' + ip + ' at interval ' + str(interval) + ': ' + str(avg),
+            'text': 'to {} at interval {}: avg {:5.1f} ms'.format(ip, interval, avg),
             'app': 'ping'
         }
         for client in self.clients:
