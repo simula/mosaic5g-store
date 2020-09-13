@@ -9,7 +9,7 @@ function timechart(g, width, height, duration) {
 	// y = d3.scaleLinear().range([height, 0]),
 	y = d3.scaleSqrt()
 	    .range([height, 0])
-	    .domain([1,50000000]),
+	    .domain([1,20000000]),
 	z = d3.scaleOrdinal(d3.schemeCategory10);
 
     var x_axis = g.append("g")
@@ -24,7 +24,7 @@ function timechart(g, width, height, duration) {
 	    .attr("transform", "translate(" + width + ")")
     	    .call(d3.axisRight(y)
 		  .tickFormat(d3.format('.2s'))
-		  .tickValues([1000000, 2000000, 4000000,8000000,16000000, 32000000])
+		  .tickValues([500000, 1000000, 2000000, 4000000,8000000,16000000])
 		  .tickSize(-width)
 		 );
 

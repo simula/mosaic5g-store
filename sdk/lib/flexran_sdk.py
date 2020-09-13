@@ -43,8 +43,6 @@ import pprint
 import yaml
 from datetime import datetime
 
-from logger import *
-
 from enum import Enum
 
 
