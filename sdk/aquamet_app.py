@@ -496,7 +496,7 @@ if __name__ == '__main__':
     parser.add_argument('--version', action='version', version='%(prog)s 1.0')
     args = parser.parse_args()
     # Create logger object
-    log=flexran_sdk.logger(log_level=args.log).init_logger()
+    log=logger.sdk_logger(log_level=args.log).init_logger()
     # Create monitoring_app object
     monitoring_app = monitoring_app.monitoring_app(log=log,
                                     url=args.url,

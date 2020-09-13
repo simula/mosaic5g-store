@@ -86,7 +86,7 @@ if __name__ == '__main__':
     
     args = parser.parse_args()
     
-    log=flexran_sdk.logger(log_level=args.log).init_logger()
+    log=logger.sdk_logger(log_level=args.log).init_logger()
     
     sm = flexran_sdk.stats_manager(log=log,
                                    url=args.url,

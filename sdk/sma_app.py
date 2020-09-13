@@ -607,7 +607,7 @@ if __name__ == '__main__':
     
     sma_app.period=args.period
 
-    log=flexran_sdk.logger(log_level=args.log).init_logger()
+    log=logger.sdk_logger(log_level=args.log).init_logger()
 
     sma_app = sma_app(log=log)
 

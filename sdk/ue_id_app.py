@@ -134,7 +134,7 @@ if __name__ == '__main__':
     parser.add_argument('--version', action='version', version='%(prog)s 1.0')
     args = parser.parse_args()
 
-    log = flexran_sdk.logger(log_level = args.log,
+    log = logger.sdk_logger(log_level = args.log,
                              format = "[%(levelname)s] %(message)s").init_logger()
 
     sm = flexran_sdk.stats_manager(log = log,

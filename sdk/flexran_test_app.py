@@ -88,7 +88,7 @@ if __name__ == '__main__':
                    log_level=args.log,
                    op_mode=args.op_mode)
     
-    log=flexran_sdk.logger(log_level=args.log).init_logger()
+    log=logger.sdk_logger(log_level=args.log).init_logger()
     log.info('test')
     
     sm = flexran_sdk.stats_manager(log=log,

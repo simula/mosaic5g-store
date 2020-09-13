@@ -358,7 +358,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    log=flexran_sdk.logger(log_level=args.log).init_logger()
+    log=logger.sdk_logger(log_level=args.log).init_logger()
     
     rrm_app = rrm_app(log=log,
                       log_level=args.log,

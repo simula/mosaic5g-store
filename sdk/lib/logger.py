@@ -34,10 +34,10 @@ import time
 import logging
 
 
-class logger(object):
+class sdk_logger(object):
 
     def __init__(self, log_level='info', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'):
-        super(logger, self).__init__()
+        super(sdk_logger, self).__init__()
         self.log_level=log_level
         self.format = format
        

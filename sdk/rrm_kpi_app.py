@@ -898,7 +898,7 @@ if __name__ == '__main__':
   
   rrm_kpi_app.period=args.period
 
-  log=flexran_sdk.logger(log_level=args.log).init_logger()
+  log=logger.sdk_logger(log_level=args.log).init_logger()
 
   rrm_kpi_app= rrm_kpi_app(log=log,
                             log_level=args.log,
