@@ -653,6 +653,20 @@ function topology(sources) {
 		    ctl.selectAll(".command")
 			.filter(function (d) { return d == data.method;})
 			.classed("fail", false);
+                    if (data.method == "ue_info") {
+                      rnti = data.params.rnti;
+                      bs_id = data.params.bs_id;
+                      text = data.params.text;
+                      app = data.params.app;
+                      //console.log(rnti, bs_id, text, app);
+                      //if (config.LC.lcUeConfig) {
+                      enb = get_enb_node(bs_id);
+                      if (enb) {
+                        ue = get_ue_node(enb, rnti, INFO_LC_UE);
+                        ue.config[app] = data.params.text;
+                        console.log(ue.config);
+                      }
+                    }
 		}
 	    } else if (data.method !== undefined) {
 		// No methods implemented by the this GUI
@@ -1119,7 +1133,7 @@ function topology(sources) {
 		.select("text.stats")
 		.attr("y", +GRAPH.NODE.R+8)
 		.selectAll("tspan")
-		.data(['imsi', 'mmeS1Ip', 'selectedPlmn', 'dlSliceId']);
+		.data(['imsi', 'mmeS1Ip', 'selectedPlmn', 'dlSliceId', 'ping']);
 		//.data(['teidSgw', 'teidEnb', 'neighPhyCellId', 'imsi']);
 	stats.enter()
 	    .append("tspan")
@@ -1130,6 +1144,7 @@ function topology(sources) {
 	    .text(function (d) {
 		var config = this.parentNode.__data__.config.ueConfig;
                 var stats  = this.parentNode.__data__.config.stats;
+                var c = this.parentNode.__data__.config;
                 switch (d) {
                   case 'teidSgw':
                   case 'teidEnb':
@@ -1145,6 +1160,9 @@ function topology(sources) {
                     if (stats == null) return '';
                     p = stats.mac_stats.s1apStats[d];
                     return d + '=' + p.mcc + p.mnc;
+                  case 'ping':
+                    //if (app_info == null || d >= app_info.length) return '';
+                    return "ping: " + c[d];
                   default:
                     return config ?  d + '=' + config[d] : '';
                 }
