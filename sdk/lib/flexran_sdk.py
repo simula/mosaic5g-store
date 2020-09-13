@@ -6,9 +6,9 @@
    Apache License, Version 2.0  (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
-  
-    	http://www.apache.org/licenses/LICENSE-2.0
-  
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,7 +16,7 @@
    limitations under the License.
  -------------------------------------------------------------------------------
    For more information about the Mosaic5G:
-   	contact@mosaic-5g.io
+       contact@mosaic-5g.io
 """
 
 """ FlexRAN software development kit (SDK)
@@ -55,7 +55,7 @@ class cd_actions(Enum):
 
     PULL = 0
     PUSH = 1
-    
+
     #def describe(self):
         #return self.name, self.value
 
@@ -66,7 +66,7 @@ class flexran_rest_api(object):
     """!@brief  FlexRAN supported REST APIs endpoints
 
     """
- 
+
     """!@brief Input data sets for all the status used for test"""
     # pf_all='inputs/multiple_data_samples_file.json'
     # pf_all = 'inputs/1eNB_2UEs_mobility_25PRB.json'
@@ -86,47 +86,47 @@ class flexran_rest_api(object):
     tf_name='template.yaml'
     tf_yaml='inputs/'+tf_name
 
-    
-    """!@brief RRC API endpoit """ 
+
+    """!@brief RRC API endpoit """
     rrc_trigger='/rrc'
-    """!@brief control delegation API endpoint for DL """ 
+    """!@brief control delegation API endpoint for DL """
     cd_dl='/dl_sched'
-    """!@brief control delegation API endpoint for DL """ 
+    """!@brief control delegation API endpoint for DL """
     cd_ul='/ul_sched'
 
-    """!@brief RRM API endpoint with a predefined policy """ 
-    rrm='/rrm'  
-    """!@brief RRM API endpoint with the policy as a payload """    
-    rrm_policy='/rrm_config'  
-    """!@brief Slice creation, update, and delete endpoints """ 
+    """!@brief RRM API endpoint with a predefined policy """
+    rrm='/rrm'
+    """!@brief RRM API endpoint with the policy as a payload """
+    rrm_policy='/rrm_config'
+    """!@brief Slice creation, update, and delete endpoints """
     enb_slice='/slice'
-    """!@brief Associate a UE to a slice endpoints """ 
+    """!@brief Associate a UE to a slice endpoints """
     ue_slice='/ue_slice_assoc'
-   
-    """!@brief eNB reconfiguration endpoints """ 
+
+    """!@brief eNB reconfiguration endpoints """
     enb_conf='/conf'
 
-    """!@brief full RAN status API endpoint (human-readable)  """    
+    """!@brief full RAN status API endpoint (human-readable)  """
     sm_hr_all='/stats_manager/all'
-    """!@brief full RAN status API endpoint in json format  """    
+    """!@brief full RAN status API endpoint in json format  """
     sm_all='/stats'
-    """!@brief RAN config status API endpoint in json format """    
+    """!@brief RAN config status API endpoint in json format """
     sm_enb='/stats/enb_config'
-    """!@brief MAC status API endpoint in json format   """    
+    """!@brief MAC status API endpoint in json format   """
     sm_mac='/stats/mac_stats'
-    
-    """!@brief Record all RAN status in json format   """    
+
+    """!@brief Record all RAN status in json format   """
     sm_record="/record/all"
-    """!@brief Record all RAN status in json format   """    
+    """!@brief Record all RAN status in json format   """
     sm_enb_record="/record/enb"
-    """!@brief Record all RAN status in json format   """    
+    """!@brief Record all RAN status in json format   """
     sm_mac_record="/record/stats"
-    """!@brief Record all RAN status in compact binary format  """    
+    """!@brief Record all RAN status in compact binary format  """
     sm_bin_record="/record/all/bin"
 
-    
-    
-    
+
+
+
 class rrc_trigger_meas(object):
     """!@brief RRC trigger measurement class
 
@@ -138,7 +138,7 @@ class rrc_trigger_meas(object):
         """!@brief Class constructor """
 
         super(rrc_trigger_meas, self).__init__()
-        
+
         self.url = url+':'+port
         self.status = ''
         self.op_mode = op_mode
@@ -216,7 +216,7 @@ class control_delegate(object):
 
        This class is used to delegate the control to the agent.
     """
-      
+
     def __init__(self, log, url='http://localhost', port='9999', op_mode='test'):
         """!@brief Class constructor """
         super(control_delegate, self).__init__()
@@ -233,20 +233,20 @@ class control_delegate(object):
         self.actions = {}
         self.actions[cd_actions.PULL] = 'PULL'
         self.actions[cd_actions.PUSH] = 'PUSH'
-        
+
     def delegate_agent(self, func='dl_sched', action='PUSH'):
         """!@brief Delegate a control function to the agent
-        
+
         @param func: name of the function
         @param action: action to be performed by the controller
         """
-        if func == 'dl_sched' : 
+        if func == 'dl_sched' :
             url = self.url+self.cd_dl_api
         elif func == 'ul_sched' :
             url = self.url+self.cd_ul_api
         else :
             self.log.error('Func ' + fucn + 'not supported')
-            return 
+            return
 
         if action == self.actions[cd_actions.PULL] :
             self.log.debug('Action: Pull ' + func + 'to the controller')
@@ -258,7 +258,7 @@ class control_delegate(object):
         if self.op_mode == 'test' :
             self.log.info('POST ' + str(url))
 
-        elif self.op_mode == 'sdk' : 
+        elif self.op_mode == 'sdk' :
             try :
                 req = requests.post(url)
                 if req.status_code == 200 :
@@ -271,18 +271,18 @@ class control_delegate(object):
                 self.log.error('Failed to delegate the DL schedling to the agent' )
 
         else :
-            self.log.warn('Unknown operation mode ' + op_mode )                 
-        
+            self.log.warn('Unknown operation mode ' + op_mode )
+
 class rrm_policy (object):
     """!@brief Apply a radio resource management policy to the underlying RAN
-        
-        This class reads, creates, updates, and applies a policy 
-            
+
+        This class reads, creates, updates, and applies a policy
+
     """
     def __init__(self, log, url='http://localhost', port='9999', op_mode='test'):
         """!@brief Class constructor """
         super(rrm_policy, self).__init__()
-        
+
         self.url = url+':'+port
         self.status = 0
         self.op_mode = op_mode
@@ -295,10 +295,10 @@ class rrm_policy (object):
         # stats manager data requeted by the endpoint
         # could be extended to have data per API endpoint
         self.policy_data = ''
-	self.template_data = '' 
+        self.template_data = ''
         # test files
         # location must be reletaive to app and not SDK
-        # To do: create env vars 
+        # To do: create env vars
         self.pf_yaml=flexran_rest_api.pf_yaml
         #self.pf_json=flexran_rest_api.pf_json
 
@@ -308,31 +308,31 @@ class rrm_policy (object):
     def is_json(self, json_obj):
         try:
             json_object = json.loads(json_obj)
-        except ValueError, e:
+        except ValueError as e:
             return False
         return True
 
-    # read the policy file     
+    # read the policy file
     def read_policy(self, pf=''):
         """
         !@brief Read the policy either from a user-defined policy file or the default one
-     
+
         Read the policy file specified as parameter. If this file does not
-        exist or is left blank, it will default to the file specified in 
+        exist or is left blank, it will default to the file specified in
         flexran_rest_api.pf_yaml
-     
+
         @param pf: the absolut path to the policy file of type str
         @return:  A dictionnary filled with data extracted from the policy file of rtype: dict
 
         @api {function} read_policy(self,pf='') Read the RAN policy either from a user-defined policy file or the default one
         @apiVersion 0.1.0
         @apiName read_policy
-        @apiGroup RRM Class 
+        @apiGroup RRM Class
         @apiPermission None
-        @apiDescription Read the policy file specified as parameter. If this file does not exist or is left blank, it will default to the file specified in 
+        @apiDescription Read the policy file specified as parameter. If this file does not exist or is left blank, it will default to the file specified in
         flexran_rest_api.pf_yaml
-        @apiExample Example usage: 
-        see RRM app      
+        @apiExample Example usage:
+        see RRM app
         @apiParam {file} policyfile the absolut path to the policy file of type str
         @apiSuccess {dictionary} dict A dictionnary filled with data extracted from the policy file of rtype: dict
 
@@ -347,26 +347,26 @@ class rrm_policy (object):
             self.log.error('cannot find the policy file '  + self.pf_yaml + ' or ' + pf)
             return
 
-                
+
         try:
             with open(pfile) as data_file:
                 self.policy_data = yaml.load(data_file)
                 self.log.debug(yaml.dump(self.policy_data, default_flow_style=False))
-        except yaml.YAMLError, exc:
+        except yaml.YAMLError as exc:
             self.log.error('error in policy file'  + pfile + str(exc) )
-	    return	
+        return
 
-	self.print_policy() 
-   
+        self.print_policy()
+
         return self.policy_data
 
     def read_template(self, tf=''):
         """!@brief Read the template file and returns the data contained in the file as a dictionary
-     
+
         Read the template file specified as parameter. If this file does not
-        exist or is left blank, it will default to the file specified in 
+        exist or is left blank, it will default to the file specified in
         flexran_rest_api.tf_yaml
-     
+
         @param tf: The name of the template file of type str
         @return: A dictionnary filled with data extracted from the template file of rtype  dict
         """
@@ -383,17 +383,17 @@ class rrm_policy (object):
             with open(tfile) as data_file:
                 self.template_data = yaml.load(data_file)
                 self.log.debug(yaml.dump(self.template_data, default_flow_style=False))
-        except yaml.YAMLError, exc:
+        except yaml.YAMLError as exc:
             self.log.error('error in policy file'  + tfile + str(exc) )
             return
 
         return self.template_data
 
-    # apply policy with policy data 
+    # apply policy with policy data
     # TBD: apply policy from a file
     def rrm_apply_policy(self, enb=-1, slice=0, policy=''):
-        """!@brief Apply and send the default or user-defined policy as parameter to FlexRAN-RTC. 
-        
+        """!@brief Apply and send the default or user-defined policy as parameter to FlexRAN-RTC.
+
         @param policy_data: content of the policy file of type str
         @param as_payload: embed the applied policy as a payload
         @return: The status of the request as str
@@ -409,21 +409,21 @@ class rrm_policy (object):
         #else:
             #self.log.warn('mal-formated policy file' + json.dumps(policy))
             #return  self.status
-        
+
         if self.op_mode == 'test' :
             self.log.info('POST ' + str(url))
-            if  self.status=='payload' : 
-                print 'PAYLOAD' + json.dumps(policy)
+            if  self.status=='payload' :
+                print('PAYLOAD' + json.dumps(policy))
             self.status='connected'
-            
+
         elif self.op_mode == 'sdk' :
             try :
-		# post data as binary
-                if  self.status=='payload' : 
+            # post data as binary
+                if  self.status=='payload' :
                     req = requests.post(url, data=json.dumps(policy),headers={'Content-Type': 'application/json'})
                 else:
                     req = requests.post(url)
-                    
+
                 if req.status_code == 200:
                     self.log.info('successfully applied the policy')
                     self.status='connected'
@@ -432,21 +432,21 @@ class rrm_policy (object):
                     self.log.error('Request error code : ' + str(req.status_code))
             except :
                 self.log.error('Failed to apply the policy ' )
-            
+
         else :
             self.log.warn('Unknown operation mode ' + op_mode )
-	    self.status='unknown'
-        return self.status 
+            self.status='unknown'
+        return self.status
 
     def associate_ues_slices(self, enb=-1, ue_rnti=0, slice=0, policy=''):
-        """!@brief Associate UEs to slices FlexRAN-RTC. 
-        
+        """!@brief Associate UEs to slices FlexRAN-RTC.
+
         @param policy_data: content of the policy file of type str
         @param as_payload: embed the applied policy as a payload
         @return: The status of the request as str
         """
         self.status='False'
-        if policy == '' :  # short version 
+        if policy == '' :  # short version
             self.status='url'
             url = self.url+self.ue_slice_api+'/enb/'+str(enb)+'/ue/'+str(ue_rnti)+'/slice/'+str(slice)
         #if self.is_json(policy) == True:
@@ -456,41 +456,41 @@ class rrm_policy (object):
         #else:
             #self.log.warn('mal-formated policy file' + json.dumps(policy))
             #return  self.status
-        
-        
+
+
         if self.op_mode == 'test' :
             self.log.info('POST ' + str(url))
-            if  self.status=='payload' : 
-                print 'PAYLOAD' + json.dumps(policy)
+            if  self.status=='payload' :
+                print('PAYLOAD' + json.dumps(policy))
             self.status='connected'
-            
+
         elif self.op_mode == 'sdk' :
             try :
-		# post data as binary
-                if  self.status=='payload' : 
-            	    req = requests.post(url, data=json.dumps(policy),headers={'Content-Type': 'application/json'})
-		else:
+            # post data as binary
+                if  self.status=='payload' :
+                    req = requests.post(url, data=json.dumps(policy),headers={'Content-Type': 'application/json'})
+                else:
                     req = requests.post(url)
-                    
-            	if req.status_code == 200:
-            	    self.log.info('successfully associated UEs to Slices')
-            	    self.status='connected'
-            	else :
-            	    self.status='disconnected'
-            	    self.log.error('Request error code : ' + str(req.status_code))
+
+                if req.status_code == 200:
+                    self.log.info('successfully associated UEs to Slices')
+                    self.status='connected'
+                else :
+                    self.status='disconnected'
+                    self.log.error('Request error code : ' + str(req.status_code))
             except :
                 self.log.error('Failed to associate UEs to Slices ' )
-            
+
         else :
             self.log.warn('Unknown operation mode ' + op_mode )
-	    self.status='unknown'
-        return self.status 
+            self.status='unknown'
+        return self.status
 
     def delete_slice(self, enb=-1, slice=0, policy=''):
-        """!@brief Delet a slice and its associated policy . 
-        
-        @param enb: eNB ID 
-        @param slice: slice id 
+        """!@brief Delet a slice and its associated policy .
+
+        @param enb: eNB ID
+        @param slice: slice id
         @param policy_data: content of the policy file of type str
         @return: The status of the request as str
         """
@@ -505,43 +505,43 @@ class rrm_policy (object):
         #else:
             #self.log.warn('mal-formated policy file' + json.dumps(policy))
             #return  self.status
-        
-        
+
+
         if self.op_mode == 'test' :
             self.log.info('DELETE ' + str(url))
-            if  self.status=='payload' : 
-                print 'PAYLOAD' + json.dumps(policy)
+            if  self.status=='payload' :
+                print('PAYLOAD' + json.dumps(policy))
             self.status='connected'
-            
+
         elif self.op_mode == 'sdk' :
             try :
-		# post data as binary
-                if  self.status=='payload' : 
-            	    req = requests.delete(url, data=json.dumps(policy),headers={'Content-Type': 'application/json'})
-		else:
+            # post data as binary
+                if  self.status=='payload' :
+                    req = requests.delete(url, data=json.dumps(policy),headers={'Content-Type': 'application/json'})
+                else:
                     req = requests.delete(url)
-                    
-            	if req.status_code == 200:
-            	    self.log.info('successfully applied the policy')
-            	    self.status='connected'
-            	else :
-            	    self.status='disconnected'
-            	    self.log.error('Request error code : ' + str(req.status_code))
+
+                if req.status_code == 200:
+                    self.log.info('successfully applied the policy')
+                    self.status='connected'
+                else :
+                    self.status='disconnected'
+                    self.log.error('Request error code : ' + str(req.status_code))
             except :
                 self.log.error('Failed to apply the policy ' )
-            
+
         else :
             self.log.warn('Unknown operation mode ' + op_mode )
-	    self.status='unknown'
-        return self.status 
-    
+            self.status='unknown'
+        return self.status
+
     def dump_policy(self, policy_data='', format='yaml'):
         """!@brief return the content of the policy given the requested format
-        
+
         @param policy_data: content of the policy file
         @return: The policy data in YAML format
         """
-        
+
         if policy_data != '' :
             if format == 'yaml':
                 return yaml.dump(policy_data, default_flow_style=False, default_style='"')
@@ -555,14 +555,14 @@ class rrm_policy (object):
 
     def print_policy(self):
         """!@brief Dump the policy in the ymal format
-        
+
         """
 
-        print self.dump_policy()
+        print(self.dump_policy())
 
     def save_policy(self, basedir='./outputs', basefn='policy', time=0, format='yaml'):
         """!@brief Save the applied policy in a user-defined path and format
-        
+
         @param basedir: base directory
         @param basefn: base file name
         @param time: timestamp when the policy is applied
@@ -579,21 +579,21 @@ class rrm_policy (object):
             json.dumps(self.policy_data, stream)
         else :
             self.log.error('unsupported format')
-            
+
         return self.policy_data
-            
+
     def set_num_slices(self, n=1, dir='dl'):
         """!@brief Set the number of RAN slices to be created/updated in the policy file for a  direction
-        
+
         @param n: number of slices
         @param dir: defines downlink or uplink direction
         """
-        
+
         if dir == 'dl' or dir == "DL":
             index = 0
             key_sched = 'dl_scheduler'
             key_slice = 'n_active_slices'
-            
+
         elif dir == 'ul' or dir == "UL":
             index = 1
             key_sched = 'ul_scheduler'
@@ -605,16 +605,16 @@ class rrm_policy (object):
         if n < 0 or n > 4 :
             self.log.error('Number of slices: Out of range')
             return
-            
+
         self.log.debug('Setting the number of ' + dir + ' slices from '+ str(self.policy_data['mac'][index][key_sched]['parameters'][key_slice]) + ' to ' + str(n) )
         self.policy_data['mac'][index][key_sched]['parameters'][key_slice]=n
 
     def get_num_slices(self, dir='dl'):
         """!@brief Get the current number of RAN slices for a  direction
-        
-        @param dir: defines downlink or uplink direction  
+
+        @param dir: defines downlink or uplink direction
         """
-      
+
         if dir == 'dl' or dir == "DL":
             index = 0
             key_sched = 'dl_scheduler'
@@ -626,29 +626,29 @@ class rrm_policy (object):
         else :
             self.log.error('Unknown direction ' + dir)
             return
-        
+
 
         return  self.policy_data['mac'][index][key_sched]['parameters'][key_slice]
-       
+
     def set_slice_rb(self, sid, rb, dir='dl'):
-        """!@brief Set the resource block share for a slice in a direction. 
-        
+        """!@brief Set the resource block share for a slice in a direction.
+
         @param sid: slice id
         @param rb: percentage of RB share, which is between [0,1]
-        @param dir: defines downlink or uplink direction 
+        @param dir: defines downlink or uplink direction
 
         @note: the sume of rb share acorss all the slices should be 1. The total number of slice is 4.
-        
+
         """
 
         if sid < 0 or sid > 4 :
             self.log.error('Out of Range slice id')
             return
         # rb_percentage
-        if rb < 0 or rb > 1 : 
+        if rb < 0 or rb > 1 :
             self.log.error('Out of Range RB percentage')
             return
-        
+
 
         if dir == 'dl' or dir == "DL":
             index = 0
@@ -663,18 +663,18 @@ class rrm_policy (object):
         self.policy_data['mac'][index][key_sched]['parameters'][key_slice][sid]=rb
         #print self.policy_data['mac'][index][key_sched]['parameters'][key_slice][sid]
 
-        
+
     def get_slice_rb(self, sid, dir='dl'):
-        """!@brief Get the current resource block share for a slice in a  direction 
-        
+        """!@brief Get the current resource block share for a slice in a  direction
+
         @param sid: slice id
-        @param dir: defines downlink or uplink direction 
+        @param dir: defines downlink or uplink direction
         """
         if sid < 0 or sid > 4 :
             self.log.error('Out of Range slice id')
             return
-        
-       
+
+
         if dir == 'dl' or dir == "DL":
             index = 0
             key_sched = 'dl_scheduler'
@@ -690,8 +690,8 @@ class rrm_policy (object):
         return self.policy_data['mac'][index][key_sched]['parameters'][key_slice][sid]
 
     def set_slice_maxmcs(self, sid, maxmcs=28, dir='dl'):
-        """!@brief Set the maximum modulation and coding scheme (MCS) for a slice in a given direction 
-        
+        """!@brief Set the maximum modulation and coding scheme (MCS) for a slice in a given direction
+
         @param sid: slice id
         @param maxmcs: maximum supported MCS
         @param dir: defines downlink or uplink direction
@@ -718,8 +718,8 @@ class rrm_policy (object):
         #print self.policy_data['mac'][index][key_sched]['parameters'][key_mcs][sid]
 
     def get_slice_maxmcs(self, sid, dir='dl'):
-        """!@brief Get the current maximum MCS for a slice in a given direction 
-        
+        """!@brief Get the current maximum MCS for a slice in a given direction
+
         @param sid: slice id
         @param dir: defines downlink or uplink direction
         """
@@ -735,7 +735,7 @@ class rrm_policy (object):
         else :
             self.log.error('Unknown direction ' + dir)
             return
-            
+
         if sid < 0 or sid > 4 :
             self.log.error('Out of Range slice id')
             return
@@ -744,12 +744,12 @@ class rrm_policy (object):
         return self.policy_data['mac'][index][key_sched]['parameters'][key_mcs][sid]
 
     def get_input_slice_type(self, enb, sid):
-        """!@brief Get the slice type from the input template 
-        
-        @param enb: enb index 
+        """!@brief Get the slice type from the input template
+
+        @param enb: enb index
         @param sid: slice id
         """
- 
+
         if enb < 0 or enb >= len(self.template_data['enb_slices']) :
             return None
         elif sid < 0 or sid >= len(self.template_data['enb_slices'][enb]):
@@ -758,9 +758,9 @@ class rrm_policy (object):
             return self.template_data['enb_slices'][enb][sid]
 
     def get_input_slice_nums(self, enb):
-        """!@brief Get the number of slices from a given eNB from the input template 
-        
-        @param enb: enb index 
+        """!@brief Get the number of slices from a given eNB from the input template
+
+        @param enb: enb index
         """
         if enb < 0 or enb >= len(self.template_data['enb_slices']) :
             return None
@@ -769,10 +769,10 @@ class rrm_policy (object):
 
     def get_input_slice_reliability(self, enb, sid, direction):
         """!@brief Get the required slice reliability for a given eNB and direction
-        
-        @param enb: enb index 
-        @param sid: slice id 
-        @param dir: defines uplink or downlink directions 
+
+        @param enb: enb index
+        @param sid: slice id
+        @param dir: defines uplink or downlink directions
         """
         slice_type = self.get_input_slice_type(enb, sid)
         if slice_type is None:
@@ -789,10 +789,10 @@ class rrm_policy (object):
 
     def get_input_slice_priority(self, enb, sid, direction):
         """!@brief Get the required slice priority for a given eNB and direction
-        
-        @param enb: enb index 
-        @param sid: slice id 
-        @param dir: defines uplink or downlink directions 
+
+        @param enb: enb index
+        @param sid: slice id
+        @param dir: defines uplink or downlink directions
         """
         slice_type = self.get_input_slice_type(enb, sid)
         if slice_type is None:
@@ -809,10 +809,10 @@ class rrm_policy (object):
 
     def get_input_slice_rate(self, enb, sid, dir='dl'):
         """!@brief Get the required slice reserved rate for a given eNB and direction
-        
-        @param enb: enb index 
-        @param sid: slice id 
-        @param dir: defines uplink or downlink directions 
+
+        @param enb: enb index
+        @param sid: slice id
+        @param dir: defines uplink or downlink directions
         """
         reserved_rate = 0
         slice_type = self.get_input_slice_type(enb, sid)
@@ -840,10 +840,10 @@ class rrm_policy (object):
 
     def get_input_slice_latency(self, enb, sid, dir='dl'):
         """!@brief Get the required slice latency for a given eNB and direction
-        
-        @param enb: enb index 
-        @param sid: slice id 
-        @param dir: defines uplink or downlink directions 
+
+        @param enb: enb index
+        @param sid: slice id
+        @param dir: defines uplink or downlink directions
         """
         reserved_latency = 10
         slice_type = self.get_input_slice_type(enb, sid)
@@ -871,10 +871,10 @@ class rrm_policy (object):
 
     def get_input_slice_priority(self, enb, sid, dir='dl'):
         """!@brief Get the required slice priority for a given eNB and direction
-        
-        @param enb: enb index 
-        @param sid: slice id 
-        @param dir: defines uplink or downlink directions 
+
+        @param enb: enb index
+        @param sid: slice id
+        @param dir: defines uplink or downlink directions
         """
         reserved_priority = 10
         slice_type = self.get_input_slice_type(enb, sid)
@@ -902,10 +902,10 @@ class rrm_policy (object):
 
     def get_input_slice_isolation(self, enb, sid, dir='dl'):
         """!@brief Get the required slice isolation for a given eNB and direction
-        
-        @param enb: enb index 
-        @param sid: slice id 
-        @param dir: defines uplink or downlink directions 
+
+        @param enb: enb index
+        @param sid: slice id
+        @param dir: defines uplink or downlink directions
         """
 
         reserved_isolation = 0
@@ -934,12 +934,12 @@ class rrm_policy (object):
 
     def get_input_slice_vrbg(self, enb, sid, dir='dl'):
         """!@brief Get the required slice required vritual RBG for a given eNB and direction
-        
-        @param enb: enb index 
-        @param sid: slice id 
-        @param dir: defines uplink or downlink directions 
+
+        @param enb: enb index
+        @param sid: slice id
+        @param dir: defines uplink or downlink directions
         """
- 
+
         reserved_vrbg = 1
         slice_type = self.get_input_slice_type(enb, sid)
         if slice_type is None:
@@ -963,10 +963,10 @@ class rrm_policy (object):
             pass
 
         return reserved_vrbg
-    
+
 class stats_manager(object):
-    """!@brief Statistic manager class 
-    
+    """!@brief Statistic manager class
+
     This class provides high-level APIS to read and process realtime Radio information received from the underlying RAN
     """
 
@@ -990,7 +990,7 @@ class stats_manager(object):
         # could be extended to have data per API endpoint
         """!@brief content of status received by the controller """
         self.stats_data = ''
-        
+
         """!@brief Test policy files"""
         self.pfile_all=flexran_rest_api.pf_all
         """!@brief Test policy file for MAC """
@@ -1002,7 +1002,7 @@ class stats_manager(object):
         self.stats_data_log = ''
         self.stats_data_recorded = []
         self.stats_data_recorded_file = './output/recorded_data.json'
-        
+
         self.recording=False
 
     def __del__(self):
@@ -1010,17 +1010,17 @@ class stats_manager(object):
             with open(self.stats_data_recorded_file, 'w') as outfile:
                 json.dumps(self.stats_data_recorded, outfile)
 
-              
+
     def start_recorder(self):
 
         self.log.info('start the recorder app')
         self.recording=True
-            
+
     def stop_recorder(self, basedir='./outputs', basefn='recorded_data', formatfn='json'):
 
         self.stats_data_recorded_file=basedir+'/'+basefn+'.'+formatfn
-        
-        if self.recording : 
+
+        if self.recording :
             self.log.info('stop the recorder app')
             self.recording=False
             try:
@@ -1031,25 +1031,25 @@ class stats_manager(object):
                 self.log.error('cannot open the file ' + self.stats_data_recorded_file)
         else :
             self.log.warn('recording is not enabled')
-        
-    # called every run loop from monitoring_app        
+
+    # called every run loop from monitoring_app
     def stats_manager(self, api):
         """!@brief Request the statistics from the controller and store it locally.
-        
-        @param api: defines the what type of stats shall be requested, available values: all, mac, eNB 
+
+        @param api: defines the what type of stats shall be requested, available values: all, mac, eNB
         """
         self.log.debug('set stats_manager API to :' + str(api))
         file = ''
-        #url = '' 
+        #url = ''
         if self.op_mode == 'test' :
-            
+
             if 'all' in api :
                 file =  self.pfile_all
             elif 'mac' in api :
                 file =  self.pfile_mac
             elif 'enb' in api :
                 file =  self.pfile_enb
-            
+
             try:
                 if  self.stats_data_index == -1 :
                     self.log.info('Reading the json file for test mode. This can take a while...')
@@ -1062,7 +1062,7 @@ class stats_manager(object):
                 self.status='connected'
             except :
                 self.status='disconnected'
-                self.log.error('cannot find or cannot read the input data file '  + file )                        
+                self.log.error('cannot find or cannot read the input data file '  + file )
 
         elif self.op_mode == 'sdk' :
 
@@ -1072,8 +1072,8 @@ class stats_manager(object):
                 url = self.url+self.sm_mac_api
             elif 'enb' in api :
                 url = self.url+self.sm_enb_api
-            
-            
+
+
             self.log.debug('the request url is: ' + url)
             try :
                 req = requests.get(url)
@@ -1087,11 +1087,11 @@ class stats_manager(object):
                     self.log.error('Request error code : ' + str(req.status_code))
             except :
                 self.log.error('Request url ' + url + ' failed')
-            
+
         else :
             self.log.warn('Unknown operation mode ' + op_mode )
-            
-        if self.status == 'connected' :     
+
+        if self.status == 'connected' :
             self.log.debug('Stats Manager requested data')
             self.log.debug(json.dumps(self.stats_data, indent=2))
 
@@ -1102,14 +1102,14 @@ class stats_manager(object):
 
     def get_enb_config(self,enb=0):
         """!@brief Get the entire eNB configuration
-        
+
         @param enb: index of eNB
         """
         return self.stats_data['eNB_config'][enb]
 
     def get_enb_id(self,enb=0):
-        """!@brief Get the eNB identifier 
-        
+        """!@brief Get the eNB identifier
+
         @param enb: index of eNB
         """
         if 'bs_id' in self.stats_data['eNB_config'][enb]:
@@ -1124,8 +1124,8 @@ class stats_manager(object):
         return [ self.get_enb_id(enb) for enb in range(0, self.get_num_enb()) ]
 
     def get_num_enb(self):
-        """!@brief Get the number of connected eNB to this controller 
-        
+        """!@brief Get the number of connected eNB to this controller
+
         """
         if self.stats_data == '': # if nothing received yet
             return 0
@@ -1133,7 +1133,7 @@ class stats_manager(object):
 
     def get_ue_config(self,enb=0,ue=0):
         """!@brief Get the UE specific configuration
-        
+
         @param enb: index of eNB
         @param ue: index of UE
         """
@@ -1141,7 +1141,7 @@ class stats_manager(object):
 
     def get_cell_config(self,enb=0,cc=0):
         """!@brief Get the Cell-specific configuration
-        
+
         @param enb: index of eNB
         @param cc: index of component carrier
         """
@@ -1149,7 +1149,7 @@ class stats_manager(object):
 
     def get_cell_rb(self,enb=0,cc=0, dir='dl'):
         """!@brief Get the eNB total available resource blocks in a given direction
-        
+
         @param enb: index of eNB
         @param cc: index of component carrier
         @param dir: defines downlink and uplink direction
@@ -1164,7 +1164,7 @@ class stats_manager(object):
 
     def get_cell_bw(self,enb=0,cc=0, dir='dl'):
         """!@brief Get the cell frequency bandwidth for a given direction
-        
+
         @param enb: index of eNB
         @param cc: index of component carrier
         @param dir: defines downlink and uplink direction
@@ -1182,8 +1182,8 @@ class stats_manager(object):
             return 20
 
     def get_rbg_size(self,enb=0,cc=0, dir='dl'):
-        """!@brief Get the cell resource block group size 
-        
+        """!@brief Get the cell resource block group size
+
         @param enb: index of eNB
         @param cc: index of component carrier
         @param dir: defines downlink and uplink direction
@@ -1199,10 +1199,10 @@ class stats_manager(object):
             return 4
         elif rb == 100 :
             return 4
-        
+
     def get_cell_freq(self,enb=0,cc=0, dir='dl'):
         """!@brief Get the cell current operating frequency
-        
+
         @param enb: index of eNB
         @param cc: index of component carrier
         @param dir: defines downlink and uplink direction
@@ -1217,7 +1217,7 @@ class stats_manager(object):
 
     def get_cell_power(self,enb=0,cc=0, dir='dl'):
         """!@brief Get the current cell operating power
-        
+
         @param enb: index of eNB
         @param cc: index of component carrier
         @param dir: defines downlink and uplink direction
@@ -1233,20 +1233,20 @@ class stats_manager(object):
 
     def get_cell_band(self,enb=0,cc=0):
         """!@brief Get the current cell frequency band
-        
+
         @param enb: index of eNB
         @param cc: index of component carrier
         """
         return self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['eutraBand']
-               
+
     def get_cell_maxmcs(self,enb=0,cc=0, dir='dl'):
         """!@brief Get the maximum supported MCS by this eNB
-        
+
         @param enb: index of eNB
         @param cc: index of component carrier
         @param dir: defines downlink and uplink direction
         """
-        
+
         if dir == 'dl' or dir == 'DL' :
             return 28
         elif self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['enable64QAM'] == 0 :
@@ -1268,19 +1268,19 @@ class stats_manager(object):
         @param enb: index of eNB
         """
         return self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['x2HoNetControl']
-    
+
     def get_lc_config(self,enb=0,lc=0):
         """!@brief Get a logical channel (LC) config for a given eNB and LC id
-        
+
         @param enb: index of eNB
         @param lc: logical channel id
         """
-        return self.stats_data['eNB_config'][enb]['LC']['lcUeConfig'][lc]      
+        return self.stats_data['eNB_config'][enb]['LC']['lcUeConfig'][lc]
 
     # mac_stats needs to be changed to ue_status
     def get_ue_status(self,enb=0,ue=0):
-        """!@brief Get the full UE status 
-        
+        """!@brief Get the full UE status
+
         @param enb: index of eNB
         @param ue: index of UE
         """
@@ -1289,7 +1289,7 @@ class stats_manager(object):
 
     def get_num_ue(self,enb=0):
         """!@brief Get the total number of attached UE to a given eNB
-        
+
         @param enb: index of eNB
         """
 
@@ -1316,8 +1316,8 @@ class stats_manager(object):
         return [ self.get_ue_rnti(enb, u) for u in range(0, self.get_num_ue(enb)) ]
 
     def get_ue_mac_status(self,enb=0,ue=0):
-        """!@brief Get the UE MAC layer status 
-        
+        """!@brief Get the UE MAC layer status
+
         @param enb: index of eNB
         @param ue: index of UE
         """
@@ -1325,15 +1325,15 @@ class stats_manager(object):
 
     def get_ue_phr(self,enb=0,ue=0):
         """!@brief Get the current UE power headroom
-        
+
         @param enb: index of eNB
         @param ue: index of UE
         """
         return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['phr']
     # return for all LCIDs
     def get_ue_rlc_report(self,enb=0,ue=0):
-        """!@brief Get the current UE RLC layer buffer report 
-        
+        """!@brief Get the current UE RLC layer buffer report
+
         @param enb: index of eNB
         @param ue: index of UE
         """
@@ -1342,7 +1342,7 @@ class stats_manager(object):
 
     def get_num_ue_lc(self,enb=0,ue=0):
         """!@brief Get the number of configured/active UE logical channels for a given eNB
-        
+
         @param enb: index of eNB
         @param ue: index of UE
         """
@@ -1351,7 +1351,7 @@ class stats_manager(object):
 
     def get_ue_lc_report(self,enb=0,ue=0,lc=0):
         """!@brief Get the UE RLC report for a particular logical channel
-        
+
         @param enb: index of eNB
         @param ue: index of UE
         @param lc: logical channel id
@@ -1361,58 +1361,58 @@ class stats_manager(object):
 
     def get_ue_lc_bo(self,enb=0,ue=0,lc=0):
         """!@brief Get the UE RLC buffer occupancy for a particular logical channel
-        
+
         @param enb: index of eNB
         @param ue: index of UE
         @param lc: logical channel id
         """
 
         return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['rlcReport'][lc]['txQueueSize']
-    
+
     def get_ue_lc_hol_delay(self,enb=0,ue=0,lc=0):
         """!@brief Get the UE RLC buffer occupancy for a particular logical channel
-        
+
         @param enb: index of eNB
         @param ue: index of UE
         @param lc: logical channel id
         """
 
         return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['rlcReport'][lc]['txQueueHolDelay']
-    
+
     def get_ue_lc_num_pdus(self,enb=0,ue=0,lc=0):
         """!@brief Get the UE RLC buffer occupancy for a particular logical channel
-        
+
         @param enb: index of eNB
         @param ue: index of UE
         @param lc: logical channel id
         """
 
         return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['rlcReport'][lc]['statusPduSize']
-    
+
 
     def get_ue_dlcqi_report(self,enb=0,ue=0):
         """!@brief Get the UE downlink channel quality indicator (CQI) report
-        
+
         @param enb: index of eNB
         @param ue: index of UE
         """
 
         return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['dlCqiReport']
-   
+
     def get_ue_dlwbcqi(self,enb=0,ue=0,cc=0):
         """!@brief Get the UE downlink channel quality indicator for a patricular eNB and CC
-        
+
         @param enb: index of eNB
         @param ue: index of UE
         @param cc: index of component carrier
         """
-        if  'wbCqi' in self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['dlCqiReport']['csiReport'][cc]['p10csi'] :      
+        if  'wbCqi' in self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['dlCqiReport']['csiReport'][cc]['p10csi'] :
             return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['dlCqiReport']['csiReport'][cc]['p10csi']['wbCqi']
         return 0
     # lcgdi 0 for SRBs, lcgid 1 for default drb
     def get_ue_bsr(self,enb=0,ue=0, lc=0):
-        """!@brief Get the UE buffer status report for a particular logical channel 
-        
+        """!@brief Get the UE buffer status report for a particular logical channel
+
         @param enb: index of eNB
         @param ue: index of UE
         @param lc: logical channel id
@@ -1428,7 +1428,7 @@ class stats_manager(object):
 
     def get_ue_harq(self,enb=0,ue=0):
         """!@brief Get the UE HARQ status for different PID
-        
+
         @param enb: index of eNB
         @param ue: index of UE
         """
@@ -1437,19 +1437,19 @@ class stats_manager(object):
     # don't need UE
     def get_enb_sfn(self,enb=0,ue=0):
         """!@brief Get eNB system frame number (SFN)
-        
+
         @param enb: index of eNB
         @param ue: index of UE
         """
-        
-	if self.get_num_ue(enb) > 0 :
+
+        if self.get_num_ue(enb) > 0 :
             return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['dlCqiReport']['sfnSn']
-   	else:
+        else:
             return 0
 
     def get_enb_pdcp_sfn(self,enb=0,ue=0):
-        """!@brief Get the PDCP super frame counter 
-        
+        """!@brief Get the PDCP super frame counter
+
         @param enb: index of eNB
         """
         return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['sfn']
@@ -1457,12 +1457,12 @@ class stats_manager(object):
 
     def get_ue_pdcp_pkt(self,enb=0,ue=0, dir='DL'):
         """!@brief Get the number of PDCP packets in a given direction
-        
+
         @param enb: index of eNB
         @param ue: index of UE
         @param dir : direction of the packet
         """
-        
+
         if dir == 'dl' or dir == 'DL' :
             return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktTx']
         elif dir == 'ul' or dir == 'UL' :
@@ -1473,12 +1473,12 @@ class stats_manager(object):
 
     def get_ue_pdcp_pkt_bytes(self,enb=0,ue=0, dir='DL'):
         """!@brief Get the total bytes of PDCP packets in a given direction
-        
+
         @param enb: index of eNB
         @param ue: index of UE
         @param dir : direction of the packet
         """
-        
+
         if dir == 'dl' or dir == 'DL' :
             return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktTxBytes']
         elif dir == 'ul' or dir == 'UL' :
@@ -1489,12 +1489,12 @@ class stats_manager(object):
 
     def get_ue_pdcp_pkt_sn(self,enb=0,ue=0, dir='DL'):
         """!@brief Get the PDCP packet sequence number in a given direction
-        
+
         @param enb: index of eNB
         @param ue: index of UE
         @param dir : direction of the packet
         """
-        
+
         if dir == 'dl' or dir == 'DL' :
             return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktTxSn']
         elif dir == 'ul' or dir == 'UL' :
@@ -1505,12 +1505,12 @@ class stats_manager(object):
 
     def get_ue_pdcp_pkt_w(self,enb=0,ue=0, dir='DL'):
         """!@brief Get the  PDCP number of pkts per observation window in a given direction
-        
+
         @param enb: index of eNB
         @param ue: index of UE
         @param dir : direction of the packet
         """
-        
+
         if dir == 'dl' or dir == 'DL' :
             return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktTxW']
         elif dir == 'ul' or dir == 'UL' :
@@ -1521,12 +1521,12 @@ class stats_manager(object):
 
     def get_ue_pdcp_pkt_aiat(self,enb=0,ue=0, dir='DL'):
         """!@brief Get the  PDCP aggregated inter-arrivale time in a given direction
-        
+
         @param enb: index of eNB
         @param ue: index of UE
         @param dir : direction of the packet
         """
-        
+
         if dir == 'dl' or dir == 'DL' :
             return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktTxAiat']
         elif dir == 'ul' or dir == 'UL' :
@@ -1537,12 +1537,12 @@ class stats_manager(object):
 
     def get_ue_pdcp_pkt_bytes_w(self,enb=0,ue=0, dir='DL'):
         """!@brief Get the  PDCP aggregated inter-arrivale time in a given direction
-        
+
         @param enb: index of eNB
         @param ue: index of UE
         @param dir : direction of the packet
         """
-        
+
         if dir == 'dl' or dir == 'DL' :
             return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktTxBytesW']
         elif dir == 'ul' or dir == 'UL' :
@@ -1553,12 +1553,12 @@ class stats_manager(object):
 
     def get_ue_pdcp_pkt_aiat_w(self,enb=0,ue=0, dir='DL'):
         """!@brief Get the  PDCP aggregated inter-arrivale time in a given direction
-        
+
         @param enb: index of eNB
         @param ue: index of UE
         @param dir : direction of the packet
         """
-        
+
         if dir == 'dl' or dir == 'DL' :
             return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktTxAiatW']
         elif dir == 'ul' or dir == 'UL' :
@@ -1569,23 +1569,23 @@ class stats_manager(object):
 
     def get_ue_pdcp_pkt_oo(self,enb=0,ue=0, dir='UL'):
         """!@brief Get the  PDCP aggregated inter-arrivale time in a given direction
-        
+
         @param enb: index of eNB
         @param ue: index of UE
         @param dir : direction of the packet
         """
-        
-        
+
+
         if dir == 'ul' or dir == 'UL' :
             return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktRxOo']
         else :
             self.log.warning('unknown direction ' + dir + 'set to DL')
-            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktRxOo']       
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['pdcpStats']['pktRxOo']
 
 
     def get_ue_measid(self, enb=0, ue=0):
-        """!@brief Get the RRC measurement id 
-        
+        """!@brief Get the RRC measurement id
+
         @param enb: index of eNB
         @param ue: index of UE
         """
@@ -1595,8 +1595,8 @@ class stats_manager(object):
         return -1
 
     def get_ue_rsrq(self, enb=0, ue=0):
-        """!@brief Get the RRC RSRQ values 
-        
+        """!@brief Get the RRC RSRQ values
+
         @param enb: index of eNB
         @param ue: index of UE
         """
@@ -1607,7 +1607,7 @@ class stats_manager(object):
 
     def get_ue_rsrp(self, enb=0, ue=0):
         """!@brief Get the RRC RSRP value
-        
+
         @param enb: index of eNB
         @param ue: index of UE
         """
@@ -1631,7 +1631,7 @@ class stats_manager(object):
 
     def get_ue_tbs(self, enb=0, ue=0, dir='UL'):
         """!@brief Get the RRC RSRP value
-        
+
         @param enb: index of eNB
         @param ue: index of UE
         """
@@ -1644,7 +1644,7 @@ class stats_manager(object):
             return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['tbsDl']
     def get_harq_round(self, enb=0,ue=0):
         """!@brief Get the HARQ round value
-        
+
         @param enb: index of eNB
         @param ue: index of UE
         """
@@ -1652,7 +1652,7 @@ class stats_manager(object):
 
     def get_ue_prb_retx(self, enb=0, ue=0, dir='UL'):
         """!@brief Get the RRC RSRP value
-        
+
         @param enb: index of eNB
         @param ue: index of UE
         """
@@ -1663,10 +1663,10 @@ class stats_manager(object):
         else :
             self.log.warning('unknown direction ' + dir + 'set to DL')
             return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['prbRetxDl']
-    
+
     def get_ue_prb(self, enb=0, ue=0, dir='UL'):
         """!@brief Get the RRC RSRP value
-        
+
         @param enb: index of eNB
         @param ue: index of UE
         """
@@ -1680,7 +1680,7 @@ class stats_manager(object):
 
     def get_ue_mcs1(self, enb=0, ue=0, dir='UL'):
         """!@brief Get the RRC RSRP value
-        
+
         @param enb: index of eNB
         @param ue: index of UE
         """
@@ -1694,7 +1694,7 @@ class stats_manager(object):
 
     def get_ue_mcs2(self, enb=0, ue=0, dir='UL'):
         """!@brief Get the RRC RSRP value
-        
+
         @param enb: index of eNB
         @param ue: index of UE
         """
@@ -1708,7 +1708,7 @@ class stats_manager(object):
 
     def get_ue_total_bytes_sdus(self, enb=0, ue=0, dir='UL'):
         """!@brief Get the RRC RSRP value
-        
+
         @param enb: index of eNB
         @param ue: index of UE
         """
@@ -1722,7 +1722,7 @@ class stats_manager(object):
 
     def get_ue_total_prb(self, enb=0, ue=0, dir='UL'):
         """!@brief Get the RRC RSRP value
-        
+
         @param enb: index of eNB
         @param ue: index of UE
         """
@@ -1736,7 +1736,7 @@ class stats_manager(object):
 
     def get_ue_total_tbs(self, enb=0, ue=0, dir='UL'):
         """!@brief Get the RRC RSRP value
-        
+
         @param enb: index of eNB
         @param ue: index of UE
         """
@@ -1750,7 +1750,7 @@ class stats_manager(object):
 
     def get_ue_mac_sdu_length(self, enb=0, ue=0, dir='UL'):
         """!@brief Get the RRC RSRP value
-        
+
         @param enb: index of eNB
         @param ue: index of UE
         """
@@ -1764,7 +1764,7 @@ class stats_manager(object):
 
     def get_ue_mac_sdu_lcid(self, enb=0, ue=0, dir='UL'):
         """!@brief Get the RRC RSRP value
-        
+
         @param enb: index of eNB
         @param ue: index of UE
         """
@@ -1790,8 +1790,8 @@ class stats_manager(object):
 
 class ss_policy (object):
     """!@brief Spectrum sharing class
-        
-        This class provides emulated spectrum sharing polices (general, operator, and LSA), rules, and sensing data. 
+
+        This class provides emulated spectrum sharing polices (general, operator, and LSA), rules, and sensing data.
     @note: This class can implements interfaces to remote database and retrive and make available all the required information to the network control apps.
     """
     general_policy = []
@@ -1800,17 +1800,17 @@ class ss_policy (object):
     rules = []
     sensing_data = []
     enb_assign = []
-    
+
     general_policy_file='inputs/general_policy.yaml'
     operator_policy_file='inputs/operator_policy.yaml'
     lsa_policy_file='inputs/lsa_policy.yaml'
     rules_file='inputs/rules.yaml'
     enb_assign_file='inputs/enb_assign.yaml'
     sensing_data_file='inputs/sensing_data.yaml'
-    
+
     def __init__(self, log, url='http://localhost', port='9999', op_mode='test'):
         super(ss_policy, self).__init__()
-        
+
         self.url = url+':'+port
         self.status = 0
         self.op_mode = op_mode
@@ -1849,28 +1849,28 @@ class ss_policy (object):
         self.log.debug('Loaded: rules file [yaml] :')
         self.log.debug(yaml.dump(self.rules))
 
-	file = open(self.enb_assign_file,'r')
+        file = open(self.enb_assign_file,'r')
         self.enb_assign = yaml.load(file)
         self.log.debug('Loaded: enb assign file [yaml] :')
         self.log.debug(yaml.dump(self.enb_assign))
 
     def set_enb_assign(self, enb=0, name='default'):
-	with open(self.enb_assign_file,'r') as file:
-	    enb_assign_tmp = yaml.load(file)
-	    exists = False
-	    for i, v in enumerate(enb_assign_tmp):
-		if v['cell_id'] == enb:
-		    enb_assign_tmp[i]['MVNO_group'] = name
-		    exists = True
-		    break
-	    if not exists:
-	        enb_assign_tmp.append({'MVNO_group': name, 'cell_id' : enb})
-        with open(self.enb_assign_file,'w') as file:
-            yaml.dump(enb_assign_tmp, file, default_flow_style=False)
+        with open(self.enb_assign_file,'r') as file:
+            enb_assign_tmp = yaml.load(file)
+            exists = False
+            for i, v in enumerate(enb_assign_tmp):
+                if v['cell_id'] == enb:
+                    enb_assign_tmp[i]['MVNO_group'] = name
+                    exists = True
+                    break
+            if not exists:
+                enb_assign_tmp.append({'MVNO_group': name, 'cell_id' : enb})
+            with open(self.enb_assign_file,'w') as file:
+                yaml.dump(enb_assign_tmp, file, default_flow_style=False)
 
     def get_enb_assign(self):
-	with open(self.enb_assign_file,'r') as file:
-	    return yaml.load(file)
+        with open(self.enb_assign_file,'r') as file:
+            return yaml.load(file)
 
     def load_sensing_data(self):
         """!@brief load sensing data"""
@@ -1905,11 +1905,11 @@ class ss_policy (object):
         """!@brief return the enb assigment settings """
         return self.enb_assign
 
-    # apply policy with policy data 
+    # apply policy with policy data
     # TBD: apply policy from a file
     def apply_policy(self, enb=0, policy_data='',as_payload=True):
-        """!@brief Apply the default or user-defined policy 
-        
+        """!@brief Apply the default or user-defined policy
+
         @param policy_data: content of the policy file
         @param as_payload: embed the applied policy as a payload
         @note: this method is the same as in RRM class.
@@ -1919,39 +1919,39 @@ class ss_policy (object):
         if policy_data != '' :
             pdata=policy_data
         elif self.policy_data != '' :
-            pdata=self.policy_data 
+            pdata=self.policy_data
         else:
             self.log.error('cannot find the policy data '  + pdata)
             return
 
-        url = self.url+self.conf_api+'/enb/'+str(enb)    
-    
+        url = self.url+self.conf_api+'/enb/'+str(enb)
+
         if self.op_mode == 'test' :
             self.log.info('POST ' + str(url))
             self.log.debug(self.dump_policy(policy_data=pdata))
             self.status='connected'
-            
+
         elif self.op_mode == 'sdk' :
             try :
-		# post data as binary
-            	req = requests.post(url, data=json.dumps(pdata),headers={'Content-Type': 'application/json'})
-            	if req.status_code == 200:
-            	    self.log.info('successfully applied the policy')
-            	    self.status='connected'
-            	else :
-            	    self.status='disconnected'
-            	    self.log.error('Request error code : ' + str(req.status_code))
+            # post data as binary
+                req = requests.post(url, data=json.dumps(pdata),headers={'Content-Type': 'application/json'})
+                if req.status_code == 200:
+                    self.log.info('successfully applied the policy')
+                    self.status='connected'
+                else :
+                    self.status='disconnected'
+                    self.log.error('Request error code : ' + str(req.status_code))
             except :
                 self.log.error('Failed to apply the policy ' )
-            
+
         else :
             self.log.warn('Unknown operation mode ' + op_mode )
-	    self.status='unknown'
-        return self.status 
+            self.status='unknown'
+        return self.status
 
     def dump_policy(self, policy_data=''):
         """!@brief return the content of the policy in ymal format
-        
+
         @param policy_data: content of the policy file
         """
         if policy_data != '' :
@@ -1961,4 +1961,4 @@ class ss_policy (object):
         else:
             self.log.error('cannot find the policy data ' + policy_data)
             return
-   
+
