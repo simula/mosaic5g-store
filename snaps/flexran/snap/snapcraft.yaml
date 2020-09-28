@@ -23,12 +23,26 @@ apps:
     command: run
   init:
     command: init
+  sbi-addr:
+    command: conf saddr
+  nbi-addr:
+    command: conf naddr
   sbi-port:
     command: conf sbi
   nbi-port:
     command: conf nbi
+  addr:
+    command: conf addr
   ports:
     command: conf ports
+  conf-set:
+    command: conf set-log
+  conf-get:
+    command: conf echo-log
+  conf-show:
+    command: conf cat-log
+  conf-list:
+    command: conf ls-log  
   flexrand:
     command: run flexran
     daemon: simple
@@ -157,7 +171,7 @@ parts:
     after: [ pistache, protobuf]
     plugin: cmake
     source: https://gitlab.eurecom.fr/flexran/flexran-rtc.git
-    source-branch: master
+    source-branch: develop
     build-packages: [build-essential, ]
     stage-packages:
       - libboost-all-dev
