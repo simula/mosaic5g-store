@@ -1713,12 +1713,12 @@ class stats_manager(object):
         @param ue: index of UE
         """
         if dir == 'dl' or dir == 'DL' :
-            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['totalbytesSdusDl']
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['totalBytesSdusDl']
         elif dir == 'ul' or dir == 'UL' :
-            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['totalbytesSdusUl']
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['totalBytesSdusUl']
         else :
             self.log.warning('unknown direction ' + dir + 'set to DL')
-            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['totalbytesSdusDl']
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['totalBytesSdusDl']
 
     def get_ue_total_prb(self, enb=0, ue=0, dir='UL'):
         """!@brief Get the RRC RSRP value
