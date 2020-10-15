@@ -1,5 +1,5 @@
 name: oai-spgwu
-version: '1.0' 
+version: '2.0' 
 summary: OpenAirInterface spgwc entity Rel. 14 with LL-MEC Agent
 description: |
     OAI-SPGWU is the openairinterface-based SPGWU with LL-MEC agent allowing to connect a 4G-comptaible BS and UEs to the core network. It is one of the projects of Mosaic5G inititive.
@@ -14,8 +14,8 @@ grade: stable
 base: core18
 
 apps:
-  test:
-    command : test
+  check:
+    command : test spgwu
   info:
     command: run info
   oai-spgwu:
