@@ -6,6 +6,11 @@ snapctl stop --disable ${SNAP_NAME}  2>&1  || true
 sleep 1 
 snapctl start --enable ${SNAP_NAME}.apid  2>&1  || true
 
+if [ ! -f  $SNAP_DATA/.init ] ; then
+    touch $SNAP_DATA/.init
+    $SNAP/init
+fi
+
 log=$(snapctl get conf.log)
 if [ ! -z "$log" ] ; then 
     $SNAP/conf set-log $log
