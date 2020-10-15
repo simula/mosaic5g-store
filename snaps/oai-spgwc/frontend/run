@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 . $SNAP/common
 . $SNAP/util
@@ -6,7 +6,7 @@
 export LD_LIBRARY_PATH="$SNAP/usr/lib:$SNAP/usr/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"
 
 if [ ! -e $SPGWC_EXEC ]; then
-    echo "Cannot find $SPGWC_EXEC executable"
+    echo_error "Cannot find $SPGWC_EXEC executable"
     exit -1
 fi
 
@@ -17,15 +17,6 @@ fi
 SPGWC_CONFIG=${SPGWC_CONF_FILE2:-$SPGWC_CONF_FILE}
 SPGWC_EXEC_ARGS=" -c $SPGWC_CONFIG -o "
 
-if_sudo(){
-
-    if [ "$(id -u)" -eq 0 ] ; then
-	return 0
-    else
-	echo "Please run as a sudoer!"
-	exit 1
-    fi
-}
 
 case "$1" in
     "openapi" )
@@ -52,7 +43,7 @@ case "$1" in
     "info" )
 	#snap info $SNAP_NAME
 	shift 
-	echo "Please manually run: snap info $SNAP_NAME "
+	snap_info
 	;; 
     
     "start"  )
@@ -128,32 +119,16 @@ case "$1" in
 	;;
     
     "help" )
-	echo "Usage:   sudo  $SNAP_NAME.[options] args"
-	echo "Note:    need root priviliage"
-	echo "Options:"
-	echo "  start:       start the $SNAP_NAME.spgwcd daemon"
-	echo "  stop:        stop the $SNAP_NAME.spgwcd daemon"
-	echo "  restart:     restart the $SNAP_NAME.spgwd daemon"
-	echo "  status:      get the $SNAP_NAME.spgwcd status"
-	echo "  journal:     get the $SNAP_NAME.spgwcd logs"
-	echo ""
-	echo "  init:       initialize SPGWC"
-	echo "  conf-set:   set the SPGWC configuration file"
-	echo "  conf-get:   get the current SPGWC configuration file (spgwc.conf)"
-	echo "  conf-show:  show the path to the SPGWC configuration file (spgwc.conf)"
-	echo "  conf-list:  list all the SPGWC configuration files (spgwc.conf)"
-	echo ""
-	echo "  help:       print this help"
-	echo "  Example:    sudo oai-spgwc.init; sudo oai-spgwc;"
-	
+	snap_help
 	;;
     
     "spgwc" | * )
 		
-        echo "$SPGWC_EXEC  $SPGWC_EXEC_ARGS" 
+        echo_info "$SPGWC_EXEC  $SPGWC_EXEC_ARGS" 
 	$SPGWC_EXEC  `echo $SPGWC_EXEC_ARGS` "$@"
         ;;
 
 esac
 
 
+set_health

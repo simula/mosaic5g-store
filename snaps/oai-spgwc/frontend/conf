@@ -19,7 +19,7 @@ case "$1" in
 	    echo "Reset to default config file: $SPGWC_CONF_FILE"
 	    CONFIG_FILE=$SPGWC_CONF_FILE
 	fi
-
+	snapctl set conf.spgwc=$CONFIG_FILE
 	echo "SPGWC_CONF_FILE2=$CONFIG_FILE" > $SNAP_DATA/config_spgwc.sh
 	echo "SPGWC_CONF_FILE2=$CONFIG_FILE" > $SNAP_USER_DATA/config_spgwc.sh
 	;;
