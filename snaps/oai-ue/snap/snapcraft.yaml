@@ -1,5 +1,5 @@
 name: oai-ue
-version: '1.6' 
+version: '2.0' 
 summary: OpenAirInterface UE entity 
 description: |
     OAI UE is the openairinterface-based UE that allows you to connect to any commercial eNB. 
@@ -14,8 +14,8 @@ grade: stable
 base: core18
 
 apps:
-  test:
-    command: test all
+  check:
+    command: test ue
   info:
     command: run info
   oai-ue:
@@ -137,7 +137,7 @@ parts:
     #  - g++
     #  - build-essential
     override-build: |
-      sudo apt install make gcc g++ build-essential -y
+      sudo apt install make gcc g++ build-essential net-tools -y
       mkdir $SNAPCRAFT_PART_INSTALL/tools 
       cp /usr/bin/make $SNAPCRAFT_PART_INSTALL/tools
       cp /usr/bin/gcc $SNAPCRAFT_PART_INSTALL/tools
@@ -152,7 +152,7 @@ parts:
   ue:
     plugin: cmake
     source: https://gitlab.eurecom.fr/oai/openairinterface5g.git
-    source-branch: master
+    source-branch: develop
     build-packages: [build-essential, ]
     stage-packages:
       - libatlas3-base
@@ -176,7 +176,9 @@ parts:
       ./build_oai --UE -w USRP -c -C 
       cd ../ 
       mkdir -p $SNAPCRAFT_PART_INSTALL/ue
+      mkdir -p $SNAPCRAFT_PART_INSTALL/usr/share
       cp  targets/bin/* $SNAPCRAFT_PART_INSTALL/ue
+      cp -rp /usr/share/uhd $SNAPCRAFT_PART_INSTALL/usr/share
       cp -r common/uhd_images $SNAPCRAFT_PART_INSTALL/ 
       cp targets/PROJECTS/GENERIC-LTE-EPC/CONF/* $SNAPCRAFT_PART_INSTALL/ue
       cp cmake_targets/snap_environment.sh $SNAPCRAFT_PART_INSTALL/ue
@@ -191,15 +193,45 @@ parts:
       - lib/*
       - uhd_images/*
     organize:
-      ue/liboai_usrpdevif.so.Rel14: usr/lib/liboai_device.so
+      ue/liboai_usrpdevif.so.Rel15: usr/lib/liboai_device.so
       ue/libcoding.so: usr/lib/libcoding.so
       ue/libparams_libconfig.so: usr/lib/libparams_libconfig.so
-      ue/liboai_eth_transpro.so.Rel14: usr/lib/liboai_transpro.so
-      ue/librfsimulator.so.Rel14: usr/lib/librfsimulator.so.Rel14
-      ue/libtcp_bridge_oai.so.Rel14: usr/lib/libtcp_bridge_oai.so.Rel14
-      #ue/lte-uesoftmodem.Rel14: ue/oai-ue
+      ue/liboai_eth_transpro.so.Rel15: usr/lib/liboai_transpro.so
+      ue/librfsimulator.so.Rel15: usr/lib/librfsimulator.so.Rel15
+      ue/libtcp_bridge_oai.so.Rel14: usr/lib/libtcp_bridge_oai.so.Rel15
+      ue/lte-uesoftmodem.Rel15: ue/oai-ue
       #usr/lib/lapack/liblapack.so.3: usr/lib/liblapack.so.3 
 
   frontend:
     plugin: dump
     source: frontend
+
+  openapi:
+    plugin: python
+    python-version: python3
+    python-packages:
+      - flask
+      - itsdangerous
+      - Werkzeug==0.16.1
+      - click
+      - jinja2
+      - MarkupSafe
+      - requests
+      - argparse
+      - flask_restplus==0.13.0
+      - aniso8601==8.0.0
+      - pytz==2020.1
+      - jsonschema==3.2.0
+      - attrs==19.3.0
+      - pyrsistent==0.16.0
+      - importlib-metadata==1.7.0
+      - importlib-resources==1.5.0
+      - zipp==3.1.0
+      # - pyrsistent==0.16.0
+      # - cassandra-driver==3.24.0
+    stage:
+      - usr/*
+      - lib/*
+    prime:
+      - usr/*
+      - lib/*
