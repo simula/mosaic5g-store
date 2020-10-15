@@ -280,11 +280,11 @@ parts:
       # - pyrsistent==0.16.0
       # - cassandra-driver==3.24.0
     stage:
-      - usr/lib/python3.6/*
       - usr/*
+      - lib/*
     prime:
-      - usr/lib/python3.6/*
       - usr/*
+      - lib/*
 
 # layout:
 #   /usr/share/parameters:
