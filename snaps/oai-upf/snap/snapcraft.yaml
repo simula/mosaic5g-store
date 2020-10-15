@@ -1,0 +1,184 @@
+name: oai-upf
+version: '2.0' 
+summary: OpenAirInterface UPF entity Rel. 15 with LL-MEC Agent
+description: |
+    OAI-UPF is the openairinterface-based UPF with LL-MEC agent and the Mosaic5G frontend.
+
+type: app
+license: Apache-2.0
+architectures:
+  - amd64
+  - i386
+confinement: devmode
+grade: stable
+base: core18
+
+apps:
+  check:
+    command : test upf
+  info:
+    command: run info
+  oai-upf:
+    command: run upf
+  upfd:
+    command: run upf
+    daemon: simple
+    stop-command: run stop
+    stop-timeout: 1s
+  start-all:
+    command: run start-all
+  stop-all:
+    command: run stop-all
+  restart-all:
+    command: run restart-all
+  status-all:
+    command: run status-all
+  start:
+    command: run start upfd
+  stop:
+    command: run stop upfd
+  restart:
+    command: run restart upfd
+  status:
+    command: run status upfd
+  journal:
+    command: run journal upfd
+  init:
+    command: init upf
+  help:
+    command: run help
+  debug:
+    command: run gdb
+  conf-set:
+    command: conf set-upf
+  conf-get:
+    command: conf echo-upf
+  conf-show:
+    command: conf cat-upf
+  conf-list:
+    command: conf ls-upf
+  api:
+    command: run openapi
+  apid:
+    command: run openapi
+    daemon: simple
+    stop-command: run stop
+    stop-timeout: 1s
+  api-start:
+    command: run start apid
+  api-stop:
+    command: run stop apid
+  api-restart:
+    command: run restart apid
+  api-status:
+    command: run status apid
+  api-journal:
+    command: run journal apid
+  apiman:
+    command: run openapiman
+  apidman:
+    command: run openapiman
+    daemon: simple
+    stop-command: run stop apidman
+    stop-timeout: 1s
+  apiman-start:
+    command: run start apidman
+  apiman-stop:
+    command: run stop apidman
+  apiman-restart:
+    command: run restart apidman
+  apiman-status:
+    command: run status apidman
+  apiman-journal:
+    command: run journal apidman
+
+hooks:
+  install:
+    plugs: [home, network]
+  configure:
+    plugs: [home, network]
+    
+parts:
+  gdb:
+    plugin: nil
+    override-build: |
+      sudo apt install gdb -y
+      mkdir $SNAPCRAFT_PART_INSTALL/share 
+      cp -r /usr/share/gdb $SNAPCRAFT_PART_INSTALL/share
+      cp /usr/bin/gdb* $SNAPCRAFT_PART_INSTALL
+    prime:
+      - gdb*
+      - share/*
+      
+  upf:
+    plugin: cmake
+    source: https://github.com/OPENAIRINTERFACE/openair-spgwu-tiny.git
+    source-branch: upf
+    build-packages: [build-essential, ]
+    stage-packages:
+      - libstdc++6
+      - libboost-system1.65.1
+      - libconfig++9v5
+      - libdouble-conversion1
+      - libgflags2.2
+      - libgoogle-glog0v5
+      - libunwind8
+
+    override-build: |
+      cd ../src/build/scripts
+      ./build_spgwu -I -f 
+      ./build_spgwu -c -b Release
+      cd ../..
+      mkdir -p $SNAPCRAFT_PART_INSTALL/upf
+      cp etc/spgw*  $SNAPCRAFT_PART_INSTALL/upf/
+      cp -r build/spgw_u/build/  $SNAPCRAFT_PART_INSTALL/upf
+      #cp build/spgw_u/build/spgwu  $SNAPCRAFT_PART_INSTALL/upf
+    stage:
+      - upf/*
+      - usr/*
+      - lib/*
+    prime:
+      - upf/*
+      - usr/*
+      - lib/*
+    organize:
+        upf/build/spgwu : upf/upf
+
+  frontend:
+    plugin: dump
+    source: frontend
+
+  openapi:
+    plugin: python
+    python-version: python3
+    python-packages:
+      - flask
+      - itsdangerous
+      - Werkzeug==0.16.1
+      - click
+      - jinja2
+      - MarkupSafe
+      - requests
+      - argparse
+      - flask_restplus==0.13.0
+      - aniso8601==8.0.0
+      - pytz==2020.1
+      - jsonschema==3.2.0
+      - attrs==19.3.0
+      - pyrsistent==0.16.0
+      - importlib-metadata==1.7.0
+      - importlib-resources==1.5.0
+      - zipp==3.1.0
+      # - pyrsistent==0.16.0
+      # - cassandra-driver==3.24.0
+    stage:
+      - usr/*
+      - lib/*
+    prime:
+      - usr/*
+      - lib/*
+
+layout:
+  /usr/share/parameters:
+    bind: $SNAP_DATA/usr/share/parameters
+
