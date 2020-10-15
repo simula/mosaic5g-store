@@ -1,5 +1,5 @@
 name: oai-hss
-version: '1.0'  
+version: '2.0'  
 title: OpenAirInterface HSS module
 summary: OpenAirInterface HSS entity Rel. 14
 description: |
@@ -15,8 +15,8 @@ grade: stable
 base: core18
 
 apps:
-  test:
-    command : test hss-service
+  check:
+    command : test hss
   info:
     command: run info
   help:
