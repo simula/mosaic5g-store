@@ -1,0 +1,138 @@
+#!/bin/bash
+
+. $SNAP/common
+. $SNAP/util
+
+export LD_LIBRARY_PATH="$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"
+
+if [ ! -e $AMF_EXEC ]; then
+    echo_error "Cannot find $AMF_EXEC executable"
+    exit -1 
+fi		   	   
+
+
+if [ -r $SNAP_DATA/config_amf.sh ]; then
+    . $SNAP_DATA/config_amf.sh
+fi
+
+AMF_CONFIG=${AMF_CONF_FILE2:-$AMF_CONF_FILE}
+AMF_EXEC_ARGS=" -c $AMF_CONFIG -o "
+
+case "$1" in
+    "openapi" )
+	shift
+	python3 $SNAP/api.py "$@"
+	;;
+
+    "openapiman" )
+	shift
+	python3 $SNAP/api-manager.py "$@"
+	;;
+
+    "gdb" )
+	echo "Running $2 with the gdb"
+	touch      $SNAP_DATA/.gdb_$2
+	chmod 777  $SNAP_DATA/.gdb_$2
+	echo "file ${2^^}_EXEC"        > $SNAP_DATA/.gdb_$2
+	echo "set args ${2^^}_EXEC_ARGS" >> $SNAP_DATA/.gdb_$2
+	echo "run"                     >> $SNAP_DATA/.gdb_$2
+	cat $SNAP_DATA/.gdb_$2
+	exec $SNAP/gdb --data-directory=$SNAP_DATA  -n -x $SNAP_DATA/.gdb_$2
+	;;
+
+     "info" )
+	 #snap info $SNAP_NAME
+	 shift
+	 snap_info
+	 
+	 ;; 
+     
+     "start"  )
+	 #snap start $SNAP_NAME
+	 daemon=$2
+	 shift 2
+	 if_sudo
+	 snapctl start --enable $SNAP_NAME.$daemon "$@"
+	 snapctl services $SNAP_NAME.$daemon "$@"
+	 ;;
+     
+     "start-all"  )
+	 #snap start $SNAP_NAME
+	 if_sudo
+	 shift   
+	 snapctl start --enable $SNAP_NAME "$@"
+	 snapctl services $SNAP_NAME "$@"
+	 ;;
+     
+     "stop" )
+	 daemon=$2
+	 shift 2
+	 if_sudo
+	 snapctl stop --disable $SNAP_NAME.$daemon "$@"
+	 snapctl services $SNAP_NAME.$daemon "$@"
+	 ;;
+     
+     "stop-all" )
+	 shift 
+	 if_sudo
+	 snapctl stop --disable $SNAP_NAME "$@"
+	 snapctl services $SNAP_NAME "$@"
+	 ;;
+     
+     "restart" )
+	 #snap restart $SNAP_NAME
+	 daemon=$2
+	 shift 2
+	 if_sudo
+	 snapctl stop --disable $SNAP_NAME.$daemon "$@"
+	 snapctl start --enable $SNAP_NAME.$daemon "$@"
+	 snapctl services $SNAP_NAME.$daemon "$@"
+	 ;;
+     
+     "restart-all" )
+	 #snap restart $SNAP_NAME
+	 shift
+	 if_sudo
+	 snapctl stop --disable $SNAP_NAME "$@"
+	 snapctl start --enable $SNAP_NAME "$@"
+	 snapctl services $SNAP_NAME "$@"
+	 ;;
+     
+     "status" )
+	 #snap services $SNAP_NAME
+	 daemon=$2
+	 shift 2
+	 snapctl services $SNAP_NAME.$daemon "$@"
+	 ;;
+     
+     "status-all" )
+	 #snap services $SNAP_NAME
+	 shift
+	 snapctl services $SNAP_NAME "$@"
+	;;
+     
+     "journal" )
+	 daemon=$2
+	 shift 2 
+	 journalctl -u snap.$SNAP_NAME.$daemon.service "$@"
+	 ;;    
+    
+    "help" )
+	snap_help
+	
+	;;
+        
+    "amf-certificate"  )
+	echo_info "Creating AMF certificate for user $CONF_DIR $fqdn"
+	amf_cert
+	;;
+    
+    "amf" | * )
+	shift 
+	echo_info "$AMF_EXEC  $AMF_EXEC_ARGS"
+	$AMF_EXEC  `echo $AMF_EXEC_ARGS` "$@" $*
+	;;
+    
+esac
+
+set_health
