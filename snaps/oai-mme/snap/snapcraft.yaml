@@ -1,5 +1,5 @@
 name: oai-mme
-version: '1.1' 
+version: '2.0' 
 summary: OpenAirInterface MME entity with LL-MEC Agent
 description: |
     OAI-MME is the openairinterface-based MME entity with the LL-MEC agent allowing to connect a 4G-comptaible BS and UEs to the core network and monitor and control the UP with LL-MEC controller. It is one of the projects of Mosaic5G inititive.
@@ -13,8 +13,8 @@ grade: stable
 base: core18
 
 apps:
-  test:
-    command : test mme-service
+  check:
+    command : test mme
   info:
     command: run info
   oai-mme:

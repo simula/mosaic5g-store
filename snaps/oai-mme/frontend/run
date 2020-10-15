@@ -59,9 +59,8 @@ case "$1" in
      "start-all"  )
 	 #snap start $SNAP_NAME
 	 if_sudo
-	 daemon=$2
-	 shift 2  
-	 snapctl start --enable $SNAP_NAME.$daemon "$@"
+	 shift   
+	 snapctl start --enable $SNAP_NAME "$@"
 	 snapctl services $SNAP_NAME "$@"
 	 ;;
      
@@ -74,10 +73,9 @@ case "$1" in
 	 ;;
      
      "stop-all" )
+	 shift 
 	 if_sudo
-	 daemon=$2
-	 shift 2  
-	 snapctl stop --disable $SNAP_NAME.$daemon "$@"
+	 snapctl stop --disable $SNAP_NAME "$@"
 	 snapctl services $SNAP_NAME "$@"
 	 ;;
      
