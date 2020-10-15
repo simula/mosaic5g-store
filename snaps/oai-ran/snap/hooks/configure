@@ -5,9 +5,19 @@ snapctl stop --disable ${SNAP_NAME}  2>&1  || true
 sleep 1 
 snapctl start --enable ${SNAP_NAME}.apid  2>&1  || true
 
+if [ ! -f  $SNAP_DATA/.init ] ; then
+    touch $SNAP_DATA/.init
+    $SNAP/init
+fi
+
 enb=$(snapctl get conf.enb)
 if [ ! -z "$enb" ] ; then 
     $SNAP/conf set-enb $enb
+fi
+
+gnb=$(snapctl get conf.gnb)
+if [ ! -z "$gnb" ] ; then 
+    $SNAP/conf set-gnb $gnb
 fi
 
 cudu=$(snapctl get conf.cudu)
@@ -20,16 +30,6 @@ if [ ! -z "$rru" ] ; then
     $SNAP/conf set-rru $rru
 fi
 
-apiport=$(snapctl get conf.apiport)
-if [ ! -z "$apiport" ] ; then 
-    snapctl set conf.apiport=$apiport
-fi
-
-mgrport=$(snapctl get conf.mgrport)
-if [ ! -z "$mgrport" ] ; then 
-    snapctl set conf.apiport=$mgrport
-fi
-
 usrp=$(snapctl get conf.usrp)
 if [ -z "$usrp" ] ; then
     snapctl set conf.usrp=$SNAP/uhd_images
@@ -38,4 +38,14 @@ fi
 rfnoc=$(snapctl get conf.rfnoc)
 if [ -z "$rfnoc" ] ; then
     snapctl set conf.rfnoc=$SNAP/usr/share/uhd/rfnoc/blocks
+fi
+
+apiaddr=$(snapctl get conf.apiaddr)
+if [ ! -z "$apiaddr" ] ; then 
+    snapctl set conf.apiaddr=$apiaddr
+fi
+
+mgraddr=$(snapctl get conf.mgraddr)
+if [ ! -z "$mgraddr" ] ; then 
+    snapctl set conf.mgraddr=$mgraddr
 fi

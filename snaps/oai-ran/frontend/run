@@ -13,6 +13,11 @@ if [ ! -e $ENB_EXEC ]; then
     exit 127
 fi		   	   
 
+if [ ! -e $GNB_EXEC ]; then
+    echo_error "Cannot find $GNB_EXEC executable"
+    exit 127
+fi		   	   
+
 if [ ! -e $CUDU_EXEC ]; then
     echo_error "Cannot find $CUDU_EXEC executable"
     exit 127
@@ -28,6 +33,10 @@ if [ -r $SNAP_DATA/config_enb.sh ]; then
     . $SNAP_DATA/config_enb.sh
 fi
 
+if [ -r $SNAP_DATA/config_gnb.sh ]; then
+    . $SNAP_DATA/config_gnb.sh
+fi
+
 if [ -r $SNAP_DATA/config_cudu.sh ]; then
     . $SNAP_DATA/config_cudu.sh
 fi
@@ -39,6 +48,9 @@ fi
 
 ENB_CONFIG=${ENB_CONF_FILE2:-$ENB_CONF_FILE}
 ENB_EXEC_ARGS=" -O $ENB_CONFIG"
+
+GNB_CONFIG=${GNB_CONF_FILE2:-$GNB_CONF_FILE}
+GNB_EXEC_ARGS=" -O $GNB_CONFIG"
 
 CUDU_CONFIG=${CUDU_CONF_FILE2:-$CUDU_CONF_FILE}
 CUDU_EXEC_ARGS=" -O $CUDU_CONFIG"
@@ -166,6 +178,13 @@ case "$1" in
 	shift 
 	echo_info "$ENB_EXEC  $ENB_EXEC_ARGS $@"
 	$ENB_EXEC  `echo $ENB_EXEC_ARGS` "$@"
+	;;
+    "gnb")
+	shift 
+	echo_info "Add option -E for USRP b210"
+	echo ""
+	echo_info "$GNB_EXEC  $GNB_EXEC_ARGS $@"
+	$GNB_EXEC  `echo $GNB_EXEC_ARGS` "$@"
 	;;
      * )
 	echo_warn "unknow run command $1"

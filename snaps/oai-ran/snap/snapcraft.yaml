@@ -1,19 +1,21 @@
 name: oai-ran
-version: '1.6' 
-summary: OpenAirInterface RAN entity with FlexRAN Agent/Runtime 
+version: '2.0'
+title: OpenAirInterface RAN Rel.15
+summary: OpenAirInterface RAN entity with FlexRAN Agent/Runtime
 description: |
-    OAI RAN is an openairinterface-based 4G BS with different deployment flavors (eNB,C-RAN, CU,DU, RRU) allowing to connect any commercial UEs with the band of your choice. It is one of the projects of Mosaic5G inititive and includes FlexRAN agent.
-grade: stable
+    OAI RAN is an openairinterface-based 4G and 5G BS with different deployment flavors (eNB, gNB, C-RAN, CU,DU, RRU) allowing to connect any commercial UEs with the band of your choice. It is one of the projects of Mosaic5G inititive and includes FlexRAN agent.
 type: app
+license: Apache-2.0
 architectures:
   - amd64
   - i386
 confinement: devmode
+grade: stable
 base: core18
 
 apps:
   check:
-    command: test enb
+    command: test
   info:
     command: run info
   start-all:
@@ -26,10 +28,12 @@ apps:
     command: run status-all
   enb:
     command: run enb
-  cudu:
-    command: run cudu
-  rru:
-    command: run rru  
+  gnb:
+    command: run gnb
+#  cudu:
+#    command: run cudu
+#  rru:
+#    command: run rru  
   init:
     command: init
   enbd:
@@ -37,16 +41,21 @@ apps:
     daemon: simple
     stop-command: run stop enbd
     stop-timeout: 1s
-  cudud:
-    command: run cudu
+  gnbd:
+    command: run gnb
     daemon: simple
-    stop-command: run stop cudud
-    stop-timeout: 7s
-  rrud:
-    command: run rru
-    daemon: simple
-    stop-command: run stop rrud
-    stop-timeout: 7s
+    stop-command: run stop gnbd
+    stop-timeout: 1s
+#  cudud:
+#    command: run cudu
+#    daemon: simple
+#    stop-command: run stop cudud
+#    stop-timeout: 7s
+#  rrud:
+#    command: run rru
+#    daemon: simple
+#    stop-command: run stop rrud
+#    stop-timeout: 7s
   enb-start:
     command: run start enbd
   enb-stop:
@@ -57,40 +66,50 @@ apps:
     command: run status enbd
   enb-journal:
     command: run journal enbd
-  cudu-start:
-    command: run start cudud
-  cudu-stop:
-    command: run stop cudud
-  cudu-restart:
-    command: run restart cudud 
-  cudu-status:
-    command: run status cudud
-  cudu-journal:
-    command: run journal cudud 
-  rru-start:
-    command: run start rrud 
-  rru-stop:
-    command: run stop rrud
-  rru-restart:
-    command: run restart rrud 
-  rru-status:
-    command: run status rrud
-  rru-journal:
-    command: run journal rrud
+  gnb-start:
+    command: run start gnbd
+  gnb-stop:
+    command: run stop gnbd
+  gnb-restart:
+    command: run restart gnbd 
+  gnb-status:
+    command: run status gnbd
+  gnb-journal:
+    command: run journal gnbd
+ # cudu-start:
+ #   command: run start cudud
+ # cudu-stop:
+ #   command: run stop cudud
+ # cudu-restart:
+ #   command: run restart cudud 
+ # cudu-status:
+ #   command: run status cudud
+ # cudu-journal:
+ #   command: run journal cudud 
+ # rru-start:
+ #   command: run start rrud 
+ # rru-stop:
+ #   command: run stop rrud
+ # rru-restart:
+ #   command: run restart rrud 
+ # rru-status:
+ #   command: run status rrud
+ # rru-journal:
+ #   command: run journal rrud
   help:
     command: run help
   enb-debug:
     command: run gdb-enb
-  cudu-debug:
-    command: run gdb-cudu  
-  cudu-conf-set:
-    command: conf set-cudu
-  cudu-conf-get:
-    command: conf echo-cudu
-  cudu-conf-show:
-    command: conf cat-cudu
-  cudu-conf-list:
-    command: conf ls-cudu
+ # cudu-debug:
+ #   command: run gdb-cudu  
+#  cudu-conf-set:
+#    command: conf set-cudu
+#  cudu-conf-get:
+#    command: conf echo-cudu
+#  cudu-conf-show:
+#    command: conf cat-cudu
+#  cudu-conf-list:
+#    command: conf ls-cudu
   enb-conf-set:
     command: conf set-enb
   enb-conf-get:
@@ -99,14 +118,22 @@ apps:
     command: conf cat-enb
   enb-conf-list:
     command: conf ls-enb
-  rru-conf-set:
-    command: conf set-rru
-  rru-conf-get:
-    command: conf echo-rru
-  rru-conf-show:
-    command: conf cat-rru
-  rru-conf-list:
-    command: conf ls-rru
+  gnb-conf-set:
+    command: conf set-gnb
+  gnb-conf-get:
+    command: conf echo-gnb
+  gnb-conf-show:
+    command: conf cat-gnb
+  gnb-conf-list:
+    command: conf ls-gnb
+#  rru-conf-set:
+#    command: conf set-rru
+#  rru-conf-get:
+#    command: conf echo-rru
+#  rru-conf-show:
+#    command: conf cat-rru
+#  rru-conf-list:
+#    command: conf ls-rru
   api:
     command: run openapi
   apid:
@@ -163,29 +190,55 @@ parts:
       - gdb*
       - share/*
       - usr/bin/gdb*
-  enb:
+  ran:
     plugin: cmake
     source: https://gitlab.eurecom.fr/oai/openairinterface5g.git
     source-branch: develop
     build-packages: [build-essential, ]
+    stage-packages:
+      - libatlas3-base
+      - libboost-date-time1.65.1
+      - libboost-filesystem1.65.1
+      - libboost-regex1.65.1
+      - libboost-serialization1.65.1
+      - libboost-system1.65.1
+      - libboost-thread1.65.1
+      - libconfig9
+      - libicu60
+      - libsctp1
+      - libuhd3.14.1
+      - libusb-1.0-0
+
     override-build: |
       cd ../src/cmake_targets
       ./build_oai -I -w USRP --uhd-images-dir ../common/uhd_images
+      # first build 4G 
       ./build_oai --eNB -w USRP -c -C 
       cd ../ 
       mkdir -p $SNAPCRAFT_PART_INSTALL/enb
+      mkdir -p $SNAPCRAFT_PART_INSTALL/usr/share
       cp  targets/bin/* $SNAPCRAFT_PART_INSTALL/enb
-      cp -rp /usr/share/uhd/rfnoc/blocks/ $SNAPCRAFT_PART_INSTALL/usr
+      cp -rp /usr/share/uhd $SNAPCRAFT_PART_INSTALL/usr/share
       cp -r common/uhd_images $SNAPCRAFT_PART_INSTALL/ 
       cp targets/PROJECTS/GENERIC-LTE-EPC/CONF/* $SNAPCRAFT_PART_INSTALL/enb
       cp cmake_targets/snap_environment.sh $SNAPCRAFT_PART_INSTALL/enb
+      #second build 5G
+      cd ../src/cmake_targets
+      ./build_oai --gNB -w USRP -c -C 
+      cd ../ 
+      mkdir -p $SNAPCRAFT_PART_INSTALL/gnb
+      cp  targets/bin/* $SNAPCRAFT_PART_INSTALL/gnb
+      cp targets/PROJECTS/GENERIC-LTE-EPC/CONF/* $SNAPCRAFT_PART_INSTALL/gnb
+      cp cmake_targets/snap_environment.sh $SNAPCRAFT_PART_INSTALL/gnb
     stage:
       - enb/*
+      - gnb/*
       - usr/*
       - lib/*
       - uhd_images/*
     prime:
       - enb/*
+      - gnb/*
       - usr/*
       - lib/*
       - uhd_images/*
@@ -194,43 +247,44 @@ parts:
       enb/liboai_eth_transpro.so.Rel15: usr/lib/liboai_transpro.so
       enb/libcoding.so: usr/lib/libcoding.so
       enb/libparams_libconfig.so: usr/lib/libparams_libconfig.so
-      enb/lte-softmodem.Rel15: enb/oai-ran
       enb/librfsimulator.so.Rel15: usr/lib/librfsimulator.so.Rel15
       enb/libtcp_bridge_oai.so.Rel15: usr/lib/libtcp_bridge_oai.so.Rel15
-   
+      enb/lte-softmodem.Rel15: enb/oai-ran
+      gnb/nr-softmodem.Rel15:  gnb/oai-nr
+
   frontend:
     plugin: dump
     source: frontend
 
-  #openapi:
-  #  plugin: python
-  #  python-version: python3
-  #  python-packages:
-  #    - flask
-  #    - itsdangerous
-  #    - Werkzeug==0.16.1
-  #    - click
-  #    - jinja2
-  #    - MarkupSafe
-  #    - requests
-  #    - argparse
-  #    - flask_restplus==0.13.0
-  #    - aniso8601==8.0.0
-  #    - pytz==2020.1
-  #    - jsonschema==3.2.0
-  #    - attrs==19.3.0
-  #    - pyrsistent==0.16.0
-  #    - importlib-metadata==1.7.0
-  #    - importlib-resources==1.5.0
-  #    - zipp==3.1.0
+  openapi:
+    plugin: python
+    python-version: python3
+    python-packages:
+      - flask
+      - itsdangerous
+      - Werkzeug==0.16.1
+      - click
+      - jinja2
+      - MarkupSafe
+      - requests
+      - argparse
+      - flask_restplus==0.13.0
+      - aniso8601==8.0.0
+      - pytz==2020.1
+      - jsonschema==3.2.0
+      - attrs==19.3.0
+      - pyrsistent==0.16.0
+      - importlib-metadata==1.7.0
+      - importlib-resources==1.5.0
+      - zipp==3.1.0
       # - pyrsistent==0.16.0
       # - cassandra-driver==3.24.0
-  #  stage:
-  #    - usr/lib/python3.6/*
-  #    - usr/*
-  #  prime:
-  #    - usr/lib/python3.6/*
-  #    - usr/*
+    stage:
+      - usr/lib/python3.6/*
+      - usr/*
+    prime:
+      - usr/lib/python3.6/*
+      - usr/*
 
 # layout:
 #   /usr/share/parameters:
