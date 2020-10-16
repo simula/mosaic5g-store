@@ -192,7 +192,8 @@ parts:
       - usr/bin/gdb*
   ran:
     plugin: cmake
-    source: https://gitlab.eurecom.fr/oai/openairinterface5g.git
+    source: git@gitlab.eurecom.fr:oai/openairinterface5g.git
+    #https://gitlab.eurecom.fr/oai/openairinterface5g.git
     source-branch: develop
     build-packages: [build-essential, ]
     stage-packages:
@@ -208,7 +209,7 @@ parts:
       - libsctp1
       - libuhd3.14.1
       - libusb-1.0-0
-
+      - libprotobuf-c1
     override-build: |
       cd ../src/cmake_targets
       ./build_oai -I -w USRP --uhd-images-dir ../common/uhd_images
