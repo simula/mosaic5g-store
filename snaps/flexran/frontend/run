@@ -12,19 +12,23 @@ fi
 
 if [ -r $CONF_DIR/sbi_config.sh ] ; then 
     . $CONF_DIR/sbi_config.sh
-else
-    . $FLEXRAN_DIR/etc/sbi_config.sh 
-    cp $FLEXRAN_DIR/etc/sbi_config.sh $CONF_DIR
+    FLEXRAN_EXEC_ARGS=" -p $SBI_PORT"
 fi
 
 if [ -r $CONF_DIR/nbi_config.sh ] ; then 
     . $CONF_DIR/nbi_config.sh
-else
-    . $FLEXRAN_DIR/etc/nbi_config.sh 
-    cp $FLEXRAN_DIR/etc/nbi_config.sh $CONF_DIR
+    FLEXRAN_EXEC_ARGS="$FLEXRAN_EXEC_ARGS -n $NBI_PORT"
 fi
-    
-FLEXRAN_EXEC_ARGS=" -p $SBI_PORT -n $NBI_PORT"
+
+if [ -r $CONF_DIR/naddr_config.sh ] ; then 
+    . $CONF_DIR/naddr_config.sh
+    FLEXRAN_EXEC_ARGS="$FLEXRAN_EXEC_ARGS -s $NBI_ADDR"
+fi
+
+if [ -r $CONF_DIR/saddr_config.sh ] ; then 
+    . $CONF_DIR/saddr_config.sh
+    FLEXRAN_EXEC_ARGS="$FLEXRAN_EXEC_ARGS -a $SBI_ADDR"
+fi
 
 case "$1" in
     "openapi" )

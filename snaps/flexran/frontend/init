@@ -3,27 +3,37 @@
 . $SNAP/common
 . $SNAP/util
 
+
+cp $SNAP/etc/* $CONF_DIR
+
 snapctl set conf.sbi=2210 conf.nbi=9999
+snapctl set conf.saddr="0.0.0.0" conf.naddr="0.0.0.0"
 
 sbi="$(snapctl get conf.sbi)"
 nbi="$(snapctl get conf.nbi)"
+saddr="$(snapctl get conf.saddr)"
+naddr="$(snapctl get conf.naddr)"
 
-if [ -z "$sbi" -o -z "$nbi" ]; then
-    echo_error "SBI or NBI are not set!"
-    exit -1 
-fi
-echo "NBI_PORT=$nbi" > $CONF_DIR/nbi_config.sh
-echo "SBI_PORT=$sbi" > $CONF_DIR/sbi_config.sh
+#if [ -z "$sbi" -o -z "$nbi" ]; then
+#    echo_error "SBI or NBI are not set!"
+#    exit -1 
+#fi
+# this is becasue in the port conf, we test port conflict
+#echo "NBI_PORT=$nbi" > $CONF_DIR/nbi_config.sh
+#echo "SBI_PORT=$sbi" > $CONF_DIR/sbi_config.sh
 
-$SNAP/conf sbi $sbi
+$SNAP/conf set-log $LOG_CONF_FILE
+
 $SNAP/conf nbi $nbi
+$SNAP/conf sbi $sbi
+$SNAP/conf saddr $saddr
+$SNAP/conf naddr $naddr
     
-
-# show the conf
-$SNAP/conf ports
 
 apiport=$(grep -m1 "api_port_default" $SNAP/apivars.py | cut -f3 -d " ")
 mgrport=$(grep -m1 "api_manager_port_default" $SNAP/apivars.py | cut -f3 -d " ")
+apiaddr=$(grep -m1 "api_host_default" $SNAP/apivars.py | cut -f3 -d " " | cut -f3 -d " " | tr -d "'")
+mgraddr=$(grep -m1 "api_manager_host_default" $SNAP/apivars.py | cut -f3 -d " " | cut -f3 -d " " | tr -d "'")
 
 if [ ! -z "$apiport" ] ; then 
     snapctl set conf.apiport=$apiport
@@ -38,5 +48,22 @@ if [ ! -z "$mgrport" ] ; then
 else
     echo_error "Could not read  api_manager_port_default in apivars.py!"
 fi
+if [ ! -z "$apiaddr" ] ; then 
+    snapctl set conf.apiaddr=$apiaddr
+    echo_info "Default API addr :"  $(snapctl get conf.apiaddr)
+else
+    echo_error "Could not read api_host_default in apivars.py!"
+fi
+
+if [ ! -z "$mgraddr" ] ; then 
+    snapctl set conf.mgraddr=$mgraddr
+    echo_info "Default MGR addr :"  $(snapctl get conf.mgraddr)
+else
+    echo_error "Could not read api_manager_host_default in apivars.py!"
+fi
+
+openapi="http://"$(snapctl get conf.apiaddr)":"$(snapctl get conf.apiport)
+snapctl set conf.openapi=$openapi
+
 
 echo_success "FlexRAN init: done"

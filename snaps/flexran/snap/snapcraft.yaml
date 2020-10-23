@@ -1,5 +1,5 @@
 name: flexran
-version: '2.3' 
+version: '2.4' 
 summary: FlexRAN SD-RAN platfrrom
 description: |
    FlexRAN is a software-defined radio access network platform on the top of OpenAirInterface, licensed under Apache License V2.0. It is one of the projects of Mosaic5G inititive.
@@ -23,12 +23,26 @@ apps:
     command: run
   init:
     command: init
+  sbi-addr:
+    command: conf saddr
+  nbi-addr:
+    command: conf naddr
   sbi-port:
     command: conf sbi
   nbi-port:
     command: conf nbi
+  addr:
+    command: conf addr
   ports:
     command: conf ports
+  conf-set:
+    command: conf set-log
+  conf-get:
+    command: conf echo-log
+  conf-show:
+    command: conf cat-log
+  conf-list:
+    command: conf ls-log  
   flexrand:
     command: run flexran
     daemon: simple
@@ -157,7 +171,7 @@ parts:
     after: [ pistache, protobuf]
     plugin: cmake
     source: https://gitlab.eurecom.fr/flexran/flexran-rtc.git
-    source-branch: master
+    source-branch: develop
     build-packages: [build-essential, ]
     stage-packages:
       - libboost-all-dev
@@ -211,8 +225,8 @@ parts:
       # - pyrsistent==0.16.0
       # - cassandra-driver==3.24.0
     stage:
-      - usr/lib/python3.6/*
       - usr/*
+      - lib/*
     prime:
-      - usr/lib/python3.6/*
       - usr/*
+      - lib/*

@@ -1,25 +1,77 @@
-#!/bin/sh
+#!/bin/bash
 
 . $SNAP/common
+. $SNAP/util
 
-echo "Test Snap Service $1"
+echo "Test Snap HSSD Service"
+check_string="The freeDiameter engine has been started"
+conf=$(snapctl get conf.$1)
+d="d"
+waiting_time=1
 
-waiting_time=2
 case "$1" in
-    "hss-service" )
-	$SNAP/run status hssd 
+    "api" )
+	
+    ;;
+    
+    "hss" )
+
+	$SNAP/run status-all
 	sleep $waiting_time 
-	$SNAP/run start hssd
-	sleep $waiting_time 
-	$SNAP/run status hssd
-	sleep $waiting_time 
-	$SNAP/run stop hssd
+
+	echo_info "Start $1$d"
+	$SNAP/run start "$1$d" 
 	sleep $waiting_time
-	$SNAP/run status hssd
+
+	echo_info "Stop $1$d"
+	$SNAP/run stop "$1$d"
+	sleep $waiting_time
+	$SNAP/run status-all
+	
 	sleep $waiting_time 
+	$SNAP/run status-all
+	sleep $waiting_time 
+	
+	echo_info "Stop All"
+	$SNAP/run stop-all
+	sleep $waiting_time
+
+	echo_info "Check and set $1 conf"
+	$SNAP/conf ls-$1
+	$SNAP/conf set-$1 $conf
+	snapctl get conf.$1
+
+	
+	echo_info "Init"
+	$SNAP/init $1
+	
+	echo_info "Start OpenAPI"
+	$SNAP/run start apid
+	#echo "curl -Is localhost:$(snapctl get conf.apiport)"
+	#curl -Is localhost:$(snapctl get conf.apiport) | head -n 1
+	$SNAP/run journal apid -e -n20 |  egrep -i "Starting Open API|Starting OpenAPI" > /dev/null 2>&1
+	
+	if [ $? -eq 0 ] ; then
+	    echo_success "apid test: passed"
+	else
+	    echo_error   "apid test: failed"
+	fi
+
+	echo_info "Snap Info"
+	$SNAP/run info
+	
+	echo_info "Check $1 exec"
+	$SNAP/run journal $1$d -e -n40 | grep "$check_string" > /dev/null 2>&1
+	if [ $? -eq 0 ] ; then
+	    echo_success "$1 Exec: passed"
+	else
+	    echo_error  "$1 exec: failed"
+	    exit 1 
+	fi
+	
+       
 
     ;;
-
 	
     * )
 	echo "Unknown command: $1"

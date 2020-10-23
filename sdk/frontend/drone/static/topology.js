@@ -739,6 +739,8 @@ function topology(sources) {
                     agentInfo: config.agent_info,
 		    cellConfig: config.eNB.cellConfig,
         s1ap: config.eNB.s1ap,
+                    loadedApps: config.eNB.loadedApps,
+                    loadedMacObjects: config.eNB.loadedMacObjects,
 		    ueConfig: config.UE.ueConfig,
 		    lcUeConfig: config.LC.lcUeConfig
 		};
@@ -1153,7 +1155,7 @@ function topology(sources) {
 		.selectAll("tspan")
 	// The following fields from cellConfig[0] will be show on
 	// right of the eNB icon. Generated below...
-		.data(['eutraBand', 'dlFreq', 'dlBandwidth', 'plmnId', 's1ip', 'mme', 'sliceAlgorithm']);
+		.data(['eutraBand', 'dlFreq', 'dlBandwidth', 'plmnId', 's1ip', 'mme', 'dlSliceAlgorithm', 'loadedApps', 'loadedMacObjects']);
 	stats.enter()
 	    .append("tspan")
 	    .attr("x", GRAPH.NODE.R+5)
@@ -1174,14 +1176,16 @@ function topology(sources) {
                   var agents = [];
                   for (var a in as) agents.push(as[a].agent_id);
                   return d + "=" + agents;
-                } else if (d == 'sliceAlgorithm') {
-                  return d + "=" + config.cellConfig[0]['sliceConfig']['algorithm'];
+                } else if (d == 'dlSliceAlgorithm') {
+                  return d + "=" + config.cellConfig[0]['sliceConfig']['dl']['algorithm'];
                 } else if (d == 's1ip') {
                   return d + "=" + config.s1ap.enbS1Ip;
                 } else if (d == 'mme') {
                   var mmes = [];
                   for (var m in config.s1ap.mme) mmes.push(config.s1ap.mme[m].s1Ip);
                   return d + "=" + mmes;
+                } else if (d == 'loadedApps' || d == 'loadedMacObjects') {
+                  return d + "=" + config[d] || [];
                 } else {
                   return d + "=" + config.cellConfig[0][d];
                 }

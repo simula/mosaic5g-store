@@ -19,7 +19,7 @@ case "$1" in
 	    echo "Reset to default config file: $UE_CONF_FILE"
 	    CONFIG_FILE=$UE_CONF_FILE
 	fi
-	
+	snapctl set conf.ue=$CONFIG_FILE
 	echo "UE_CONF_FILE2=$CONFIG_FILE" > $SNAP_DATA/config_ue.sh
 	echo "UE_CONF_FILE2=$CONFIG_FILE"  > $SNAP_USER_DATA/config_ue.sh
 	;;
@@ -40,7 +40,7 @@ case "$1" in
 	    echo "Reset to default config file: $UE_CMD_FILE"
 	    CONFIG_FILE=$UE_CMD_FILE
 	fi
-	
+	snapctl set conf.uecmd=$CONFIG_FILE
 	echo "UE_CMD_FILE2=$CONFIG_FILE" > $SNAP_DATA/config_ue_cmd.sh
 	echo "UE_CMD_FILE2=$CONFIG_FILE"  > $SNAP_USER_DATA/config_ue_cmd.sh
 	;;
@@ -61,7 +61,7 @@ case "$1" in
 	    echo "Reset to default config file: $UESIM_CMD_FILE"
 	    CONFIG_FILE=$UESIM_CMD_FILE
 	fi
-	
+	snapctl set conf.uesimcmd=$CONFIG_FILE
 	echo "UESIM_CMD_FILE2=$CONFIG_FILE" >  $SNAP_DATA/config_uesim_cmd.sh
 	echo "UESIM_CMD_FILE2=$CONFIG_FILE"  > $SNAP_USER_DATA/config_uesim_cmd.sh
 	;;
@@ -82,7 +82,7 @@ case "$1" in
 	    echo "Reset to default config file: $UE_USIM_CONF_FILE"
 	    CONFIG_FILE=$UE_USIM_CONF_FILE
 	fi
-	
+	snapctl set conf.usim=$CONFIG_FILE
 	echo "UE_USIM_CONF_FILE2=$CONFIG_FILE" > $SNAP_DATA/config_usim.sh
 	echo "UE_USIM_CONF_FILE2=$CONFIG_FILE"  > $SNAP_USER_DATA/config_usim.sh
 	;;
@@ -102,8 +102,7 @@ case "$1" in
 	    echo "Reset to default config file: $USIM_CONF_FILE"
 	    CONFIG_FILE=$UESIM_CONF_FILE
 	fi
-	    
-
+	snapctl set conf.uesim=$CONFIG_FILE
 	echo "UESIM_CONF_FILE2=$CONFIG_FILE" > $SNAP_DATA/config_uesim.sh
 	echo "UESIM_CONF_FILE2=$CONFIG_FILE"  > $SNAP_USER_DATA/config_uesim.sh
 	;;

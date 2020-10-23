@@ -1,6 +1,44 @@
-#!/bin/sh
+#!/bin/bash
 
 . $SNAP/common
+. $SNAP/util
+
+
+apiport=$(grep -m1 "api_port_default" $SNAP/apivars.py | cut -f3 -d " ")
+mgrport=$(grep -m1 "api_manager_port_default" $SNAP/apivars.py | cut -f3 -d " ")
+apiaddr=$(grep -m1 "api_host_default" $SNAP/apivars.py | cut -f3 -d " " | cut -f3 -d " " | tr -d "'")
+mgraddr=$(grep -m1 "api_manager_host_default" $SNAP/apivars.py | cut -f3 -d " " | cut -f3 -d " " | tr -d "'")
+
+if [ ! -z "$apiport" ] ; then 
+    snapctl set conf.apiport=$apiport
+    echo_info "Default API port :"  $(snapctl get conf.apiport)
+else
+    echo_error "Could not read api_port_default in apivars.py!"
+fi
+
+if [ ! -z "$mgrport" ] ; then 
+    snapctl set conf.mgrport=$mgrport
+    echo_info "Default MGR port :"  $(snapctl get conf.mgrport)
+else
+    echo_error "Could not read  api_manager_port_default in apivars.py!"
+fi
+
+if [ ! -z "$apiaddr" ] ; then 
+    snapctl set conf.apiaddr=$apiaddr
+    echo_info "Default API addr :"  $(snapctl get conf.apiaddr)
+else
+    echo_error "Could not read api_host_default in apivars.py!"
+fi
+
+if [ ! -z "$mgraddr" ] ; then 
+    snapctl set conf.mgraddr=$mgraddr
+    echo_info "Default MGR addr :"  $(snapctl get conf.mgraddr)
+else
+    echo_error "Could not read api_manager_host_default in apivars.py!"
+fi
+
+openapi="http://"$(snapctl get conf.apiaddr)":"$(snapctl get conf.apiport)
+snapctl set conf.openapi=$openapi
 
 case "$1" in
     "spgwc" )
@@ -9,13 +47,15 @@ case "$1" in
 	    cp $SNAP/etc/spgwc.conf $CONF_DIR
 #	fi
 	
-	$SNAP/conf set-spgwc $CONF_DIR/spgwc.conf
+	snapctl set conf.spgwc=$CONF_DIR/spgwc.conf
+	$SNAP/conf set-spgwc $(snapctl get conf.spgwc) 
+	echo_info "Default SPGWC conf:" $SNAP/conf echo-spgwc 
 
 	# a copy for the user
 	cp $CONF_DIR/spgwc.conf $SNAP_USER_DATA
 	echo""
-	echo "SPGWC is initialized"
-	echo "Now, configure the spgw.conf file (mainly the NETWORK_INTERFACES and P-GW sections)"
+	echo_success "SPGWC is initialized"
+	echo_info "Now, configure the spgw.conf file (mainly the NETWORK_INTERFACES and P-GW sections)"
 	;;
     * )
 	echo "Unknown command: $1"

@@ -4,6 +4,26 @@
 . $SNAP/util
 
 case "$1" in
+    "set-log" )
+	CONFIG_FILE=$2
+	if [  "$CONFIG_FILE" != "${CONFIG_FILE#/}" -a -f "$CONFIG_FILE" ]; then
+	    echo_success "Setting the default config file to: $CONFIG_FILE"
+	    
+	elif [ -f "$CONF_DIR/$CONFIG_FILE" ]; then
+	    CONFIG_FILE=$CONF_DIR/$CONFIG_FILE
+	    echo_info "Config file found in the $CONF_DIR!"
+	    echo_info "Resetting to the default config file: $CONFIG_FILE"
+	    
+	else
+	    echo_error "[ERR] Config file $CONFIG_FILE not found, please provide an absolute path!"
+	    echo_info "Resetting to the default config file: $LOG_CONF_FILE"
+	    CONFIG_FILE=$LOG_CONF_FILE
+	fi	
+	snapctl set conf.log=$CONFIG_FILE
+	echo "LOG_CONF_FILE2=$CONFIG_FILE" > $SNAP_DATA/config_log.sh
+       	echo "LOG_CONF_FILE2=$CONFIG_FILE" > $SNAP_USER_DATA/config_log.sh
+	;;
+
     "sbi" )
 	if [ "$2" != "" ]; then
             . $CONF_DIR/nbi_config.sh
@@ -40,12 +60,78 @@ case "$1" in
 	# echo "NBI_PORT=$2" > $SNAP_USER_DATA/nbi_config.sh
 	;;
     
+    "naddr" )
+	if [ "$2" != "" ]; then
+            snapctl set conf.naddr=$2
+	    echo "NBI_ADDR=$2" > $CONF_DIR/naddr_config.sh
+	    echo_info "NBI_ADDR $2 is properly set!"
+	else
+	    # prevent the user to set the same port for nbi and sbi
+	    echo_error "NBI address empty"
+	fi
+	;;
+    "saddr" )
+	if [ "$2" != "" ]; then
+            snapctl set conf.saddr=$2
+	    echo "SBI_ADDR=$2" > $CONF_DIR/saddr_config.sh
+	    echo_info "SBI_ADDR $2 is properly set!"
+	else
+	    # prevent the user to set the same port for nbi and sbi
+	    echo_error "SBI addr empty"
+	fi
+	;;
+
+    "addr" )
+	. $CONF_DIR/saddr_config.sh
+	. $CONF_DIR/naddr_config.sh
+	echo_info "SBI_ADDR:  $SBI_ADDR"
+	echo_info "NBI_ADDR:  $NBI_ADDR"
+ 	;;
     "ports" )
 	. $CONF_DIR/sbi_config.sh
 	. $CONF_DIR/nbi_config.sh
 	echo_info "SBI_PORT:  $SBI_PORT"
 	echo_info "NBI_PORT:  $NBI_PORT"
  	;;
+
+    "ls-log" )
+	if [ -r $SNAP_DATA/config_log.sh ]; then
+	    . $SNAP_DATA/config_log.sh
+	fi
+	
+	# default config file is (unless set in above config)
+	LOG_CONFIG=${LOG_CONF_FILE2:-$LOG_CONF_FILE}
+	ls $(dirname $LOG_CONFIG)/*log
+	;;
+    
+    "echo-log" | "cat-log" )
+	show_file=$2
+	
+	
+	if [ -r $SNAP_DATA/config_log.sh ]; then
+	    . $SNAP_DATA/config_log.sh
+	fi
+	
+	# default config file is (unless set in above config)
+	LOG_CONFIG=${LOG_CONF_FILE2:-$LOG_CONF_FILE}
+	# echo (get), cat (show)
+        # `echo $1 | cut -d"-" -f1` $MME_CONFIG
+	
+	if [ "$show_file" != "" ]; then
+	    # echo "File to show $SNAP_DATA/$show_file"
+	    absolute_show_file=$SNAP_DATA/$show_file
+	    if [ ! -e $absolute_show_file ]; then
+		echo "The file $absolute_show_file does not exist"
+	    else
+		`echo $1 | cut -d"-" -f1` $absolute_show_file
+	    fi
+	else
+	    # echo "File to show $MME_CONFIG"
+	    `echo $1 | cut -d"-" -f1` $LOG_CONFIG
+	fi
+	
+	;;
+
     * )
 	echo_error "unknow option: $1"
 	;;

@@ -1,10 +1,10 @@
-#!/bin/sh
+#!/bin/bash
 
 . $SNAP/common
 . $SNAP/util
 
 if [ ! -e $SPGWU_EXEC ]; then
-    echo "Cannot find $SPGWU_EXEC executable"
+    echo_error "Cannot find $SPGWU_EXEC executable"
     exit -1
 fi
 
@@ -14,16 +14,6 @@ fi
 
 SPGWU_CONFIG=${SPGWU_CONF_FILE2:-$SPGWU_CONF_FILE}
 SPGWU_EXEC_ARGS=" -c $SPGWU_CONFIG -o "
-
-if_sudo(){
-
-    if [ "$(id -u)" -eq 0 ] ; then
-	return 0
-    else
-	echo "Please run as a sudoer!"
-	exit 1
-    fi
-}
 
 
 case "$1" in
@@ -51,7 +41,7 @@ case "$1" in
     "info" )
 	#snap info $SNAP_NAME
 	shift 
-	echo "Please manually run: snap info $SNAP_NAME "
+	snap_info
 	;; 
     
     "start"  )
@@ -128,24 +118,7 @@ case "$1" in
     
     
     "help" )
-	echo "Usage:   sudo  $SNAP_NAME.[options] args"
-	echo "Note:    need root priviliage"
-	echo "Options:"
-	echo "  start:       start the $SNAP_NAME.spgwud daemon"
-	echo "  stop:        stop the $SNAP_NAME.spgwud daemon"
-	echo "  restart:     restart the $SNAP_NAME.spgwd daemon"
-	echo "  status:      get the $SNAP_NAME.spgwud status"
-	echo "  journal:     get the $SNAP_NAME.spgwud logs"
-	echo ""
-	echo "  init:       initialize SPGWU"
-	echo "  conf-set:   set the SPGWU configuration file"
-	echo "  conf-get:   get the current SPGWU configuration file (spgwu.conf)"
-	echo "  conf-show:  show the path to the SPGWU configuration file (spgwu.conf)"
-	echo "  conf-list:  list all the SPGWU configuration files (spgwu.conf)"
-	echo ""
-	echo "  help:       print this help"
-	echo "  Example:    sudo oai-spgwu.init; sudo oai-spgwu;"
-	
+	snap_help
 	;;
     
     "spgwu" | * )

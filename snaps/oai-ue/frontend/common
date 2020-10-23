@@ -5,7 +5,7 @@ set -e
 CONF_DIR="$SNAP_DATA"
 
 UE_DIR="$SNAP/ue"
-UE_EXEC="$UE_DIR/lte-uesoftmodem.Rel14"
+UE_EXEC="$UE_DIR/oai-ue"
 USIM_EXEC="$UE_DIR/usim"
 USIM_MULTI_EXEC="$UE_DIR/conf2uedata"
 NVRAM_EXEC="$UE_DIR/nvram"
@@ -21,7 +21,7 @@ UE_USIM_CONF_FILE="$CONF_DIR/usim_default.conf"
 
 UESIM_DIR="$SNAP/ue"
 UESIM_CONF_FILE="$CONF_DIR/uesim.conf"
-UESIM_EXEC="$UE_DIR/lte-uesoftmodem.Rel14"
+UESIM_EXEC="$UE_DIR/oai-ue"
 
 
 UE_IP_DIR="$CONF_DIR/ue_ip"

@@ -1,5 +1,35 @@
-#!/bin/sh
+#!/bin/bash
 . $SNAP/common
+
+# Echo 
+black='\E[30m'
+red='\E[31m'
+green='\E[32m'
+yellow='\E[33m'
+blue='\E[1;34m'
+magenta='\E[35m'
+cyan='\E[36m'
+white='\E[37m'
+reset_color='\E[00m'
+COLORIZE=1
+
+cecho()  {  
+    # Color-echo
+    # arg1 = message
+    # arg2 = color
+    local default_msg="No Message."
+    message=${1:-$default_msg}
+    color=${2:-$green}
+    [ "$COLORIZE" = "1" ] && message="$color$message$reset_color"
+    echo -e "$message"
+    return
+}
+
+echo_error()   { cecho "$*" $red          ;}
+echo_fatal()   { cecho "$*" $red; exit -1 ;}
+echo_warn()    { cecho "$*" $yellow       ;}
+echo_success() { cecho "$*" $green        ;}
+echo_info()    { cecho "$*" $blue         ;}
 
 
 if_sudo(){
@@ -10,6 +40,70 @@ if_sudo(){
 	echo "Please run as a sudoer!"
 	exit 1
     fi
+}
+
+
+set_health(){
+    
+    status=$(snapctl services $SNAP_NAME.hssd)
+    case "$status" in
+	*inactive*)
+	    #echo "Service inactive"
+	    snapctl set-health --code=ready blocked "$SNAP_NAME ready to be run"
+	    ;;
+	*active*)
+	    #echo "Service active"
+	    snapctl set-health okay
+	    ;;
+	*)
+            #echo "Unknown service state"
+	    snapctl set-health --code=error error "Execution failed. Checked the Journal"
+	    ;;
+    esac 
+    
+}
+
+snap_info(){
+    echo_info "Snap Name: $SNAP_NAME"
+    echo_info "Snap Instance Name: $SNAP_INSTANCE_NAME"
+    echo_info "Sanp Version: $SNAP_VERSION"
+    echo_info "Sanp Revision: $SNAP_REVISION"
+    echo_info "Snap Data: $SNAP_DATA"
+    echo_info "Snap Conf : "
+    snapctl get conf
+    echo ""
+    echo_info "For more information, run: snap info $SNAP_NAME"
+}
+
+snap_help(){
+    echo "Usage:   sudo  $SNAP_NAME.[options] args"
+    echo "Note:    need root priviliage"
+    echo "Options:"
+    echo "  start:        start the $SNAP_NAME.hssd daemon"
+    echo "  stop:         stop the $SNAP_NAME.hssd daemon"
+    echo "  restart:      restart the $SNAP_NAME.hssd daemon"
+    echo "  status:       get the $SNAP_NAME.hssd status"
+    echo "  journal:      get the $SNAP_NAME.hssd logs"
+    echo ""
+    echo "  init:         initialize HSS"
+    echo "  conf-set:     set the HSS configuration file"
+    echo "  conf-get:     get the current HSS configuration file (hss_rel14.conf)"
+    echo "  conf-show:    show the path to the HSS configuration file (hss_rel14.conf)"
+    echo "  conf-list:    list all the HSS configuration files"
+    echo ""
+    echo "  add-user      [options] Add a user identfied by an IMSI to the Cassandra DB. Use -h for more options."
+    echo "  dump-users:   [options] dump the current user DB. Use -h for more options."
+    echo "  add-mme       [options] Add an MME identified by its FQDN. Use -h for more options."
+    echo "  dump-mmes:    [options] dump the current authenticated mme hosts. Use -h for more options."
+    echo "  dump-vars:    Dump internal OAI-HSS vars"
+    echo "  reset-db:     reset to default user entires in the cassandra DB"
+    echo "  clean-db:     clean all user entires in the cassandra DB"
+    echo "  reset-mme-db: rest to default MME entires in the cassandra DB"
+    echo "  clean-mme-db: clean all MME entires in the cassandra DB"
+    echo ""
+    echo "  help:         print this help"
+    echo "  Example:      sudo oai-hss.init; sudo oai-hss;"
+    
 }
 
 hss_set_vars(){
@@ -36,13 +130,13 @@ hss_set_vars(){
 
 hss_print_vars(){
 
-echo "HSS_CONF_FILE:"     $HSS_CONFIG
-echo "HSS_FD_CONF_FILE: " $HSS_FD_CONF_FILE
-echo "REALM:"             $REALM
-echo "Cassandra IP:"      $Cassandra_Server_IP
-echo "MME_ID:"            $MME_IDENTITIY
-echo "OP KEY:"            $OP_KEY
-echo "Default USER KEY:"  $USER_KEY
+    echo_info "HSS_CONF_FILE:"     $HSS_CONFIG
+    echo_info "HSS_FD_CONF_FILE: " $HSS_FD_CONF_FILE
+    echo-info "REALM:"             $REALM
+    echo_info "Cassandra IP:"      $Cassandra_Server_IP
+    echo-info "MME_ID:"            $MME_IDENTITIY
+    echo_info "OP KEY:"            $OP_KEY
+    echo_info "Default USER KEY:"  $USER_KEY
 }
 
 check_cassandra_service(){

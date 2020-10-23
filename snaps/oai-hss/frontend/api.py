@@ -32,13 +32,7 @@ import argparse
 from werkzeug.utils import cached_property
 from werkzeug.datastructures import FileStorage
 
-snap_name = "oai-hss"
-
-api_host_default = '0.0.0.0'
-api_port_default = 5551
-
-api_manager_host_default = '0.0.0.0'
-api_manager_port_default = 6661
+from apivars import *
 
 UPLOAD_FOLDER="/var/snap/{}/current/".format(snap_name)
 # PARAMETER_FOLDER="/var/snap/{}/common/".format(snap_name)

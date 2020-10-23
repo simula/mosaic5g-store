@@ -1,60 +1,73 @@
-#!/bin/sh
+#!/bin/bash
 
 . $SNAP/common
+. $SNAP/util
 
-echo "Test Snap Service $1"
-
-waiting_time1=1
-waiting_time2=2
-
+waiting_time=1
+check_string="No USRP Device Found"
+conf=$(snapctl get conf.$1)
+d="d"
 case "$1" in
-     "all" )
+    "api" )
+
+    ;;
+    
+    "ue")
 	
-	$SNAP/run status  ued
-	sleep $waiting_time1 
-	$SNAP/run start ued 
-	sleep $waiting_time1
-	$SNAP/run status ued
-	sleep $waiting_time1
-	$SNAP/run stop ued
-	sleep $waiting_time1
-	$SNAP/run status ued 
-	sleep $waiting_time1
+	$SNAP/run status-all
+	sleep $waiting_time 
+	echo_info "Start $1$d"
+	$SNAP/run start "$1$d" 
+	sleep $waiting_time
+	echo_info "Stop $1$d"
+	$SNAP/run stop "$1$d"
+	sleep $waiting_time
+	$SNAP/run status-all
+	
+	sleep $waiting_time 
+	$SNAP/run status-all
+	sleep $waiting_time 
+	
+	echo_info "Stop All"
+	$SNAP/run stop-all
+	sleep $waiting_time
 
-	sleep $waiting_time1
-	$SNAP/run start uesimd
-	sleep $waiting_time1
-	$SNAP/run status uesimd
-	sleep $waiting_time1
-	$SNAP/run stop uesimd
-	sleep $waiting_time1
-	$SNAP/run status uesimd
-		
-	echo "1. get usim info"
-	$SNAP/run  usim-print
-	sleep $waiting_time2 
-	echo "2. get nvram info"
-	$SNAP/run  nvram-print
-	sleep $waiting_time2
-	echo "3. get UE config"
-	$SNAP/conf echo-ue
-	sleep $waiting_time2
-	echo "4. get UE command"
-	$SNAP/conf echo-ue-cmd
-	sleep $waiting_time2
-	echo "5. get usim configuration file"
-	$SNAP/conf echo-usim
+	echo_info "Check and set $1 conf"
+	$SNAP/conf ls-$1
+	$SNAP/conf set-$1 $conf
+	snapctl get conf.$1
 
+	echo_info "Init"
+	$SNAP/init
+	
+	echo_info "Start OpenAPI"
+#	$SNAP/run start apid
+	#echo "curl -Is localhost:$(snapctl get conf.apiport)"
+	#curl -Is localhost:$(snapctl get conf.apiport) | head -n 1
+#	$SNAP/run journal apid -e -n20 |  egrep -i "Starting Open API|Starting OpenAPI" > /dev/null 2>&1
+	
+#	if [ $? -eq 0 ] ; then
+#	    echo_success "apid test: passed"
+#	else
+#	    echo_error   "apid test: failed"
+#	fi
+
+	echo_info "Snap Info"
+	$SNAP/run info
+
+	echo_info "Check $1 exec"
+	$SNAP/run $1 | grep "$check_string" > /dev/null 2>&1
+	if [ $? -eq 0 ] ; then
+	    echo_success "$1 Exec: passed"
+	    exit 0 
+	else
+	    echo_error   "$1 exec: failed"
+	    exit 1
+	fi
 	
 	;;
-	"ue" | "uesim" )
-		   
-	;;
-	
-    * )
-	echo "Unknown command: $1"
-	;;
 
+   
 esac
 
 	

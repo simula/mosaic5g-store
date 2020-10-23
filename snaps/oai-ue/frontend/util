@@ -1,0 +1,112 @@
+#!/bin/bash
+
+. $SNAP/common
+
+# Echo 
+black='\E[30m'
+red='\E[31m'
+green='\E[32m'
+yellow='\E[33m'
+blue='\E[1;34m'
+magenta='\E[35m'
+cyan='\E[36m'
+white='\E[37m'
+reset_color='\E[00m'
+COLORIZE=1
+
+cecho()  {  
+    # Color-echo
+    # arg1 = message
+    # arg2 = color
+    local default_msg="No Message."
+    message=${1:-$default_msg}
+    color=${2:-$green}
+    [ "$COLORIZE" = "1" ] && message="$color$message$reset_color"
+    echo -e "$message"
+    return
+}
+
+echo_error()   { cecho "$*" $red          ;}
+echo_fatal()   { cecho "$*" $red; exit -1 ;}
+echo_warn()    { cecho "$*" $yellow       ;}
+echo_success() { cecho "$*" $green        ;}
+echo_info()    { cecho "$*" $blue         ;}
+
+
+if_sudo(){
+
+    if [ "$(id -u)" -eq 0 ] ; then
+	return 0
+    else
+	echo "Please run as a sudoer!"
+	exit 1
+    fi
+}
+
+set_health(){
+    
+    status=$(snapctl services $SNAP_NAME.ued)
+    case "$status" in
+	*inactive*)
+	    #echo "Service inactive"
+	    snapctl set-health --code=ready blocked "$SNAP_NAME ready to be run"
+	    ;;
+	*active*)
+	    #echo "Service active"
+	    snapctl set-health okay
+	    ;;
+	*)
+            #echo "Unknown service state"
+	    snapctl set-health --code=error error "Execution failed. Checked the Journal"
+	    ;;
+    esac 
+    
+}
+
+snap_info(){
+    echo_info "Snap Name: $SNAP_NAME"
+    echo_info "Snap Instance Name: $SNAP_INSTANCE_NAME"
+    echo_info "Sanp Version: $SNAP_VERSION"
+    echo_info "Sanp Revision: $SNAP_REVISION"
+    echo_info "Snap Data: $SNAP_DATA"
+    echo_info "Snap Conf: "
+    snapctl get conf
+    echo ""
+    echo_info "For more information, run: snap info $SNAP_NAME"
+}
+
+snap_help(){
+	echo "Usage:                sudo  $SNAP_NAME or $SNAP_NAME.[x] args"
+	echo "                      App [x] is ue or uesim"
+	echo "Note:                 root priviliage required"
+	echo "Options:"
+	echo "oai-ue.[x]:           run App [x] manually as a process. Run with option -h for available execution options."
+	echo "oai-ue.init:               initialize $SNAP_NAME (after the 1st installation)"
+	echo "oai-ue.[x]-conf-get   get the current $SNAP_NAME.[X] configuration file"
+	echo "oai-ue.[x]-conf-list  list the $SNAP_NAME.[x] configuration files"
+	echo "oai-ue.[x]-conf-set   set the $SNAP_NAME.[x] configuration file"
+	echo "oai-ue.[x]-conf-show  show the path to the $SNAP_NAME.[x] configuration file"
+	echo "oai-ue.ue-cmd-set:    set the $SNAP_NAME configuration file"
+	echo "oai-ue.ue-cmd-get:    get the current $SNAP_NAME configuration file"
+	echo "oai-ue.ue-cmd-show:   show the path to the current $SNAP_NAME configuration file"
+	echo "oai-ue.ue-cmd-list:   list the $SNAP_NAME configuration files"
+	echo "oai-ue.oip:           bring up the $SNAP_NAME UE IP address"
+	echo ""
+	echo "oai-ue.[x]-journal    get the $SNAP_NAME.[x] daemon logs"
+	echo "oai-ue.[x]-restart    restart the $SNAP_NAME.[x] daemon"
+	echo "oai-ue.[x]-start      start the $SNAP_NAME.[x] daemon"
+	echo "oai-ue.[x]-status     status the $SNAP_NAME.[x] daemon"
+	echo "oai-ue.[x]-stop       stop the $SNAP_NAME.[x] daemon"
+	echo ""
+	echo "oai-ue.usim-gen:      generate usim data file for single or multi UEs"
+	echo "oai-ue.usim-print:    print the usim configure data file"
+	echo "oai-ue.nvram-print:   print the nvram data file"
+	echo "oai-ue.debug:         debug the $SNAP_NAME UE with gdb"
+	echo "oai-ue.usim-set:      set the USIM configuration file"
+	echo "oai-ue.usim-get:      get the current USIM  configuration file"
+	echo "oai-ue.usim-show:     show the current USIM configuration file"
+	echo "oai-ue.usim-list:     list the USIM configuration files"
+	echo ""
+	echo "oai-ue.help:          print this help"
+	
+}

@@ -9,6 +9,9 @@ ENB_CONF_FILE="$CONF_DIR/enb.band7.tm1.50PRB.usrpb210.conf"
 ENB_SIM_CONF_FILE="$CONF_DIR/rcc.band7.tm1.if4p5.50PRB.lo.conf"
 ENB_EXEC="$ENB_DIR/$SNAP_NAME"
 
+GNB_DIR="$SNAP/gnb"
+GNB_CONF_FILE="$CONF_DIR/gnb.band78.tm1.106PRB.usrpn300.conf"
+GNB_EXEC="$GNB_DIR/oai-nr"
 
 CUDU_DIR="$SNAP/enb"
 CUDU_CONF_FILE="$CONF_DIR/rcc.band7.tm1.if4p5.50PRB.conf"
