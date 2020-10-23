@@ -4,7 +4,8 @@
 . $SNAP/util
 
 waiting_time=1
-check_string="Listening on port"
+check_string="Listening on "$(snapctl get conf.naddr)":"$(snapctl get conf.nbi) 
+conf=$(snapctl get conf.log) 
 d="d"
 case "$1" in
     "api" )
@@ -34,16 +35,28 @@ case "$1" in
 	echo_info "Check and set $1 conf"
 	$SNAP/conf sbi 1234
 	$SNAP/conf nbi 4321
-	snapctl get ports
-
+	$SNAP/conf naddr "10.0.1.1"
+	$SNAP/conf set-log $conf
+	
 	echo_info "Init"
-	$SNAP/init
+	$SNAP/init $1
 	
 	echo_info "Start OpenAPI"
 	$SNAP/run start apid
-	#echo "curl -Is localhost:$(snapctl get conf.apiport)"
-	#curl -Is localhost:$(snapctl get conf.apiport) | head -n 1
+	check_service apid
 
+	if [ $? -eq 0 ] ; then
+	
+	    $SNAP/run journal apid -e -n20 |  egrep -i "Starting Open API|Starting OpenAPI" > /dev/null 2>&1
+	    if [ $? -eq 0 ] ; then
+		echo_success "apid test: passed"
+	    else
+		echo_error   "apid test: failed"
+	    fi
+	else
+	    echo_error   "apid test: failed"
+	fi
+	    
 	echo_info "Snap Info"
 	$SNAP/run info
 

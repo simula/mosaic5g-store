@@ -1,5 +1,5 @@
 name: oai-hss
-version: '1.0'  
+version: '2.0'  
 title: OpenAirInterface HSS module
 summary: OpenAirInterface HSS entity Rel. 14
 description: |
@@ -15,8 +15,8 @@ grade: stable
 base: core18
 
 apps:
-  test:
-    command : test hss-service
+  check:
+    command : test hss
   info:
     command: run info
   help:
@@ -247,14 +247,14 @@ parts:
       - importlib-metadata==1.7.0
       - importlib-resources==1.5.0
       - zipp==3.1.0
-      # - pyrsistent==0.16.0
-      # - cassandra-driver==3.24.0
+      - pyrsistent==0.16.0
+      - cassandra-driver==3.24.0
     stage:
-      - usr/lib/python3.6/*
       - usr/*
+      - lib/*
     prime:
-      - usr/lib/python3.6/*
       - usr/*
+      - lib/*
 
 layout:
   /usr/share/parameters:

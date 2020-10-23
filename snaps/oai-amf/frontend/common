@@ -1,0 +1,14 @@
+#!/bin/sh
+
+export DEBIAN_FRONTEND=noninteractive
+set -e
+
+
+CONF_DIR="$SNAP_DATA"
+
+AMF_DIR="$SNAP/amf"
+AMF_CONF_FILE="$CONF_DIR/amf.conf"
+AMF_FD_CONF_FILE="$CONF_DIR/amf_fd.conf"
+AMF_EXEC="$AMF_DIR/amf"
+
+export LD_LIBRARY_PATH="$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"

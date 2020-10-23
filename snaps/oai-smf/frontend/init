@@ -1,0 +1,72 @@
+#!/bin/bash
+
+. $SNAP/common
+. $SNAP/util
+
+
+apiport=$(grep -m1 "api_port_default" $SNAP/apivars.py | cut -f3 -d " ")
+mgrport=$(grep -m1 "api_manager_port_default" $SNAP/apivars.py | cut -f3 -d " ")
+apiaddr=$(grep -m1 "api_host_default" $SNAP/apivars.py | cut -f3 -d " " | cut -f3 -d " " | tr -d "'")
+mgraddr=$(grep -m1 "api_manager_host_default" $SNAP/apivars.py | cut -f3 -d " " | cut -f3 -d " " | tr -d "'")
+
+if [ ! -z "$apiport" ] ; then 
+    snapctl set conf.apiport=$apiport
+    echo_info "Default API port :"  $(snapctl get conf.apiport)
+else
+    echo_error "Could not read api_port_default in apivars.py!"
+fi
+
+if [ ! -z "$mgrport" ] ; then 
+    snapctl set conf.mgrport=$mgrport
+    echo_info "Default MGR port :"  $(snapctl get conf.mgrport)
+else
+    echo_error "Could not read  api_manager_port_default in apivars.py!"
+fi
+
+if [ ! -z "$apiaddr" ] ; then 
+    snapctl set conf.apiaddr=$apiaddr
+    echo_info "Default API addr :"  $(snapctl get conf.apiaddr)
+else
+    echo_error "Could not read api_host_default in apivars.py!"
+fi
+
+if [ ! -z "$mgraddr" ] ; then 
+    snapctl set conf.mgraddr=$mgraddr
+    echo_info "Default MGR addr :"  $(snapctl get conf.mgraddr)
+else
+    echo_error "Could not read api_manager_host_default in apivars.py!"
+fi
+
+openapi="http://"$(snapctl get conf.apiaddr)":"$(snapctl get conf.apiport)
+snapctl set conf.openapi=$openapi
+
+
+case "$1" in
+
+    "smf" )
+	mkdir -p $CONF_DIR/run
+	chmod -R 777 $CONF_DIR/run
+	#chown $USER:$USER $CONF_DIR/run
+	
+	#if [ ! -f $CONF_DIR/mme.conf ] ; then
+	cp $SNAP/etc/* $CONF_DIR
+
+	$SNAP/conf set-smf $SMF_CONF_FILE
+	#snapctl set conf.smf=$CONF_DIR/smf.conf
+	#$(snapctl get conf.smf) # $CONF_DIR/enb.band7.tm1.50PRB.usrpb210.conf
+	#echo_info "Default SMF conf:" $SNAP/conf echo-smf 
+
+
+	# a copy for the user
+	cp $CONF_DIR/smf.conf $SNAP_USER_DATA
+	
+	
+	echo_success "SMF is initialized"
+	echo_info "Now, it is the time to check/reconfigure the smf.conf"
+	;;
+    
+    * )
+	echo_warn "Unknown command: $1"
+	;;
+    
+esac

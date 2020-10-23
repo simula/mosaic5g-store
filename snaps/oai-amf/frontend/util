@@ -1,0 +1,120 @@
+#!/bin/bash
+. $SNAP/common
+
+# Echo 
+black='\E[30m'
+red='\E[31m'
+green='\E[32m'
+yellow='\E[33m'
+blue='\E[1;34m'
+magenta='\E[35m'
+cyan='\E[36m'
+white='\E[37m'
+reset_color='\E[00m'
+COLORIZE=1
+
+cecho()  {  
+    # Color-echo
+    # arg1 = message
+    # arg2 = color
+    local default_msg="No Message."
+    message=${1:-$default_msg}
+    color=${2:-$green}
+    [ "$COLORIZE" = "1" ] && message="$color$message$reset_color"
+    echo -e "$message"
+    return
+}
+
+echo_error()   { cecho "$*" $red          ;}
+echo_fatal()   { cecho "$*" $red; exit -1 ;}
+echo_warn()    { cecho "$*" $yellow       ;}
+echo_success() { cecho "$*" $green        ;}
+echo_info()    { cecho "$*" $blue         ;}
+
+
+if_sudo(){
+
+    if [ "$(id -u)" -eq 0 ] ; then
+	return 0
+    else
+	echo "Please run as a sudoer!"
+	exit 1
+    fi
+}
+
+set_health(){
+    
+    status=$(snapctl services $SNAP_NAME.amfd)
+    case "$status" in
+	*inactive*)
+	    #echo "Service inactive"
+	    snapctl set-health --code=ready blocked "$SNAP_NAME ready to be run"
+	    ;;
+	*active*)
+	    #echo "Service active"
+	    snapctl set-health okay
+	    ;;
+	*)
+            #echo "Unknown service state"
+	    snapctl set-health --code=error error "Execution failed. Checked the Journal"
+	    ;;
+    esac 
+    
+}
+
+amf_cert(){
+    cd /tmp
+    rm -rf ./demoCA
+    mkdir ./demoCA
+    echo 01 > ./demoCA/serial
+    touch ./demoCA/index.txt
+    touch ./demoCA/index.txt.attr
+    
+    fqdn=$(hostname --fqdn)
+    # Create a Root Certification Authority Certificate
+    openssl req  -new -batch -x509 -days 3650 -nodes -newkey rsa:1024 -out amf.cacert.pem -keyout amf.cakey.pem -subj /CN=$fqdn/C=FR/ST=PACA/L=Aix/O=Eurecom/OU=CM
+    # Generate a Private Key
+    openssl genrsa -out amf.key.pem 1024
+    # Generate a CSR (Certificate Signing Request) that will be self-signed
+    openssl req -new -batch -out amf.csr.pem -key amf.key.pem -subj /CN=$fqdn/C=FR/ST=PACA/L=Aix/O=Eurecom/OU=CM
+    #certificate authority
+    openssl ca -cert amf.cacert.pem -keyfile amf.cakey.pem -in amf.csr.pem -out amf.cert.pem -outdir . -batch
+    mkdir -p $CONF_DIR/
+    mv amf.cakey.pem amf.cert.pem amf.cacert.pem amf.key.pem  $CONF_DIR
+    cd - 
+    
+}
+
+snap_info(){
+    echo_info "Snap Name: $SNAP_NAME"
+    echo_info "Snap Instance Name: $SNAP_INSTANCE_NAME"
+    echo_info "Sanp Version: $SNAP_VERSION"
+    echo_info "Sanp Revision: $SNAP_REVISION"
+    echo_info "Snap Data: $SNAP_DATA"
+    echo_info "Snap Conf : "
+    snapctl get conf
+    echo ""
+    echo_info "For more information, run: snap info $SNAP_NAME"
+}
+
+snap_help(){
+
+    echo_info "Usage:   sudo  $SNAP_NAME.[options] args"
+    echo_info "Note:    need root priviliage"
+    echo_info "Options:"
+    echo_info "  start:        start the $SNAP_NAME.amfd daemon"
+    echo_info "  stop:         stop the $SNAP_NAME.amfd daemon"
+    echo_info "  restart:      restart the $SNAP_NAME.amfd daemon"
+    echo_info "  status:       get the $SNAP_NAME.amfd status"
+    echo_info "  journal:      get the $SNAP_NAME.amfd logs"
+    echo_info ""
+    echo_info "  init:         initialize AMF"
+    echo_info "  conf-set:     set the AMF configuration file"
+    echo_info "  conf-get:     get the current AMF configuration file"
+    echo_info "  conf-show:    show the path to the AMF configuration file"
+    echo_info "  conf-list:    list all the SPGW configuration files"
+    echo ""
+    echo_info "  help:         print this help"
+    echo_info "  Example:      sudo oai-amf.init; sudo oai-amf;"
+
+}

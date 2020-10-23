@@ -24,6 +24,26 @@ case "$1" in
 	echo "ENB_CONF_FILE2=$CONFIG_FILE"  > $SNAP_USER_DATA/config_enb.sh
 	;;
 
+    "set-gnb" )
+	CONFIG_FILE=$2
+	if [ "$CONFIG_FILE" != "${CONFIG_FILE#/}" -a  -f "$CONFIG_FILE" ]; then
+	    echo_success "Setting the default config file to: $CONFIG_FILE"
+	    
+	elif [ -f "$CONF_DIR/$CONFIG_FILE" ]; then
+	    CONFIG_FILE=$CONF_DIR/$CONFIG_FILE
+	    echo_info "Config file found in the $CONF_DIR!"
+	    echo_info "Resetting to the default config file: $CONFIG_FILE"
+
+	else
+	    echo_error "[ERR] Config file $CONFIG_FILE not found, please provide an absolute path!"
+	    echo_info "Reset to default config file: $GNB_CONF_FILE"
+	    CONFIG_FILE=$GNB_CONF_FILE
+	fi
+	snapctl set conf.gnb=$CONFIG_FILE
+	echo "GNB_CONF_FILE2=$CONFIG_FILE" > $SNAP_DATA/config_gnb.sh
+	echo "GNB_CONF_FILE2=$CONFIG_FILE"  > $SNAP_USER_DATA/config_gnb.sh
+	;;
+
     "set-cudu" )
 	CONFIG_FILE=$2
 	if [ "$CONFIG_FILE" != "${CONFIG_FILE#/}" -a  -f "$CONFIG_FILE" ]; then
@@ -75,6 +95,16 @@ case "$1" in
 	
 	;;
     
+    "ls-gnb" )
+	if [ -r $SNAP_DATA/config_gnb.sh ]; then
+	    . $SNAP_DATA/config_gnb.sh
+	fi
+	
+	# default config file is (unless set in above config)
+	GNB_CONFIG=${GNB_CONF_FILE2:-$GNB_CONF_FILE}
+	ls $(dirname $GNB_CONFIG)/gnb*.conf
+	
+	;;
     "ls-cudu" )
 	if [ -r $SNAP_DATA/config_cudu.sh ]; then
 	    . $SNAP_DATA/config_cudu.sh
@@ -109,7 +139,19 @@ case "$1" in
         `echo $1 | cut -d"-" -f1` $ENB_CONFIG
 	;;
 
-     "echo-cudu" | "cat-cudu" )
+    "echo-gnb" | "cat-gnb" )
+	
+	if [ -r $SNAP_DATA/config_gnb.sh ]; then
+	    . $SNAP_DATA/config_gnb.sh
+	fi
+	
+	# default config file is (unless set in above config)
+	GNB_CONFIG=${GNB_CONF_FILE2:-$GNB_CONF_FILE}
+	# echo (get), cat (show)
+        `echo $1 | cut -d"-" -f1` $GNB_CONFIG
+	;;
+
+    "echo-cudu" | "cat-cudu" )
 	
 	if [ -r $SNAP_DATA/config_cudu.sh ]; then
 	    . $SNAP_DATA/config_cudu.sh

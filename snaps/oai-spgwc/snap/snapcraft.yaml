@@ -1,5 +1,5 @@
 name: oai-spgwc
-version: '1.0' 
+version: '2.0' 
 summary: OpenAirInterface spgwc entity with LL-MEC Agent
 description: |
     OAI-SPGWC is the openairinterface-based SPGWC with LL-MEC agent allowing to connect a 4G-comptaible BS and UEs to the core network. It is one of the projects of Mosaic5G inititive.
@@ -14,8 +14,8 @@ grade: stable
 base: core18
 
 apps:
-  test:
-    command : test
+  check:
+    command : test spgwc
   info:
     command: run info
   oai-spgwc:
@@ -168,11 +168,11 @@ parts:
       # - pyrsistent==0.16.0
       # - cassandra-driver==3.24.0
     stage:
-      - usr/lib/python3.6/*
       - usr/*
+      - lib/*
     prime:
-      - usr/lib/python3.6/*
       - usr/*
+      - lib/*
 
 layout:
   /usr/share/parameters:

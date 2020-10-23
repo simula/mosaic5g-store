@@ -69,7 +69,7 @@ snap_info(){
     echo_info "Sanp Version: $SNAP_VERSION"
     echo_info "Sanp Revision: $SNAP_REVISION"
     echo_info "Snap Data: $SNAP_DATA"
-    echo_info "Snap Conf : "
+    echo_info "Snap Conf: "
     snapctl get conf
     echo ""
     echo_info "For more information, run: snap info $SNAP_NAME"
@@ -81,7 +81,7 @@ snap_help(){
 	echo "Note:                     root priviliage required"
 	echo "Options:"
 	echo "oai-ran.info              get the info for this snap"     
-	echo "oai-ran.test              test snap services" 
+	echo "oai-ran.check              test snap services" 
 	echo "oai-ran.init              initialize $SNAP_NAME (after the 1st installation)"
 	echo ""
 	echo "oai-ran.[x]               run the App [x] manually"

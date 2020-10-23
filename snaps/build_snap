@@ -11,7 +11,7 @@ SNAP_CLEAN_PART="frontend"
 
 
 # to be removed later
-declare -a snap_list=("all oai-ue oai-tracer oai-hss oai-spgwc oai-spgwu oai-mme flexran oai-ran")
+declare -a snap_list=("all oai-ue oai-tracer oai-cn oai-hss oai-spgwc oai-spgwu oai-mme flexran oai-ran")
 
 
 export SNAPCRAFT_BUILD_ENVIRONMENT=host
@@ -150,7 +150,7 @@ Options
    test the internal conf command of the snap
 Usage:
 - build_snap -f  : rebuild the frontend of all the snaps
-- build_snap -s oai-hss: rebuild from scartch the oai-hss snap
+- build_snap -n oai-hss: rebuild from scartch the oai-hss snap
 '
 }
 

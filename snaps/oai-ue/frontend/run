@@ -1,34 +1,35 @@
-#!/bin/sh
+#!/bin/bash
 
 . $SNAP/common
+. $SNAP/util
 
-export UHD_IMAGES_DIR=$SNAP/uhd_images
-export UHD_RFNOC_DIR=$SNAP/usr/share/uhd/rfnoc/blocks
+export UHD_IMAGES_DIR=$(snapctl get conf.usrp) # $SNAP/uhd_images
+export UHD_RFNOC_DIR=$(snapctl get conf.rfnoc) #$SNAP/usr/share/uhd/rfnoc/blocks
 export LD_LIBRARY_PATH="$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"
 
 
 if [ ! -e $UE_EXEC ]; then
-    echo "Cannot find $UE_EXEC executable"
+    echo_error "Cannot find $UE_EXEC executable"
     exit 127
 fi
 
 if [ ! -e $UESIM_EXEC ]; then
-    echo "Cannot find $UESIM_EXEC executable"
+    echo_error "Cannot find $UESIM_EXEC executable"
     exit 127
 fi
 
 if [ ! -e $USIM_MULTI_EXEC ]; then
-    echo "Cannot find $USIM_MULTI_EXEC executable"
+    echo_error "Cannot find $USIM_MULTI_EXEC executable"
     exit 127
 fi
 
 if [ ! -e $USIM_EXEC ]; then
-    echo "Cannot find $USIM_EXEC executable"
+    echo_error "Cannot find $USIM_EXEC executable"
     exit 127
 fi
 
 if [ ! -e $NVRAM_EXEC ]; then
-    echo "Cannot find $NVRAM_EXEC executable"
+    echo_error "Cannot find $NVRAM_EXEC executable"
     exit 127
 fi
 
@@ -67,16 +68,6 @@ UESIM_EXEC_ARGS="`cat $UESIM_CMD` -O $UESIM_CONFIG"
 UE_USIM=${UE_USIM_CONF_FILE2:-$UE_USIM_CONF_FILE}
 UE_USIM_EXEC_ARGS=" -c $UE_USIM -o $CONF_DIR"
 
-if_sudo(){
-
-    if [ "$(id -u)" -eq 0 ] ; then
-	return 0
-    else
-	echo "Please run as a sudoer!"
-	exit 1
-    fi
-}
-
 case "$1" in
     "gdb" )
 	echo "Running $SNAP_NAME with the gdb"
@@ -92,7 +83,7 @@ case "$1" in
     "info" )
 	#snap info $SNAP_NAME
 	 shift
-	 echo "This command shall manually be run, try: snap info $SNAP_NAME "
+	 snap_info
 
 	;; 
 
@@ -143,38 +134,7 @@ case "$1" in
 
 
     "help" )
-	echo "Usage:                sudo  $SNAP_NAME or $SNAP_NAME.[x] args"
-	echo "                      App [x] is ue or uesim"
-	echo "Note:                 root priviliage required"
-	echo "Options:"
-	echo "oai-ue.[x]:           run App [x] manually as a process. Run with option -h for available execution options."
-	echo "oai-ue.init:               initialize $SNAP_NAME (after the 1st installation)"
-	echo "oai-ue.[x]-conf-get   get the current $SNAP_NAME.[X] configuration file"
-	echo "oai-ue.[x]-conf-list  list the $SNAP_NAME.[x] configuration files"
-	echo "oai-ue.[x]-conf-set   set the $SNAP_NAME.[x] configuration file"
-	echo "oai-ue.[x]-conf-show  show the path to the $SNAP_NAME.[x] configuration file"
-	echo "oai-ue.ue-cmd-set:    set the $SNAP_NAME configuration file"
-	echo "oai-ue.ue-cmd-get:    get the current $SNAP_NAME configuration file"
-	echo "oai-ue.ue-cmd-show:   show the path to the current $SNAP_NAME configuration file"
-	echo "oai-ue.ue-cmd-list:   list the $SNAP_NAME configuration files"
-	echo "oai-ue.oip:           bring up the $SNAP_NAME UE IP address"
-	echo ""
-	echo "oai-ue.[x]-journal    get the $SNAP_NAME.[x] daemon logs"
-	echo "oai-ue.[x]-restart    restart the $SNAP_NAME.[x] daemon"
-	echo "oai-ue.[x]-start      start the $SNAP_NAME.[x] daemon"
-	echo "oai-ue.[x]-status     status the $SNAP_NAME.[x] daemon"
-	echo "oai-ue.[x]-stop       stop the $SNAP_NAME.[x] daemon"
-	echo ""
-	echo "oai-ue.usim-gen:      generate usim data file for single or multi UEs"
-	echo "oai-ue.usim-print:    print the usim configure data file"
-	echo "oai-ue.nvram-print:   print the nvram data file"
-	echo "oai-ue.debug:         debug the $SNAP_NAME UE with gdb"
-	echo "oai-ue.usim-set:      set the USIM configuration file"
-	echo "oai-ue.usim-get:      get the current USIM  configuration file"
-	echo "oai-ue.usim-show:     show the current USIM configuration file"
-	echo "oai-ue.usim-list:     list the USIM configuration files"
-	echo ""
-	echo "oai-ue.help:          print this help"
+	snap_help
 	;;
 
     "oip" )
@@ -189,41 +149,41 @@ case "$1" in
 		$UE_IP_DIR/oip add $UE_IP_DIR/ue_ip.ko || true
  		
 		if [ -z "$(lsmod | grep ue_ip)" ] ; then 
-		    echo "Can't install the ue_ip kernel module."
-		    echo "Build manually as follows: cd $SNAP_USER_DATA/ue_ip; make; ./oip add ./ue_ip.ko;"
+		    echo_error "Can't install the ue_ip kernel module."
+		    echo_info "Build manually as follows: cd $SNAP_USER_DATA/ue_ip; make; ./oip add ./ue_ip.ko;"
 		else
-		    echo "OAI UE IP interface initialization done"
+		    echo_info "OAI UE IP interface initialization done"
 		fi
 	    else
-		echo "OAI IP module is not supported for this kernel version $kern"
-		echo "Build manually as follows: cd /var/snap/oai-ue/current/ue_ip/; make; ./oip add ./ue_ip.ko ;"
+		echo_error "OAI IP module is not supported for this kernel version $kern"
+		echo_info "Build manually as follows: cd /var/snap/oai-ue/current/ue_ip/; make; ./oip add ./ue_ip.ko ;"
 	    fi    
 	else
-	    echo "OAI IP module is not supported for this kernel version $kern"
-	    echo "Build manually as follows: cd $SNAP_USER_DATA/ue_ip; make; ./oip UE ue_ip.ko;"
+	    echo_error "OAI IP module is not supported for this kernel version $kern"
+	    echo_error "Build manually as follows: cd $SNAP_USER_DATA/ue_ip; make; ./oip UE ue_ip.ko;"
 		
 	fi
 	;;
     "usim-gen")
 	shift 
-	echo "$USIM_MULTI_EXEC $UE_USIM_EXEC_ARGS $@"
+	echo_info "$USIM_MULTI_EXEC $UE_USIM_EXEC_ARGS $@"
 	$USIM_MULTI_EXEC $UE_USIM_EXEC_ARGS "$@"
 	;;
     "usim-print")
 	shift
-	echo "$USIM_EXEC -p $@"
+	echo_info "$USIM_EXEC -p $@"
 	export USIM_DIR="$CONF_DIR"
 	$USIM_EXEC -p "$@"
 	;;
     "nvram-print")
 	shift 
-	echo "$NVRAM_EXEC -p $@"
+	echo_info "$NVRAM_EXEC -p $@"
 	export NVRAM_DIR="$CONF_DIR"
 	$NVRAM_EXEC -p "$@"
 	;;
     "uesim")
 	shift 
-	echo "$UESIM_EXEC  $UESIM_EXEC_ARGS   $@"
+	echo_info "$UESIM_EXEC  $UESIM_EXEC_ARGS   $@"
 
 	export USIM_DIR="$CONF_DIR"
 	export NVRAM_DIR="$CONF_DIR"
@@ -243,11 +203,11 @@ case "$1" in
 	#ln -s $CONF_DIR/.ue_emm.nvram0  .ue_emm.nvram0
 	#ln -s $CONF_DIR/.ue.nvram0      .ue.nvram0
 	#ln -s $CONF_DIR/.usim.nvram0    .usim.nvram0
-	echo "$UE_EXEC  $UE_EXEC_ARGS $@"
+	echo_info "$UE_EXEC  $UE_EXEC_ARGS $@"
 	$UE_EXEC  $UE_EXEC_ARGS "$@"
 	;;
 
     * )
-	echo "unknow run command $@"
+	echo_warn "unknow run command $@"
 	;;
 esac

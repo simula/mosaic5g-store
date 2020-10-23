@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 . $SNAP/common
 . $SNAP/util
@@ -19,7 +19,7 @@ HSS_FD_CONFIG=${HSS_FD_CONF_FILE2:-$HSS_FD_CONF_FILE}
 
 	
 if [ ! -e $HSS_EXEC ]; then
-    echo "Cannot find $HSS_EXEC executable"
+    echo_error "Cannot find $HSS_EXEC executable"
     exit -1 
 fi		   	   
 
@@ -50,12 +50,7 @@ case "$1" in
      "info" )
 	#snap info $SNAP_NAME
 	 shift 
-	 echo_info "Snap Name: $SNAP_NAME"
-	 echo_info "Snap Instance Name: $SNAP_INSTANCE_NAME"
-	 echo_info "Sanp Version: $SNAP_VERSION"
-	 echo_info "Sanp Revision: $SNAP_REVISION"
-	 echo ""
-	 echo_info "For more information, run: snap info $SNAP_NAME"
+	 snap_info
 	 
 	 ;; 
      
@@ -131,34 +126,7 @@ case "$1" in
 	 ;;
     
     "help" )
-	echo "Usage:   sudo  $SNAP_NAME.[options] args"
-	echo "Note:    need root priviliage"
-	echo "Options:"
-	echo "  start:        start the $SNAP_NAME.hssd daemon"
-	echo "  stop:         stop the $SNAP_NAME.hssd daemon"
-	echo "  restart:      restart the $SNAP_NAME.hssd daemon"
-	echo "  status:       get the $SNAP_NAME.hssd status"
-	echo "  journal:      get the $SNAP_NAME.hssd logs"
-	echo ""
-	echo "  init:         initialize HSS"
-	echo "  conf-set:     set the HSS configuration file"
-	echo "  conf-get:     get the current HSS configuration file (hss_rel14.conf)"
-	echo "  conf-show:    show the path to the HSS configuration file (hss_rel14.conf)"
-	echo "  conf-list:    list all the HSS configuration files"
-	echo ""
-	echo "  add-user      [options] Add a user identfied by an IMSI to the Cassandra DB. Use -h for more options."
-	echo "  dump-users:   [options] dump the current user DB. Use -h for more options."
-	echo "  add-mme       [options] Add an MME identified by its FQDN. Use -h for more options."
-	echo "  dump-mmes:    [options] dump the current authenticated mme hosts. Use -h for more options."
-	echo "  dump-vars:    Dump internal OAI-HSS vars"
-	echo "  reset-db:     reset to default user entires in the cassandra DB"
-	echo "  clean-db:     clean all user entires in the cassandra DB"
-	echo "  reset-mme-db: rest to default MME entires in the cassandra DB"
-	echo "  clean-mme-db: clean all MME entires in the cassandra DB"
-	echo ""
-	echo "  help:         print this help"
-	echo "  Example:      sudo oai-hss.init; sudo oai-hss;"
-	
+	snap_help
 	;;
 
     "provision-user-cassandra" | "reset-db" )
@@ -345,7 +313,7 @@ case "$1" in
      "hss" | * )
 	 
 	 shift 
-         echo "$HSS_EXEC  $HSS_EXEC_ARGS"
+         echo_info "$HSS_EXEC  $HSS_EXEC_ARGS"
 	 $HSS_EXEC  `echo $HSS_EXEC_ARGS`  "$@" $*
 	 
 	 ;;
@@ -353,3 +321,4 @@ case "$1" in
 esac
 
 
+set_health

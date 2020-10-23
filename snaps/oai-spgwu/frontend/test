@@ -1,37 +1,73 @@
-#!/bin/sh
+#!/bin/bash
 
 . $SNAP/common
+. $SNAP/util
 
-echo "Test Snap Service $1"
+echo "Test Snap SPGWU Service"
+check_string="\[spgwu_app\] \[start\] Started"
+conf=$(snapctl get conf.$1)
+d="d"
+waiting_time=1
 
-waiting_time=2
 case "$1" in
-    "hss-service" )
-	$SNAP/run status hssd 
-	sleep $waiting_time 
-	$SNAP/run start hssd
-	sleep $waiting_time 
-	$SNAP/run status hssd
-	sleep $waiting_time 
-	$SNAP/run stop hssd
-	sleep $waiting_time
-	$SNAP/run status hssd
-	sleep $waiting_time 
-
+    "api" )
+	
     ;;
+    
+    "spgwu" )
 
-    "all" )
 	$SNAP/run status-all
 	sleep $waiting_time 
-	$SNAP/run start-all
+	echo_info "Start $1$d"
+	$SNAP/run start "$1$d" 
+	sleep $waiting_time
+	echo_info "Stop $1$d"
+	$SNAP/run stop "$1$d"
+	sleep $waiting_time
+	$SNAP/run status-all
+	
 	sleep $waiting_time 
 	$SNAP/run status-all
 	sleep $waiting_time 
+	
+	echo_info "Stop All"
 	$SNAP/run stop-all
 	sleep $waiting_time
-	$SNAP/run status-all
-	sleep $waiting_time 
-	;;
+
+	echo_info "Check and set $1 conf"
+	$SNAP/conf ls-$1
+	$SNAP/conf set-$1 $conf
+	snapctl get conf.$1
+
+	
+	echo_info "Init"
+	$SNAP/init $1
+	
+	echo_info "Start OpenAPI"
+	$SNAP/run start apid
+	
+	$SNAP/run journal apid -e -n30 | egrep -i "Starting Open API|Starting OpenAPI" > /dev/null 2>&1
+	
+	if [ $? -eq 0 ] ; then
+	    echo_success "apid test: passed"
+	else
+	    echo_error   "apid test: failed"
+	fi
+
+	echo_info "Snap Info"
+	$SNAP/run info
+	
+	echo_info "Check $1 exec"
+	$SNAP/run journal $1$d -e -n10 | grep "$check_string" > /dev/null 2>&1
+	if [ $? -eq 0 ] ; then
+	    echo_success "$1 Exec: passed"
+	else
+	    echo_error   "$1 exec: failed"
+	fi
+	
+       
+
+    ;;
 	
     * )
 	echo "Unknown command: $1"

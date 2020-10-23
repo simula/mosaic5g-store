@@ -1,6 +1,7 @@
-#!/bin/sh
+#!/bin/bash
 
 . $SNAP/common
+. $SNAP/util
 
 #if [ ! -f $CONF_DIR/uesim.50PRB.conf ] ; then
     cp $SNAP/etc/* $CONF_DIR
@@ -18,6 +19,7 @@
 # set the UE conf
 #$SNAP/conf set-ue $CONF_DIR/UE_config.xml
 $SNAP/conf set-ue $UE_CONF_FILE
+    
 $SNAP/conf set-ue-cmd $UE_CMD_FILE
 
 #set the UE SIM  conf for L1+L2 sim
@@ -30,6 +32,11 @@ $SNAP/conf set-uesim-cmd $UESIM_L2SIM_CMD_FILE
 #set the USIM conf
 $SNAP/conf set-usim $CONF_DIR/usim_default.conf
 
+snapctl set conf.usrp=$SNAP/uhd_images
+snapctl set conf.rfnoc=$SNAP/usr/share/uhd/rfnoc/blocks
+echo_info "Default USRP images:"  $(snapctl get conf.usrp)
+echo_info "Default USRP RFNOC:"  $(snapctl get conf.rfnoc)
+
 
 # a copy for the user
 cp $CONF_DIR/ue.band7.25PRB.usrp210.cmd $SNAP_USER_DATA
@@ -41,7 +48,43 @@ cp $CONF_DIR/uesim.conf         $SNAP_USER_DATA
 
 #$SNAP/run oip
 
-echo "OAI-UE init: done"
+apiport=$(grep -m1 "api_port_default" $SNAP/apivars.py | cut -f3 -d " ")
+mgrport=$(grep -m1 "api_manager_port_default" $SNAP/apivars.py | cut -f3 -d " ")
+apiaddr=$(grep -m1 "api_host_default" $SNAP/apivars.py | cut -f3 -d " " | cut -f3 -d " " | tr -d "'")
+mgraddr=$(grep -m1 "api_manager_host_default" $SNAP/apivars.py | cut -f3 -d " " | cut -f3 -d " " | tr -d "'")
+
+if [ ! -z "$apiport" ] ; then 
+    snapctl set conf.apiport=$apiport
+    echo_info "Default API port :"  $(snapctl get conf.apiport)
+else
+    echo_error "Could not read api_port_default in apivars.py!"
+fi
+
+if [ ! -z "$mgrport" ] ; then 
+    snapctl set conf.mgrport=$mgrport
+    echo_info "Default MGR port :"  $(snapctl get conf.mgrport)
+else
+    echo_error "Could not read  api_manager_port_default in apivars.py!"
+fi
+
+if [ ! -z "$apiaddr" ] ; then 
+    snapctl set conf.apiaddr=$apiaddr
+    echo_info "Default API addr :"  $(snapctl get conf.apiaddr)
+else
+    echo_error "Could not read api_host_default in apivars.py!"
+fi
+
+if [ ! -z "$mgraddr" ] ; then 
+    snapctl set conf.mgraddr=$mgraddr
+    echo_info "Default MGR addr :"  $(snapctl get conf.mgraddr)
+else
+    echo_error "Could not read api_manager_host_default in apivars.py!"
+fi
+
+openapi="http://"$(snapctl get conf.apiaddr)":"$(snapctl get conf.apiport)
+snapctl set conf.openapi=$openapi
+
+echo_success "OAI-UE init: done"
 
 
 

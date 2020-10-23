@@ -17,8 +17,8 @@ case "$1" in
 	    echo "[ERR] Config file $CONFIG_FILE not found, please provide an absolute path!"
 	    echo "Resetting to the default config file: $HSS_CONF_FILE"
 	    CONFIG_FILE=$HSS_CONF_FILE
-	fi
-	
+	fi	
+	snapctl set conf.hss=$CONFIG_FILE
 	echo "HSS_CONF_FILE2=$CONFIG_FILE" > $SNAP_DATA/config_hss.sh
        	echo "HSS_CONF_FILE2=$CONFIG_FILE" > $SNAP_USER_DATA/config_hss.sh
 	;;

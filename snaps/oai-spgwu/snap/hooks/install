@@ -2,4 +2,4 @@
 set -e 
 echo "Install hook"
 
-#$SNAP/init spgwu
+$SNAP/init spgwu

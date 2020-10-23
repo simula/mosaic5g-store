@@ -1,0 +1,95 @@
+#!/bin/bash
+
+. $SNAP/common
+. $SNAP/util
+
+
+HOSTNAME=`hostname`
+FQDN=`hostname --fqdn`
+
+apiport=$(grep -m1 "api_port_default" $SNAP/apivars.py | cut -f3 -d " ")
+mgrport=$(grep -m1 "api_manager_port_default" $SNAP/apivars.py | cut -f3 -d " ")
+apiaddr=$(grep -m1 "api_host_default" $SNAP/apivars.py | cut -f3 -d " " | cut -f3 -d " " | tr -d "'")
+mgraddr=$(grep -m1 "api_manager_host_default" $SNAP/apivars.py | cut -f3 -d " " | cut -f3 -d " " | tr -d "'")
+
+if [ ! -z "$apiport" ] ; then 
+    snapctl set conf.apiport=$apiport
+    echo_info "Default API port :"  $(snapctl get conf.apiport)
+else
+    echo_error "Could not read api_port_default in apivars.py!"
+fi
+
+if [ ! -z "$mgrport" ] ; then 
+    snapctl set conf.mgrport=$mgrport
+    echo_info "Default MGR port :"  $(snapctl get conf.mgrport)
+else
+    echo_error "Could not read  api_manager_port_default in apivars.py!"
+fi
+
+if [ ! -z "$apiaddr" ] ; then 
+    snapctl set conf.apiaddr=$apiaddr
+    echo_info "Default API addr :"  $(snapctl get conf.apiaddr)
+else
+    echo_error "Could not read api_host_default in apivars.py!"
+fi
+
+if [ ! -z "$mgraddr" ] ; then 
+    snapctl set conf.mgraddr=$mgraddr
+    echo_info "Default MGR addr :"  $(snapctl get conf.mgraddr)
+else
+    echo_error "Could not read api_manager_host_default in apivars.py!"
+fi
+
+openapi="http://"$(snapctl get conf.apiaddr)":"$(snapctl get conf.apiport)
+snapctl set conf.openapi=$openapi
+
+
+case "$1" in
+
+    "amf" )
+	mkdir -p $CONF_DIR/run
+	chmod -R 777 $CONF_DIR/run
+	#chown $USER:$USER $CONF_DIR/run
+	
+	#if [ ! -f $CONF_DIR/mme.conf ] ; then
+	cp $SNAP/etc/* $CONF_DIR
+
+	$SNAP/conf set-amf $AMF_CONF_FILE
+	#snapctl set conf.amf=$CONF_DIR/amf.conf
+	#snapctl set conf.amffd=$CONF_DIR/amf_fd.conf
+	#$SNAP/conf set-amf $(snapctl get conf.amf) # $CONF_DIR/enb.band7.tm1.50PRB.usrpb210.conf
+	echo_info "Default AMF conf:" $SNAP/conf echo-amf 
+
+	
+	#sed -i -e "s/hss/$HOSTNAME/g" $CONF_DIR/amf.conf 
+	#sed -i -e "s/ubuntu/$HOSTNAME/g" $CONF_DIR/amf_fd.conf 
+	
+	# a copy for the user
+	cp $CONF_DIR/amf.conf $SNAP_USER_DATA
+	#cp $CONF_DIR/amf_fd.conf $SNAP_USER_DATA
+	
+	#REALM=`cat $AMF_FD_CONF_FILE | grep  "Realm "  | cut -f2 -d'"'`
+	#snapctl set conf.realm="$REALM"
+	#snapctl set conf.host="$HOSTNAME"
+	
+	#if [ -z "$(grep -o "$HOSTNAME.$REALM" /etc/hosts)" ]; then
+	#    cp /etc/hosts /etc/hosts.$REALM.bkup
+	    
+	#    echo "Adding 127.0.0.1" $HOSTNAME.$REALM $HOSTNAME "amf to /etc/hosts"
+	#    sed -i '/amf/d' /etc/hosts
+	#    sed -i "1i127.0.0.1 $HOSTNAME.$REALM $HOSTNAME amf" /etc/hosts
+	    
+	#fi
+
+	#$SNAP/run amf-certificate
+
+	echo ""
+	echo_success "AMF is initialized"
+	echo_info "Now, it is the time to configure the amf.conf and amf_fd.conf"
+	;;
+    
+    * )
+	echo_warn "Unknown command: $1"
+	;;
+    
+esac

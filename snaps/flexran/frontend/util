@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 . $SNAP/common
 
@@ -48,6 +48,7 @@ set_health(){
 	*inactive*)
 	    #echo "Service inactive"
 	    snapctl set-health --code=ready blocked "$SNAP_NAME ready to be run"
+
 	    ;;
 	*active*)
 	    #echo "Service active"
@@ -57,6 +58,29 @@ set_health(){
             #echo "Unknown service state"
 	    snapctl set-health --code=error error "Execution failed. Checked the Journal"
 	    ;;
+    esac 
+    
+}
+
+check_service(){
+
+    if [ "$1" == "" ] ; then
+	echo_error "service name is missing"
+	return 3
+    fi
+    
+    status=$(snapctl services $SNAP_NAME.$1)
+    sleep 1
+    case "$status" in
+	*inactive*)
+	    return 1
+	;;
+	*active*)
+	    return 0
+	    ;;
+	*)
+	    return 2
+            ;;
     esac 
     
 }

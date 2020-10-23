@@ -1,0 +1,133 @@
+#!/bin/bash
+
+. $SNAP/common
+. $SNAP/util
+
+if [ ! -e $UPF_EXEC ]; then
+    echo_error "Cannot find $UPF_EXEC executable"
+    exit -1
+fi
+
+if [ -r $SNAP_DATA/config_upf.sh ]; then
+    . $SNAP_DATA/config_upf.sh
+fi
+
+UPF_CONFIG=${UPF_CONF_FILE2:-$UPF_CONF_FILE}
+UPF_EXEC_ARGS=" -c $UPF_CONFIG -o "
+
+
+case "$1" in
+    "openapi" )
+	shift
+	python3 $SNAP/api.py "$@"
+	;;
+
+	"openapiman" )
+	shift
+	python3 $SNAP/api-manager.py "$@"
+	;;
+	
+    "gdb" )
+	echo "Running $2 with the gdb"
+	touch      $SNAP_DATA/.gdb_$2
+	chmod 777  $SNAP_DATA/.gdb_$2
+	echo "file ${2^^}_EXEC"        > $SNAP_DATA/.gdb_$2
+	echo "set args ${2^^}_EXEC_ARGS" >> $SNAP_DATA/.gdb_$2
+	echo "run"                     >> $SNAP_DATA/.gdb_$2
+	cat $SNAP_DATA/.gdb_$2
+	exec $SNAP/gdb --data-directory=$SNAP_DATA  -n -x $SNAP_DATA/.gdb_$2
+	;;
+
+    "info" )
+	#snap info $SNAP_NAME
+	shift 
+	snap_info
+	;; 
+    
+    "start"  )
+	#snap start $SNAP_NAME
+	daemon=$2
+	shift 2
+	if_sudo
+	snapctl start --enable $SNAP_NAME.$daemon "$@"
+	snapctl services $SNAP_NAME.$daemon "$@"
+	;;
+
+	"start-all"  )
+	#snap start $SNAP_NAME
+	shift
+	if_sudo
+	snapctl start --enable $SNAP_NAME "$@"
+	snapctl services $SNAP_NAME "$@"
+	;;
+    
+	"stop" )
+	daemon=$2
+	shift 2
+	if_sudo
+	snapctl stop --disable $SNAP_NAME.$daemon "$@"
+	snapctl services $SNAP_NAME.$daemon "$@"
+	;;
+
+    "stop-all" )
+	shift
+	if_sudo
+	snapctl stop --disable $SNAP_NAME "$@"
+	snapctl services $SNAP_NAME "$@"
+	;;
+
+	"restart" )
+	#snap restart $SNAP_NAME
+	daemon=$2
+	shift 2
+	if_sudo
+	snapctl stop --disable $SNAP_NAME.$daemon "$@"
+	snapctl start --enable $SNAP_NAME.$daemon "$@"
+	snapctl services $SNAP_NAME.$daemon "$@"
+	;;
+    
+	"restart-all" )
+	#snap restart $SNAP_NAME
+	shift
+	if_sudo
+	snapctl stop --disable $SNAP_NAME "$@"
+	snapctl start --enable $SNAP_NAME "$@"
+	snapctl services $SNAP_NAME "$@"
+	;;
+
+	"status" )
+	#snap services $SNAP_NAME
+	daemon=$2
+	shift 2
+	snapctl services $SNAP_NAME.$daemon "$@"
+	;;
+
+	"status-all" )
+	#snap services $SNAP_NAME
+	shift
+	snapctl services $SNAP_NAME "$@"
+	;;
+
+	"journal" )
+	#  shift
+	#  journalctl -u snap.$SNAP_NAME.upfd.service "$@"
+	daemon=$2
+	shift 2 
+	journalctl -u snap.$SNAP_NAME.$daemon.service "$@"
+	 ;;
+    
+    
+    "help" )
+	snap_help
+	;;
+    
+    "upf" | * )
+	
+	
+        echo "$UPF_EXEC  $UPF_EXEC_ARGS" 
+	$UPF_EXEC  `echo $UPF_EXEC_ARGS` "$@"
+        ;;
+
+esac
+
+

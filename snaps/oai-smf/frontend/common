@@ -1,0 +1,13 @@
+#!/bin/sh
+
+export DEBIAN_FRONTEND=noninteractive
+set -e
+
+
+CONF_DIR="$SNAP_DATA"
+
+SMF_DIR="$SNAP/smf"
+SMF_CONF_FILE="$CONF_DIR/smf.conf"
+SMF_EXEC="$SMF_DIR/smf"
+
+export LD_LIBRARY_PATH="$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"

@@ -3,4 +3,32 @@ set -e
 
 snapctl stop --disable ${SNAP_NAME}  2>&1  || true
 
-$SNAP/init
+if [ ! -f  $SNAP_DATA/.init ] ; then
+    touch $SNAP_DATA/.init
+    $SNAP/init
+fi
+
+ue=$(snapctl get conf.ue)
+if [ ! -z "$ue" ] ; then 
+    $SNAP/conf set-ue $ue
+fi
+
+usrp=$(snapctl get conf.usrp)
+if [ -z "$usrp" ] ; then
+    snapctl set conf.usrp=$SNAP/uhd_images
+fi
+
+rfnoc=$(snapctl get conf.rfnoc)
+if [ -z "$rfnoc" ] ; then
+    snapctl set conf.rfnoc=$SNAP/usr/share/uhd/rfnoc/blocks
+fi
+
+apiaddr=$(snapctl get conf.apiaddr)
+if [ ! -z "$apiaddr" ] ; then 
+    snapctl set conf.apiaddr=$apiaddr
+fi
+
+mgraddr=$(snapctl get conf.mgraddr)
+if [ ! -z "$mgraddr" ] ; then 
+    snapctl set conf.mgraddr=$mgraddr
+fi
