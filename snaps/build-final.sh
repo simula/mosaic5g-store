@@ -44,8 +44,8 @@ function build_snap() {
         # exit 0
         # docker rm --force snap-build-ubuntu1804
         docker run --name snap-build-ubuntu1804 \
-            -v $HOME/mosaic5g:$HOME/mosaic5g \
-            -w $HOME/mosaic5g/store/snaps/$snap_remote \
+            -v $STORE:$HOME/store \
+            -w $HOME/store/snaps/$snap_remote \
             mosaic5gecosys/snapcraft:1.0 \
             snapcraft $@ && snapcraft
         # snapcraft $@
