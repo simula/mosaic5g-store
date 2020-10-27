@@ -9,7 +9,7 @@ architectures:
   - amd64
   - i386
 confinement: devmode
-license: Apache-2.0
+# license: Apache-2.0
 base: core18
 
 apps:
@@ -145,7 +145,7 @@ parts:
 #      - share/*
   mme:
     plugin: cmake
-    source: https://gitlab.eurecom.fr/oai/openair-cn.git
+    source: git@gitlab.eurecom.fr:oai/openair-cn.git
     source-branch: openair-cn-llmec
     build-packages: [build-essential, ]
     stage-packages:
@@ -172,7 +172,7 @@ parts:
       - lib/*
   spgw:
     plugin: cmake
-    source: https://gitlab.eurecom.fr/oai/openair-cn.git
+    source: git@gitlab.eurecom.fr:oai/openair-cn.git
     source-branch: openair-cn-llmec
     build-packages: [build-essential, ]
     stage-packages:
@@ -202,7 +202,7 @@ parts:
       - usr/bin/curl*
   hss:
     plugin: cmake
-    source: https://gitlab.eurecom.fr/oai/openair-cn.git
+    source: git@gitlab.eurecom.fr:oai/openair-cn.git
     source-branch: openair-cn-llmec
     build-packages: [build-essential, ]
     stage-packages:
@@ -239,18 +239,20 @@ parts:
       cp build/hss/build/*.*  $SNAPCRAFT_PART_INSTALL/hss
       cp build/hss/build/oai_hss  $SNAPCRAFT_PART_INSTALL/hss/
     stage:
+      - usr/local/*
       - hss/*
       - usr/lib/*
       - lib/*
       - usr/bin/mysql*
     prime:
+      - usr/local/*
       - hss/*
       - usr/lib/*
       - lib/*
       - usr/bin/mysql*
 #  fd:
 #    plugin: cmake
-#    source: https://gitlab.eurecom.fr/oai/freediameter.git
+#    source: git@gitlab.eurecom.fr:oai/freediameter.git
 #    source-branch: eurecom-1.2.0
 #    override-build: |
 #      cd ../src
@@ -262,12 +264,6 @@ parts:
 #      sudo -S -E make install
 #      #mkdir -p $SNAPCRAFT_PART_INSTALL/usr/local/lib/freeDiameter/
 #      #sudo cp -r /usr/local/lib/freeDiameter $SNAPCRAFT_PART_INSTALL/usr/local/lib
-    stage:
-      - lib/*
-      - usr/local/*
-    prime:
-      - lib/*
-      - usr/local/*
   frontend:
     plugin: dump
     source: frontend

@@ -9,7 +9,7 @@ architectures:
   - amd64
   - i386
 confinement: strict
-license: Apache-2.0
+# license: Apache-2.0
 base: core18
 
 apps:
@@ -21,8 +21,6 @@ apps:
     command: run info
   flexran:
     command: run
-  init:
-    command: init
   sbi-addr:
     command: conf saddr
   nbi-addr:
@@ -170,7 +168,7 @@ parts:
   flexran:
     after: [ pistache, protobuf]
     plugin: cmake
-    source: https://gitlab.eurecom.fr/flexran/flexran-rtc.git
+    source: git@gitlab.eurecom.fr:flexran/flexran-rtc.git
     source-branch: develop
     build-packages: [build-essential, ]
     stage-packages:

@@ -4,7 +4,7 @@ summary: OpenAirInterface UE entity
 description: |
     OAI UE is the openairinterface-based UE that allows you to connect to any commercial eNB. 
 type: app
-license: Apache-2.0
+# license: Apache-2.0
 
 architectures:
   - amd64
@@ -151,7 +151,7 @@ parts:
       
   ue:
     plugin: cmake
-    source: https://gitlab.eurecom.fr/oai/openairinterface5g.git
+    source: git@gitlab.eurecom.fr:oai/openairinterface5g.git
     source-branch: develop
     build-packages: [build-essential, ]
     stage-packages:

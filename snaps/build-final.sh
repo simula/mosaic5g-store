@@ -43,13 +43,13 @@ function build_snap() {
         # pwd
         # exit 0
         # docker rm --force snap-build-ubuntu1804
-        docker run --name snap-build-ubuntu1804 \
-            -v $STORE:$HOME/store \
-            -w $HOME/store/snaps/$snap_remote \
-            mosaic5gecosys/snapcraft:1.0 \
-            /bin/bash -c "snapcraft $@ && snapcraft"
-        # snapcraft $@
-        # snapcraft
+        # docker run --name snap-build-ubuntu1804 \
+        #     -v $STORE:$HOME/store \
+        #     -w $HOME/store/snaps/$snap_remote \
+        #     mosaic5gecosys/snapcraft:1.0 \
+        #     /bin/bash -c "snapcraft $@ && snapcraft"
+        snapcraft $@
+        snapcraft
         # echo "sudo snap install ./$snap $confinement"
         # sudo snap install $snap $confinement
         now=$(date)

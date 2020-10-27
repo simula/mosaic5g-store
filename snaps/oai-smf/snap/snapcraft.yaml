@@ -4,7 +4,7 @@ summary: OpenAirInterface SMF entity
 description: |
     OAI-SMF is the openairinterface-based SMF entity with the Mosaic5G frontend.
 type: app
-license: Apache-2.0
+# license: Apache-2.0
 architectures:
   - amd64
   - i386
@@ -109,7 +109,7 @@ parts:
 
   smf:
     plugin: cmake
-    source: https://gitlab.eurecom.fr/oai/oai-cn5g-smf.git
+    source: git@gitlab.eurecom.fr:oai/oai-cn5g-smf.git
     source-branch: develop
     build-packages: [build-essential, ]
     stage-packages:

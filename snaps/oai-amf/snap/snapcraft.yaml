@@ -4,7 +4,7 @@ summary: OpenAirInterface AMF entity
 description: |
     OAI-AMF is the openairinterface-based AMF entity with the Mosaic5G frontend.
 type: app
-license: Apache-2.0
+# license: Apache-2.0
 architectures:
   - amd64
   - i386
@@ -108,7 +108,7 @@ parts:
       - share/*
   #fd:
   #  plugin: cmake
-  #  source: https://gitlab.eurecom.fr/oai/freediameter.git
+  #  source: git@gitlab.eurecom.fr:oai/freediameter.git
   # source-branch: eurecom-1.2.0
   # stage-packages:
   #   - libsctp1
@@ -131,7 +131,7 @@ parts:
 
   amf:
     plugin: cmake
-    source: https://gitlab.eurecom.fr/oai/oai-cn5g-amf.git
+    source: git@gitlab.eurecom.fr:oai/oai-cn5g-amf.git
     source-branch: develop
     build-packages: [build-essential, ]
     stage-packages:
