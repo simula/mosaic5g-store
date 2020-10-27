@@ -190,6 +190,7 @@ parts:
       - gdb*
       - share/*
       - usr/bin/gdb*
+  
   ran:
     plugin: cmake
     source: git@gitlab.eurecom.fr:oai/openairinterface5g.git
@@ -207,7 +208,7 @@ parts:
       - libconfig9
       - libicu60
       - libsctp1
-      - libuhd3.14.1
+      - libuhd3.15.0
       - libusb-1.0-0
       - libprotobuf-c1
     override-build: |
@@ -223,6 +224,9 @@ parts:
       cp -r common/uhd_images $SNAPCRAFT_PART_INSTALL/ 
       cp targets/PROJECTS/GENERIC-LTE-EPC/CONF/* $SNAPCRAFT_PART_INSTALL/enb
       cp cmake_targets/snap_environment.sh $SNAPCRAFT_PART_INSTALL/enb
+      cp /usr/local/lib/libproto* $SNAPCRAFT_PART_INSTALL/lib
+      mkdir -p $SNAPCRAFT_PART_INSTALL/bin
+      cp /usr/local/bin/protoc* $SNAPCRAFT_PART_INSTALL/bin      
       #second build 5G
       cd ../src/cmake_targets
       ./build_oai --gNB -w USRP -c -C 
@@ -236,12 +240,14 @@ parts:
       - gnb/*
       - usr/*
       - lib/*
+      - bin/*
       - uhd_images/*
     prime:
       - enb/*
       - gnb/*
       - usr/*
       - lib/*
+      - bin/*
       - uhd_images/*
     organize:
       enb/liboai_usrpdevif.so.Rel15: usr/lib/liboai_device.so
