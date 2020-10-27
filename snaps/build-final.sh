@@ -47,7 +47,7 @@ function build_snap() {
             -v $STORE:$HOME/store \
             -w $HOME/store/snaps/$snap_remote \
             mosaic5gecosys/snapcraft:1.0 \
-            snapcraft $@ && snapcraft
+            /bin/bash -c "snapcraft $@ && snapcraft"
         # snapcraft $@
         # snapcraft
         # echo "sudo snap install ./$snap $confinement"
