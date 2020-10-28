@@ -1,6 +1,6 @@
 name: oai-ran
 version: '2.0'
-title: OpenAirInterface RAN Rel.15
+#title: OpenAirInterface RAN Rel.15
 summary: OpenAirInterface RAN entity with FlexRAN Agent/Runtime
 description: |
     OAI RAN is an openairinterface-based 4G and 5G BS with different deployment flavors (eNB, gNB, C-RAN, CU,DU, RRU) allowing to connect any commercial UEs with the band of your choice. It is one of the projects of Mosaic5G inititive and includes FlexRAN agent.
