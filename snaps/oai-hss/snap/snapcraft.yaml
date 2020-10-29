@@ -5,7 +5,7 @@ summary: OpenAirInterface HSS entity Rel. 14
 description: |
     OAI-HSS is the openairinterface-based HSS entity allowing to connect a 4G-comptaible BS and UEs to the core network. It is one of the projects of Mosaic5G inititive.
 type: app
-license: Apache-2.0
+# license: Apache-2.0
 
 architectures:
   - amd64
@@ -149,7 +149,7 @@ parts:
   #    - lib/*
   #fd:
   #  plugin: cmake
-  #  source: https://gitlab.eurecom.fr/oai/freediameter.git
+  #  source: git@gitlab.eurecom.fr:oai/freediameter.git
   #  source-branch: eurecom-1.2.0
   #  stage-packages:
   #    - libsctp1

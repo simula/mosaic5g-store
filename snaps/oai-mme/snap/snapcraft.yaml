@@ -4,7 +4,7 @@ summary: OpenAirInterface MME entity with LL-MEC Agent
 description: |
     OAI-MME is the openairinterface-based MME entity with the LL-MEC agent allowing to connect a 4G-comptaible BS and UEs to the core network and monitor and control the UP with LL-MEC controller. It is one of the projects of Mosaic5G inititive.
 type: app
-license: Apache-2.0
+# license: Apache-2.0
 architectures:
   - amd64
   - i386
@@ -108,7 +108,7 @@ parts:
       - share/*
   #fd:
   #  plugin: cmake
-  #  source: https://gitlab.eurecom.fr/oai/freediameter.git
+  #  source: git@gitlab.eurecom.fr:oai/freediameter.git
   # source-branch: eurecom-1.2.0
   # stage-packages:
   #   - libsctp1

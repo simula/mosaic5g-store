@@ -10,6 +10,7 @@ architectures:
 #icon: meta/gui/icon.png  
 grade: stable
 confinement: devmode
+base: core18
 
 apps:
   ovs-gtp:
@@ -28,7 +29,7 @@ apps:
 parts:
   gtp:
     plugin: make
-    source: https://gitlab.eurecom.fr/oai/openair-cn-extras.git
+    source: git@gitlab.eurecom.fr:oai/openair-cn-extras.git
     #source-branch: develop
     #build-packages: [build-essential, g++, libevent-dev, libssl-dev]
     #stage-packages:

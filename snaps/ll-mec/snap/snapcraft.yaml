@@ -83,7 +83,7 @@ parts:
   ll-mec:
     after: [ pistache, ]
     plugin: cmake
-    source: https://gitlab.eurecom.fr/mosaic5g/ll-mec.git
+    source: git@gitlab.eurecom.fr:mosaic5g/ll-mec.git
     source-branch: ubuntu_18
     build-packages: [build-essential, g++, libevent-dev, libssl-dev]
  #   stage-packages:
