@@ -4,12 +4,20 @@
 . $SNAP/util
 
 waiting_time=1
+waiting_time2=30
 check_string="No USRP Device Found"
-enb_conf=$(snapctl get conf.enb)
-gnb_conf=$(snapctl get conf.gnb)
+check_string_sdr="got sync"
 d="d"
 node="enb"
 
+echo_info "Init"
+$SNAP/init
+
+enb_conf=$(snapctl get conf.enb)
+gnb_conf=$(snapctl get conf.gnb)
+
+echo ""
+echo_info "Services"
 $SNAP/run status-all
 sleep $waiting_time 
 echo_info "Start $node$d"
@@ -28,14 +36,12 @@ echo_info "Stop All"
 $SNAP/run stop-all
 sleep $waiting_time
 
+echo ""
 echo_info "Check and set enb conf"
 $SNAP/conf ls-$node
 $SNAP/conf set-$node $enb_conf
-snapctl get conf.$node
 
-echo_info "Init"
-$SNAP/init
-
+echo ""
 echo_info "Start OpenAPI"
 $SNAP/run start apid
 $SNAP/run journal apid -e -n20 |  egrep -i "Starting Open API|Starting OpenAPI" > /dev/null 2>&1
@@ -46,11 +52,18 @@ else
     echo_error   "apid test: failed"
 fi
 
+echo ""
 echo_info "Snap Info"
 $SNAP/run info
 
+echo ""
 echo_info "Check $node exec"
-$SNAP/run $node -O $enb_conf | grep "$check_string" > /dev/null 2>&1
+$SNAP/conf set-$node $enb_conf
+$SNAP/run start "$node$d"
+sleep $waiting_time2
+$SNAP/run stop "$node$d"
+
+$SNAP/run journal enbd -e -n 500 | egrep "$check_string_sdr|$check_string" > /dev/null 2>&1
 if [ $? -eq 0 ] ; then
     echo_success "$node Exec: passed"
 else
@@ -59,14 +72,39 @@ else
 fi
 
 node="gnb"
+echo ""
+echo_info "Check $node exec"
+$SNAP/conf set-$node $gnb_conf
+$SNAP/run start "$node$d"
+sleep $waiting_time2
+$SNAP/run stop "$node$d"
 
-$SNAP/run $node  -O $gnb_conf | grep "$check_string" > /dev/null 2>&1
+$SNAP/run journal gnbd -e -n 500 | egrep "$check_string_sdr|$check_string" > /dev/null 2>&1
 if [ $? -eq 0 ] ; then
     echo_success "$node Exec: passed"
 else
     echo_error   "$node exec: failed"
     exit 1
 fi
+
+#$SNAP/run $node | grep "$check_string" > /dev/null 2>&1
+#if [ $? -eq 0 ] ; then
+#    echo_success "$node Exec: passed"
+#else
+#    echo_error   "$node exec: failed"
+#    exit 1
+#fi
+
+#node="gnb"
+#echo_info "Check $node exec"
+#$SNAP/conf set-$node "$node"_conf
+#$SNAP/run $node  | grep "$check_string" > /dev/null 2>&1
+#if [ $? -eq 0 ] ; then
+#    echo_success "$node Exec: passed"
+#else
+#    echo_error   "$node exec: failed"
+#    exit 1
+#fi
 
 
 
