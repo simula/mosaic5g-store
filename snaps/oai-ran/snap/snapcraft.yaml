@@ -1,6 +1,6 @@
 name: oai-ran
 version: '2.0'
-#title: OpenAirInterface RAN Rel.15
+title: OpenAirInterface RAN Rel.15
 summary: OpenAirInterface RAN entity with FlexRAN Agent/Runtime
 description: |
     OAI RAN is an openairinterface-based 4G and 5G BS with different deployment flavors (eNB, gNB, C-RAN, CU,DU, RRU) allowing to connect any commercial UEs with the band of your choice. It is one of the projects of Mosaic5G inititive and includes FlexRAN agent.
@@ -190,9 +190,11 @@ parts:
       - gdb*
       - share/*
       - usr/bin/gdb*
+  
   ran:
     plugin: cmake
     source: git@gitlab.eurecom.fr:oai/openairinterface5g.git
+    #https://gitlab.eurecom.fr/oai/openairinterface5g.git
     source-branch: develop
     build-packages: [build-essential, ]
     stage-packages:
@@ -206,9 +208,9 @@ parts:
       - libconfig9
       - libicu60
       - libsctp1
-      - libuhd3.14.1
+      - libuhd3.15.0
       - libusb-1.0-0
-
+      - libprotobuf-c1
     override-build: |
       cd ../src/cmake_targets
       ./build_oai -I -w USRP --uhd-images-dir ../common/uhd_images
@@ -222,6 +224,9 @@ parts:
       cp -r common/uhd_images $SNAPCRAFT_PART_INSTALL/ 
       cp targets/PROJECTS/GENERIC-LTE-EPC/CONF/* $SNAPCRAFT_PART_INSTALL/enb
       cp cmake_targets/snap_environment.sh $SNAPCRAFT_PART_INSTALL/enb
+      cp /usr/local/lib/libproto* $SNAPCRAFT_PART_INSTALL/lib
+      mkdir -p $SNAPCRAFT_PART_INSTALL/bin
+      cp /usr/local/bin/protoc* $SNAPCRAFT_PART_INSTALL/bin      
       #second build 5G
       cd ../src/cmake_targets
       ./build_oai --gNB -w USRP -c -C 
@@ -235,12 +240,14 @@ parts:
       - gnb/*
       - usr/*
       - lib/*
+      - bin/*
       - uhd_images/*
     prime:
       - enb/*
       - gnb/*
       - usr/*
       - lib/*
+      - bin/*
       - uhd_images/*
     organize:
       enb/liboai_usrpdevif.so.Rel15: usr/lib/liboai_device.so
