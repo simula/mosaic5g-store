@@ -21,6 +21,8 @@ apps:
     command: run info
   flexran:
     command: run
+  init:
+    command: init
   sbi-addr:
     command: conf saddr
   nbi-addr:
