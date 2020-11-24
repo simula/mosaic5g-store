@@ -12,15 +12,23 @@ confinement: strict
 # license: Apache-2.0
 base: core18
 
+#plugs:
+#  sys-access:
+#    interface: system-files
+#    read:
+#    - /dev/cpu_dma_latency
+
 apps:
   check:
     command: test flexran
+    plugs: [network, network-control, log-observe, process-control, cpu-control, network-observe, network-bind]
   init:
     command: init
   info:
     command: run info
   flexran:
     command: run
+    plugs: [network, network-control, log-observe, process-control, cpu-control, network-observe, network-bind]
   init:
     command: init
   sbi-addr:
@@ -48,6 +56,7 @@ apps:
     daemon: simple
     stop-command: run stop
     stop-timeout: 1s
+    plugs: [network, network-control, log-observe, process-control, cpu-control, network-observe, network-bind]
   start-all:
     command: run start-all
   stop-all:
@@ -66,15 +75,18 @@ apps:
     command: run status flexrand
   journal:
     command: run journal flexrand
+    plugs: [log-observe, process-control, system-observe]
   help:
     command: run help
   api:
     command: run openapi
+    plugs: [network, network-control, network-observe, network-bind]
   apid:
     command: run openapi
     daemon: simple
     stop-command: run stop apid
-    stop-timeout: 1s  
+    stop-timeout: 1s
+    plugs: [network, network-control, network-observe, network-bind]
   api-start:
     command: run start apid
   api-stop:
@@ -85,13 +97,16 @@ apps:
     command: run status apid
   api-journal:
     command: run journal apid
+    plugs: [log-observe, process-control, system-observe]
   apiman:
     command: run openapiman
+    plugs: [network, network-control, network-observe, network-bind]
   apidman:
     command: run openapiman
     daemon: simple
     stop-command: run stop apidman
     stop-timeout: 1s
+    plugs: [network, network-control, network-observe, network-bind]
   apiman-start:
     command: run start apidman
   apiman-stop:
@@ -102,6 +117,7 @@ apps:
     command: run status apidman
   apiman-journal:
     command: run journal apidman
+    plugs: [network-control, network-observe, network-bind]
 #  debug:
 #    command: run gdb
 hooks:
@@ -159,6 +175,7 @@ parts:
       sudo ldconfig
       #mkdir -p $SNAPCRAFT_PART_INSTALL/lib
       cp /usr/local/lib/libproto* $SNAPCRAFT_PART_INSTALL/lib
+      cp /usr/lib/x86_64-linux-gnu/libpsm_infinipath.so.1 $SNAPCRAFT_PART_INSTALL/lib
       mkdir -p $SNAPCRAFT_PART_INSTALL/bin
       cp /usr/local/bin/protoc* $SNAPCRAFT_PART_INSTALL/bin
     stage:

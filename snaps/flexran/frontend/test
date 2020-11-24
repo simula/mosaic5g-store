@@ -1,4 +1,27 @@
-#!/bin/bash
+#! /bin/bash
+################################################################################
+# Licensed to the Mosaic5G under one or more contributor license
+# work for additional information regarding copyright ownership.
+# Apache License, Version 2.0  (the "License");
+# You may obtain a copy of the License at
+#  
+#    	http://www.apache.org/licenses/LICENSE-2.0
+#  
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+# -------------------------------------------------------------------------------
+#   For more information about the Mosaic5G:
+#   	contact@mosaic-5g.io
+#
+#
+################################################################################
+# file test
+# brief test scripts and variables for flexran Snap
+# author Navid Nikaein (navid.nikaein@eurecom.fr, navid.nikaein@mosaic-5g.io)
+
 
 . $SNAP/common
 . $SNAP/util
@@ -7,6 +30,13 @@ waiting_time=1
 check_string="Listening on "$(snapctl get conf.naddr)":"$(snapctl get conf.nbi) 
 conf=$(snapctl get conf.log) 
 d="d"
+
+if_sudo
+snap_isconnected log-observe
+#snap_isconnected network-control
+snap_isconnected process-control
+
+
 case "$1" in
     "api" )
 
@@ -32,34 +62,35 @@ case "$1" in
 	$SNAP/run stop-all
 	sleep $waiting_time
 
+	echo ""
 	echo_info "Check and set $1 conf"
 	$SNAP/conf sbi 1234
 	$SNAP/conf nbi 4321
 	$SNAP/conf naddr "10.0.1.1"
 	$SNAP/conf set-log $conf
 	
+	echo ""
 	echo_info "Init"
 	$SNAP/init $1
-	
+
+	echo ""
 	echo_info "Start OpenAPI"
 	$SNAP/run start apid
-	check_service apid
-
-	if [ $? -eq 0 ] ; then
+	#echo "curl -Is localhost:$(snapctl get conf.apiport)"
+	#curl -Is localhost:$(snapctl get conf.apiport) | head -n 1
+	$SNAP/run journal apid -e -n20 |  egrep -i "Starting Open API|Starting OpenAPI" > /dev/null 2>&1
 	
-	    $SNAP/run journal apid -e -n20 |  egrep -i "Starting Open API|Starting OpenAPI" > /dev/null 2>&1
-	    if [ $? -eq 0 ] ; then
-		echo_success "apid test: passed"
-	    else
-		echo_error   "apid test: failed"
-	    fi
+	if [ $? -eq 0 ] ; then
+	    echo_success "apid test: passed"
 	else
 	    echo_error   "apid test: failed"
 	fi
-	    
+    
+	echo ""
 	echo_info "Snap Info"
 	$SNAP/run info
 
+	echo ""
 	echo_info "Check $1 exec"
 	$SNAP/run journal $1$d -e -n10 | grep "$check_string" > /dev/null 2>&1
 	if [ $? -eq 0 ] ; then
@@ -74,4 +105,3 @@ case "$1" in
 esac
 
 	
-
