@@ -1,0 +1,6 @@
+#!/bin/bash
+
+for ip in {2..33}; do 
+ iperf -uc172.16.0.$ip -b0.5M -i1 -t10 
+done
+

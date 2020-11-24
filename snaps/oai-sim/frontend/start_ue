@@ -1,0 +1,21 @@
+#!/bin/bash
+
+uid=0
+
+if [ -z "$1" ] && [ -z "$2" ] ; then 
+    echo "Please provide the range of UEs you want to start"
+    echo "Example: start_ue 0 31"
+    
+    exit 0;
+fi 
+
+echo "Starting UE from $1 and $2"
+
+for ue in $(seq $1 $2); do 
+ sleep 2
+echo "Start UE $ue"
+telnet 127.0.0.1 9090 << TELNET_END
+  enable ue $ue
+TELNET_END
+ 
+done

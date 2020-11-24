@@ -1,0 +1,208 @@
+#! /bin/bash
+################################################################################
+# Licensed to the Mosaic5G under one or more contributor license
+# work for additional information regarding copyright ownership.
+# Apache License, Version 2.0  (the "License");
+# You may obtain a copy of the License at
+#  
+#    	http://www.apache.org/licenses/LICENSE-2.0
+#  
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+# -------------------------------------------------------------------------------
+#   For more information about the Mosaic5G:
+#   	contact@mosaic-5g.io
+#
+#
+################################################################################
+# file conf
+# brief conf scripts and variables for oai-sim Snap
+# author Navid Nikaein (navid.nikaein@eurecom.fr, navid.nikaein@mosaic-5g.io)
+
+
+. $SNAP/common
+
+case "$1" in
+    "set-enb" )
+	CONFIG_FILE=$2
+	
+	if  [ "$CONFIG_FILE" != "${CONFIG_FILE#/}" -a -f "$CONFIG_FILE" ]; then
+	    echo "Setting the default config file to: $CONFIG_FILE"
+	    
+	elif [ -f "$CONF_DIR/$CONFIG_FILE" ]; then
+	    CONFIG_FILE=$CONF_DIR/$CONFIG_FILE
+	    echo "Config file found in the $CONF_DIR!"
+	    echo "Resetting to the default config file: $CONFIG_FILE"
+
+	else
+	    echo "[ERR] Config file $CONFIG_FILE not found, please provide an absolute path!"
+	    echo "Reset to default config file: $ENB_CONF_FILE"
+	    CONFIG_FILE=$ENB_CONF_FILE
+	fi
+	snapctl set conf.enbsim=$CONFIG_FILE
+	echo "ENB_CONF_FILE2=$CONFIG_FILE" > $SNAP_DATA/config_enb.sh
+	echo "ENB_CONF_FILE2=$CONFIG_FILE"  > $SNAP_USER_DATA/config_enb.sh
+	;;
+      
+    "set-ue" )
+	CONFIG_FILE=$2
+	if [ "$CONFIG_FILE" != "${CONFIG_FILE#/}" -a -f "$CONFIG_FILE" ]; then
+	    echo "Setting the default config file to: $CONFIG_FILE"
+
+	elif [ -f "$CONF_DIR/$CONFIG_FILE" ]; then
+	    CONFIG_FILE=$CONF_DIR/$CONFIG_FILE
+	    echo "Config file found in the $CONF_DIR!"
+	    echo "Resetting to the default config file: $CONFIG_FILE"
+
+	else
+	    echo "[ERR] Config file <$CONFIG_FILE> not found, please provide an absolute path!"
+	    echo "Reset to default config file: $UE_CONF_FILE"
+	    CONFIG_FILE=$UE_CONF_FILE
+	fi
+	snapctl set conf.uesim=$CONFIG_FILE
+	echo "UE_CONF_FILE2=$CONFIG_FILE" > $SNAP_DATA/config_ue.sh
+	echo "UE_CONF_FILE2=$CONFIG_FILE"  > $SNAP_USER_DATA/config_ue.sh
+	;;
+
+    "set-ue-cmd" )
+	CONFIG_FILE=$2
+	   
+	if [ "$CONFIG_FILE" != "${CONFIG_FILE#/}" -a -f $CONFIG_FILE ]; then
+	    echo "Setting the default config file to: $CONFIG_FILE"
+	        
+	elif [ -f "$CONF_DIR/$CONFIG_FILE" ]; then
+	    CONFIG_FILE=$CONF_DIR/$CONFIG_FILE
+	    echo "Config file found in the $CONF_DIR!"
+	    echo "Resetting to the default config file: $CONFIG_FILE"
+
+	else
+	    echo "[ERR] Config file <$CONFIG_FILE> not found, please provide an absolute path!"
+	    echo "Reset to default config file: $UE_CMD_FILE"
+	    CONFIG_FILE=$UE_CMD_FILE
+	fi
+	snapctl set conf.uesimcmd=$CONFIG_FILE
+	echo "UE_CMD_FILE2=$CONFIG_FILE" >  $SNAP_DATA/config_ue_cmd.sh
+	echo "UE_CMD_FILE2=$CONFIG_FILE"  > $SNAP_USER_DATA/config_ue_cmd.sh
+	;;
+
+  "set-usim" )
+	CONFIG_FILE=$2
+	
+	if [ "$CONFIG_FILE" != "${CONFIG_FILE#/}" -a -f "$CONFIG_FILE" ]; then
+	    echo "Setting the default config file to: $CONFIG_FILE"
+
+	elif [ -f "$CONF_DIR/$CONFIG_FILE" ]; then
+	    CONFIG_FILE=$CONF_DIR/$CONFIG_FILE
+	    echo "Config file found in the $CONF_DIR!"
+	    echo "Resetting to the default config file: $CONFIG_FILE"
+
+	else
+	    echo "[ERR] Config file <$CONFIG_FILE> not found, please provide an absolute path!"
+	    echo "Reset to default config file: $USIM_CONF_FILE"
+	    CONFIG_FILE=$USIM_CONF_FILE
+	fi
+	snapctl set conf.usim=$CONFIG_FILE
+	echo "USIM_CONF_FILE2=$CONFIG_FILE" > $SNAP_DATA/config_usim.sh
+	echo "USIM_CONF_FILE2=$CONFIG_FILE"  > $SNAP_USER_DATA/config_usim.sh
+	;;
+
+ 
+    "ls-enb" )
+	if [ -r $SNAP_DATA/config_enb.sh ]; then
+	    . $SNAP_DATA/config_enb.sh
+	fi
+	ENB_CONFIG=${ENB_CONF_FILE2:-$ENB_CONF_FILE}
+
+	ls $(dirname $ENB_CONFIG)/enb*
+	
+	;;
+
+    "ls-ue" )
+	if [ -r $SNAP_DATA/config_ue.sh ]; then
+	    . $SNAP_DATA/config_ue.sh
+	fi
+	UE_CONFIG=${UE_CONF_FILE2:-$UE_CONF_FILE}
+
+	ls $(dirname $UE_CONFIG)/ue*
+	
+	;;
+    
+    "echo-ue" | "cat-ue" )
+	
+	if [ -r $SNAP_DATA/config_ue.sh ]; then
+	    . $SNAP_DATA/config_ue.sh
+	fi
+	
+	# default config file is (unless set in above config)
+	UE_CONFIG=${UE_CONF_FILE2:-$UE_CONF_FILE}
+	# echo (get), cat (show)
+	`echo $1 | cut -d"-" -f1` $UE_CONFIG
+	;;
+ 
+   "echo-enb" | "cat-enb" )
+	
+	if [ -r $SNAP_DATA/config_enb.sh ]; then
+	    . $SNAP_DATA/config_enb.sh
+	fi
+	
+	# default config file is (unless set in above config)
+	ENB_CONFIG=${ENB_CONF_FILE2:-$ENB_CONF_FILE}
+	# echo (get), cat (show)
+	`echo $1 | cut -d"-" -f1` $ENB_CONFIG
+	;;
+    "ls-ue-cmd" )
+	if [ -r $SNAP_DATA/config_ue_cmd.sh ]; then
+	    . $SNAP_DATA/config_ue_cmd.sh
+	fi
+	UE_CMD=${UE_CMD_FILE2:-$UE_CMD_FILE}
+
+	ls $(dirname $UE_CMD)/ue.*cmd
+	;;
+
+    "echo-ue-cmd" | "cat-ue-cmd" )
+	
+	if [ -r $SNAP_DATA/config_ue_cmd.sh ]; then
+	    . $SNAP_DATA/config_ue_cmd.sh
+	fi
+	
+	# default config file is (unless set in above config)
+	UE_CMD=${UE_CMD_FILE2:-$UE_CMD_FILE}
+	# echo (get), cat (show)
+        `echo $1 | cut -d"-" -f1` $UE_CMD
+	;;
+
+    "ls-usim" )
+	if [ -r $SNAP_DATA/config_usim.sh ]; then
+	    . $SNAP_DATA/config_usim.sh
+	fi
+	USIM=${USIM_CONF_FILE2:-$USIM_CONF_FILE}
+
+	ls $(dirname $USIM)/usim*
+	;;
+
+    "echo-usim" | "cat-usim" )
+	
+	if [ -r $SNAP_DATA/config_usim.sh ]; then
+	    . $SNAP_DATA/config_usim.sh
+	fi
+	
+	# default config file is (unless set in above config)
+	USIM=${USIM_CONF_FILE2:-$USIM_CONF_FILE}
+	# echo (get), cat (show)
+        `echo $1 | cut -d"-" -f1` $USIM
+	;;
+
+    *)
+	echo "unknown command $1"
+	 
+	;;
+
+esac
+
+#cat >$SNAP_USER_DATA/config.sh <<EOF
+#CONFIG=$CONFIG_FILE
+#EOF
+    

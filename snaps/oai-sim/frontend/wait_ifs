@@ -1,0 +1,19 @@
+#!/bin/bash
+
+if [[ $# -ne 1 ]]; then
+  echo "need one param"
+  exit
+fi
+if [[ ! $1 =~ ^[0-9]+$ ]]; then
+  echo "param needs to be a number"
+  exit
+fi
+while [ $(ifconfig | grep "oaitun_ue[0-9]\+" | wc -l) -ne $1 ]; do
+  sleep 0.1;
+done
+let devs=$1+1
+for ((ip=2; ip <= $devs; ip++)); do
+  echo "bind on 172.16.0.$ip"
+  iperf -su --bind 172.16.0.$ip -i1 &
+done
+

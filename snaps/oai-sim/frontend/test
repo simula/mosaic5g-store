@@ -1,0 +1,119 @@
+#! /bin/bash
+################################################################################
+# Licensed to the Mosaic5G under one or more contributor license
+# work for additional information regarding copyright ownership.
+# Apache License, Version 2.0  (the "License");
+# You may obtain a copy of the License at
+#  
+#    	http://www.apache.org/licenses/LICENSE-2.0
+#  
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+# -------------------------------------------------------------------------------
+#   For more information about the Mosaic5G:
+#   	contact@mosaic-5g.io
+#
+#
+################################################################################
+# file test
+# brief test scripts and variables for oai-sim Snap
+# author Navid Nikaein (navid.nikaein@eurecom.fr, navid.nikaein@mosaic-5g.io)
+
+
+. $SNAP/common
+. $SNAP/util
+
+waiting_time=3
+waiting_time2=10
+check_string_ue="waiting for NFAPI PNF connection and population of global structure"
+check_string_enb="Waiting for PHY_config_req"
+d="d"
+node="enb"
+
+if_sudo
+snap_isconnected log-observe
+snap_isconnected netlink-connector
+snap_isconnected network-control
+snap_isconnected process-control
+
+echo_info "Init"
+$SNAP/init net-if 
+
+ue_conf=$(snapctl get conf.uesim)
+enb_conf=$(snapctl get conf.enbsim)
+
+echo ""
+echo_info "Services"
+$SNAP/run status-all
+sleep $waiting_time 
+echo_info "Start $node$d"
+$SNAP/run start "$node$d" 
+sleep $waiting_time
+echo_info "Stop $node$d"
+$SNAP/run stop "$node$d"
+sleep $waiting_time
+$SNAP/run status-all
+
+sleep $waiting_time 
+$SNAP/run status-all
+sleep $waiting_time 
+
+echo_info "Stop All"
+$SNAP/run stop-all
+sleep $waiting_time
+
+echo ""
+echo_info "Check and set enb conf"
+$SNAP/conf ls-$node
+$SNAP/conf set-$node $enb_conf
+
+
+echo ""
+echo_info "Snap Info"
+$SNAP/run info
+
+echo ""
+echo_info "Check $node exec"
+$SNAP/conf set-$node $enb_conf
+$SNAP/run start "$node$d"
+
+sleep $waiting_time
+
+node="ue"
+echo ""
+echo_info "Check $node exec"
+$SNAP/conf set-$node $ue_conf
+$SNAP/run start "$node$d"
+
+sleep $waiting_time2
+
+node="enb"
+$SNAP/run journal enbd -e -n 100 | egrep "$check_string_enb" > /dev/null 2>&1
+if [ $? -eq 0 ] ; then
+    echo_success "$node Exec: passed"
+else
+    echo_error   "$node exec: failed"
+    exit 1
+fi
+
+node="ue"
+$SNAP/run journal ued -e -n 100 | egrep "$check_string_ue" > /dev/null 2>&1
+if [ $? -eq 0 ] ; then
+    echo_success "$node Exec: passed"
+else
+    echo_error   "$node exec: failed"
+    exit 1
+fi
+
+
+sleep $waiting_time
+$SNAP/run stop ued
+
+sleep $waiting_time
+$SNAP/run stop enbd
+	
+
+	
