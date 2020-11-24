@@ -1,16 +1,39 @@
-#!/bin/bash
+#! /bin/bash
+################################################################################
+# Licensed to the Mosaic5G under one or more contributor license
+# work for additional information regarding copyright ownership.
+# Apache License, Version 2.0  (the "License");
+# You may obtain a copy of the License at
+#  
+#    	http://www.apache.org/licenses/LICENSE-2.0
+#  
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+# -------------------------------------------------------------------------------
+#   For more information about the Mosaic5G:
+#   	contact@mosaic-5g.io
+#
+#
+################################################################################
+# file util
+# brief util scripts and variables for oai-spgwu Snap
+# author Navid Nikaein (navid.nikaein@eurecom.fr, navid.nikaein@mosaic-5g.io)
+
 . $SNAP/common
 
 # Echo 
-black='\E[30m'
-red='\E[31m'
-green='\E[32m'
-yellow='\E[33m'
-blue='\E[1;34m'
-magenta='\E[35m'
-cyan='\E[36m'
-white='\E[37m'
-reset_color='\E[00m'
+black='[30m'
+red='[31m'
+green='[32m'
+yellow='[33m'
+blue='[1;34m'
+magenta='[35m'
+cyan='[36m'
+white='[37m'
+reset_color='[00m'
 COLORIZE=1
 
 cecho()  {  
@@ -42,6 +65,13 @@ if_sudo(){
     fi
 }
 
+snap_isconnected(){
+
+    echo_warn "Plug $1: snap connect $SNAP_NAME:$1"
+    snapctl is-connected $1
+    echo_success "$1 connected"
+    
+}
 
 set_health(){
     
@@ -71,8 +101,14 @@ snap_info(){
     echo_info "Snap Data: $SNAP_DATA"
     echo_info "Snap Conf : "
     snapctl get conf
+    echo_warn 'Snap Permissions to be granted:
+    	- log-observe
+        - firewal-control
+        - network-control
+        - process-control'	          
     echo ""
-    echo_info "For more information, run: snap info $SNAP_NAME"
+    echo_warn "Check current permissions: snap connection $SNAP_NAME"
+    
 }
 
 snap_help(){

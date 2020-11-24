@@ -1,6 +1,6 @@
 name: oai-spgwu
 version: '2.0' 
-summary: OpenAirInterface spgwc entity Rel. 14 with LL-MEC Agent
+summary: OpenAirInterface SPGWU entity Rel. 14 with LL-MEC Agent
 description: |
     OAI-SPGWU is the openairinterface-based SPGWU with LL-MEC agent allowing to connect a 4G-comptaible BS and UEs to the core network. It is one of the projects of Mosaic5G inititive.
 
@@ -9,22 +9,25 @@ license: Apache-2.0
 architectures:
   - amd64
   - i386
-confinement: devmode
+confinement: strict
 grade: stable
 base: core18
 
 apps:
   check:
     command : test spgwu
+    plugs: [log-observe, process-control, network-control, firewall-control, network-observe, network-bind]
   info:
     command: run info
   oai-spgwu:
     command: run spgwu
+    plugs: [log-observe, process-control, firewall-control, network-control, network-observe, network-bind]
   spgwud:
     command: run spgwu
     daemon: simple
     stop-command: run stop
     stop-timeout: 1s
+    plugs: [log-observe, process-control, firewall-control, network-control, network-observe, network-bind]
   start-all:
     command: run start-all
   stop-all:
@@ -47,8 +50,8 @@ apps:
     command: init spgwu
   help:
     command: run help
-  debug:
-    command: run gdb
+  #debug:
+  #  command: run gdb
   conf-set:
     command: conf set-spgwu
   conf-get:
@@ -59,11 +62,13 @@ apps:
     command: conf ls-spgwu
   api:
     command: run openapi
+    plugs: [network, network-control, network-observe, network-bind]
   apid:
     command: run openapi
     daemon: simple
     stop-command: run stop
     stop-timeout: 1s
+    plugs: [network, network-control, network-observe, network-bind]
   api-start:
     command: run start apid
   api-stop:
@@ -74,13 +79,16 @@ apps:
     command: run status apid
   api-journal:
     command: run journal apid
+    plugs: [log-observe, process-control, system-observe]
   apiman:
     command: run openapiman
+    plugs: [network, network-observe, network-bind]
   apidman:
     command: run openapiman
     daemon: simple
     stop-command: run stop apidman
     stop-timeout: 1s
+    plugs: [network, network-observe, network-bind]
   apiman-start:
     command: run start apidman
   apiman-stop:
@@ -91,7 +99,8 @@ apps:
     command: run status apidman
   apiman-journal:
     command: run journal apidman
-
+    plugs: [log-observe, process-control, system-observe]
+ 
 hooks:
   install:
     plugs: [home, network]
@@ -99,16 +108,16 @@ hooks:
     plugs: [home, network]
     
 parts:
-  gdb:
-    plugin: nil
-    override-build: |
-      sudo apt install gdb -y
-      mkdir $SNAPCRAFT_PART_INSTALL/share 
-      cp -r /usr/share/gdb $SNAPCRAFT_PART_INSTALL/share
-      cp /usr/bin/gdb* $SNAPCRAFT_PART_INSTALL
-    prime:
-      - gdb*
-      - share/*
+  #gdb:
+  #  plugin: nil
+  #  override-build: |
+  #    sudo apt install gdb -y
+  #    mkdir $SNAPCRAFT_PART_INSTALL/share 
+  #    cp -r /usr/share/gdb $SNAPCRAFT_PART_INSTALL/share
+  #    cp /usr/bin/gdb* $SNAPCRAFT_PART_INSTALL
+  #  prime:
+  #    - gdb*
+  #    - share/*
       
   spgwu:
     plugin: cmake
