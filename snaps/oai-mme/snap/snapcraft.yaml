@@ -8,24 +8,27 @@ type: app
 architectures:
   - amd64
   - i386
-confinement: devmode
+confinement: strict
 grade: stable
 base: core18
 
 apps:
   check:
     command : test mme
+    plugs: [log-observe, system-backup, process-control, network-control, network-observe, network-bind]
   info:
     command: run info
   oai-mme:
     command: run mme
+    plugs: [mount-observe, system-backup, process-control, network-control, network-observe, network-bind, network]
   mmed:
     command: run mme
     daemon: simple
     stop-command: run stop
     stop-timeout: 1s
-  debug:
-    command: run gdb
+    plugs: [mount-observe, system-backup, process-control, network-control, network-observe, network-bind, network]
+#  debug:
+#    command: run gdb
   start-all:
     command: run start-all
   stop-all:
@@ -44,8 +47,10 @@ apps:
     command: run status mmed
   journal:
     command: run journal mmed
+    plugs: [log-observe, process-control, system-observe]
   init:
     command: init mme
+    plugs: [network-control, hostname-control, network-bind]
   conf-set:
     command: conf set-mme
   conf-get:
@@ -54,13 +59,17 @@ apps:
     command: conf cat-mme
   conf-list:
     command: conf ls-mme
+  dump-vars:
+    command: run dump-vars
   api:
     command: run openapi
+    plugs: [network, network-control, network-observe, network-bind]
   apid:
     command: run openapi
     daemon: simple
     stop-command: run stop
     stop-timeout: 1s
+    plugs: [network, network-control, network-observe, network-bind]
   api-start:
     command: run start apid
   api-stop:
@@ -71,13 +80,16 @@ apps:
     command: run status apid
   api-journal:
     command: run journal apid
+    plugs: [log-observe, process-control, system-observe]
   apiman:
     command: run openapiman
+    plugs: [network-control, network-observe, network-bind]
   apidman:
     command: run openapiman
     daemon: simple
     stop-command: run stop apidman
     stop-timeout: 1s
+    plugs: [network-control, network-observe, network-bind]
   apiman-start:
     command: run start apidman
   apiman-stop:
@@ -88,24 +100,27 @@ apps:
     command: run status apidman
   apiman-journal:
     command: run journal apidman
-    
+    plugs: [log-observe, process-control, system-observe]
+
 hooks:
   install:
     plugs: [home, network, desktop]
   configure:
     plugs: [home, network, desktop]
-    
+  connect-plug-network-control:
+    plugs: [network-control]   
+
 parts:
-  gdb:
-    plugin: nil
-    override-build: |
-      sudo apt install gdb -y
-      mkdir $SNAPCRAFT_PART_INSTALL/share 
-      cp -r /usr/share/gdb $SNAPCRAFT_PART_INSTALL/share
-      cp /usr/bin/gdb* $SNAPCRAFT_PART_INSTALL
-    prime:
-      - gdb*
-      - share/*
+  #gdb:
+  #  plugin: nil
+  #  override-build: |
+  #    sudo apt install gdb -y
+  #    mkdir $SNAPCRAFT_PART_INSTALL/share 
+  #    cp -r /usr/share/gdb $SNAPCRAFT_PART_INSTALL/share
+  #    cp /usr/bin/gdb* $SNAPCRAFT_PART_INSTALL
+  #  prime:
+  #    - gdb*
+  #    - share/*
   #fd:
   #  plugin: cmake
   #  source: git@gitlab.eurecom.fr:oai/freediameter.git
@@ -195,6 +210,10 @@ parts:
       - usr/*
       - lib/*
 
-layout:
-  /usr/share/parameters:
-    bind: $SNAP_DATA/usr/share/parameters
+#layout:
+#  /run/shm:
+#    bind: $SNAP_COMMON/run/shm
+  # /bin:
+  #   symlink: $SNAP_DATA/current/usr/bin
+  #/etc/host.conf:
+  #  bind-file:  $SNAP_DATA/etc
