@@ -2,3 +2,8 @@
 set -e 
 
 $SNAP/init
+
+tracer=$(snapctl get conf.tracer)
+if [ ! -z "$tracer" ] ; then 
+    $SNAP/conf set $tracer
+fi

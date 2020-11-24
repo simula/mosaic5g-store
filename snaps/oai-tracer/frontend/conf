@@ -1,24 +1,48 @@
-#!/bin/sh
+#! /bin/bash
+################################################################################
+# Licensed to the Mosaic5G under one or more contributor license
+# work for additional information regarding copyright ownership.
+# Apache License, Version 2.0  (the "License");
+# You may obtain a copy of the License at
+#  
+#    	http://www.apache.org/licenses/LICENSE-2.0
+#  
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+# -------------------------------------------------------------------------------
+#   For more information about the Mosaic5G:
+#   	contact@mosaic-5g.io
+#
+#
+################################################################################
+# file conf
+# brief conf scripts and variables for oai-tracer Snap
+# author Navid Nikaein (navid.nikaein@eurecom.fr, navid.nikaein@mosaic-5g.io)
+
 
 . $SNAP/common
+. $SNAP/util
 
 case "$1" in
     "set" )
 	CONFIG_FILE=$2
 	if [ "$CONFIG_FILE" != "${CONFIG_FILE#/}" -a -f "$CONFIG_FILE" ]; then
-	    echo "Setting the default config file to: $CONFIG_FILE"
+	    echo_info "Setting the default config file to: $CONFIG_FILE"
 	    
 	elif [ -f "$CONF_DIR/$CONFIG_FILE" ]; then
 	    CONFIG_FILE=$CONF_DIR/$CONFIG_FILE
-	    echo "Config file found in the $CONF_DIR!"
-	    echo "Resetting to the default config file: $CONFIG_FILE"
+	    echo_info "Config file found in the $CONF_DIR!"
+	    echo_warn "Resetting to the default config file: $CONFIG_FILE"
 
 	else
-	    echo "[ERR] Config file $CONFIG_FILE not found, please provide an absolute path!"
-	    echo "Reset to default config file: $T_CONF_FILE"
+	    echo_error "[ERR] Config file $CONFIG_FILE not found, please provide an absolute path!"
+	    echo_info "Reset to default config file: $T_CONF_FILE"
 	    CONFIG_FILE=$T_CONF_FILE
 	fi
-
+	snapctl set conf.tracer=$CONFIG_FILE
 	echo "T_CONF_FILE2=$CONFIG_FILE" > $SNAP_DATA/config.sh
 	echo "T_CONF_FILE2=$CONFIG_FILE"  > $SNAP_USER_DATA/config.sh
 	;;
@@ -55,4 +79,3 @@ esac
 #CONFIG=$CONFIG_FILE
 #EOF
     
-

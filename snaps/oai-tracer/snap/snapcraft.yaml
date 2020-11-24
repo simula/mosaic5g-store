@@ -10,18 +10,21 @@ type: app
 architectures:
   - amd64
   - i386
-confinement: devmode
+confinement: strict
 grade: stable
 base: core18
 
 apps:
   init:
     command: init
+  info:
+    command: run info
   help:
     command: run help
   oai-tracer:
-    command: run 
-  list:
+    command: run oai-tracer
+    plugs: [network, home, desktop, network-observe, network-bind, x11]
+  conf-list:
     command: conf ls
   conf-set:
     command: conf set
