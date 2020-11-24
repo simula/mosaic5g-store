@@ -2,4 +2,14 @@
 set -e 
 echo "Install hook"
 
-$SNAP/init hss
+$SNAP/init
+
+#snapctl is-connected sys-access
+#if [ $? -eq 0 ] ; then
+#    $SNAP/init hss
+#    touch $SNAP_DATA/sys-access-granted
+#else
+#    touch $SNAP_DATA/sys-access-denied
+#fi
+
+

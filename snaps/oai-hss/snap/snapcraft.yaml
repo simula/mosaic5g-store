@@ -10,24 +10,28 @@ type: app
 architectures:
   - amd64
   - i386
-confinement: devmode
+confinement: strict
 grade: stable
 base: core18
+
 
 apps:
   check:
     command : test hss
+    plugs: [home, network, desktop, log-observe, network-control, network-observe, network-bind]
   info:
     command: run info
   help:
     command: run help 
   oai-hss:
     command: run hss
+    plugs: [home, network, desktop, mount-observe, process-control, network-control, network-observe, network-bind]
   hssd:
     command: run hss
     daemon: simple
     stop-command: run stop
     stop-timeout: 1s
+    plugs: [home, network, desktop, mount-observe, process-control, network-control, network-observe, network-bind]
 #  debug:
 #    command: run gdb
   start-all:
@@ -48,8 +52,10 @@ apps:
     command: run status hssd
   journal:
     command: run journal hssd
+    plugs: [log-observe, process-control, system-observe]
   init:
     command: init hss
+    plugs: [network-control,  hostname-control, network-bind]
   conf-set:
     command: conf set-hss
   conf-get:
@@ -60,27 +66,42 @@ apps:
     command: conf ls-hss
   add-users:
     command: run add-users
+    plugs: [network, network-control, network-observe, network-bind]	
   dump-users:
     command: run dump-users
-  reset-db:
-    command: run reset-db
-  clean-db:
-    command: run clean-db
+    plugs: [network, network-control, network-observe, network-bind]	
+  reset-users:
+    command: run reset-users
+    plugs: [network, network-control, network-observe, network-bind]		
+  clean-users:
+    command: run clean-users
+    plugs: [network, network-control, network-observe, network-bind]		
   probe-db:
     command: run probe-db
+    plugs: [network, network-control, network-observe, network-bind]		
   add-mme:
     command: run add-mme
-  dump-mme:
-    command: run dump-mme
+    plugs: [network, network-control, network-observe, network-bind]		
+  dump-mmes:
+    command: run dump-mmes
+    plugs: [network, network-control, network-observe, network-bind]
+  reset-mmes:
+    command: run reset-mmes
+    plugs: [network, network-control, network-observe, network-bind]		
+  clean-mmes:
+    command: run clean-mmes
+    plugs: [network, network-control, network-observe, network-bind]	
   dump-vars:
     command: run dump-vars
   api:
     command: run openapi
+    plugs: [home, network, desktop, network-control, network-observe, network-bind]
   apid:
     command: run openapi
     daemon: simple
     stop-command: run stop
     stop-timeout: 1s
+    plugs: [home, network, desktop, network-control, network-observe, network-bind]
   api-start:
     command: run start apid
   api-stop:
@@ -91,13 +112,16 @@ apps:
     command: run status apid
   api-journal:
     command: run journal apid
+    plugs: [log-observe, process-control, system-observe]
   apiman:
     command: run openapiman
+    plugs: [home, network, desktop, network-control, network-observe, network-bind]
   apidman:
     command: run openapiman
     daemon: simple
     stop-command: run stop apidman
     stop-timeout: 1s
+    plugs: [home, network, desktop, network-control, network-observe, network-bind]
   apiman-start:
     command: run start apidman
   apiman-stop:
@@ -108,13 +132,14 @@ apps:
     command: run status apidman
   apiman-journal:
     command: run journal apidman
-    
+    plugs: [log-observe, process-control, system-observe]
 hooks:
   install:
     plugs: [home, network, desktop]
   configure:
     plugs: [home, network, desktop]
-    
+  connect-plug-network-control:
+    plugs: [network-control]
 parts:
   #gdb:
   #  plugin: nil
@@ -223,8 +248,6 @@ parts:
     #cp /usr/local/lib/x86_64-linux-gnu/libcassandra.so* .
   frontend:
     plugin: dump
-    #stage-packages:
-    #  -  python3-cassandra
     source: frontend
   openapi:
     plugin: python
@@ -243,7 +266,6 @@ parts:
       - pytz==2020.1
       - jsonschema==3.2.0
       - attrs==19.3.0
-      - pyrsistent==0.16.0
       - importlib-metadata==1.7.0
       - importlib-resources==1.5.0
       - zipp==3.1.0
@@ -256,6 +278,11 @@ parts:
       - usr/*
       - lib/*
 
-layout:
-  /usr/share/parameters:
-    bind: $SNAP_DATA/usr/share/parameters
+#layout:
+#  /usr/share/parameters:
+#    bind: $SNAP_DATA/usr/share/parameters
+#  /etc/hosts:
+#    bind-file: $SNAP_DATA/etc/hosts
+#  /etc/host.conf:
+#    bind-file: $SNAP_DATA/etc/host.conf
+    

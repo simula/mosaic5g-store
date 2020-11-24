@@ -1,7 +1,32 @@
-#!/bin/bash
+#! /bin/bash
+################################################################################
+# Licensed to the Mosaic5G under one or more contributor license
+# work for additional information regarding copyright ownership.
+# Apache License, Version 2.0  (the "License");
+# You may obtain a copy of the License at
+#  
+#    	http://www.apache.org/licenses/LICENSE-2.0
+#  
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+# -------------------------------------------------------------------------------
+#   For more information about the Mosaic5G:
+#   	contact@mosaic-5g.io
+#
+#
+################################################################################
+# file init
+# brief init scripts and variables for oai-hss Snap
+# author Navid Nikaein (navid.nikaein@eurecom.fr, navid.nikaein@mosaic-5g.io)
+
 
 . $SNAP/common
 . $SNAP/util
+
+if_sudo
 
 apiport=$(grep -m1 "api_port_default" $SNAP/apivars.py | cut -f3 -d " ")
 mgrport=$(grep -m1 "api_manager_port_default" $SNAP/apivars.py | cut -f3 -d " ")
@@ -39,73 +64,78 @@ fi
 openapi="http://"$(snapctl get conf.apiaddr)":"$(snapctl get conf.apiport)
 snapctl set conf.openapi=$openapi
 
+#	if [ ! -f $CONF_DIR/hss.conf ]; then
+cp $SNAP/etc/* $CONF_DIR
+#	fi
 
+hss_set_vars
+hss_print_vars
+# set the hss.conf
+#echo "set-hss $CONF_DIR/hss.conf"
+snapctl set conf.hss=$CONF_DIR/hss_rel14.json
+snapctl set conf.hssfd=$CONF_DIR/hss_rel14_fd.conf
+$SNAP/conf set-hss $(snapctl get conf.hss) # $CONF_DIR/enb.band7.tm1.50PRB.usrpb210.conf
+echo_info "Default HSS conf:" $SNAP/conf echo-hss 
+
+snapctl set conf.cassandra=$Cassandra_Server_IP
+snapctl set conf.realm="$REALM"
+snapctl set conf.host="$HOSTNAME"
+
+sed -i -e "s/ubuntu/$HOSTNAME/g" $HSS_FD_CONF_FILE
+sed -i -e "s/ubuntu/$HOSTNAME/g" $HSS_CONF_FILE 
+
+# a copy for the user: with sudo, the user is root
+echo "backup the config file into $SNAP_USER_DATA"
+cp $CONF_DIR/hss_rel14.json $SNAP_USER_DATA
+cp $CONF_DIR/hss_rel14_fd.conf $SNAP_USER_DATA
+cp $CONF_DIR/acl.conf $SNAP_USER_DATA
+cp $CONF_DIR/oss.json $SNAP_USER_DATA
+
+	
 case "$1" in
 
     "hss" )
 	shift 
-#	if [ ! -f $CONF_DIR/hss.conf ]; then
-	cp $SNAP/etc/* $CONF_DIR
-#	fi
-
-	hss_set_vars
-	# set the hss.conf
-	#echo "set-hss $CONF_DIR/hss.conf"
-	snapctl set conf.hss=$CONF_DIR/hss_rel14.json
-	snapctl set conf.hssfd=$CONF_DIR/hss_rel14_fd.conf
-	$SNAP/conf set-hss $(snapctl get conf.hss) # $CONF_DIR/enb.band7.tm1.50PRB.usrpb210.conf
-	echo_info "Default HSS conf:" $SNAP/conf echo-hss 
-
-	snapctl set conf.cassandra=$Cassandra_Server_IP
-	snapctl set conf.realm="$REALM"
-	snapctl set conf.host="$HOSTNAME"
-
-	sed -i -e "s/ubuntu/$HOSTNAME/g" $HSS_FD_CONF_FILE
-	sed -i -e "s/ubuntu/$HOSTNAME/g" $HSS_CONF_FILE 
-	$SNAP/run hss-certificate
-		
-	# a copy for the user: with sudo, the user is root
-	echo "backup the config file into $SNAP_USER_DATA"
-	cp $CONF_DIR/hss_rel14.json $SNAP_USER_DATA
-	cp $CONF_DIR/hss_rel14_fd.conf $SNAP_USER_DATA
-	cp $CONF_DIR/acl.conf $SNAP_USER_DATA
-	cp $CONF_DIR/oss.json $SNAP_USER_DATA
-
-	# this part needs sudo privilage 
-  	#service mysql restart || true 
 	
-	if [ -z "$(grep -o "$HOSTNAME.$REALM" /etc/hosts)" ]; then
-	    cp /etc/hosts /etc/hosts.$REALM.bkup
-	    #echo 127.0.0.1 localhost > /etc/hosts
-	    #echo 127.0.0.1 `hostname`.$REALM `hostname` hss >> /etc/hosts
-	    #echo 127.0.0.1 `hostname`.$REALM `hostname` mme >> /etc/hosts
-	    echo "Adding 127.0.0.1" $HOSTNAME.$REALM $HOSTNAME "hss to /etc/hosts"
-	    sed -i '/hss/d' /etc/hosts
-	    sed -i "1i127.0.0.1 $HOSTNAME.$REALM $HOSTNAME hss" /etc/hosts
-	    
-	    echo "Adding 127.0.0.1" $HOSTNAME.$REALM $HOSTNAME "mme to /etc/hosts"
-	    sed -i '/mme/d' /etc/hosts
-	    sed -i "1i127.0.0.1 $HOSTNAME.$REALM $HOSTNAME mme" /etc/hosts
-	fi
+	$SNAP/run hss-certificate
+	echo_info "HSS certificate is generated"
+	echo ""
 	
 	check_cassandra_service
-	if [ $? -eq 0 ]; then
+	
+	if [  "$status" == "0"  ]; then
 	    $SNAP/run  provision-user-cassandra "$@" $*  || true 
 	    $SNAP/run  provision-mme-cassandra "$@" $*  || true
-
-	    echo ""
-	    echo "HSS is initialized"
-	    echo "Now, it is the time to configure the $CONF_DIR/hss_rel14_fd.conf"
+	    echo_info "Cassandra DB provisioned"
 	else
-	    echo ""
-	    echo "Cassandra service is not yet active"
-	
+	    echo_error "Cassandra DB not provisioned!"
 	fi
+    	
+	echo ""
+	snap_isconnected network-control #sys-access
+	
+	if [ -z "$(grep -o "$HOSTNAME.$REALM" /etc/hosts)" ] || [ -z "$(grep -o hss /etc/hosts)" ]; then
+
+	    echo_info "127.0.0.1" $HOSTNAME.$REALM $HOSTNAME " hss"  "added to /etc/hosts"
+	    cp /etc/hosts $CONF_DIR/hosts
+	    sed -i '/hss/d' $CONF_DIR/hosts
+	    sed -i "1i127.0.0.1 $HOSTNAME.$REALM $HOSTNAME hss" $CONF_DIR/hosts
+	    cat $CONF_DIR/hosts > /etc/hosts
+	   
+	fi
+	
+	echo ""
+	echo_success "HSS is initialized"
+
 	;;
     
     
     * )
-	echo "Unknown command: $1"
+	echo "HSS init is not completed, run oai-hss.init"
 	;;
     
 esac
+
+echo ""
+echo "$SNAP_NAME snap info:"
+snap_info 

@@ -1,4 +1,27 @@
-#!/bin/bash
+#! /bin/bash
+################################################################################
+# Licensed to the Mosaic5G under one or more contributor license
+# work for additional information regarding copyright ownership.
+# Apache License, Version 2.0  (the "License");
+# You may obtain a copy of the License at
+#  
+#    	http://www.apache.org/licenses/LICENSE-2.0
+#  
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+# -------------------------------------------------------------------------------
+#   For more information about the Mosaic5G:
+#   	contact@mosaic-5g.io
+#
+#
+################################################################################
+# file run
+# brief run scripts and variables for oai-hss Snap
+# author Navid Nikaein (navid.nikaein@eurecom.fr, navid.nikaein@mosaic-5g.io)
+
 
 . $SNAP/common
 . $SNAP/util
@@ -120,7 +143,8 @@ case "$1" in
      
      "journal" )
 	 daemon=$2
-	 shift 2 
+	 shift 2
+	 snap_isconnected log-observe
 	 journalctl -u snap.$SNAP_NAME.$daemon.service "$@"
 
 	 ;;
@@ -129,7 +153,7 @@ case "$1" in
 	snap_help
 	;;
 
-    "provision-user-cassandra" | "reset-db" )
+    "provision-user-cassandra" | "reset-users" )
 	check_cassandra_service
 	
 	# provisin 208930000000001
@@ -155,12 +179,12 @@ case "$1" in
 
 	;;
 
-    "clean-db" )
+    "clean-users" )
 	shift 
 	python3 $SNAP/prov-users -t -C  $Cassandra_Server_IP
 	;;
 
-	"probe-db" )
+    "probe-db" )
 		shift 
 		python3 $SNAP/probe-db.py -C  $Cassandra_Server_IP
 	;;
@@ -217,7 +241,7 @@ case "$1" in
 	python3 $SNAP/dump-users --cassandra-cluster $Cassandra_Server_IP "$@" 
 	;;
      
-    "provision-mme-cassandra" |  "reset-mme-db" )
+    "provision-mme-cassandra" |  "reset-mmes" )
 	shift
 	check_cassandra_service
 	echo ""
@@ -261,13 +285,13 @@ case "$1" in
 	python3 $SNAP/prov-mme --cassandra-cluster $Cassandra_Server_IP "$@"
 	;;
 
-    "dump-mme" )
+    "dump-mmes" )
 	shift
 	python3 $SNAP/dump-mme --cassandra-cluster $Cassandra_Server_IP "$@"
 
 	;;
 
-    "clean-mme-db" )
+    "clean-mmes" )
 	 python3 $SNAP/prov-mme -t --cassandra-cluster $Cassandra_Server_IP
 	 ;;
         
@@ -283,6 +307,7 @@ case "$1" in
 
     "hss-certificate" )
 
+	#pushd .
 	cd /tmp
 	rm -rf ./demoCA
 	mkdir ./demoCA
@@ -304,7 +329,8 @@ case "$1" in
 	openssl ca -cert hss.cacert.pem -keyfile hss.cakey.pem -in hss.csr.pem -out hss.cert.pem -outdir . -batch
 	mkdir -p $CONF_DIR/
 	mv hss.cakey.pem hss.cert.pem hss.cacert.pem hss.key.pem $CONF_DIR
-	cd -
+	#popd
+	#cd -
 	
 #	echo "Done creating HSS certificate for user: $CONF_DIR $fqdn"
 	
@@ -312,7 +338,8 @@ case "$1" in
      
      "hss" | * )
 	 
-	 shift 
+	 shift
+	 snap_isconnected network-control #sys-access
          echo_info "$HSS_EXEC  $HSS_EXEC_ARGS"
 	 $HSS_EXEC  `echo $HSS_EXEC_ARGS`  "$@" $*
 	 

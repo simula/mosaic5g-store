@@ -1,4 +1,27 @@
-#!/bin/bash
+#! /bin/bash
+################################################################################
+# Licensed to the Mosaic5G under one or more contributor license
+# work for additional information regarding copyright ownership.
+# Apache License, Version 2.0  (the "License");
+# You may obtain a copy of the License at
+#  
+#    	http://www.apache.org/licenses/LICENSE-2.0
+#  
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+# -------------------------------------------------------------------------------
+#   For more information about the Mosaic5G:
+#   	contact@mosaic-5g.io
+#
+#
+################################################################################
+# file test
+# brief test scripts and variables for oai-hss Snap
+# author Navid Nikaein (navid.nikaein@eurecom.fr, navid.nikaein@mosaic-5g.io)
+
 
 . $SNAP/common
 . $SNAP/util
@@ -8,6 +31,9 @@ check_string="The freeDiameter engine has been started"
 conf=$(snapctl get conf.$1)
 d="d"
 waiting_time=1
+
+snap_isconnected log-observe
+snap_isconnected network-control #sys-access
 
 case "$1" in
     "api" )
@@ -36,15 +62,17 @@ case "$1" in
 	$SNAP/run stop-all
 	sleep $waiting_time
 
+	echo ""
 	echo_info "Check and set $1 conf"
 	$SNAP/conf ls-$1
 	$SNAP/conf set-$1 $conf
 	snapctl get conf.$1
-
 	
+	echo ""
 	echo_info "Init"
 	$SNAP/init $1
 	
+	echo ""
 	echo_info "Start OpenAPI"
 	$SNAP/run start apid
 	#echo "curl -Is localhost:$(snapctl get conf.apiport)"
@@ -57,9 +85,22 @@ case "$1" in
 	    echo_error   "apid test: failed"
 	fi
 
+	echo ""
 	echo_info "Snap Info"
 	$SNAP/run info
 	
+	echo ""
+	echo_info "cassandra"
+	$SNAP/run dump-vars 
+	$SNAP/run dump-users 
+	$SNAP/run add-users -I 208960000000001
+	$SNAP/run dump-users -I 208960000000001
+	$SNAP/run clean-users
+	$SNAP/run reset-users
+	$SNAP/run dump-mmes
+		
+
+	echo ""
 	echo_info "Check $1 exec"
 	$SNAP/run journal $1$d -e -n40 | grep "$check_string" > /dev/null 2>&1
 	if [ $? -eq 0 ] ; then
@@ -68,8 +109,6 @@ case "$1" in
 	    echo_error  "$1 exec: failed"
 	    exit 1 
 	fi
-	
-       
 
     ;;
 	
@@ -80,4 +119,3 @@ case "$1" in
 esac
 
 	
-
