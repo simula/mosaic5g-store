@@ -18,29 +18,6 @@
 #
 #
 ################################################################################
-# file common
-# brief common scripts and variables for oai-ran Snap
-# author Navid Nikaein (navid.nikaein@eurecom.fr, navid.nikaein@mosaic-5g.io)
-
-
-export DEBIAN_FRONTEND=noninteractive
-set -e
-
-CONF_DIR="$SNAP_DATA"
-
-ENB_DIR="$SNAP/enb"
-ENB_EXEC="$ENB_DIR/$SNAP_NAME"
-
-ENB_CONF_FILE="$CONF_DIR/enb.band7.tm1.50PRB.usrpb210.conf"
-ENB_NSA_CONF_FILE="$CONF_DIR/enb.band7.tm1.fr1.25PRB.usrpb210.conf"
-BBU_CONF_FILE="$CONF_DIR/rcc.band7.tm1.if4p5.50PRB.conf"
-RRU_CONF_FILE="$CONF_DIR/rru.conf"
-CU_CONF_FILE="$CONF_DIR/cu.lte.conf"
-DU_CONF_FILE="$CONF_DIR/du.lte.band7.10MHz.if4p5.conf"
-LTEM_CONF_FILE="$CONF_DIR/enb.band13.tm1.50PRB.emtc.conf"
-
-
-GNB_DIR="$SNAP/gnb"
-GNB_EXEC="$GNB_DIR/oai-nr"
-GNB_CONF_FILE="$CONF_DIR/gnb.band78.tm1.106PRB.usrpn300.conf"
-GNB_NSA_CONF_FILE="$CONF_DIR/gnb.band78.tm1.fr1.106PRB.usrpb210.conf"
+# file 
+# brief
+# author

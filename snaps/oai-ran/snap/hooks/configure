@@ -10,6 +10,11 @@ if [ ! -f  $SNAP_DATA/.init ] ; then
     $SNAP/init
 fi
 
+node=$(snapctl get conf.node)
+if [ ! -z "$node" ] ; then 
+    snapctl set conf.ran=$node
+fi
+
 enb=$(snapctl get conf.enb)
 if [ ! -z "$enb" ] ; then 
     $SNAP/conf set-enb $enb
@@ -20,14 +25,24 @@ if [ ! -z "$gnb" ] ; then
     $SNAP/conf set-gnb $gnb
 fi
 
-cudu=$(snapctl get conf.cudu)
-if [ ! -z "$cudu" ] ; then 
-    $SNAP/conf set-cudu $cudu
+enb_cu=$(snapctl get conf.enb-cu)
+if [ ! -z "$enb_cu" ] ; then 
+    snapctl set conf.enb-cu=$enb_cu
 fi
 
-rru=$(snapctl get conf.rru)
-if [ ! -z "$rru" ] ; then 
-    $SNAP/conf set-rru $rru
+enb_du=$(snapctl get conf.enb-du)
+if [ ! -z "$enb_du" ] ; then 
+    snapctl set conf.enb-du=$enb_du
+fi
+
+enb_bbu=$(snapctl get conf.enb-bbu)
+if [ ! -z "$enb_bbu" ] ; then 
+    $SNAP/conf set-bbu $enb_bbu
+fi
+
+enb_rru=$(snapctl get conf.enb-rru)
+if [ ! -z "$enb_rru" ] ; then 
+    $SNAP/conf set-rru $enb_rru
 fi
 
 usrp=$(snapctl get conf.usrp)

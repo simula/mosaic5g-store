@@ -1,18 +1,52 @@
-#!/bin/bash
+#! /bin/bash
+################################################################################
+# Licensed to the Mosaic5G under one or more contributor license
+# work for additional information regarding copyright ownership.
+# Apache License, Version 2.0  (the "License");
+# You may obtain a copy of the License at
+#  
+#    	http://www.apache.org/licenses/LICENSE-2.0
+#  
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+# -------------------------------------------------------------------------------
+#   For more information about the Mosaic5G:
+#   	contact@mosaic-5g.io
+#
+#
+################################################################################
+# file util
+# brief util scripts and variables for oai-ran Snap
+# author Navid Nikaein (navid.nikaein@eurecom.fr, navid.nikaein@mosaic-5g.io)
+
 
 . $SNAP/common
 
 # Echo 
-black='\E[30m'
-red='\E[31m'
-green='\E[32m'
-yellow='\E[33m'
-blue='\E[1;34m'
-magenta='\E[35m'
-cyan='\E[36m'
-white='\E[37m'
-reset_color='\E[00m'
+black='[30m'
+red='[31m'
+green='[32m'
+yellow='[33m'
+blue='[1;34m'
+magenta='[35m'
+cyan='[36m'
+white='[37m'
+#reset_color='[00m'
+
 COLORIZE=1
+#black=$(tput setaf 0)
+#red=$(tput setaf 1)
+#green=$(tput setaf 2)
+#yellow=$(tput setaf 3)
+#blue=$(tput setaf 4)
+#magenta=$(tput setaf 5)
+#cyan=$(tput setaf 6)
+#white=$(tput setaf 7)
+#reset_color=$(tput sgr 0)
+
 
 cecho()  {  
     # Color-echo
@@ -63,6 +97,63 @@ set_health(){
     
 }
 
+snap_isconnected(){
+
+    echo_warn "Plug $1: snap connect $SNAP_NAME:$1"
+    snapctl is-connected $1
+    echo_success "$1 connected"
+    
+}
+
+detect_uhd_device(){
+    rv=$($SNAP/bin/uhd_usrp_probe > /tmp/uhd_log.txt 2>&1) || true # uhd_find_device
+    if [ -z "$rv" ] ; then
+	DEVICE="NONE"
+    elif [ -n "$(echo "$rv" | grep -o "B-Series")" ]; then
+	DEVICE="B"
+    elif [ -n "$(echo "$rv" | grep -o "X-Series")" ]; then
+	DEVICE="X"
+    elif [ -n "$(echo "$rv" | grep -o "N-Series")" ]; then
+	DEVICE="N"
+    fi
+}
+
+set_enb_vars(){
+
+    case $(snapctl get conf.node) in
+	enb)
+	    CONFIG=$(snapctl get conf.enb)	    
+	    ;;
+	gnb)
+	    CONFIG=$(snapctl get conf.gnb)	    
+	    ;;
+	cudu)
+	    CONFIG=$(snapctl get conf.cudu)	    
+	    ;;
+	enbsim)
+	    CONFIG=$(snapctl get conf.enbsim)	    
+	    ;;
+	*)
+	    
+    esac
+    NODE_NAME=`cat $CONFIG | grep "node_function" | cut -f2 -d= | tr -d '"' | tr -d " " | tr -d ";"` 
+    NODE_FUNC=`cat $ENB_CONFIG | grep "node_function" | cut -f2 -d= | tr -d '"' | tr -d " " | tr -d ";"`
+    NODE_SPLIT=`cat $ENB_CONFIG | grep "tr_s_preference" | cut -f2 -d= | tr -d '"' | tr -d " " | tr -d ";"`
+    
+    ENBUE_IF=`cat $ENB_CONFIG | grep "local_s_if_name" | cut -f2 -d= | tr -d '"' | tr -d " " | tr -d ";"`
+    ENBUE_ADDR=`cat $ENB_CONFIG | grep "local_s_address" | cut -f2 -d= | tr -d '"' | tr -d " " | tr -d ";"`
+    
+}
+
+dump_enb_vars(){
+    
+    echo_info "Node Func:"   $NODE_FUNC
+    echo_info "ENB-UE IF:"   $ENBUE_IF
+    echo_info "ENB-UE IF:"   $ENBUE_IF
+    echo_info "ENB-UE ADDR:" $ENBUE_ADDR
+  
+}
+
 snap_info(){
     echo_info "Snap Name: $SNAP_NAME"
     echo_info "Snap Instance Name: $SNAP_INSTANCE_NAME"
@@ -71,13 +162,21 @@ snap_info(){
     echo_info "Snap Data: $SNAP_DATA"
     echo_info "Snap Conf: "
     snapctl get conf
+    echo_info 'Snap Permissions to be granted:
+    	- log-observe
+        - network-control
+        - process-control
+	- raw-usb
+        - netlink-connectors
+        - cpu-control'
+	          
     echo ""
-    echo_info "For more information, run: snap info $SNAP_NAME"
+    echo_warn "Check current permissions: snap connection $SNAP_NAME"
 }
 
 snap_help(){
 	echo_info "Usage:                    sudo $SNAP_NAME.[x] args"
-	echo "                          App [x] is enb, cudu, and rru"
+	echo "                          App [x] is enb, gnb"
 	echo "Note:                     root priviliage required"
 	echo "Options:"
 	echo "oai-ran.info              get the info for this snap"     
