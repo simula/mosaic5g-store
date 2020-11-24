@@ -118,6 +118,10 @@ apps:
     command: run hss-dump-users
   hss-get-user:
     command: run hss-get-user
+#  hss-add-oaisim:
+#    command: run add-oaisim
+#  hss-remove-oaisim:
+#    command: run remove-oaisim
   hss-reset-db:
     command: run hss-reset-db
   hss-remove-mme:
