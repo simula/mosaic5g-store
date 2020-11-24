@@ -1,5 +1,4 @@
 
-
 snap_name = "oai-smf"
 
 api_host_default = '0.0.0.0'
