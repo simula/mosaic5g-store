@@ -1,4 +1,27 @@
-#!/bin/bash
+#! /bin/bash
+################################################################################
+# Licensed to the Mosaic5G under one or more contributor license
+# work for additional information regarding copyright ownership.
+# Apache License, Version 2.0  (the "License");
+# You may obtain a copy of the License at
+#  
+#    	http://www.apache.org/licenses/LICENSE-2.0
+#  
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+# -------------------------------------------------------------------------------
+#   For more information about the Mosaic5G:
+#   	contact@mosaic-5g.io
+#
+#
+################################################################################
+# file run
+# brief run scripts and variables for ll-mec Snap
+# author Navid Nikaein (navid.nikaein@eurecom.fr, navid.nikaein@mosaic-5g.io)
+
 
 . $SNAP/common
 . $SNAP/util
@@ -28,6 +51,16 @@ fi
 
 
 case "$1" in
+    "openapi" )
+	shift
+	python3 $SNAP/api.py "$@"
+	;;
+    
+    "openapiman" )
+	shift
+	python3 $SNAP/api-manager.py "$@"
+	;;
+
     "gdb" )
 	echo "Running $SNAP_NAME with the gdb"
 	touch      $SNAP_DATA/.gdb_$SNAP_NAME
@@ -87,21 +120,18 @@ case "$1" in
     "status" )
 	daemon=$2
 	shift 2
-	# echo "Please manually run: snap services $SNAP_NAME.$daemon" 
-	snapctl services $SNAP_NAME.$daemon 
-	#systemctl status --lines 0 snap.$SNAP_NAME.$2.service
-
-		;; 
+	snapctl services $SNAP_NAME.$daemon  "$@"
+      	;;
+    
     "status-all"  )
-	daemon=$2
 	shift
-	if_sudo
-	snapctl services $SNAP_NAME
+	snapctl services $SNAP_NAME  "$@"
 	;;
 
     "journal" )
 	daemon=$2
 	shift 2
+	snap_isconnected log-observe
 	journalctl -u snap.$SNAP_NAME.$daemon.service "$@"
 	;;
 
@@ -109,10 +139,14 @@ case "$1" in
     "help" )
 	snap_help
 	;;
-    *)
+    "ll-mec" )
+	shift
+	if_sudo
+	snap_isconnected process-control
 	echo_info "$LLMEC_EXEC  `echo $LLMEC_EXEC_ARGS` "$@"" 
 	$LLMEC_EXEC  `echo $LLMEC_EXEC_ARGS` "$@"
 	;;
+    *)
 esac
 
 

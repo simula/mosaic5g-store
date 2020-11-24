@@ -1,31 +1,42 @@
 name: ll-mec
-version: '1.3' 
+version: '2.0' 
 summary: Low Latency MEC platform
 description: |
    LL-MEC is a Low Latency Multi-access Edge Computing platform licensed under Apache License V2.0. It is one of the projects of Mosaic5G inititive.
-icon: meta/gui/icon.png  
 grade: stable
 type: app
 architectures:
   - amd64
   - i386
-confinement: devmode
+confinement: strict
+license: Apache-2.0
 base: core18
 
 apps:
   check:
     command: test ll-mec
+    plugs: [network, network-control, log-observe, process-control, network-observe, network-bind]
+  start-all:
+    command: run start-all
+  stop-all:
+    command: run stop-all
+  restart-all:
+    command: run restart-all
+  status-all:
+    command: run status-all  
   ll-mec:
-    command: run
+    command: run ll-mec
+    plugs: [network, network-control, log-observe, process-control, network-observe, network-bind]
   info:
     command: run info
   init:
     command: init
   ll-mecd:
-    command: run ll-mecd
+    command: run ll-mec
     daemon: simple
     stop-command: run stop
     stop-timeout: 1s
+    plugs: [network, network-control, log-observe, process-control, network-observe, network-bind]
   start:
     command: run start
   stop:
@@ -35,34 +46,63 @@ apps:
   status:
     command: run status
   journal:
-    command: run journal
+    command: run journal ll-mecd 
+    plugs: [network-control, network-observe, network-bind]
   help:
     command: run help
-  debug:
-    command: run gdb
   conf-set:
     command: conf set
   conf-get:
     command: conf echo
   conf-show:
     command: conf cat
-  
+  api:
+    command: run openapi
+    plugs: [network, network-control, network-observe, network-bind]
+  apid:
+    command: run openapi
+    daemon: simple
+    stop-command: run stop apid
+    stop-timeout: 1s
+    plugs: [network, network-control, network-observe, network-bind]
+  api-start:
+    command: run start apid
+  api-stop:
+    command: run stop apid
+  api-restart:
+    command: run restart apid
+  api-status:
+    command: run status apid
+  api-journal:
+    command: run journal apid
+    plugs: [log-observe, process-control, system-observe]
+  apiman:
+    command: run openapiman
+    plugs: [network, network-control, network-observe, network-bind]
+  apidman:
+    command: run openapiman
+    daemon: simple
+    stop-command: run stop apidman
+    stop-timeout: 1s
+    plugs: [network, network-control, network-observe, network-bind]
+  apiman-start:
+    command: run start apidman
+  apiman-stop:
+    command: run stop apidman
+  apiman-restart:
+    command: run restart apidman
+  apiman-status:
+    command: run status apidman
+  apiman-journal:
+    command: run journal apidman
+    plugs: [network-control, network-observe, network-bind]
+ 
 hooks:
   install:
     plugs: [home, network]
   configure:
     plugs: [home, network]
 parts:
-  gdb:
-    plugin: nil
-    override-build: |
-      sudo apt install gdb -y
-      mkdir $SNAPCRAFT_PART_INSTALL/share 
-      cp -r /usr/share/gdb $SNAPCRAFT_PART_INSTALL/share
-      cp /usr/bin/gdb* $SNAPCRAFT_PART_INSTALL
-    prime:
-      - gdb*
-      - share/*
       
   pistache:
     plugin: cmake
@@ -86,11 +126,10 @@ parts:
     source: git@gitlab.eurecom.fr:mosaic5g/ll-mec.git
     source-branch: ubuntu_18
     build-packages: [build-essential, g++, libevent-dev, libssl-dev]
- #   stage-packages:
- #     - libssl1.0.0
- #     - libevent-2.1-6
- #     - libevent-openssl-2.1-6
- #     - libevent-pthreads-2.1-6
+    stage-packages:
+       - libevent-2.1-6
+       - libevent-openssl-2.1-6
+       - libevent-pthreads-2.1-6
     override-build: |
       cd ../src
       ./install_dependencies.sh
@@ -100,15 +139,43 @@ parts:
       cp ./ll-mec $SNAPCRAFT_PART_INSTALL
     stage:
       - ll-mec
-      - llmec_config.json
-      - usr/lib/*
+      - usr/*
       - lib/*
     prime:
       - ll-mec
-      - llmec_config.json
-      - usr/lib/*
+      - usr/*
       - lib/*
 
   frontend:
     plugin: dump
     source: frontend
+
+  openapi:
+    plugin: python
+    python-version: python3
+    python-packages:
+      - flask
+      - itsdangerous
+      - Werkzeug==0.16.1
+      - click
+      - jinja2
+      - MarkupSafe
+      - requests
+      - argparse
+      - flask_restplus==0.13.0
+      - aniso8601==8.0.0
+      - pytz==2020.1
+      - jsonschema==3.2.0
+      - attrs==19.3.0
+      - pyrsistent==0.16.0
+      - importlib-metadata==1.7.0
+      - importlib-resources==1.5.0
+      - zipp==3.1.0
+      # - pyrsistent==0.16.0
+      # - cassandra-driver==3.24.0
+    stage:
+      - usr/*
+      - lib/*
+    prime:
+      - usr/*
+      - lib/*

@@ -1,10 +1,33 @@
-#!/bin/bash
+#! /bin/bash
+################################################################################
+# Licensed to the Mosaic5G under one or more contributor license
+# work for additional information regarding copyright ownership.
+# Apache License, Version 2.0  (the "License");
+# You may obtain a copy of the License at
+#  
+#    	http://www.apache.org/licenses/LICENSE-2.0
+#  
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+# -------------------------------------------------------------------------------
+#   For more information about the Mosaic5G:
+#   	contact@mosaic-5g.io
+#
+#
+################################################################################
+# file conf
+# brief conf scripts and variables for ll-mec Snap
+# author Navid Nikaein (navid.nikaein@eurecom.fr, navid.nikaein@mosaic-5g.io)
+
 
 . $SNAP/common
 . $SNAP/util
 
 case "$1" in
-    "set" )
+    "set" | "set-llmec")
 	CONFIG_FILE=$2
 	if [  "$CONFIG_FILE" != "${CONFIG_FILE#/}" -a -f "$CONFIG_FILE" ]; then
 	    echo_success "Setting the default config file to: $CONFIG_FILE"
@@ -20,7 +43,7 @@ case "$1" in
 	    CONFIG_FILE=$LLMEC_CONF_FILE
 	fi
 
-	snapctl set conf.enb=$CONFIG_FILE
+	snapctl set conf.llmec=$CONFIG_FILE
 	echo "LLMEC_CONF_FILE2=$CONFIG_FILE" > $CONF_DIR/config.sh
 	echo "LLMEC_CONF_FILE2=$CONFIG_FILE" > $SNAP_USER_DATA/config.sh
 	;;
