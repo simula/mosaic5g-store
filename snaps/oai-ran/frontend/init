@@ -59,7 +59,7 @@ $SNAP/conf set-gnb $(snapctl get conf.gnb-nsa)
 
 
 snapctl set conf.usrp=$SNAP/uhd_images
-snapctl set conf.rfnoc=$SNAP/usr/share/uhd/rfnoc/blocks
+snapctl set conf.rfnoc=$SNAP/usr/share/uhd/rfnoc
 echo_info "Default USRP images:"  $(snapctl get conf.usrp)
 echo_info "Default USRP RFNOC:"  $(snapctl get conf.rfnoc)
 

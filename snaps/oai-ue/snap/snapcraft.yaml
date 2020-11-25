@@ -9,19 +9,27 @@ type: app
 architectures:
   - amd64
   - i386
-confinement: devmode
+confinement: strict
 grade: stable
 base: core18
 
 apps:
   check:
     command: test ue
+    plugs: [network, network-control, log-observe, process-control, cpu-control, network-observe, network-bind, raw-usb, netlink-connector, hardware-observe]
   info:
     command: run info
+  start-all:
+    command: run start-all
+  stop-all:
+    command: run stop-all
+  restart-all:
+    command: run restart-all
+  status-all:
+    command: run status-all
   oai-ue:
     command: run ue
-  uesim:
-    command: run uesim
+    plugs: [network, network-control, process-control,  cpu-control, network-observe, network-bind, raw-usb, netlink-connector]
   usim-gen:
     command: run usim-gen
   usim-print:
@@ -37,11 +45,7 @@ apps:
     daemon: simple
     stop-command: run stop
     stop-timeout: 1s
-  uesimd:
-    command: run uesim
-    daemon: simple
-    stop-command: run stop uesimd
-    stop-timeout: 1s
+    plugs: [network, network-control, process-control,  cpu-control, network-observe, network-bind, raw-usb, netlink-connector]
   start:
     command: run start ued
   stop:
@@ -52,20 +56,11 @@ apps:
     command: run status ued
   journal:
     command: run journal ued
-  uesim-start:
-    command: run start uesimd
-  uesim-stop:
-    command: run stop uesimd
-  uesim-restart:
-    command: run restart uesimd 
-  uesim-status:
-    command: run status uesimd
-  uesim-journal:
-    command: run journal uesimd
+    plugs: [log-observe]
   help:
     command: run help
-  debug:
-    command: run gdb
+  #debug:
+  #  command: run gdb
   conf-set:
     command: conf set-ue
   conf-get:
@@ -82,14 +77,6 @@ apps:
     command: conf cat-ue-cmd
   cmd-list:
     command: conf ls-ue-cmd
-  uesim-cmd-set:
-    command: conf set-uesim-cmd
-  uesim-cmd-get:
-    command: conf echo-uesim-cmd
-  uesim-cmd-show:
-    command: conf cat-uesim-cmd
-  uesim-cmd-list:
-    command: conf ls-uesim-cmd
   usim-set:
     command: conf set-usim
   usim-get:
@@ -98,14 +85,47 @@ apps:
     command: conf cat-usim
   usim-list:
     command: conf ls-usim
-  uesim-conf-set:
-    command: conf set-uesim
-  uesim-conf-get:
-    command: conf echo-uesim
-  uesim-conf-show:
-    command: conf cat-uesim
-  uesim-conf-list:
-    command: conf ls-uesim
+  api:
+    command: run openapi
+    plugs: [network-control, network-observe, network-bind]
+  apid:
+    command: run openapi
+    daemon: simple
+    stop-command: run stop apid
+    stop-timeout: 1s
+    plugs: [network-control, network-observe, network-bind]
+  api-start:
+    command: run start apid
+  api-stop:
+    command: run stop apid
+  api-restart:
+    command: run restart apid
+  api-status:
+    command: run status apid
+  api-journal:
+    command: run journal apid
+    plugs: [log-observe, process-control, system-observe]
+  apiman:
+    command: run openapiman
+    plugs: [home, network, desktop, network-control, network-observe, network-bind]
+  apidman:
+    command: run openapiman
+    daemon: simple
+    stop-command: run stop apidman
+    stop-timeout: 1s
+    plugs: [home, network, desktop, network-control, network-observe, network-bind]
+  apiman-start:
+    command: run start apidman
+  apiman-stop:
+    command: run stop apidman
+  apiman-restart:
+    command: run restart apidman
+  apiman-status:
+    command: run status apidman
+  apiman-journal:
+    command: run journal apidman
+    plugs: [log-observe, process-control, system-observe]
+   
 hooks:
   install:
     plugs: [home, network]
@@ -115,17 +135,17 @@ hooks:
     plugs: [home, network]
 
 parts:
-  gdb:
-    plugin: nil
-    override-build: |
-      sudo apt install gdb -y
-      mkdir $SNAPCRAFT_PART_INSTALL/share 
-      cp -r /usr/share/gdb $SNAPCRAFT_PART_INSTALL/share
-      cp /usr/bin/gdb* $SNAPCRAFT_PART_INSTALL
-    prime:
-      - gdb*
-      - share/*
-      - usr/bin/gdb*
+  #gdb:
+  #  plugin: nil
+  #  override-build: |
+  #    sudo apt install gdb -y
+  #    mkdir $SNAPCRAFT_PART_INSTALL/share 
+  #    cp -r /usr/share/gdb $SNAPCRAFT_PART_INSTALL/share
+  #    cp /usr/bin/gdb* $SNAPCRAFT_PART_INSTALL
+  #  prime:
+  #    - gdb*
+  #    - share/*
+  #    - usr/bin/gdb*
   tools:
     plugin: nil
     #stage-packages:
@@ -136,6 +156,8 @@ parts:
     #  - gcc
     #  - g++
     #  - build-essential
+    stage-packages:
+      - libboost-program-options1.65.1
     override-build: |
       sudo apt install make gcc g++ build-essential net-tools -y
       mkdir $SNAPCRAFT_PART_INSTALL/tools 
@@ -143,11 +165,13 @@ parts:
       cp /usr/bin/gcc $SNAPCRAFT_PART_INSTALL/tools
       cp /usr/bin/g++ $SNAPCRAFT_PART_INSTALL/tools
       cp /usr/bin/cc $SNAPCRAFT_PART_INSTALL/tools
-
+      mkdir $SNAPCRAFT_PART_INSTALL/bin 
+      cp /usr/bin/uhd* $SNAPCRAFT_PART_INSTALL/bin
     prime:
-      - tools/
-      - usr/lib/*
+      - tools/*
       - lib/*
+      - usr/*
+      - bin/*
       
   ue:
     plugin: cmake
@@ -168,7 +192,7 @@ parts:
       - liblapacke
       - libquadmath0
       - libsctp1
-      - libuhd3.14.1
+      - libuhd3.15.0
       - libusb-1.0-0
     override-build: |
       cd ../src/cmake_targets
@@ -177,11 +201,14 @@ parts:
       cd ../ 
       mkdir -p $SNAPCRAFT_PART_INSTALL/ue
       mkdir -p $SNAPCRAFT_PART_INSTALL/usr/share
+      mkdir -p $SNAPCRAFT_PART_INSTALL/lib
       cp  targets/bin/* $SNAPCRAFT_PART_INSTALL/ue
       cp -rp /usr/share/uhd $SNAPCRAFT_PART_INSTALL/usr/share
       cp -r common/uhd_images $SNAPCRAFT_PART_INSTALL/ 
       cp targets/PROJECTS/GENERIC-LTE-EPC/CONF/* $SNAPCRAFT_PART_INSTALL/ue
       cp cmake_targets/snap_environment.sh $SNAPCRAFT_PART_INSTALL/ue
+      cp cmake_targets/ran_build/build/libSIMU.so $SNAPCRAFT_PART_INSTALL/lib
+      cp cmake_targets/ran_build/build/libdfts.so $SNAPCRAFT_PART_INSTALL/lib
     stage:
       - ue/*
       - usr/*
@@ -200,8 +227,8 @@ parts:
       ue/librfsimulator.so.Rel15: usr/lib/librfsimulator.so.Rel15
       ue/libtcp_bridge_oai.so.Rel14: usr/lib/libtcp_bridge_oai.so.Rel15
       ue/lte-uesoftmodem.Rel15: ue/oai-ue
-      #usr/lib/lapack/liblapack.so.3: usr/lib/liblapack.so.3 
-
+      #usr/lib/lapack/liblapack.so.3: usr/lib/liblapack.so.3
+  
   frontend:
     plugin: dump
     source: frontend

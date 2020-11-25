@@ -103,7 +103,7 @@ def allowed_file(filename):
 """
 Example Usage:
 GET: curl http://0.0.0.0:5550/ue/conf
-POST: curl http://0.0.0.0:5550/ue/conf  -X POST -F file=@enb.conf
+POST: curl http://0.0.0.0:5550/ue/conf  -X POST -F file=@ue.conf
 """
 @ue_space.route("/conf")
 class MainClassUeConf(Resource):
@@ -113,7 +113,7 @@ class MainClassUeConf(Resource):
         Get configuration file of oai-ue
         """
         # proc = subprocess.Popen(["oai-ue.conf-get"], stdout=subprocess.PIPE, shell=True)
-        proc = subprocess.Popen(["$SNAP/conf echo-enb"], stdout=subprocess.PIPE, shell=True)
+        proc = subprocess.Popen(["$SNAP/conf echo-ue"], stdout=subprocess.PIPE, shell=True)
         (out, err) = proc.communicate() 
 
         response = make_response(out)
@@ -150,8 +150,8 @@ class MainClassUeConf(Resource):
                         # Set alrteady existing file as config file UPLOAD_FOLDER
                         if os.path.exists(file_absolute):
                             if os.path.isfile(file_absolute):
-                                logger.debug("command to set config file= {} {}".format("$SNAP/conf set-enb", file_absolute))
-                                proc = subprocess.Popen(["$SNAP/conf set-enb {}".format(file_absolute)], stdout=subprocess.PIPE, shell=True)
+                                logger.debug("command to set config file= {} {}".format("$SNAP/conf set-ue", file_absolute))
+                                proc = subprocess.Popen(["$SNAP/conf set-ue {}".format(file_absolute)], stdout=subprocess.PIPE, shell=True)
                                 (out, err) = proc.communicate()
                                 
                                 logger.debug("program out: {}".format(out))
@@ -193,8 +193,8 @@ class MainClassUeConf(Resource):
                             conf_file.write(config_parameters)
 
                     if set_conf_file:
-                        logger.debug("command to set config file= {} {}".format("$SNAP/conf set-enb", file_absolute))
-                        proc = subprocess.Popen(["$SNAP/conf set-enb {}".format(file_absolute)], stdout=subprocess.PIPE, shell=True)
+                        logger.debug("command to set config file= {} {}".format("$SNAP/conf set-ue", file_absolute))
+                        proc = subprocess.Popen(["$SNAP/conf set-ue {}".format(file_absolute)], stdout=subprocess.PIPE, shell=True)
                         (out, err) = proc.communicate()
                         
                         logger.debug("program out: {}".format(out))
@@ -219,7 +219,7 @@ class MainClassUeConfList(Resource):
         Get list of configuration files of oai-ue
         """        
         # proc = subprocess.Popen(["oai-ue.conf-list"], stdout=subprocess.PIPE, shell=True)
-        proc = subprocess.Popen(["$SNAP/conf ls-enb"], stdout=subprocess.PIPE, shell=True)
+        proc = subprocess.Popen(["$SNAP/conf ls-ue"], stdout=subprocess.PIPE, shell=True)
         (out, err) = proc.communicate() 
 
         response = make_response(out)
@@ -246,11 +246,11 @@ class MainClassUeConfShow(Resource):
                 status_code = 400
                 return "Either choose file to show or set 'show-config-file' to True to show the config file", status_code  
             else:
-                proc = subprocess.Popen(["$SNAP/conf cat-enb {}".format(chosen_file)], stdout=subprocess.PIPE, shell=True)
+                proc = subprocess.Popen(["$SNAP/conf cat-ue {}".format(chosen_file)], stdout=subprocess.PIPE, shell=True)
         else:
             if type(chosen_file) == type(None):
                 # proc = subprocess.Popen(["oai-ue.conf-show"], stdout=subprocess.PIPE, shell=True)
-                proc = subprocess.Popen(["$SNAP/conf cat-enb"], stdout=subprocess.PIPE, shell=True)
+                proc = subprocess.Popen(["$SNAP/conf cat-ue"], stdout=subprocess.PIPE, shell=True)
             else:
                 status_code = 400
                 return "Either choose file and set 'show-config-file' to False to show the chosen file, or set 'show-config-file' to True to show the config file", status_code      
@@ -269,7 +269,7 @@ class MainClassUeInit(Resource):
         """
         Initialize the oai-ue to the default values
         """        
-        proc = subprocess.Popen(["$SNAP/init enb"], stdout=subprocess.PIPE, shell=True)
+        proc = subprocess.Popen(["$SNAP/init ue"], stdout=subprocess.PIPE, shell=True)
         (out, err) = proc.communicate() 
 
         response = make_response(out)
@@ -283,7 +283,7 @@ class MainClassUeStatus(Resource):
         """
         Get the status of oai-ue
         """        
-        proc = subprocess.Popen(["$SNAP/run status enbd"], stdout=subprocess.PIPE, shell=True)
+        proc = subprocess.Popen(["$SNAP/run status ued"], stdout=subprocess.PIPE, shell=True)
         # proc = subprocess.Popen(["oai-ue.status"], stdout=subprocess.PIPE, shell=True)
         
         (out, err) = proc.communicate() 
@@ -315,7 +315,7 @@ class MainClassUeStart(Resource):
         """
         Start the service oai-ue in deamon mode
         """        
-        proc = subprocess.Popen(["$SNAP/run start enbd"], stdout=subprocess.PIPE, shell=True)
+        proc = subprocess.Popen(["$SNAP/run start ued"], stdout=subprocess.PIPE, shell=True)
         (out, err) = proc.communicate() 
 
         service_status = serialize_service_status(out)
@@ -334,7 +334,7 @@ class MainClassUeStop(Resource):
         """
         Stop the service oai-ue in deamon mode
         """        
-        proc = subprocess.Popen(["$SNAP/run stop enbd"], stdout=subprocess.PIPE, shell=True)
+        proc = subprocess.Popen(["$SNAP/run stop ued"], stdout=subprocess.PIPE, shell=True)
         (out, err) = proc.communicate() 
 
         service_status = serialize_service_status(out)
@@ -352,7 +352,7 @@ class MainClassUeReStart(Resource):
         """
         Restart the service oai-ue in deamon mode
         """        
-        proc = subprocess.Popen(["$SNAP/run restart enbd"], stdout=subprocess.PIPE, shell=True)
+        proc = subprocess.Popen(["$SNAP/run restart ued"], stdout=subprocess.PIPE, shell=True)
         (out, err) = proc.communicate() 
 
         service_status = serialize_service_status(out)
@@ -370,7 +370,7 @@ class MainClassUeJournal(Resource):
         """
         Get the journal of oai-ue
         """        
-        proc = subprocess.Popen(["$SNAP/run journal enbd"], stdout=subprocess.PIPE, shell=True)
+        proc = subprocess.Popen(["$SNAP/run journal ued"], stdout=subprocess.PIPE, shell=True)
         (out, err) = proc.communicate() 
 
         response = make_response(out)

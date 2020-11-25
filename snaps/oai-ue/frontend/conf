@@ -1,4 +1,26 @@
-#!/bin/sh
+#! /bin/bash
+################################################################################
+# Licensed to the Mosaic5G under one or more contributor license
+# work for additional information regarding copyright ownership.
+# Apache License, Version 2.0  (the "License");
+# You may obtain a copy of the License at
+#  
+#    	http://www.apache.org/licenses/LICENSE-2.0
+#  
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+# -------------------------------------------------------------------------------
+#   For more information about the Mosaic5G:
+#   	contact@mosaic-5g.io
+#
+#
+################################################################################
+# file conf
+# brief conf scripts and variables for oai-ue Snap
+# author Navid Nikaein (navid.nikaein@eurecom.fr, navid.nikaein@mosaic-5g.io)
 
 . $SNAP/common
 
@@ -45,27 +67,6 @@ case "$1" in
 	echo "UE_CMD_FILE2=$CONFIG_FILE"  > $SNAP_USER_DATA/config_ue_cmd.sh
 	;;
     
-    "set-uesim-cmd" )
-	CONFIG_FILE=$2
-	   
-	if [ "$CONFIG_FILE" != "${CONFIG_FILE#/}" -a -f $CONFIG_FILE ]; then
-	    echo "Setting the default config file to: $CONFIG_FILE"
-	        
-	elif [ -f "$CONF_DIR/$CONFIG_FILE" ]; then
-	    CONFIG_FILE=$CONF_DIR/$CONFIG_FILE
-	    echo "Config file found in the $CONF_DIR!"
-	    echo "Resetting to the default config file: $CONFIG_FILE"
-
-	else
-	    echo "[ERR] Config file <$CONFIG_FILE> not found, please provide an absolute path!"
-	    echo "Reset to default config file: $UESIM_CMD_FILE"
-	    CONFIG_FILE=$UESIM_CMD_FILE
-	fi
-	snapctl set conf.uesimcmd=$CONFIG_FILE
-	echo "UESIM_CMD_FILE2=$CONFIG_FILE" >  $SNAP_DATA/config_uesim_cmd.sh
-	echo "UESIM_CMD_FILE2=$CONFIG_FILE"  > $SNAP_USER_DATA/config_uesim_cmd.sh
-	;;
-
   "set-usim" )
 	CONFIG_FILE=$2
 	
@@ -85,26 +86,6 @@ case "$1" in
 	snapctl set conf.usim=$CONFIG_FILE
 	echo "UE_USIM_CONF_FILE2=$CONFIG_FILE" > $SNAP_DATA/config_usim.sh
 	echo "UE_USIM_CONF_FILE2=$CONFIG_FILE"  > $SNAP_USER_DATA/config_usim.sh
-	;;
-
-    "set-uesim" )
-	CONFIG_FILE=$2
-	if [ "$CONFIG_FILE" != "${CONFIG_FILE#/}" -a -f "$CONFIG_FILE" ]; then
-	    echo "Setting the default config file to: $CONFIG_FILE"
-
-	elif [ -f "$CONF_DIR/$CONFIG_FILE" ]; then
-	    CONFIG_FILE=$CONF_DIR/$CONFIG_FILE
-	    echo "Config file found in the $CONF_DIR!"
-	    echo "Resetting to the default config file: $CONFIG_FILE"
-
-	else
-	    echo "[ERR] Config file <$CONFIG_FILE> not found, please provide an absolute path!"
-	    echo "Reset to default config file: $USIM_CONF_FILE"
-	    CONFIG_FILE=$UESIM_CONF_FILE
-	fi
-	snapctl set conf.uesim=$CONFIG_FILE
-	echo "UESIM_CONF_FILE2=$CONFIG_FILE" > $SNAP_DATA/config_uesim.sh
-	echo "UESIM_CONF_FILE2=$CONFIG_FILE"  > $SNAP_USER_DATA/config_uesim.sh
 	;;
 
     "ls-ue" )
@@ -150,26 +131,6 @@ case "$1" in
         `echo $1 | cut -d"-" -f1` $UE_CMD
 	;;
 
-    "ls-uesim-cmd" )
-	if [ -r $SNAP_DATA/config_uesim_cmd.sh ]; then
-	    . $SNAP_DATA/config_uesim_cmd.sh
-	fi
-	UESIM_CMD=${UESIM_CMD_FILE2:-$UESIM_CMD_FILE}
-
-	ls $(dirname $UESIM_CMD)/uesim*cmd
-	;;
-
-    "echo-uesim-cmd" | "cat-uesim-cmd" )
-	
-	if [ -r $SNAP_DATA/config_uesim_cmd.sh ]; then
-	    . $SNAP_DATA/config_uesim_cmd.sh
-	fi
-	
-	# default config file is (unless set in above config)
-	UESIM_CMD=${UESIM_CMD_FILE2:-$UESIM_CMD_FILE}
-	# echo (get), cat (show)
-        `echo $1 | cut -d"-" -f1` $UESIM_CMD
-	;;
 
     "ls-usim" )
 	if [ -r $SNAP_DATA/config_usim.sh ]; then
@@ -192,27 +153,6 @@ case "$1" in
         `echo $1 | cut -d"-" -f1` $UE_USIM
 	;;
 
-     "ls-uesim" )
-	if [ -r $SNAP_DATA/config_uesim.sh ]; then
-	    . $SNAP_DATA/config_uesim.sh
-	fi
-	
-	# default config file is (unless set in above config)
-	UESIM_CONFIG=${UESIM_CONF_FILE2:-$UESIM_CONF_FILE}
-	ls $(dirname $UESIM_CONFIG)/uesim*conf
-	;;
-
-     "echo-uesim" | "cat-uesim" )
-	
-	if [ -r $SNAP_DATA/config_uesim.sh ]; then
-	    . $SNAP_DATA/config_uesim.sh
-	fi
-	
-	# default config file is (unless set in above config)
-	UESIM_CONFIG=${UESIM_CONF_FILE2:-$UESIM_CONF_FILE}
-	# echo (get), cat (show)
-        `echo $1 | cut -d"-" -f1` $UESIM_CONFIG
-	;;
     *)
 	echo "unknown command $1"
 	 
@@ -224,4 +164,3 @@ esac
 #CONFIG=$CONFIG_FILE
 #EOF
     
-
