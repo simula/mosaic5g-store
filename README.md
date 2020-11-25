@@ -3,6 +3,9 @@ A repository of network function, control application, SDK, charms, templates,
 images, tools.
 
 
+## Note
+This branch is intended for the snaps in devmode, while the snaps in confined mode are now on develop branch
+
 # FlexRAN SDK
 
 A Software Developement Kit (SDK) has been developped to facilitate the use of the API that is exposed by FlexRAN-rtc.
