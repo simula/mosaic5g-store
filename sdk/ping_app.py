@@ -96,13 +96,11 @@ class ping_app(object):
         }
     }
 
-    def __init__(self, log, sm, url='http://localhost', port='9999', op_mode='test'):
+    def __init__(self, log, url='http://localhost', port='9999'):
         super(ping_app, self).__init__()
 
         self.url = url+port
         self.log = log
-        self.sm = sm
-        self.op_mode = op_mode
         self.pings = {}
         self.clients = []
 
@@ -137,7 +135,7 @@ class ping_app(object):
         params = {
             'bs_id': bs_id,
             'rnti': rnti,
-            'text': 'to {} at interval {}: avg {:5.1f} ms'.format(ip, interval, avg),
+            'text': 'avg {:5.1f} ms'.format(avg),
             'app': 'ping'
         }
         for client in self.clients:
@@ -214,26 +212,14 @@ if __name__ == '__main__':
     parser.add_argument('--log',  metavar='[level]', action='store', type=str,
                         required=False, default='info',
                         help='set the log level: debug, info (default), warning, error, critical')
-    parser.add_argument('--op-mode', metavar='[option]', action='store', type=str,
-                        required=False, default='test',
-                        help='Test SDK with already generated json files: test (default), sdk')
     parser.add_argument('--version', action='version', version='%(prog)s 1.0')
     args = parser.parse_args()
 
     log = logger.sdk_logger(log_level=args.log,
                             format="[%(levelname)s] %(message)s").init_logger()
-    sm = flexran_sdk.stats_manager(log = log,
-                                   url = args.url,
-                                   port = args.port,
-                                   op_mode = args.op_mode)
-    sm.stats_manager('all')
-
     app = ping_app(log = log,
-                   sm = sm,
                    url = args.url,
-                   port = args.port,
-                   op_mode = args.op_mode)
-
+                   port = args.port)
 
     # open data, i.e. exposing an interface to the drone app
     app_open_data=app_sdk.app_builder(log=log,
