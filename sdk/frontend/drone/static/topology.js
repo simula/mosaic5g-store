@@ -1145,8 +1145,9 @@ function topology(sources) {
 		var config = this.parentNode.__data__.config.ueConfig;
                 var stats  = this.parentNode.__data__.config.stats;
                 var c = this.parentNode.__data__.config;
-                switch (d) {
+				switch (d) {
                   case 'teidSgw':
+					return stats ? d + '=' + stats.mac_stats.gtpStats[0][d] : '';
                   case 'teidEnb':
                     return stats ? d + '=' + stats.mac_stats.gtpStats[0][d] : '';
                   case 'neighPhyCellId':
@@ -1155,14 +1156,28 @@ function topology(sources) {
                     var meas = neighMeas ? neighMeas.eutraMeas : [];
                     return d + '=' + meas.map(x => x.physCellId);
                   case 'mmeS1Ip':
-                    return stats ? d + '=' + stats.mac_stats.s1apStats[d] : '';
+					try{
+						return d + '=' + stats.mac_stats.s1apStats[d];
+					}catch(e){
+						console.log("stats.mac_stats.s1apStats["+d+"] not found");
+						return '';
+					}
                   case 'selectedPlmn':
-                    if (stats == null) return '';
-                    p = stats.mac_stats.s1apStats[d];
-                    return d + '=' + p.mcc + p.mnc;
+					try{
+						p = stats.mac_stats.s1apStats[d];
+						return d + '=' + p.mcc + p.mnc;
+					}catch(e){
+						console.log("stats.mac_stats.s1apStats["+d+"] not found");
+						return '';
+					}
                   case 'ping':
                     //if (app_info == null || d >= app_info.length) return '';
-                    return "ping: " + c[d];
+                    try{
+						return "ping: " + c[d];
+					}catch(e){
+						console.log("config["+d+"] not found");
+						return '';
+					}
                   default:
                     return config ?  d + '=' + config[d] : '';
                 }
@@ -1195,15 +1210,22 @@ function topology(sources) {
                   for (var a in as) agents.push(as[a].agent_id);
                   return d + "=" + agents;
                 } else if (d == 'dlSliceAlgorithm') {
-                  return d + "=" + config.cellConfig[0]['sliceConfig']['dl']['algorithm'];
+					try{
+						return d + "=" + config.cellConfig[0]['sliceConfig']['dl']['algorithm'];
+					}catch(e){
+						console.log("config.cellConfig[0]['sliceConfig']['dl']['algorithm'] not found");
+						return [];
+					}
                 } else if (d == 's1ip') {
                   return d + "=" + config.s1ap.enbS1Ip;
                 } else if (d == 'mme') {
                   var mmes = [];
                   for (var m in config.s1ap.mme) mmes.push(config.s1ap.mme[m].s1Ip);
                   return d + "=" + mmes;
-                } else if (d == 'loadedApps' || d == 'loadedMacObjects') {
-                  return d + "=" + config[d] || [];
+                } else if (d == 'loadedApps') {
+					return d + "=" + config.loadedMacObjects;
+				} else if (d == 'loadedMacObjects') {
+                  return d + "=" + config.loadedMacObjects;
                 } else {
                   return d + "=" + config.cellConfig[0][d];
                 }
