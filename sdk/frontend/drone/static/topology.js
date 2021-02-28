@@ -1223,7 +1223,7 @@ function topology(sources) {
                   for (var m in config.s1ap.mme) mmes.push(config.s1ap.mme[m].s1Ip);
                   return d + "=" + mmes;
                 } else if (d == 'loadedApps') {
-					return d + "=" + config.loadedMacObjects;
+					return d + "=" + config.loadedApps;
 				} else if (d == 'loadedMacObjects') {
                   return d + "=" + config.loadedMacObjects;
                 } else {
