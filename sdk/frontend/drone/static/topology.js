@@ -1142,42 +1142,37 @@ function topology(sources) {
 	    .attr("dy", "1em");
 	stats.merge(stats)
 	    .text(function (d) {
+                if (!(config in this.parentNode.__data__))
+                  return "";
 		var config = this.parentNode.__data__.config.ueConfig;
+                if (!(stats in this.parentNode.__data__.config))
+                  return "";
                 var stats  = this.parentNode.__data__.config.stats;
                 var c = this.parentNode.__data__.config;
 				switch (d) {
                   case 'teidSgw':
-					return stats ? d + '=' + stats.mac_stats.gtpStats[0][d] : '';
+                    return mac_stats in stats && gtpStats in stats.mac_stats
+                           ?  d + '=' + stats.mac_stats.gtpStats[0][d] : '';
                   case 'teidEnb':
-                    return stats ? d + '=' + stats.mac_stats.gtpStats[0][d] : '';
+                    return mac_stats in stats && gtpStats in stats.mac_stats
+                           ? d + '=' + stats.mac_stats.gtpStats[0][d] : '';
                   case 'neighPhyCellId':
-                    if (stats == null) return '';
+                    if (!(mac_stats in stats
+                          && rrcMeasurements in mac_stats.stats
+                          && neighMeas in mac_stats.stats.rrcMeasurements) return '';
                     var neighMeas = stats.mac_stats.rrcMeasurements.neighMeas;
                     var meas = neighMeas ? neighMeas.eutraMeas : [];
                     return d + '=' + meas.map(x => x.physCellId);
                   case 'mmeS1Ip':
-					try{
-						return d + '=' + stats.mac_stats.s1apStats[d];
-					}catch(e){
-						console.log("stats.mac_stats.s1apStats["+d+"] not found");
-						return '';
-					}
+                    return mac_stats in stats && s1apStats in stats.mac_stats
+                           ? d + '=' + stats.mac_stats.s1apStats[d] : "";
                   case 'selectedPlmn':
-					try{
-						p = stats.mac_stats.s1apStats[d];
-						return d + '=' + p.mcc + p.mnc;
-					}catch(e){
-						console.log("stats.mac_stats.s1apStats["+d+"] not found");
-						return '';
-					}
+                    if (!(mac_stats in stats && s1apStats in stats.mac_stats))
+                      return "";
+                    p = stats.mac_stats.s1apStats[d];
+                    return d + '=' + p.mcc + p.mnc;
                   case 'ping':
-                    //if (app_info == null || d >= app_info.length) return '';
-                    try{
-						return "ping: " + c[d];
-					}catch(e){
-						console.log("config["+d+"] not found");
-						return '';
-					}
+                    return "ping: " + c[d];
                   default:
                     return config ?  d + '=' + config[d] : '';
                 }
@@ -1196,6 +1191,8 @@ function topology(sources) {
 	    .attr("dy", "1em");
 	stats.merge(stats)
 	    .text(function (d) {
+                if (!(config in this.parentNode.__data__))
+                  return;
 		var config = this.parentNode.__data__.config;
 		// ...add/update the above defined cellConfig[0].xxx
 		// fields in graph.
@@ -1210,12 +1207,7 @@ function topology(sources) {
                   for (var a in as) agents.push(as[a].agent_id);
                   return d + "=" + agents;
                 } else if (d == 'dlSliceAlgorithm') {
-					try{
-						return d + "=" + config.cellConfig[0]['sliceConfig']['dl']['algorithm'];
-					}catch(e){
-						console.log("config.cellConfig[0]['sliceConfig']['dl']['algorithm'] not found");
-						return [];
-					}
+                  return d + "=" + config.cellConfig[0]['sliceConfig']['dl']['algorithm'];
                 } else if (d == 's1ip') {
                   return d + "=" + config.s1ap.enbS1Ip;
                 } else if (d == 'mme') {
