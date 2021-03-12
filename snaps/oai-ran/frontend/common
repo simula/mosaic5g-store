@@ -29,7 +29,7 @@ set -e
 CONF_DIR="$SNAP_DATA"
 
 ENB_DIR="$SNAP/enb"
-ENB_EXEC="$ENB_DIR/$SNAP_NAME"
+ENB_EXEC="$ENB_DIR/oai-lte"
 
 ENB_CONF_FILE="$CONF_DIR/enb.band7.tm1.50PRB.usrpb210.conf"
 ENB_NSA_CONF_FILE="$CONF_DIR/enb.band7.tm1.fr1.25PRB.usrpb210.conf"

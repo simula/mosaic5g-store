@@ -193,10 +193,10 @@ case "$1" in
 	snap_isconnected netlink-connector
 	snap_isconnected process-control
 	snap_isconnected cpu-control
-        detect_uhd_device
-	if [ "$DEVICE" == "B" ]; then 
-	    snap_isconnected raw-usb
-	fi
+        #detect_uhd_device
+	#if [ "$DEVICE" == "B" ]; then 
+	#    snap_isconnected raw-usb
+	#fi
 	export LD_LIBRARY_PATH="$SNAP/lib/enb:$LD_LIBRARY_PATH"
         echo "Device: $DEVICE-Series"
 	echo_info "$ENB_EXEC  $ENB_EXEC_ARGS $@"
@@ -210,12 +210,12 @@ case "$1" in
 	snap_isconnected process-control
 	snap_isconnected cpu-control
 	
-	detect_uhd_device
-	if [ "$DEVICE" == "B" ]; then 
-	    echo_info "Detected USRP B-Series, Adding option -E"
-	    GNB_EXEC_ARGS=$GNB_EXEC_ARGS" -E" 
-	    snap_isconnected raw-usb
-	fi
+	#detect_uhd_device
+	#if [ "$DEVICE" == "B" ]; then 
+	#    echo_info "Detected USRP B-Series, Adding option -E"
+	#    GNB_EXEC_ARGS=$GNB_EXEC_ARGS" -E" 
+	#    snap_isconnected raw-usb
+	#fi
 	export LD_LIBRARY_PATH="$SNAP/lib/gnb:$LD_LIBRARY_PATH"
 	echo ""
 	echo_info "$GNB_EXEC  $GNB_EXEC_ARGS $@"

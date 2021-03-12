@@ -41,13 +41,13 @@ apps:
   init:
     command: init
   enbd:
-    command: run enb
+    command: run enb $@
     daemon: simple
     stop-command: run stop enbd
     stop-timeout: 1s
     plugs: [network, network-control, process-control, cpu-control, network-observe, network-bind, raw-usb, netlink-connector,hardware-observe]
   gnbd:
-    command: run gnb
+    command: run gnb $@
     daemon: simple
     stop-command: run stop gnbd
     stop-timeout: 1s
@@ -217,9 +217,10 @@ parts:
       
   ran:
     plugin: cmake
-    source: git@gitlab.eurecom.fr:oai/openairinterface5g.git
+    source: https://gitlab.eurecom.fr/oai/openairinterface5g.git
+    #git@gitlab.eurecom.fr:oai/openairinterface5g.git
     #https://gitlab.eurecom.fr/oai/openairinterface5g.git
-    source-branch: develop
+    source-branch: integration_2021_wk10
     build-packages: [build-essential, ]
     stage-packages:
       - libatlas3-base
@@ -239,8 +240,9 @@ parts:
       cd ../src/cmake_targets
       ./build_oai -I -w USRP --uhd-images-dir ../common/uhd_images
       # first build 4G 
-      ./build_oai --eNB -w USRP -c -C --build-lib telnetsrv
-      cd ../ 
+      ./build_oai --eNB --gNB -w USRP -c -C --build-lib telnetsrv --ninja 
+      cd ../
+      
       mkdir -p $SNAPCRAFT_PART_INSTALL/enb
 
       # common parts eNB and gNB
@@ -257,11 +259,7 @@ parts:
       cp targets/bin/* $SNAPCRAFT_PART_INSTALL/enb
       mkdir -p $SNAPCRAFT_PART_INSTALL/lib/enb
       cp cmake_targets/ran_build/build/*.so $SNAPCRAFT_PART_INSTALL/lib/enb
-
-      #second build 5G
-      cd ../src/cmake_targets
-      ./build_oai --gNB -w USRP -c -C --build-lib telnetsrv
-      cd ../ 
+      
       mkdir -p $SNAPCRAFT_PART_INSTALL/gnb
       
       #GNB
@@ -292,7 +290,7 @@ parts:
       enb/libparams_libconfig.so: usr/lib/libparams_libconfig.so
       enb/librfsimulator.so.Rel15: usr/lib/librfsimulator.so.Rel15
       enb/libtcp_bridge_oai.so.Rel15: usr/lib/libtcp_bridge_oai.so.Rel15
-      enb/lte-softmodem.Rel15: enb/oai-ran
+      enb/lte-softmodem.Rel15: enb/oai-lte
       gnb/nr-softmodem.Rel15:  gnb/oai-nr
 
   frontend:
