@@ -60,8 +60,12 @@ $SNAP/conf set-gnb $(snapctl get conf.gnb-nsa)
 
 snapctl set conf.usrp=$SNAP/uhd_images
 snapctl set conf.rfnoc=$SNAP/usr/share/uhd/rfnoc
+snapctl set conf.usrpdev=B
+detect_uhd_device
+
 echo_info "Default USRP images:"  $(snapctl get conf.usrp)
 echo_info "Default USRP RFNOC:"  $(snapctl get conf.rfnoc)
+echo_info "Default USRP Device:" $(snapctl get conf.usrpdev)
 
 apiport=$(grep -m1 "api_port_default" $SNAP/apivars.py | cut -f3 -d " ")
 mgrport=$(grep -m1 "api_manager_port_default" $SNAP/apivars.py | cut -f3 -d " ")

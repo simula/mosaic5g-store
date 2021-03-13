@@ -71,6 +71,12 @@ BBU_EXEC_ARGS=" -O $BBU_CONFIG"
 RRU_CONFIG=${RRU_CONF_FILE2:-$RRU_CONF_FILE}
 RRU_EXEC_ARGS=" -O $RRU_CONFIG"
 
+usrpdev=$(snapctl get conf.usrpdev)
+if [ "$usrpdev" == "B" ] ; then
+   echo_info "Detected USRP B-Series, Adding option -E"
+   GNB_EXEC_ARGS=$GNB_EXEC_ARGS" -E"
+   snap_isconnected raw-usb
+fi
 
 case "$1" in
     "openapi" )

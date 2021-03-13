@@ -41,13 +41,13 @@ apps:
   init:
     command: init
   enbd:
-    command: run enb $@
+    command: run enb
     daemon: simple
     stop-command: run stop enbd
     stop-timeout: 1s
     plugs: [network, network-control, process-control, cpu-control, network-observe, network-bind, raw-usb, netlink-connector,hardware-observe]
   gnbd:
-    command: run gnb $@
+    command: run gnb
     daemon: simple
     stop-command: run stop gnbd
     stop-timeout: 1s

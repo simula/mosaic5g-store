@@ -55,6 +55,11 @@ if [ -z "$rfnoc" ] ; then
     snapctl set conf.rfnoc=$SNAP/usr/share/uhd/rfnoc/blocks
 fi
 
+usrpdev=$(snapctl get conf.usrpdev)
+if [ -z "$usrpdev" ] ; then
+    snapctl set conf.usrpdev=$usrpdev
+fi
+
 apiaddr=$(snapctl get conf.apiaddr)
 if [ ! -z "$apiaddr" ] ; then 
     snapctl set conf.apiaddr=$apiaddr

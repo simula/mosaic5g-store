@@ -108,7 +108,7 @@ snap_isconnected(){
 detect_uhd_device(){
     rv=$($SNAP/bin/uhd_usrp_probe > /tmp/uhd_log.txt 2>&1) || true # uhd_find_device
     if [ -z "$rv" ] ; then
-	DEVICE="NONE"
+	DEVICE="B" #"NONE"
     elif [ -n "$(echo "$rv" | grep -o "B-Series")" ]; then
 	DEVICE="B"
     elif [ -n "$(echo "$rv" | grep -o "X-Series")" ]; then
@@ -116,6 +116,7 @@ detect_uhd_device(){
     elif [ -n "$(echo "$rv" | grep -o "N-Series")" ]; then
 	DEVICE="N"
     fi
+    snapctl set conf.usrpdev=$DEVICE
 }
 
 set_enb_vars(){
