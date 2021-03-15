@@ -220,7 +220,7 @@ parts:
     source: https://gitlab.eurecom.fr/oai/openairinterface5g.git
     #git@gitlab.eurecom.fr:oai/openairinterface5g.git
     #https://gitlab.eurecom.fr/oai/openairinterface5g.git
-    source-branch: integration_2021_wk10
+    source-branch: develop
     build-packages: [build-essential, ]
     stage-packages:
       - libatlas3-base
