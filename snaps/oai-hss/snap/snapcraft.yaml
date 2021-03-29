@@ -66,31 +66,31 @@ apps:
     command: conf ls-hss
   add-users:
     command: run add-users
-    plugs: [network, network-control, network-observe, network-bind]	
+    plugs: [network, network-control, network-observe, network-bind]
   dump-users:
     command: run dump-users
-    plugs: [network, network-control, network-observe, network-bind]	
+    plugs: [network, network-control, network-observe, network-bind]
   reset-users:
     command: run reset-users
-    plugs: [network, network-control, network-observe, network-bind]		
+    plugs: [network, network-control, network-observe, network-bind]
   clean-users:
     command: run clean-users
-    plugs: [network, network-control, network-observe, network-bind]		
+    plugs: [network, network-control, network-observe, network-bind]
   probe-db:
     command: run probe-db
-    plugs: [network, network-control, network-observe, network-bind]		
+    plugs: [network, network-control, network-observe, network-bind]
   add-mme:
     command: run add-mme
-    plugs: [network, network-control, network-observe, network-bind]		
+    plugs: [network, network-control, network-observe, network-bind]
   dump-mmes:
     command: run dump-mmes
     plugs: [network, network-control, network-observe, network-bind]
   reset-mmes:
     command: run reset-mmes
-    plugs: [network, network-control, network-observe, network-bind]		
+    plugs: [network, network-control, network-observe, network-bind]
   clean-mmes:
     command: run clean-mmes
-    plugs: [network, network-control, network-observe, network-bind]	
+    plugs: [network, network-control, network-observe, network-bind]
   dump-vars:
     command: run dump-vars
   api:
