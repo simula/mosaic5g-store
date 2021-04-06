@@ -141,7 +141,7 @@ parts:
     override-build: |
       mkdir -p $SNAPCRAFT_PART_INSTALL/bin 
       cp -r /usr/bin/curl $SNAPCRAFT_PART_INSTALL/bin
-      sudo apt install curl
+      sudo apt install curl -y
     prime:
       - bin
       - usr

@@ -163,6 +163,7 @@ parts:
   protobuf:
     plugin: make
     source:  https://github.com/google/protobuf.git
+    source-branch: v3.3.0
     build-packages: [ autoconf, automake, libtool, curl, g++, unzip, ]
     override-build: |
       cd ../src/
