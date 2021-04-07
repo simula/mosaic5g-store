@@ -1,0 +1,20 @@
+#!/bin/bash
+
+. $SNAP/common
+. $SNAP/util
+
+hss_set_vars
+
+if [ -z "$(grep -o "$HOSTNAME.$REALM" /etc/hosts)" ] || [ -z "$(grep -o hss /etc/hosts)" ]; then
+    #cp /etc/hosts /etc/hosts.$REALM.bkup
+    #echo 127.0.0.1 localhost > /etc/hosts
+    #echo 127.0.0.1 `hostname`.$REALM `hostname` hss >> /etc/hosts
+    #echo 127.0.0.1 `hostname`.$REALM `hostname` mme >> /etc/hosts
+    echo_info "127.0.0.1" $HOSTNAME.$REALM $HOSTNAME " hss"  "added to /etc/hosts"
+    cp /etc/hosts $CONF_DIR/hosts
+    sed -i '/hss/d' $CONF_DIR/hosts
+    sed -i "1i127.0.0.1 $HOSTNAME.$REALM $HOSTNAME hss" $CONF_DIR/hosts
+    cat $CONF_DIR/hosts > /etc/hosts
+	   
+fi
+

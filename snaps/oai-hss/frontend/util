@@ -1,0 +1,236 @@
+#! /bin/bash
+################################################################################
+# Licensed to the Mosaic5G under one or more contributor license
+# work for additional information regarding copyright ownership.
+# Apache License, Version 2.0  (the "License");
+# You may obtain a copy of the License at
+#  
+#    	http://www.apache.org/licenses/LICENSE-2.0
+#  
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+# -------------------------------------------------------------------------------
+#   For more information about the Mosaic5G:
+#   	contact@mosaic-5g.io
+#
+#
+################################################################################
+# file util
+# brief util scripts and variables for oai-hss Snap
+# author Navid Nikaein (navid.nikaein@eurecom.fr, navid.nikaein@mosaic-5g.io)
+
+. $SNAP/common
+
+# Echo 
+black='[30m'
+red='[31m'
+green='[32m'
+yellow='[33m'
+blue='[1;34m'
+magenta='[35m'
+cyan='[36m'
+white='[37m'
+reset_color='[00m'
+COLORIZE=1
+
+cecho()  {  
+    # Color-echo
+    # arg1 = message
+    # arg2 = color
+    local default_msg="No Message."
+    message=${1:-$default_msg}
+    color=${2:-$green}
+    [ "$COLORIZE" = "1" ] && message="$color$message$reset_color"
+    echo -e "$message"
+    return
+}
+
+echo_error()   { cecho "$*" $red          ;}
+echo_fatal()   { cecho "$*" $red; exit -1 ;}
+echo_warn()    { cecho "$*" $yellow       ;}
+echo_success() { cecho "$*" $green        ;}
+echo_info()    { cecho "$*" $blue         ;}
+
+
+if_sudo(){
+
+    if [ "$(id -u)" -eq 0 ] ; then
+	return 0
+    else
+	echo "Please run as a sudoer!"
+	exit 1
+    fi
+}
+
+
+set_health(){
+    
+    status=$(snapctl services $SNAP_NAME.hssd)
+    case "$status" in
+	*inactive*)
+	    #echo "Service inactive"
+	    snapctl set-health --code=ready blocked "$SNAP_NAME ready to be run"
+	    ;;
+	*active*)
+	    #echo "Service active"
+	    snapctl set-health okay
+	    ;;
+	*)
+            #echo "Unknown service state"
+	    snapctl set-health --code=error error "Execution failed. Checked the Journal"
+	    ;;
+    esac 
+    
+}
+
+snap_isconnected(){
+
+    echo_warn "Plug $1: snap connect $SNAP_NAME:$1"
+    snapctl is-connected $1
+    echo_success "$1 connected"
+    
+}
+
+snap_info(){
+    echo_info "Snap Name: $SNAP_NAME"
+    echo_info "Snap Instance Name: $SNAP_INSTANCE_NAME"
+    echo_info "Sanp Version: $SNAP_VERSION"
+    echo_info "Sanp Revision: $SNAP_REVISION"
+    echo_info "Snap Data: $SNAP_DATA"
+    echo_info "Snap Conf : "
+    snapctl get conf
+    echo_warn 'Snap Permissions to be granted:
+    	- log-observe
+        - process-control
+        - network-control'
+	          
+    echo ""
+    echo_warn "Check current permissions: snap connection $SNAP_NAME"
+}
+snap_help(){
+    echo "Usage:   sudo  $SNAP_NAME.[options] args"
+    echo "Note:    need root priviliage"
+    echo "Options:"
+    echo "  start:        start the $SNAP_NAME.hssd daemon"
+    echo "  stop:         stop the $SNAP_NAME.hssd daemon"
+    echo "  restart:      restart the $SNAP_NAME.hssd daemon"
+    echo "  status:       get the $SNAP_NAME.hssd status"
+    echo "  journal:      get the $SNAP_NAME.hssd logs"
+    echo ""
+    echo "  init:         initialize HSS"
+    echo "  conf-set:     set the HSS configuration file"
+    echo "  conf-get:     get the current HSS configuration file (hss_rel14.conf)"
+    echo "  conf-show:    show the path to the HSS configuration file (hss_rel14.conf)"
+    echo "  conf-list:    list all the HSS configuration files"
+    echo ""
+    echo "  add-users      [options] Add one or multiple user(s) identfied by an IMSI to the Cassandra DB. Use -h for more options."
+    echo "  dump-users:   [options] dump the current user DB. Use -h for more options."
+    echo "  add-mme       [options] Add an MME identified by its FQDN. Use -h for more options."
+    echo "  dump-mmes:    [options] dump the current authenticated mme hosts. Use -h for more options."
+    echo "  dump-vars:    Dump internal OAI-HSS vars"
+    echo "  reset-users:     reset to default user entires in the cassandra DB"
+    echo "  clean-users:     clean all user entires in the cassandra DB"
+    echo "  reset-mmes: rest to default MME entires in the cassandra DB"
+    echo "  clean-mmes: clean all MME entires in the cassandra DB"
+    echo ""
+    echo "  help:         print this help"
+    echo "  Example:      sudo oai-hss.init; sudo oai-hss;"
+    
+}
+
+hss_set_vars(){
+
+    if [ -r $SNAP_DATA/config_hss.sh ]; then
+	    . $SNAP_DATA/config_hss.sh
+    fi
+    HSS_CONFIG=${HSS_CONF_FILE2:-$HSS_CONF_FILE}
+    HSS_CONFIG=$(echo $HSS_CONFIG | cut -f2 -d"=")
+    
+    HSS_FD_CONF_FILE=`cat $HSS_CONFIG | grep \"fdcfg\" | cut -f2 -d: | tr -d '"' | tr -d " " | tr -d ","`
+
+    REALM=`cat $HSS_FD_CONF_FILE | grep  "Realm "  | cut -f2 -d'"'`
+    HOSTNAME=`hostname` # `cat /etc/hostname` #`hostname`
+    #cassandra_Server_IP=`cat $HSS_CONF_FILE | grep cassandra_Server_IP | cut -d "#" -f1 | tr -d ";" | cut -f3 -d' '`
+    #OP_KEY=`cat $HSS_CONF_FILE | grep -m1 OPERATOR_key | cut -f2 -d '"'`
+
+    Cassandra_Server_IP=`cat $HSS_CONFIG | grep \"casssrv\" | cut -f2 -d: | tr -d '"' | tr -d " " | tr -d ","`
+    OP_KEY=`cat $HSS_CONFIG | grep \"optkey\" | cut -f2 -d: | tr -d '"' | tr -d " " | tr -d ","`
+
+    MME_IDENTITIY=$HOSTNAME"."$REALM
+
+}
+
+hss_print_vars(){
+
+    echo_info "HSS_CONF_FILE:"     $HSS_CONFIG
+    echo_info "HSS_FD_CONF_FILE: " $HSS_FD_CONF_FILE
+    echo_info "HOST:"              $HOSTNAME
+    echo_info "REALM:"             $REALM
+    echo_info "Cassandra IP:"      $Cassandra_Server_IP
+    echo_info "MME_ID:"            $MME_IDENTITIY
+    echo_info "OP KEY:"            $OP_KEY
+    echo_info "Default USER KEY:"  $USER_KEY
+}
+
+check_cassandra_service(){
+
+    Cassandra_Server_IP=`cat $HSS_CONFIG | grep \"casssrv\" | cut -f2 -d: | tr -d '"' | tr -d " " | tr -d ","`
+
+    python3 $SNAP/probe-db.py -C  $Cassandra_Server_IP > $SNAP_DATA/cassandra.log # 2>&
+    
+    if [ -z  "$(cat $SNAP_DATA/cassandra.log | grep -o "not alive")" ]; then 
+	status="0"
+    else
+	echo_error "Cassandra DB not alive!"
+	cat $SNAP_DATA/cassandra.log
+	status="1"
+    fi
+    
+    #cassandra_IP=$(docker inspect --format="{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}" cassandra-docker)
+
+    #cassandra_config_IP=`cat $HSS_CONFIG | grep cassandra_Server_IP | cut -d "#" -f1 | tr -d ";" | cut -f3 -d' '`
+
+    #if ( "$cassandra_IP" != "$cassandra_config_IP$" ) ; then
+#	echo "cassandra_config_IP: $cassandra_config_IP different from cassandra_IP $cassandra_IP"
+#	return 1
+#    else
+#	return 0
+#    fi
+     
+}
+
+hss_conf(){
+
+    # prompt has been removed for easier Ctrl+C Ctrl+V
+    # cd $OPENAIRCN_DIR/scripts
+    # reset the config file 
+    cp /var/snap/oai-hss/current/hss_rel14_t.json /var/snap/oai-hss/current/hss_rel14.json
+    
+    PREFIX='/var/snap/oai-hss/current/'
+  
+    declare -A HSS_CONF
+    HSS_CONF[@PREFIX@]=$PREFIX
+    HSS_CONF[@REALM@]=$1
+    HSS_CONF[@HSS_FQDN@]="hss.${HSS_CONF[@REALM@]}"
+    HSS_CONF[@cassandra_Server_IP@]=$2 
+    HSS_CONF[@OP_KEY@]=$3
+    HSS_CONF[@ROAMING_ALLOWED@]='true'
+   
+
+    for K in "${!HSS_CONF[@]}"; do 
+	egrep -lRZ "$K" $PREFIX | xargs -0 -l sed -i -e "s|$K|${HSS_CONF[$K]}|g"
+    done
+    sed -i -e 's/#ListenOn/ListenOn/g' $PREFIX/hss_rel14_fd.conf
+
+    $SNAP/run hss -j $PREFIX/hss_rel14.json --onlyloadkey
+	
+    ### freeDiameter certificate
+    #../src/hss_rel14/bin/make_certs.sh hss ${HSS_CONF[@REALM@]} $PREFIX
+
+    # Finally customize the listen address of FD server
+    # set in $PREFIX/freeDiameter/hss_rel14_fd.conf and uncomment the following line
+    #sed -i -e 's/#ListenOn/ListenOn/g' $PREFIX/freeDiameter/hss_rel14_fd.conf
+}

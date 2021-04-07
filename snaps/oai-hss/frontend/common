@@ -1,0 +1,53 @@
+#! /bin/bash
+################################################################################
+# Licensed to the Mosaic5G under one or more contributor license
+# work for additional information regarding copyright ownership.
+# Apache License, Version 2.0  (the "License");
+# You may obtain a copy of the License at
+#  
+#    	http://www.apache.org/licenses/LICENSE-2.0
+#  
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+# -------------------------------------------------------------------------------
+#   For more information about the Mosaic5G:
+#   	contact@mosaic-5g.io
+#
+#
+################################################################################
+# file common
+# brief common scripts and variables for oai-hss Snap
+# author Navid Nikaein (navid.nikaein@eurecom.fr, navid.nikaein@mosaic-5g.io)
+
+
+export DEBIAN_FRONTEND=noninteractive
+set -e
+
+
+CONF_DIR="$SNAP_DATA"
+
+#SNAP_PATH=`$(dirname $(readlink -f $0))`
+HSS_DIR="$SNAP/hss"
+HSS_SCRIPTS="$SNAP/scripts"
+HSS_CONF_FILE="$CONF_DIR/hss_rel14.json"
+#HSS_FD_CONF_FILE="$CONF_DIR/hss_rel14_fd.conf"
+HSS_EXEC="$HSS_DIR/hss"
+
+
+USER_KEY=8BAF473F2F8FD09487CCCBD7097C6862
+SQN=000000000021
+OPC="8baf473f2f8fd09487cccbd7097c6862"
+
+HSS_APN_DEFAULT="oai"
+HSS_APN_ALT="internet"
+HSS_APN_OAI=$HSS_APN_DEFAULT"."$REALM
+IMSI_FIRST3=208930000000001
+IMSI_FIRST4=208940000000001
+IMSI_FIRST5=208950000000001
+MSISDN_FIRST=001011234561000
+MME_ID=3
+MME_ISDN=208
+HSS_NUM_USER=10

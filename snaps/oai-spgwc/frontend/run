@@ -1,0 +1,163 @@
+#! /bin/bash
+################################################################################
+# Licensed to the Mosaic5G under one or more contributor license
+# work for additional information regarding copyright ownership.
+# Apache License, Version 2.0  (the "License");
+# You may obtain a copy of the License at
+#  
+#    	http://www.apache.org/licenses/LICENSE-2.0
+#  
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+# -------------------------------------------------------------------------------
+#   For more information about the Mosaic5G:
+#   	contact@mosaic-5g.io
+#
+#
+################################################################################
+# file run
+# brief run scripts and variables for oai-spgwc Snap
+# author Navid Nikaein (navid.nikaein@eurecom.fr, navid.nikaein@mosaic-5g.io)
+
+
+. $SNAP/common
+. $SNAP/util
+
+export LD_LIBRARY_PATH="$SNAP/usr/lib:$SNAP/usr/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"
+export PATH="$SNAP/bin:$PATH"
+
+if [ ! -e $SPGWC_EXEC ]; then
+    echo_error "Cannot find $SPGWC_EXEC executable"
+    exit -1
+fi
+
+if [ -r $SNAP_DATA/config_spgwc.sh ]; then
+    . $SNAP_DATA/config_spgwc.sh
+fi
+
+SPGWC_CONFIG=${SPGWC_CONF_FILE2:-$SPGWC_CONF_FILE}
+SPGWC_EXEC_ARGS=" -c $SPGWC_CONFIG -o "
+
+
+case "$1" in
+    "openapi" )
+	shift
+	python3 $SNAP/api.py "$@"
+	;;
+
+    "openapiman" )
+	shift
+	python3 $SNAP/api-manager.py "$@"
+	;;
+
+    "gdb" )
+	echo "Running $2 with the gdb"
+	touch      $SNAP_DATA/.gdb_$2
+	chmod 777  $SNAP_DATA/.gdb_$2
+	echo "file ${2^^}_EXEC"        > $SNAP_DATA/.gdb_$2
+	echo "set args ${2^^}_EXEC_ARGS" >> $SNAP_DATA/.gdb_$2
+	echo "run"                     >> $SNAP_DATA/.gdb_$2
+	cat $SNAP_DATA/.gdb_$2
+	exec $SNAP/gdb --data-directory=$SNAP_DATA  -n -x $SNAP_DATA/.gdb_$2
+	;;
+    
+    "info" )
+	#snap info $SNAP_NAME
+	shift 
+	snap_info
+	;; 
+    
+    "start"  )
+	#snap start $SNAP_NAME
+	daemon=$2
+	shift 2
+	if_sudo
+	snapctl start --enable $SNAP_NAME.$daemon "$@"
+	snapctl services $SNAP_NAME.$daemon "$@"
+	;;
+
+    "start-all"  )
+	#snap start $SNAP_NAME
+	shift
+	if_sudo
+	snapctl start --enable $SNAP_NAME "$@"
+	snapctl services $SNAP_NAME "$@"
+	;;
+    
+    "stop" )
+	daemon=$2
+	shift 2
+	if_sudo
+	snapctl stop --disable $SNAP_NAME.$daemon "$@"
+	snapctl services $SNAP_NAME.$daemon "$@"
+	;;
+
+    "stop-all" )
+	shift
+	if_sudo
+	snapctl stop --disable $SNAP_NAME "$@"
+	snapctl services $SNAP_NAME "$@"
+	;;
+
+    "restart" )
+	#snap restart $SNAP_NAME
+	daemon=$2
+	shift 2
+	if_sudo
+	snapctl stop --disable $SNAP_NAME.$daemon "$@"
+	snapctl start --enable $SNAP_NAME.$daemon "$@"
+	snapctl services $SNAP_NAME.$daemon "$@"
+	;;
+    
+    "restart-all" )
+	#snap restart $SNAP_NAME
+	shift
+	if_sudo
+	snapctl stop --disable $SNAP_NAME "$@"
+	snapctl start --enable $SNAP_NAME "$@"
+	snapctl services $SNAP_NAME "$@"
+	;;
+
+    "status" )
+	#snap services $SNAP_NAME
+	daemon=$2
+	shift 2
+	snapctl services $SNAP_NAME.$daemon "$@"
+	;;
+
+    "status-all" )
+	#snap services $SNAP_NAME
+	shift
+	snapctl services $SNAP_NAME "$@"
+	;;
+
+    "journal" )
+	# shift
+	# journalctl -u snap.$SNAP_NAME.spgwcd.service "$@"
+	daemon=$2
+	shift 2 
+	snap_isconnected log-observe
+	journalctl -u snap.$SNAP_NAME.$daemon.service "$@"
+	;;
+    
+    "help" )
+	snap_help
+	;;
+    
+    "spgwc" )
+		
+        echo_info "$SPGWC_EXEC  $SPGWC_EXEC_ARGS"
+	#snap_isconnected network-control
+	snap_isconnected process-control
+	$SPGWC_EXEC  `echo $SPGWC_EXEC_ARGS` "$@"
+        ;;
+    *)
+	echo_error "Command $1 not found!"
+
+esac
+
+
+set_health

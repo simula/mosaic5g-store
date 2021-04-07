@@ -1,0 +1,59 @@
+#!/bin/sh
+set -e
+echo "Configure hook "
+
+snapctl stop --disable ${SNAP_NAME}  2>&1  || true
+sleep 1 
+snapctl start --enable ${SNAP_NAME}.apid  2>&1  || true
+
+if [ ! -f  $SNAP_DATA/.init ] ; then
+    touch $SNAP_DATA/.init
+    $SNAP/init
+fi
+
+log=$(snapctl get conf.log)
+if [ ! -z "$log" ] ; then 
+    $SNAP/conf set-log $log
+fi
+
+sbi=$(snapctl get conf.sbi)
+if [ ! -z "$sbi" ] ; then 
+    $SNAP/conf sbi $sbi
+fi
+
+nbi=$(snapctl get conf.nbi)
+if [ ! -z "$nbi" ]; then
+    $SNAP/conf nbi $nbi
+fi
+
+saddr=$(snapctl get conf.saddr)
+if [ ! -z "$saddr" ] ; then 
+    $SNAP/conf saddr $saddr
+fi
+
+naddr=$(snapctl get conf.naddr)
+if [ ! -z "$naddr" ]; then
+    $SNAP/conf naddr $naddr
+fi
+
+apiport=$(snapctl get conf.apiport)
+if [ ! -z "$apiport" ] ; then 
+    snapctl set conf.apiport=$apiport
+fi
+
+mgrport=$(snapctl get conf.mgrport)
+if [ ! -z "$mgrport" ] ; then 
+    snapctl set conf.mgrport=$mgrport
+fi
+
+apiaddr=$(snapctl get conf.apiaddr)
+if [ ! -z "$apiaddr" ] ; then 
+    snapctl set conf.apiaddr=$apiaddr
+fi
+
+mgraddr=$(snapctl get conf.mgraddr)
+if [ ! -z "$mgraddr" ] ; then 
+    snapctl set conf.mgraddr=$mgraddr
+fi
+
+#snapctl set-health --code=ready blocked "FlexRAN ready to be run"

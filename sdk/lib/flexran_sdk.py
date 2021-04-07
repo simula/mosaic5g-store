@@ -1,25 +1,22 @@
 """
-   The MIT License (MIT)
-
-   Copyright (c) 2017
-
-   Permission is hereby granted, free of charge, to any person obtaining a copy
-   of this software and associated documentation files (the "Software"), to deal
-   in the Software without restriction, including without limitation the rights
-   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-   copies of the Software, and to permit persons to whom the Software is
-   furnished to do so, subject to the following conditions:
-   
-   The above copyright notice and this permission notice shall be included in all
-   copies or substantial portions of the Software.
-   
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-   SOFTWARE.
+   Licensed to the Mosaic5G under one or more contributor license
+   agreements. See the NOTICE file distributed with this
+   work for additional information regarding copyright ownership.
+   The Mosaic5G licenses this file to You under the
+   Apache License, Version 2.0  (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+  
+    	http://www.apache.org/licenses/LICENSE-2.0
+  
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+ -------------------------------------------------------------------------------
+   For more information about the Mosaic5G:
+   	contact@mosaic-5g.io
 """
 
 """ FlexRAN software development kit (SDK)
@@ -38,24 +35,18 @@ import io
 import requests
 import time
 import logging
+logging.getLogger("requests").setLevel(logging.WARNING)
+logging.getLogger("urllib3").setLevel(logging.WARNING)
 import argparse
 import os
 import pprint
 import yaml
+from datetime import datetime
 
 from logger import *
 
 from enum import Enum
 
-
-class rrc_triggers(Enum):
-    """!@brief RRC Measurements trigger types
-    
-    """
-
-    ONE_SHOT = 0
-    PERIODICAL = 1
-    EVENT_DRIVEN= 2
 
 class cd_actions(Enum):
     """!@brief control delegation actions
@@ -77,7 +68,11 @@ class flexran_rest_api(object):
     """
  
     """!@brief Input data sets for all the status used for test"""
-    pf_all='inputs/all_1.json'
+    # pf_all='inputs/multiple_data_samples_file.json'
+    # pf_all = 'inputs/1eNB_2UEs_mobility_25PRB.json'
+    #pf_all = 'inputs/test_20s.json'
+    pf_all = 'inputs/all-new.json'
+    # pf_all = 'inputs/Last.json'
     """!@brief Input data sets for MAC  status used for test"""
     pf_mac='inputs/mac_stats_2.json'
     """!@brief Input data sets for eNB config status used for test"""
@@ -86,7 +81,6 @@ class flexran_rest_api(object):
     # relateive to flexran apps
     pf_name='enb_scheduling_policy.yaml'
     pf_yaml='inputs/'+pf_name
-    pf_json='{"mac": [{"dl_scheduler": {"parameters": {"n_active_slices": 1,"slice_percentage": [1,0.4,0,0],"slice_maxmcs": [28,28,28,28 ]}}}]}'
 
     # slices templates
     tf_name='template.yaml'
@@ -94,32 +88,51 @@ class flexran_rest_api(object):
 
     
     """!@brief RRC API endpoit """ 
-    rrc_trigger='/rrc_trigger'
+    rrc_trigger='/rrc'
     """!@brief control delegation API endpoint for DL """ 
     cd_dl='/dl_sched'
     """!@brief control delegation API endpoint for DL """ 
     cd_ul='/ul_sched'
 
-    """!@brief RRM API endpoint """ 
+    """!@brief RRM API endpoint with a predefined policy """ 
     rrm='/rrm'  
-    """!@brief RRM API endpoint with config as a payload """    
+    """!@brief RRM API endpoint with the policy as a payload """    
     rrm_policy='/rrm_config'  
+    """!@brief Slice creation, update, and delete endpoints """ 
+    enb_slice='/slice'
+    """!@brief Associate a UE to a slice endpoints """ 
+    ue_slice='/ue_slice_assoc'
+   
+    """!@brief eNB reconfiguration endpoints """ 
+    enb_conf='/conf'
 
+    """!@brief full RAN status API endpoint (human-readable)  """    
+    sm_hr_all='/stats_manager/all'
+    """!@brief full RAN status API endpoint in json format  """    
+    sm_all='/stats'
+    """!@brief RAN config status API endpoint in json format """    
+    sm_enb='/stats/enb_config'
+    """!@brief MAC status API endpoint in json format   """    
+    sm_mac='/stats/mac_stats'
+    
+    """!@brief Record all RAN status in json format   """    
+    sm_record="/record/all"
+    """!@brief Record all RAN status in json format   """    
+    sm_enb_record="/record/enb"
+    """!@brief Record all RAN status in json format   """    
+    sm_mac_record="/record/stats"
+    """!@brief Record all RAN status in compact binary format  """    
+    sm_bin_record="/record/all/bin"
 
-    """!@brief full status API endpoint for  """    
-    sm_all='/stats_manager/json/all'
-    """!@brief eNb config status API endpoint for  """    
-    sm_enb='/stats_manager/json/enb_config'
-    """!@brief MAC status API endpoint for  """    
-    sm_mac='/stats_manager/json/mac_stats'
-        
+    
+    
+    
 class rrc_trigger_meas(object):
     """!@brief RRC trigger measurement class
 
-    This class is used to trigger measurement events in the UE for the reception of RSRP and RSRQ values of the neighboring cells.
-    The REST API end point is /rrc_trigger
-    @todo make the measurment trigger event reconfigurable and per UE basis 
-    @return RSRP/RSRQ : from the status manger
+    This class is used to configure RRC parameters and trigger handovers.
+    The REST API end point is /rrc
+    @return RSRP/RSRQ : from the status manager
     """
     def __init__(self, log, url='http://localhost', port='9999', op_mode='test'):
         """!@brief Class constructor """
@@ -130,50 +143,73 @@ class rrc_trigger_meas(object):
         self.status = ''
         self.op_mode = op_mode
         self.log = log
-
         self.rrc_trigger_api=flexran_rest_api.rrc_trigger
 
-        self.rrc_meas = {}
-        self.rrc_meas[rrc_triggers.ONE_SHOT]      = 'ONE_SHOT'
-        self.rrc_meas[rrc_triggers.PERIODICAL]       = 'PERIODICAL'
-        self.rrc_meas[rrc_triggers.EVENT_DRIVEN]  = 'EVENT_DRIVEN'
-        
+    def trigger_ho(self, senb_id, ue_rnti, tenb_id):
+        """!@brief Trigger a HO. No checks are performed.
 
-    def trigger_meas(self, type='PERIODICAL'):
-        """!@brief Set the type of RRC trigger measurments
-        
-        @param type: ONE_SHOT, PERIODICAL, and EVENT_DRIVEN
-        @note: this call enables RRC measurement for active/connected UEs
+        @param senb_id: the BS ID of the source eNB
+        @param ue_rnti: the RNTI of the UE to handover
+        @param tenb_id: the BS ID of the target eNB
         """
-
-        if type == self.rrc_meas[rrc_triggers.ONE_SHOT] :
-            url = self.url+self.rrc_trigger_api+'/'+type.lower()
-        elif type == self.rrc_meas[rrc_triggers.PERIODICAL] :
-            url = self.url+self.rrc_trigger_api+'/'+type.lower()
-        elif type == self.rrc_meas[rrc_triggers.EVENT_DRIVEN] :
-            url = self.url+self.rrc_trigger_api+'/'+type.lower()
-        else:
-            self.log.error('Type ' + type + 'not supported')
-            return
-        
-        if self.op_mode == 'test' :
-            self.log.info('POST ' + str(url))
-
-        elif self.op_mode == 'sdk' : 
-            try :
+        # /rrc/ho/senb/:sid/ue/:ue/tenb/:tid
+        url = self.url + self.rrc_trigger_api + "/ho/"
+        url += "senb/" + str(senb_id) + "/"
+        url += "ue/" + str(ue_rnti) + "/"
+        url += "tenb/" + str(tenb_id)
+        if self.op_mode == "test":
+            self.log.info("TEST MODE: POST " + url)
+        elif self.op_mode == "sdk":
+            self.log.info("POST " + url)
+            try:
                 req = requests.post(url)
-                self.log.info('POST ' + str(url))
-                if req.status_code == 200 :
-                    self.log.info('successfully send the RRC trigger measurment to the agent' )
-                    self.status='connected'
-                else :
-                    self.status='disconnected'
-                self.log.error('Request error code : ' + req.status_code)
-            except :
-                self.log.error('Failed to send the RRC trigger measurement to the agent' )
+                if req.status_code == 200:
+                    status = "connected"
+                else:
+                    status = "disconnected"
+                    self.log.error("Request failed. Error " + req.reason + "(code " + str(req.status_code) + ")")
+            except:
+                self.log.error("Exception in trigger_ho()")
+        else:
+            self.log.warn("Unknown operation mode " + op_mode)
 
-        else :
-            self.log.warn('Unknown operation mode ' + op_mode )       
+    def switch_x2_ho_net_control(self, enb_id, enable):
+        """!@brief Enable/Disable X2 HO net control, i.e. whether handover
+        requests initiated by a UE are ignored (true) or honored (false)
+
+        @param enb_id: The ID of the BS
+        @param enable: boolean
+        """
+        # /rrc/x2_ho_net_control/enb/:id/:bool
+        url = self.url + self.rrc_trigger_api + "/x2_ho_net_control/"
+        url += "enb/" + str(enb_id) + "/"
+        if enable:
+            url += "1"
+        else:
+            url += "0"
+        if self.op_mode == "test":
+            self.log.info("TEST MODE: POST " + url)
+        elif self.op_mode == "sdk":
+            self.log.info("POST " + url)
+            try:
+                req = requests.post(url)
+                if req.status_code == 200:
+                    status = "connected"
+                else:
+                    status = "disconnected"
+                    self.log.error("Request failed. Error " + req.reason + "(code " + str(req.status_code) + ")")
+            except:
+                self.log.error("Exception in switch_x2_ho_net_control()")
+        else:
+            self.log.warn("Unknown operation mode " + op_mode)
+
+    def trigger_meas(self, type='EVENT_DRIVEN'):
+        """!@brief Deprecated: Set the type of RRC trigger measurements,
+
+        @param type: any string
+        @note: This deprecated method does nothing
+        """
+        self.log.warn("trigger_meas() does nothing")
 
 class control_delegate(object):
     """!@brief Control delegation class
@@ -230,7 +266,7 @@ class control_delegate(object):
                     self.status='connected'
                 else :
                     self.status='disconnected'
-                self.log.error('Request error code : ' + req.status_code)
+                    self.log.error('Request error code : ' + str(req.status_code))
             except :
                 self.log.error('Failed to delegate the DL schedling to the agent' )
 
@@ -241,7 +277,8 @@ class rrm_policy (object):
     """!@brief Apply a radio resource management policy to the underlying RAN
         
         This class reads, creates, updates, and applies a policy 
-        """
+            
+    """
     def __init__(self, log, url='http://localhost', port='9999', op_mode='test'):
         """!@brief Class constructor """
         super(rrm_policy, self).__init__()
@@ -251,6 +288,8 @@ class rrm_policy (object):
         self.op_mode = op_mode
         self.log = log
         # NB APIs endpoints
+        self.enb_slice_api=flexran_rest_api.enb_slice
+        self.ue_slice_api=flexran_rest_api.ue_slice
         self.rrm_api=flexran_rest_api.rrm
         self.rrm_policy_api=flexran_rest_api.rrm_policy
         # stats manager data requeted by the endpoint
@@ -261,19 +300,43 @@ class rrm_policy (object):
         # location must be reletaive to app and not SDK
         # To do: create env vars 
         self.pf_yaml=flexran_rest_api.pf_yaml
-        self.pf_json=flexran_rest_api.pf_json
+        #self.pf_json=flexran_rest_api.pf_json
+
         self.tf_yaml=flexran_rest_api.tf_yaml
-        
+
+
+    def is_json(self, json_obj):
+        try:
+            json_object = json.loads(json_obj)
+        except ValueError, e:
+            return False
+        return True
+
     # read the policy file     
     def read_policy(self, pf=''):
-        """!@brief Read the policy either from a user-defined policy file or the default one
+        """
+        !@brief Read the policy either from a user-defined policy file or the default one
      
         Read the policy file specified as parameter. If this file does not
         exist or is left blank, it will default to the file specified in 
         flexran_rest_api.pf_yaml
      
-        @param pf: the absolut path to the policy file, of type str
+        @param pf: the absolut path to the policy file of type str
         @return:  A dictionnary filled with data extracted from the policy file of rtype: dict
+
+        @api {function} read_policy(self,pf='') Read the RAN policy either from a user-defined policy file or the default one
+        @apiVersion 0.1.0
+        @apiName read_policy
+        @apiGroup RRM Class 
+        @apiPermission None
+        @apiDescription Read the policy file specified as parameter. If this file does not exist or is left blank, it will default to the file specified in 
+        flexran_rest_api.pf_yaml
+        @apiExample Example usage: 
+        see RRM app      
+        @apiParam {file} policyfile the absolut path to the policy file of type str
+        @apiSuccess {dictionary} dict A dictionnary filled with data extracted from the policy file of rtype: dict
+
+
         """
 
         if os.path.isfile(pf) :
@@ -328,46 +391,45 @@ class rrm_policy (object):
 
     # apply policy with policy data 
     # TBD: apply policy from a file
-    def apply_policy(self, policy_data='',as_payload=True):
+    def rrm_apply_policy(self, enb=-1, slice=0, policy=''):
         """!@brief Apply and send the default or user-defined policy as parameter to FlexRAN-RTC. 
         
         @param policy_data: content of the policy file of type str
         @param as_payload: embed the applied policy as a payload
         @return: The status of the request as str
         """
-
-        self.status=''
-
-        if policy_data != '' :
-            pdata=policy_data
-        elif self.policy_data != '' :
-            pdata=self.policy_data 
+        self.status='False'
+        if policy == '' :
+            self.status='url'
+            url = self.url+self.enb_slice_api+'/enb/'+str(enb)+'/slice/'+str(slice)
+        #if self.is_json(policy) == True:
         else:
-            self.log.error('cannot find the policy data '  + pdata)
-            return
-	
-        if as_payload == True :
-            url = self.url+self.rrm_policy_api
-        else: 
-            url = self.url+self.rrm_api+'/'+flexran_rest_api.pf_name
+            self.status='payload'
+            url = self.url+self.enb_slice_api+'/enb/'+str(enb)
+        #else:
+            #self.log.warn('mal-formated policy file' + json.dumps(policy))
+            #return  self.status
         
         if self.op_mode == 'test' :
             self.log.info('POST ' + str(url))
-            self.log.debug(self.dump_policy(policy_data=pdata))
+            if  self.status=='payload' : 
+                print 'PAYLOAD' + json.dumps(policy)
             self.status='connected'
             
         elif self.op_mode == 'sdk' :
-            print self.dump_policy(pdata)
             try :
 		# post data as binary
-            	req = requests.post(url, data=self.dump_policy(pdata),headers={'Content-Type': 'application/octet-stream'})
-		
-            	if req.status_code == 200:
-            	    self.log.info('successfully applied the policy')
-            	    self.status='connected'
-            	else :
-            	    self.status='disconnected'
-            	    self.log.error('Request error code : ' + req.status_code)
+                if  self.status=='payload' : 
+                    req = requests.post(url, data=json.dumps(policy),headers={'Content-Type': 'application/json'})
+                else:
+                    req = requests.post(url)
+                    
+                if req.status_code == 200:
+                    self.log.info('successfully applied the policy')
+                    self.status='connected'
+                else :
+                    self.status='disconnected'
+                    self.log.error('Request error code : ' + str(req.status_code))
             except :
                 self.log.error('Failed to apply the policy ' )
             
@@ -376,15 +438,115 @@ class rrm_policy (object):
 	    self.status='unknown'
         return self.status 
 
-    def dump_policy(self, policy_data=''):
-        """!@brief return the content of the policy in ymal format
+    def associate_ues_slices(self, enb=-1, ue_rnti=0, slice=0, policy=''):
+        """!@brief Associate UEs to slices FlexRAN-RTC. 
+        
+        @param policy_data: content of the policy file of type str
+        @param as_payload: embed the applied policy as a payload
+        @return: The status of the request as str
+        """
+        self.status='False'
+        if policy == '' :  # short version 
+            self.status='url'
+            url = self.url+self.ue_slice_api+'/enb/'+str(enb)+'/ue/'+str(ue_rnti)+'/slice/'+str(slice)
+        #if self.is_json(policy) == True:
+        else:
+            self.status='payload'
+            url = self.url+self.ue_slice_api+'/enb/'+str(enb)
+        #else:
+            #self.log.warn('mal-formated policy file' + json.dumps(policy))
+            #return  self.status
+        
+        
+        if self.op_mode == 'test' :
+            self.log.info('POST ' + str(url))
+            if  self.status=='payload' : 
+                print 'PAYLOAD' + json.dumps(policy)
+            self.status='connected'
+            
+        elif self.op_mode == 'sdk' :
+            try :
+		# post data as binary
+                if  self.status=='payload' : 
+            	    req = requests.post(url, data=json.dumps(policy),headers={'Content-Type': 'application/json'})
+		else:
+                    req = requests.post(url)
+                    
+            	if req.status_code == 200:
+            	    self.log.info('successfully associated UEs to Slices')
+            	    self.status='connected'
+            	else :
+            	    self.status='disconnected'
+            	    self.log.error('Request error code : ' + str(req.status_code))
+            except :
+                self.log.error('Failed to associate UEs to Slices ' )
+            
+        else :
+            self.log.warn('Unknown operation mode ' + op_mode )
+	    self.status='unknown'
+        return self.status 
+
+    def delete_slice(self, enb=-1, slice=0, policy=''):
+        """!@brief Delet a slice and its associated policy . 
+        
+        @param enb: eNB ID 
+        @param slice: slice id 
+        @param policy_data: content of the policy file of type str
+        @return: The status of the request as str
+        """
+        self.status='False'
+        if policy == '' :
+            self.status='url'
+            url = self.url+self.enb_slice_api+'/enb/'+str(enb)+'/slice/'+str(slice)
+        else:
+        #if self.is_json(policy) == True:
+            self.status='payload'
+            url = self.url+self.enb_slice_api+'/enb/'+str(enb)
+        #else:
+            #self.log.warn('mal-formated policy file' + json.dumps(policy))
+            #return  self.status
+        
+        
+        if self.op_mode == 'test' :
+            self.log.info('DELETE ' + str(url))
+            if  self.status=='payload' : 
+                print 'PAYLOAD' + json.dumps(policy)
+            self.status='connected'
+            
+        elif self.op_mode == 'sdk' :
+            try :
+		# post data as binary
+                if  self.status=='payload' : 
+            	    req = requests.delete(url, data=json.dumps(policy),headers={'Content-Type': 'application/json'})
+		else:
+                    req = requests.delete(url)
+                    
+            	if req.status_code == 200:
+            	    self.log.info('successfully applied the policy')
+            	    self.status='connected'
+            	else :
+            	    self.status='disconnected'
+            	    self.log.error('Request error code : ' + str(req.status_code))
+            except :
+                self.log.error('Failed to apply the policy ' )
+            
+        else :
+            self.log.warn('Unknown operation mode ' + op_mode )
+	    self.status='unknown'
+        return self.status 
+    
+    def dump_policy(self, policy_data='', format='yaml'):
+        """!@brief return the content of the policy given the requested format
         
         @param policy_data: content of the policy file
         @return: The policy data in YAML format
         """
         
         if policy_data != '' :
-            return yaml.dump(policy_data, default_flow_style=False, default_style='"')
+            if format == 'yaml':
+                return yaml.dump(policy_data, default_flow_style=False, default_style='"')
+            elif format == 'json' :
+                return json.dumps(policy_data)
         elif self.policy_data != '' :
             return yaml.dump(self.policy_data, default_flow_style=False, default_style='"')
         else:
@@ -414,7 +576,7 @@ class rrm_policy (object):
         if format == 'yaml' or format == 'YAML':
             yaml.dump(self.policy_data, stream)
         elif format == 'json' :
-            json.dump(self.policy_data, stream)
+            json.dumps(self.policy_data, stream)
         else :
             self.log.error('unsupported format')
             
@@ -468,7 +630,6 @@ class rrm_policy (object):
 
         return  self.policy_data['mac'][index][key_sched]['parameters'][key_slice]
        
-
     def set_slice_rb(self, sid, rb, dir='dl'):
         """!@brief Set the resource block share for a slice in a direction. 
         
@@ -836,8 +997,42 @@ class stats_manager(object):
         self.pfile_mac=flexran_rest_api.pf_mac
         """!@brief Test policy files for eNB"""
         self.pfile_enb=flexran_rest_api.pf_enb
+        # to iterate over json file with multiple data components
+        self.stats_data_index = -1
+        self.stats_data_log = ''
+        self.stats_data_recorded = []
+        self.stats_data_recorded_file = './output/recorded_data.json'
         
+        self.recording=False
 
+    def __del__(self):
+        if self.recording:
+            with open(self.stats_data_recorded_file, 'w') as outfile:
+                json.dumps(self.stats_data_recorded, outfile)
+
+              
+    def start_recorder(self):
+
+        self.log.info('start the recorder app')
+        self.recording=True
+            
+    def stop_recorder(self, basedir='./outputs', basefn='recorded_data', formatfn='json'):
+
+        self.stats_data_recorded_file=basedir+'/'+basefn+'.'+formatfn
+        
+        if self.recording : 
+            self.log.info('stop the recorder app')
+            self.recording=False
+            try:
+                with open(self.stats_data_recorded_file, 'w') as outfile:
+                    json.dumps(self.stats_data_recorded, outfile)
+                    self.log.info('recorded file can be found at '+ self.stats_data_recorded_file)
+            except:
+                self.log.error('cannot open the file ' + self.stats_data_recorded_file)
+        else :
+            self.log.warn('recording is not enabled')
+        
+    # called every run loop from monitoring_app        
     def stats_manager(self, api):
         """!@brief Request the statistics from the controller and store it locally.
         
@@ -856,12 +1051,18 @@ class stats_manager(object):
                 file =  self.pfile_enb
             
             try:
-                with open(file) as data_file:
-                    self.stats_data = json.load(data_file)
-                    self.status='connected'
+                if  self.stats_data_index == -1 :
+                    self.log.info('Reading the json file for test mode. This can take a while...')
+                    with open(file) as data_file:
+                        # get the entire file
+                        self.stats_data = json.load(data_file)
+                    self.stats_data_index = 0
+                if self.recording:
+                    self.stats_data_recorded.append(self.stats_data)
+                self.status='connected'
             except :
                 self.status='disconnected'
-                self.log.error('cannot find the input data file'  + file )       
+                self.log.error('cannot find or cannot read the input data file '  + file )                        
 
         elif self.op_mode == 'sdk' :
 
@@ -873,15 +1074,17 @@ class stats_manager(object):
                 url = self.url+self.sm_enb_api
             
             
-            self.log.info('the request url is: ' + url)
+            self.log.debug('the request url is: ' + url)
             try :
                 req = requests.get(url)
                 if req.status_code == 200:
-                    self.stats_data = req.json()
                     self.status='connected'
+                    self.stats_data = req.json()
+                    if self.recording:
+                        self.stats_data_recorded_log.append(self.stats_data)
                 else :
                     self.status='disconnected'
-                    self.log.error('Request error code : ' + req.status_code)
+                    self.log.error('Request error code : ' + str(req.status_code))
             except :
                 self.log.error('Request url ' + url + ' failed')
             
@@ -891,7 +1094,12 @@ class stats_manager(object):
         if self.status == 'connected' :     
             self.log.debug('Stats Manager requested data')
             self.log.debug(json.dumps(self.stats_data, indent=2))
-                
+
+    def get_date_time(self):
+        """!@brief Get the date time when this JSON file was returned
+        """
+        return datetime.strptime(self.stats_data['date_time'], '%Y-%m-%dT%H:%M:%S.%f')
+
     def get_enb_config(self,enb=0):
         """!@brief Get the entire eNB configuration
         
@@ -899,10 +1107,28 @@ class stats_manager(object):
         """
         return self.stats_data['eNB_config'][enb]
 
+    def get_enb_id(self,enb=0):
+        """!@brief Get the eNB identifier 
+        
+        @param enb: index of eNB
+        """
+        if 'bs_id' in self.stats_data['eNB_config'][enb]:
+            return int(self.stats_data['eNB_config'][enb]['bs_id'])
+        else:
+            self.log.warn('BS ID not available, sending the eNB index')
+            return enb;
+
+    def get_enb_id_list(self):
+        """!@brief Get a list of all BS identifiers
+        """
+        return [ self.get_enb_id(enb) for enb in range(0, self.get_num_enb()) ]
+
     def get_num_enb(self):
         """!@brief Get the number of connected eNB to this controller 
         
         """
+        if self.stats_data == '': # if nothing received yet
+            return 0
         return len(self.stats_data['eNB_config'])
 
     def get_ue_config(self,enb=0,ue=0):
@@ -1027,6 +1253,21 @@ class stats_manager(object):
             return 16
         else :
             return 28
+
+    def get_phy_cell_id(self,enb=0,cc=0):
+        """!@brief Get the physical cell ID of the eNB
+        @param enb: index of eNB
+        @param cc: index of component carrier
+        @param dir: defines downlink and uplink direction
+        """
+        return self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['phyCellId']
+
+    def get_x2_ho_net_controlled(self, enb=0, cc=0):
+        """!@brief Return whether handover requests initiated by a UE are
+        ignored (true) or honored (false)
+        @param enb: index of eNB
+        """
+        return self.stats_data['eNB_config'][enb]['eNB']['cellConfig'][cc]['x2HoNetControl']
     
     def get_lc_config(self,enb=0,lc=0):
         """!@brief Get a logical channel (LC) config for a given eNB and LC id
@@ -1053,6 +1294,26 @@ class stats_manager(object):
         """
 
         return len(self.stats_data['mac_stats'][enb]['ue_mac_stats'])
+
+    def get_ue_rnti(self, enb=0, ue=0):
+        """!@brief Get the RNTI of a UE
+        @param enb: index of eNB
+        @param ue: index of UE
+        """
+        return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['rnti']
+
+    def get_ue_imsi(self, enb=0, ue=0):
+        """!@brief Get the IMSI of a UE
+        @param enb: index of eNB
+        @param ue: index of UE
+        """
+        return self.stats_data['eNB_config'][enb]['UE']['ueConfig'][ue]['imsi']
+
+
+    def get_rnti_list(self, enb = 0):
+        """!@brief get a list of all RNTIs for a specific eNB
+        """
+        return [ self.get_ue_rnti(enb, u) for u in range(0, self.get_num_ue(enb)) ]
 
     def get_ue_mac_status(self,enb=0,ue=0):
         """!@brief Get the UE MAC layer status 
@@ -1098,6 +1359,37 @@ class stats_manager(object):
 
         return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['rlcReport'][lc]
 
+    def get_ue_lc_bo(self,enb=0,ue=0,lc=0):
+        """!@brief Get the UE RLC buffer occupancy for a particular logical channel
+        
+        @param enb: index of eNB
+        @param ue: index of UE
+        @param lc: logical channel id
+        """
+
+        return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['rlcReport'][lc]['txQueueSize']
+    
+    def get_ue_lc_hol_delay(self,enb=0,ue=0,lc=0):
+        """!@brief Get the UE RLC buffer occupancy for a particular logical channel
+        
+        @param enb: index of eNB
+        @param ue: index of UE
+        @param lc: logical channel id
+        """
+
+        return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['rlcReport'][lc]['txQueueHolDelay']
+    
+    def get_ue_lc_num_pdus(self,enb=0,ue=0,lc=0):
+        """!@brief Get the UE RLC buffer occupancy for a particular logical channel
+        
+        @param enb: index of eNB
+        @param ue: index of UE
+        @param lc: logical channel id
+        """
+
+        return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['rlcReport'][lc]['statusPduSize']
+    
+
     def get_ue_dlcqi_report(self,enb=0,ue=0):
         """!@brief Get the UE downlink channel quality indicator (CQI) report
         
@@ -1129,7 +1421,7 @@ class stats_manager(object):
         if lc == 0 or lc == 1:
             return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['bsr'][0]
         elif lc == 2 :
-            aggregated_bsr= self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['bsr'][1]+self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['bsr'][2]+self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['bsr'][3]
+            aggregated_bsr= self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['bsr'][0]+self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['bsr'][1]+self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['bsr'][2]
             return aggregated_bsr
         else :
             return 0
@@ -1323,7 +1615,179 @@ class stats_manager(object):
             if 'pcellRsrp' in self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['rrcMeasurements'] :
                 return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['rrcMeasurements']['pcellRsrp']
         return 0
-   
+
+    def get_ue_neighboring_cells(self, enb=0, ue=0):
+        """!@brief Return the neighboring cell's physical IDs as seen by a
+        particular UE
+        @param enb: index of eNB
+        @param ue: index of UE
+        """
+        mac_stats = self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']
+        neigh = []
+        if 'rrcMeasurements' in mac_stats:
+            for meas in mac_stats['rrcMeasurements']['neighMeas']['eutraMeas']:
+                neigh += [meas['physCellId']]
+        return neigh
+
+    def get_ue_tbs(self, enb=0, ue=0, dir='UL'):
+        """!@brief Get the RRC RSRP value
+        
+        @param enb: index of eNB
+        @param ue: index of UE
+        """
+        if dir == 'dl' or dir == 'DL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['tbsDl']
+        elif dir == 'ul' or dir == 'UL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['tbsUl']
+        else :
+            self.log.warning('unknown direction ' + dir + 'set to DL')
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['tbsDl']
+    def get_harq_round(self, enb=0,ue=0):
+        """!@brief Get the HARQ round value
+        
+        @param enb: index of eNB
+        @param ue: index of UE
+        """
+        return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['harqRound']
+
+    def get_ue_prb_retx(self, enb=0, ue=0, dir='UL'):
+        """!@brief Get the RRC RSRP value
+        
+        @param enb: index of eNB
+        @param ue: index of UE
+        """
+        if dir == 'dl' or dir == 'DL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['prbRetxDl']
+        elif dir == 'ul' or dir == 'UL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['prbRetxUl']
+        else :
+            self.log.warning('unknown direction ' + dir + 'set to DL')
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['prbRetxDl']
+    
+    def get_ue_prb(self, enb=0, ue=0, dir='UL'):
+        """!@brief Get the RRC RSRP value
+        
+        @param enb: index of eNB
+        @param ue: index of UE
+        """
+        if dir == 'dl' or dir == 'DL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['prbDl']
+        elif dir == 'ul' or dir == 'UL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['prbUl']
+        else :
+            self.log.warning('unknown direction ' + dir + 'set to DL')
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['prbDl']
+
+    def get_ue_mcs1(self, enb=0, ue=0, dir='UL'):
+        """!@brief Get the RRC RSRP value
+        
+        @param enb: index of eNB
+        @param ue: index of UE
+        """
+        if dir == 'dl' or dir == 'DL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['mcs1Dl']
+        elif dir == 'ul' or dir == 'UL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['mcs1Ul']
+        else :
+            self.log.warning('unknown direction ' + dir + 'set to DL')
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['mcs1Dl']
+
+    def get_ue_mcs2(self, enb=0, ue=0, dir='UL'):
+        """!@brief Get the RRC RSRP value
+        
+        @param enb: index of eNB
+        @param ue: index of UE
+        """
+        if dir == 'dl' or dir == 'DL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['mcs2Dl']
+        elif dir == 'ul' or dir == 'UL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['mcs2Ul']
+        else :
+            self.log.warning('unknown direction ' + dir + 'set to DL')
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['mcs2Dl']
+
+    def get_ue_total_bytes_sdus(self, enb=0, ue=0, dir='UL'):
+        """!@brief Get the RRC RSRP value
+        
+        @param enb: index of eNB
+        @param ue: index of UE
+        """
+        if dir == 'dl' or dir == 'DL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['totalBytesSdusDl']
+        elif dir == 'ul' or dir == 'UL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['totalBytesSdusUl']
+        else :
+            self.log.warning('unknown direction ' + dir + 'set to DL')
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['totalBytesSdusDl']
+
+    def get_ue_total_prb(self, enb=0, ue=0, dir='UL'):
+        """!@brief Get the RRC RSRP value
+        
+        @param enb: index of eNB
+        @param ue: index of UE
+        """
+        if dir == 'dl' or dir == 'DL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['totalPrbDl']
+        elif dir == 'ul' or dir == 'UL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['totalPrbUl']
+        else :
+            self.log.warning('unknown direction ' + dir + 'set to DL')
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['totalPrbDl']
+
+    def get_ue_total_tbs(self, enb=0, ue=0, dir='UL'):
+        """!@brief Get the RRC RSRP value
+        
+        @param enb: index of eNB
+        @param ue: index of UE
+        """
+        if dir == 'dl' or dir == 'DL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['totalTbsDl']
+        elif dir == 'ul' or dir == 'UL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['totalTbsUl']
+        else :
+            self.log.warning('unknown direction ' + dir + 'set to DL')
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['totalTbsDl']
+
+    def get_ue_mac_sdu_length(self, enb=0, ue=0, dir='UL'):
+        """!@brief Get the RRC RSRP value
+        
+        @param enb: index of eNB
+        @param ue: index of UE
+        """
+        if dir == 'dl' or dir == 'DL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['macSdusDl'][0]['sduLength']
+        elif dir == 'ul' or dir == 'UL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['macSdusDl'][0]['sduLength']
+        else :
+            self.log.warning('unknown direction ' + dir + 'set to DL')
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['macSdusDl'][0]['sduLength']
+
+    def get_ue_mac_sdu_lcid(self, enb=0, ue=0, dir='UL'):
+        """!@brief Get the RRC RSRP value
+        
+        @param enb: index of eNB
+        @param ue: index of UE
+        """
+        if dir == 'dl' or dir == 'DL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['macSdusDl'][0]['lcid']
+        elif dir == 'ul' or dir == 'UL' :
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['macSdusDl'][0]['lcid']
+        else :
+            self.log.warning('unknown direction ' + dir + 'set to DL')
+            return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['macStats']['macSdusDl'][0]['lcid']
+
+    def get_ue_teid_sgw(self, enb=0, ue=0, erab=0):
+        """!!!@brief Get the SGw TEID for given UE and its erab (index)
+        """
+        return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['gtpStats'][erab]['teidSgw']
+
+    def get_ue_teid_enb(self, enb=0, ue=0, erab=0):
+        """!!!@brief Get the eNB TEID for given UE and its erab (index)
+        """
+        return self.stats_data['mac_stats'][enb]['ue_mac_stats'][ue]['mac_stats']['gtpStats'][erab]['teidEnb']
+
+
+
 class ss_policy (object):
     """!@brief Spectrum sharing class
         
@@ -1335,11 +1799,13 @@ class ss_policy (object):
     lsa_policy = []
     rules = []
     sensing_data = []
+    enb_assign = []
     
     general_policy_file='inputs/general_policy.yaml'
     operator_policy_file='inputs/operator_policy.yaml'
     lsa_policy_file='inputs/lsa_policy.yaml'
     rules_file='inputs/rules.yaml'
+    enb_assign_file='inputs/enb_assign.yaml'
     sensing_data_file='inputs/sensing_data.yaml'
     
     def __init__(self, log, url='http://localhost', port='9999', op_mode='test'):
@@ -1352,6 +1818,7 @@ class ss_policy (object):
         # NB APIs endpoints
         self.rrm_api=flexran_rest_api.rrm
         self.rrm_policy_api=flexran_rest_api.rrm_policy
+        self.conf_api=flexran_rest_api.enb_conf
         # stats manager data requeted by the endpoint
         # could be extended to have data per API endpoint
         self.policy_data = ''
@@ -1382,6 +1849,29 @@ class ss_policy (object):
         self.log.debug('Loaded: rules file [yaml] :')
         self.log.debug(yaml.dump(self.rules))
 
+	file = open(self.enb_assign_file,'r')
+        self.enb_assign = yaml.load(file)
+        self.log.debug('Loaded: enb assign file [yaml] :')
+        self.log.debug(yaml.dump(self.enb_assign))
+
+    def set_enb_assign(self, enb=0, name='default'):
+	with open(self.enb_assign_file,'r') as file:
+	    enb_assign_tmp = yaml.load(file)
+	    exists = False
+	    for i, v in enumerate(enb_assign_tmp):
+		if v['cell_id'] == enb:
+		    enb_assign_tmp[i]['MVNO_group'] = name
+		    exists = True
+		    break
+	    if not exists:
+	        enb_assign_tmp.append({'MVNO_group': name, 'cell_id' : enb})
+        with open(self.enb_assign_file,'w') as file:
+            yaml.dump(enb_assign_tmp, file, default_flow_style=False)
+
+    def get_enb_assign(self):
+	with open(self.enb_assign_file,'r') as file:
+	    return yaml.load(file)
+
     def load_sensing_data(self):
         """!@brief load sensing data"""
         file = open(self.sensing_data_file,'r')
@@ -1411,9 +1901,13 @@ class ss_policy (object):
         """!@brief return the general spectrum sharing policy """
         return self.general_policy
 
+    def get_enb_assign(self):
+        """!@brief return the enb assigment settings """
+        return self.enb_assign
+
     # apply policy with policy data 
     # TBD: apply policy from a file
-    def apply_policy(self, policy_data='',as_payload=True):
+    def apply_policy(self, enb=0, policy_data='',as_payload=True):
         """!@brief Apply the default or user-defined policy 
         
         @param policy_data: content of the policy file
@@ -1429,28 +1923,24 @@ class ss_policy (object):
         else:
             self.log.error('cannot find the policy data '  + pdata)
             return
-	
-        if as_payload == True :
-            url = self.url+self.rrm_policy_api
-        else: 
-            url = self.url+self.rrm_api+'/'+flexran_rest_api.pf_name
-        
+
+        url = self.url+self.conf_api+'/enb/'+str(enb)    
+    
         if self.op_mode == 'test' :
             self.log.info('POST ' + str(url))
             self.log.debug(self.dump_policy(policy_data=pdata))
             self.status='connected'
             
         elif self.op_mode == 'sdk' :
-            print self.dump_policy(pdata)
             try :
 		# post data as binary
-            	req = requests.post(url, data=self.dump_policy(pdata),headers={'Content-Type': 'application/octet-stream'})
+            	req = requests.post(url, data=json.dumps(pdata),headers={'Content-Type': 'application/json'})
             	if req.status_code == 200:
             	    self.log.info('successfully applied the policy')
             	    self.status='connected'
             	else :
             	    self.status='disconnected'
-            	    self.log.error('Request error code : ' + req.status_code)
+            	    self.log.error('Request error code : ' + str(req.status_code))
             except :
                 self.log.error('Failed to apply the policy ' )
             

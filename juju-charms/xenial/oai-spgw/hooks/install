@@ -1,32 +1,23 @@
 #!/bin/bash
-################################################################################
+# Copyright 2016-2018 Eurecom and Mosaic5G Platforms Authors
+# Licensed to the Mosaic5G under one or more contributor license
+# agreements. See the NOTICE file distributed with this
+# work for additional information regarding copyright ownership.
+# The Mosaic5G licenses this file to You under the
+# Apache License, Version 2.0  (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# Copyright (c) 2016, EURECOM (www.eurecom.fr)
-# All rights reserved.
+#      http://www.apache.org/licenses/LICENSE-2.0
 #
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are met:
-#
-# 1. Redistributions of source code must retain the above copyright notice, this
-#    list of conditions and the following disclaimer.
-# 2. Redistributions in binary form must reproduce the above copyright notice,
-#    this list of conditions and the following disclaimer in the documentation
-#    and/or other materials provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and documentation are those
-# of the authors and should not be interpreted as representing official policies,
-# either expressed or implied, of the FreeBSD Project.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#-------------------------------------------------------------------------------
+# For more information about the Mosaic5G:
+#      contact@mosaic5g.io
 #
 ################################################################################
 # file install
@@ -34,53 +25,38 @@
 # author  navid.nikaein@eurecom.fr and A. B. Molini   
 
 install_packages(){
+    apt update 
     #status-set maintenance "Installing some dependencies"
-
+     gitAlreadyInstalled=$(dpkg --get-selections snapd 2>/dev/null | grep -c 'install') || true
+    if [ ! $gitAlreadyInstalled -eq 1 ]; then # If git is NOT installed
+	apt-get install -y --force-yes snapd # Ensure necessary git dependency exist.
+    fi
+    
     gitAlreadyInstalled=$(dpkg --get-selections git 2>/dev/null | grep -c 'install') || true
     if [ ! $gitAlreadyInstalled -eq 1 ]; then # If git is NOT installed
        apt-get install -y git # Ensure necessary git dependency exist.
     fi
+
     atAlreadyInstalled=$(dpkg --get-selections at 2>/dev/null | grep -c 'install') || true
     if [ ! $atAlreadyInstalled -eq 1 ]; then 
        apt-get install -y at
     fi
+
     virtwhatAlreadyInstalled=$(dpkg --get-selections virt-what 2>/dev/null | grep -c 'install') || true
     if [ ! $virtwhatAlreadyInstalled -eq 1 ]; then 
 	apt-get install -y --force-yes virt-what
     fi
-    #Mysql-server simply because we want resolveip tool
-    PASSWORD="linux"
-    echo "mysql-server mysql-server/root_password password $PASSWORD" | debconf-set-selections
-    echo "mysql-server mysql-server/root_password_again password $PASSWORD" | debconf-set-selections
-
-    apt install -y mysql-client
 }
 
-update_sources_list(){
-    wget -O /tmp/country.json http://www.geoplugin.net/json.gp
-    country=`sed -n 's/\"geoplugin_countryName\"://gp' /tmp/country.json | sed -n 's/ //gp' | sed -n 's/,//gp' | sed -n 's/\"//gp'`
-
-    if [ "$country"x = "China"x ]; then
-        juju-log "China, get use source from Tsinghua University"
-        mv /etc/apt/sources.list /etc/apt/sources.list.bak
-        wget -P /etc/apt/ http://han.kuwan.space/oaicharms/sources.list
-        apt-get update
-    else
-        juju-log "proceed normally"
-    fi
+check_install_kernel(){
+    check_current_kernel "4.8"
+    if [ "$REQUIRED_KERNEL_IS_INSTALLED" == "no" ]; then
     
-}
-
-juju_install_kernel(){
-    #status-set maintenance "Check the kernel and update if required"
-    juju-log "Check the kernel and update if required"
-
-    if [ "$machine_type"  == "lxc" -o "$machine_type" == "docker" ]; then
-	juju-log "Can't install the required kernel in $machine_type env. Proceed with the current kernel."
-	juju-log "Please install kerenel version 4.7 or higher with GTP module enabled on the host".
-    else
-	check_current_kernel
-	if [[ $REQUIRED_KERNEL_IS_INSTALLED == false ]]; then
+	if [ "$machine_type"  == "lxc" -o "$machine_type" == "docker" ]; then
+	    
+	    juju-log "Can't install the required kernel in $machine_type env. Proceed with the current kernel."
+	    juju-log "Please install kerenel version 4.8 or higher with GTP module enabled on the HOST machine"
+	else
 	    if [ "$(cat $CHARM_DIR/.reboot)" != "reboot" ]; then  
 		juju-log "installing the required kernel and reboot"
 		status-set maintenance "installing the required kernel and rebooting"
@@ -88,42 +64,26 @@ juju_install_kernel(){
   		echo "reboot" > $CHARM_DIR/.reboot 
 		juju-reboot --now
 	    else 
-		juju-log "Can't install the required kernel. Proceed with the current kernel."
+		juju-log "Can't install the required kernel. Proceeding with the current kernel."
 	    fi 
 	fi
     fi 
-    
-    sed -i -r "s/(check_kernel_release_and_install_xtables_addons_oai[^()]+)/#\1/" $tools_path/build_helper
 }
 
 clone_repo(){
-    status-set maintenance "Fetching OpenAirInterface HSS"
+
+    juju-log  "Fetching the Mosaic5G repository"
+    
     echo -n | openssl s_client -showcerts -connect gitlab.eurecom.fr:443 2>/dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' >> /etc/ssl/certs/ca-certificates.crt
 
-    if [ -d "$openair_path"  ]; then
-        juju-log "Updating the installation directory"
-        cd $openair_path 
-        git fetch --all
-        git reset --hard HEAD
-	git checkout $branch 
-        if [ "$revision" != "head" ]; then 
-        git checkout $revision
-        cd -
-        fi 
+    #everytime refresh the installation 
+    if [ -d "$mosaic_path" ]; then  
+	cd $mosaic_path
+	git reset --hard HEAD
+	cd - 
     else
-       #Save the current hosts file
-       cp -f /etc/hosts /home
-       git clone --branch $branch https://gitlab.eurecom.fr/oai/openair-cn.git $openair_path
-       cd $openair_path 
-       if [ "$revision" != "head" ]; then 
-           git checkout $revision
-       fi
-       cd -
+	git clone https://gitlab.eurecom.fr/mosaic5g/mosaic5g.git $mosaic_path
     fi
-
-    #We don't need phpmyadmin in the installation as it is provided by phpmyadmin charm
-    #sed -i "s/phpmyadmin/#phpmyadmin/" $tools_path/build_helper
-    sed -i '/phpmyadmin/d' $tools_path/build_helper
 
 }
 
@@ -144,22 +104,25 @@ configure_hosts(){
 }
 
 build_spgw(){
-  status-set maintenance "Building spgw"
-  # workaround: need to execute build_spgw before build_spgw
-  $build_run_scripts/build_mme -i -f
-  $build_run_scripts/build_spgw -i -f
-  $build_run_scripts/build_spgw -c 
-}
-
-configure_spgw(){
-    if [[ $ubuntu_dist == *"14"* ]]; then 
-	cp $CHARM_DIR/files/spgw.conf /etc/init/spgw.conf
+    
+   if [ ! -d $mosaic_path ] ; then 
+	mkdir $mosaic_path
+    fi
+    
+    if [ "$snap" == "edge" ] || [ "$snap" == "beta" ] ; then
+	juju-log "Installing and building the HSS from OAI-CN snap"
     else
-	cp $CHARM_DIR/files/spgw.service /etc/systemd/system/
+	juju-log "channel $snap is not supported, use edge or beta"
+	snap="edge"
     fi
 
-    mkdir -p $spgw_conf_path
-    cp $openair_path/etc/spgw.conf $spgw_conf_path/spgw.conf
+    if [ -z "$(snap list oai-cn)" ] ; then
+        op="install"
+    else
+        op="refresh"
+    fi
+    sudo snap $op oai-cn --channel=$snap --devmode
+
 }
 
 configure_network(){
@@ -174,49 +137,68 @@ configure_network(){
   sed -i -e "s/eth1/$eth/g" $file
 
   #prevent dhcp gateway
-  local hook=/etc/dhcp/dhclient-enter-hooks.d/net-${eth}
-  cp ./files/dhclient_hook_tpl $hook
-  sed -i -e "s/eth1/$eth/g" $hook
-  chmod +x $hook
+  #local hook=/etc/dhcp/dhclient-enter-hooks.d/net-${eth}
+  #cp ./files/dhclient_hook_tpl $hook
+  #sed -i -e "s/eth1/$eth/g" $hook
+  #chmod +x $hook
 }
-run_spgw(){
-    echo "yes" > $CHARM_DIR/.spgw_running_flag
+init_spgw(){
+    
+    oai-cn.stop-all || true
+   
+  #  echo "yes" > $CHARM_DIR/.spgw_running_flag
 }
 
-
+status-set maintenance "Install hook"
 set -eux
-
 export DEBIAN_FRONTEND=noninteractive
 source $CHARM_DIR/utils/common
+set_env
+#echo "no" > $CHARM_DIR/.spgw_running_flag
 
-update_sources_list
-set_env_paths
-
-status-set maintenance "Installing support packages and $spgw_exec_name"
 
 open-port 2152/udp
 open-port 2123/udp
 
-branch=`config-get branch`
-revision=`config-get revision`
-echo "$branch" > $CHARM_DIR/.branch
-echo "$revision" > $CHARM_DIR/.revision
-
-status-set maintenance "Fetching and installing Openair4G"
+snap=`config-get snap`
+echo "$snap"           >  $CHARM_DIR/.snap
 
 update_hostname
-configure_network `config-get sgw-eth`
-configure_network `config-get pgw-eth`
+
+sgw_iface=`config-get sgw-eth`
+pgw_iface=`config-get pgw-eth`
+#sgw_iface="none"
+#pgw_iface="none"
+if [ "$sgw_iface" == "none" ] || [ "$pgw_iface" == "none" ]; then
+    ip_addr=`unit-get public-address`
+    for interface in $(ls /sys/class/net); do
+        if [ `ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"` != "" ]; then
+            ipv4=`ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
+            if [ $ipv4 == $ip_addr ] ; then
+                if [ "$sgw_iface" == "none" ] ; then
+                    sgw_iface=$interface
+                fi
+                if [ "$pgw_iface" == "none" ] ; then
+                    pgw_iface=$interface  
+                fi
+                break
+            fi
+        fi
+    done
+fi
+
+configure_network $sgw_iface
+configure_network $pgw_iface
 
 install_packages
 machine_type=`virt-what`
-clone_repo
-juju_install_kernel
+
+#clone_repo
 
 configure_hosts
 
-build_spgw
-configure_spgw
-run_spgw
+check_install_kernel
 
-#status-set active "SPGW Ready to start"
+build_spgw
+
+init_spgw

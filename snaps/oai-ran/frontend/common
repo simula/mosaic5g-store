@@ -1,0 +1,46 @@
+#! /bin/bash
+################################################################################
+# Licensed to the Mosaic5G under one or more contributor license
+# work for additional information regarding copyright ownership.
+# Apache License, Version 2.0  (the "License");
+# You may obtain a copy of the License at
+#  
+#    	http://www.apache.org/licenses/LICENSE-2.0
+#  
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+# -------------------------------------------------------------------------------
+#   For more information about the Mosaic5G:
+#   	contact@mosaic-5g.io
+#
+#
+################################################################################
+# file common
+# brief common scripts and variables for oai-ran Snap
+# author Navid Nikaein (navid.nikaein@eurecom.fr, navid.nikaein@mosaic-5g.io)
+
+
+export DEBIAN_FRONTEND=noninteractive
+set -e
+
+CONF_DIR="$SNAP_DATA"
+
+ENB_DIR="$SNAP/enb"
+ENB_EXEC="$ENB_DIR/oai-lte"
+
+ENB_CONF_FILE="$CONF_DIR/enb.band7.tm1.50PRB.usrpb210.conf"
+ENB_NSA_CONF_FILE="$CONF_DIR/enb.band7.tm1.fr1.25PRB.usrpb210.conf"
+BBU_CONF_FILE="$CONF_DIR/rcc.band7.tm1.if4p5.50PRB.conf"
+RRU_CONF_FILE="$CONF_DIR/rru.conf"
+CU_CONF_FILE="$CONF_DIR/cu.lte.conf"
+DU_CONF_FILE="$CONF_DIR/du.lte.band7.10MHz.if4p5.conf"
+LTEM_CONF_FILE="$CONF_DIR/enb.band13.tm1.50PRB.emtc.conf"
+
+
+GNB_DIR="$SNAP/gnb"
+GNB_EXEC="$GNB_DIR/oai-nr"
+GNB_CONF_FILE="$CONF_DIR/gnb.band78.tm1.106PRB.usrpn300.conf"
+GNB_NSA_CONF_FILE="$CONF_DIR/gnb.band78.tm1.fr1.106PRB.usrpb210.conf"

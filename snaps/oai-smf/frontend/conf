@@ -1,0 +1,70 @@
+#!/bin/bash
+
+. $SNAP/common
+. $SNAP/util
+
+case "$1" in
+    "set-smf" )
+	CONFIG_FILE=$2	
+	if [ "$CONFIG_FILE" != "${CONFIG_FILE#/}" -a -f "$CONFIG_FILE" ]; then
+	    echo_success "Setting the default config file to: $CONFIG_FILE"
+	    
+	elif [ -f "$CONF_DIR/$CONFIG_FILE" ]; then
+	    CONFIG_FILE=$CONF_DIR/$CONFIG_FILE
+	    echo_info "Config file found in the $CONF_DIR!"
+	    echo_info "Resetting to the default config file: $CONFIG_FILE"
+	    
+	else
+	    echo_error "[ERR] Config file $CONFIG_FILE not found, please provide an absolute path!"
+	    echo_info "Reset to default config file: $SMF_CONF_FILE"
+	    CONFIG_FILE=$SMF_CONF_FILE
+	fi
+	snapctl set conf.smf=$CONFIG_FILE
+	echo "SMF_CONF_FILE2=$CONFIG_FILE" > $SNAP_DATA/config_smf.sh
+	echo "SMF_CONF_FILE2=$CONFIG_FILE" > $SNAP_USER_DATA/config_smf.sh
+	;;
+
+    
+     "ls-smf" )
+	if [ -r $SNAP_DATA/config_smf.sh ]; then
+	    . $SNAP_DATA/config_smf.sh
+	fi
+	
+	# default config file is (unless set in above config)
+	SMF_CONFIG=${SMF_CONF_FILE2:-$SMF_CONF_FILE}
+	ls $(dirname $SMF_CONFIG)/*.conf
+	;;
+
+     "echo-smf" | "cat-smf" )
+	show_file=$2
+	
+	
+	if [ -r $SNAP_DATA/config_smf.sh ]; then
+	    . $SNAP_DATA/config_smf.sh
+	fi
+	
+	# default config file is (unless set in above config)
+	SMF_CONFIG=${SMF_CONF_FILE2:-$SMF_CONF_FILE}
+	# echo (get), cat (show)
+        # `echo $1 | cut -d"-" -f1` $SMF_CONFIG
+	
+	if [ "$show_file" != "" ]; then
+		# echo "File to show $SNAP_DATA/$show_file"
+		absolute_show_file=$SNAP_DATA/$show_file
+		if [ ! -e $absolute_show_file ]; then
+			echo "The file $absolute_show_file does not exist"
+		else
+			`echo $1 | cut -d"-" -f1` $absolute_show_file
+		fi
+	else
+		# echo "File to show $SMF_CONFIG"
+		`echo $1 | cut -d"-" -f1` $SMF_CONFIG
+	fi
+
+	;;
+      *)
+       echo "unknown command $1"
+       ;;
+esac
+    
+

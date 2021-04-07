@@ -1,0 +1,17 @@
+#!/bin/bash
+
+. $SNAP/common
+. $SNAP/util
+
+mme_set_vars
+
+if [ -z "$(grep -o "$HOSTNAME.$REALM" /etc/hosts)" ] || [ -z "$(grep -o mme /etc/hosts)" ]; then
+
+    echo_info "127.0.0.1" $HOSTNAME.$REALM $HOSTNAME " mme"  "added to /etc/hosts"
+    cp /etc/hosts $CONF_DIR/hosts
+    sed -i '/mme/d' $CONF_DIR/hosts
+    sed -i "1i127.0.0.1 $HOSTNAME.$REALM $HOSTNAME mme" $CONF_DIR/hosts
+    cat $CONF_DIR/hosts > /etc/hosts
+	   
+fi
+

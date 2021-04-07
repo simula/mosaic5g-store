@@ -1,0 +1,79 @@
+#!/bin/bash
+# Copyright 2016-2018 Eurecom and Mosaic5G Platforms Authors
+# Licensed to the Mosaic5G under one or more contributor license
+# agreements. See the NOTICE file distributed with this
+# work for additional information regarding copyright ownership.
+# The Mosaic5G licenses this file to You under the
+# Apache License, Version 2.0  (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#-------------------------------------------------------------------------------
+# For more information about the Mosaic5G:
+#      contact@mosaic5g.io
+#
+################################################################################
+# file du-relation-changed
+# brief manage the config changes of oai-enb service, and occurs everytime a new configuration value is updated (juju set)
+# author navid.nikaein@eurecom.fr 
+
+set -eux
+source $CHARM_DIR/utils/common
+set_env
+
+node_func=`config-get node_function`
+if [ "$node_func" == "du" ] || [ "$node_func" == "DU" ] ; then
+    status-set maintenance "du-relation-changed hook"
+
+    CUIP=`relation-get CUIP`
+    CUIF=`relation-get CUIF`
+    CUPORTC=`relation-get CUPORTC`
+    CUPORTD=`relation-get CUPORTD`
+    
+    if [ -z "$CUIP" ]; then
+	juju-log "CU IP addr not yet available"
+	exit 0
+    fi
+    if [ -z "$CUIF" ]; then
+	juju-log "CU IF name not yet available"
+	exit 0
+    fi
+    if [ -z "$CUPORTC" ]; then
+	juju-log "CU PORTC not yet available"
+	exit 0
+    fi
+    if [ -z "$CUPORTD" ]; then
+	juju-log "CU PORTD not yet available"
+	exit 0
+    fi
+    du_ip_addr=`unit-get public-address`
+    #du_iface_name=`config-get du_if_name`
+    du_iface_name="none"
+    if [ "$du_iface_name" == "none" ] ; then      
+        for interface in $(ls /sys/class/net); do
+            if [ `ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"` != "" ]; then
+                ip_addr=`ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
+                if [ "$ip_addr" == $du_ip_addr ] ; then
+                    du_iface_name=$interface
+                    break
+                fi
+            fi
+        done
+    fi
+    #du_ip_addr=`ifconfig $(config-get du_if_name) | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
+    enable_du_f1  $du_iface_name $du_ip_addr $CUIP `config-get du_portc` $CUPORTC `config-get du_portd` $CUPORTD
+    #enable_du_f1  `config-get du_if_name` $du_ip_addr $CUIP `config-get du_portc` $CUPORTC `config-get du_portd` $CUPORTD
+    #enable_du_f1  `config-get du_if_name` `config-get du_ip_addr` $CUIP `config-get du_portc` $CUPORTC `config-get du_portd` $CUPORTD
+
+    juju-log "DU config done"
+
+else
+    status-set blocked "Error, function $node_func does not have du relation"
+fi

@@ -1,0 +1,192 @@
+name: oai-sim
+version: '2.0' 
+summary: OpenAirInterface L2 System Simulator/Emulator  
+description: |
+    OAI SIM is the openairinterface-based eNB-UE L2/L3 stack that allows you to simulate/emulate large number of UEs and interact with FlexRAN. 
+type: app
+license: Apache-2.0
+
+architectures:
+  - amd64
+  - i386
+confinement: strict
+grade: stable
+base: core18
+ 
+
+apps:
+  
+  check:
+    command: test sim
+    plugs: [network, network-control, log-observe, process-control, network-observe, network-bind, netlink-connector]
+  info:
+    command: run info
+  start-all:	 
+    command: run start-all
+  stop-all:
+    command: run stop-all
+  restart-all:
+    command: run restart-all
+  status-all:
+    command: run status-all
+  ue:
+    command: run ue
+    plugs: [network,process-control, network-observe, network-bind, netlink-connector, network-control]
+  enb:
+    command: run enb
+    plugs: [network, process-control, network-observe, network-bind, netlink-connector, network-control]
+  usim-gen:
+    command: run usim-gen
+  usim-print:
+    command: run usim-print
+  nvram-print:
+    command: run nvram-print
+  init:
+    command: init
+    plugs: [network-control]
+  ued:
+    command: run ue 
+    daemon: simple
+    stop-command: run stop
+    stop-timeout: 1s
+    plugs: [network, network-control, process-control, network-observe, network-bind, netlink-connector]
+  enbd:
+    command: run enb
+    daemon: simple
+    stop-command: run stop 
+    stop-timeout: 1s
+    plugs: [network, network-control, process-control, network-observe, network-bind, netlink-connector]
+  ue-start:
+    command: run start ued 
+  ue-stop:
+    command: run stop ued
+  ue-restart:
+    command: run restart ued
+  ue-status:
+    command: run status ued
+  ue-journal:
+    command: run journal ued
+    plugs: [log-observe, process-control, system-observe]
+  enb-start:
+    command: run start enbd
+  enb-stop:
+    command: run stop enbd
+  enb-restart:
+    command: run restart enbd 
+  enb-status:
+    command: run status enbd
+  enb-journal:
+    command: run journal enbd
+    plugs: [log-observe, process-control, system-observe]
+  help:
+    command: run help
+  debug:
+    command: run gdb
+  ue-conf-set:
+    command: conf set-ue
+  ue-conf-get:
+    command: conf echo-ue
+  ue-conf-show:
+    command: conf cat-ue
+  ue-conf-list:
+    command: conf ls-ue
+  ue-cmd-set:
+    command: conf set-ue-cmd
+  ue-cmd-get:
+    command: conf echo-ue-cmd
+  ue-cmd-show:
+    command: conf cat-ue-cmd
+  ue-cmd-list:
+    command: conf ls-ue-cmd
+  usim-set:
+    command: conf set-usim
+  usim-get:
+    command: conf echo-usim
+  usim-show:
+    command: conf cat-usim
+  usim-list:
+    command: conf ls-usim
+  enb-conf-set:
+    command: conf set-enb
+  enb-conf-get:
+    command: conf echo-enb
+  enb-conf-show:
+    command: conf cat-enb
+  enb-conf-list:
+    command: conf ls-enb
+    
+hooks:
+#  install:
+#    plugs: [home, network, desktop]
+  configure:
+    plugs: [home, network, desktop]
+  remove:
+    plugs: [home, network, desktop]
+  connect-plug-network-control:
+    plugs: [network-control,  netlink-connector]
+  disconnect-plug-network-control:
+    plugs: [network-control,  netlink-connector]
+    
+parts:
+  tools:
+    plugin: nil
+    override-build: |
+      mkdir $SNAPCRAFT_PART_INSTALL/bin 
+      cp -r /bin/ip $SNAPCRAFT_PART_INSTALL/bin
+    prime:
+      - bin
+      
+  sim:
+    plugin: cmake
+    source: git@gitlab.eurecom.fr:oai/openairinterface5g.git
+    #https://gitlab.eurecom.fr/oai/openairinterface5g.git
+    source-branch: oai-sim
+    build-packages: [build-essential, ]
+    stage-packages:
+      - libatlas3-base
+      - libconfig9
+      - libgfortran4
+      - libicu60
+      - liblapacke
+      - libquadmath0
+      - libsctp1
+      - libprotobuf-c1
+    override-build: |
+      cd ../src/cmake_targets
+      ./build_oai -I 
+      ./build_oai --UE --eNB -c -C --build-lib telnetsrv
+      cd ../ 
+      mkdir -p $SNAPCRAFT_PART_INSTALL/sim
+      mkdir -p $SNAPCRAFT_PART_INSTALL/usr/share
+      mkdir -p $SNAPCRAFT_PART_INSTALL/bin
+      mkdir -p $SNAPCRAFT_PART_INSTALL/lib
+      cp targets/bin/* $SNAPCRAFT_PART_INSTALL/sim
+      cp targets/PROJECTS/GENERIC-LTE-EPC/CONF/* $SNAPCRAFT_PART_INSTALL/sim
+      cp cmake_targets/snap_environment.sh $SNAPCRAFT_PART_INSTALL/sim
+      cp /usr/local/lib/libproto* $SNAPCRAFT_PART_INSTALL/lib
+      cp /usr/local/bin/protoc* $SNAPCRAFT_PART_INSTALL/sim      
+      cp cmake_targets/ran_build/build/libSIMU.so $SNAPCRAFT_PART_INSTALL/lib
+    stage:
+      - sim/*
+      - usr/*
+      - lib/*
+    prime:
+      - sim/*
+      - usr/*
+      - lib/*
+    organize:
+      
+      sim/libcoding.so: usr/lib/libcoding.so
+      sim/libparams_libconfig.so: usr/lib/libparams_libconfig.so
+      sim/liboai_eth_transpro.so.Rel15: usr/lib/liboai_transpro.so
+      sim/librfsimulator.so.Rel15: usr/lib/librfsimulator.so.Rel15
+      sim/libtcp_bridge_oai.so.Rel15: usr/lib/libtcp_bridge_oai.so.Rel15
+      sim/lte-uesoftmodem.Rel15: sim/oai-ue
+      sim/lte-softmodem.Rel15: sim/oai-enb
+      sim/libtelnetsrv.so: usr/lib/libtelnetsrv.so
+      
+      #usr/lib/lapack/liblapack.so.3: usr/lib/liblapack.so.3 
+
+  frontend:
+    plugin: dump
+    source: frontend

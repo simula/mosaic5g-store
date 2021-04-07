@@ -1,37 +1,99 @@
 options:
-   branch:
-     default: "various-l2-fixes-187"
+   snap:
+     default: "edge"
      description: |
-       branch indicates which installation you want to do. 
-     type: string
-   revision: 
-     default: "head"
-     description: get a specific revison from the openairinterface5G git repository. 
-     type: string
-   kernel: 
-     default: "lowlatency"
-     description: set the default kerenl, generic or lowlatency. 
+      snap indicates which channel to use for the installation hook. 
      type: string
    node_function: 
-     default: "eNodeB_3GPP"
+     default: "enb"
      description: | 
-       set the function of this node. Available Options: eNodeB_3GPP (classical eNodeB function), eNodeB_IP (eNodeB Standalone), eNodeB_3GPP_BBU (eNodeB with NGFI IF5), NGFI_RCC_IF4p5 (NGFI radio cloud center).
+       set the function of this BS node. Available Options: enb, cu and du, rcc and rru.
      type: string
    target_hardware:
      default: "usrp_b200"
      description: |
-       defines the target RF hardware. Available Options: usrp_b200, usrp_x310, lmsdr, blader. Setting this option will require different configuration file and will trigger different building process. 
+       defines the target RF hardware. Available Options: usrp_b200, usrp_x310. Other options will be made available later: lmsdr, blader. 
      type: string
-   config_file:
-     default: "default"
+   mme_ip_addr:
+     default: ""
      description: |
-       takes the default configuration file based on the target hardware. It defines the specific enb configuration file, see openairinterface5g/targets/PROJECTS/GENERIC-LTE-EPC/CONF.
-     type: string
-   eth:
-     default: "eth0"
+       if the MME IP address is provided, the BS node connects to MME without waiting for S1-C relation. Default is an empty string.
+     type: string  
+   #eth:
+   #  default: "none"
+   #  description: |
+   #    If the value of this interface is "none", the interface name will be detected authomatically
+   #    defines the interface for S1-U and S1-C. Set this option to the interface the machine onto you deploy this charm has. 
+   #  type: string
+   cu_ip_addr:
+     default: "127.0.0.1"
      description: |
-       defines the interface for S1-U and S1-C. Set this option to the interface the machine onto you deploy this charm has. 
+       The IP address of the CU module. Only valid if the node function is CU.
      type: string
+   du_ip_addr:
+     default: "127.0.0.1"
+     description: |
+       The IP address of the DU module. Only valid if the node function is DU.
+     type: string
+   #cu_if_name:
+   #  default: "none"
+   #  description: |
+   #    If the value of this interface is "none", the interface name will be detected authomatically
+   #    The interface name of the CU module. Only valid if the node function is CU.
+   #  type: string
+   #du_if_name:
+   #  default: "none"
+   #  description: |
+   #    If the value of this interface is "none", the interface name will be detected authomatically  
+   #    The interface name of the DU module. Only valid if the node function is DU.
+   #  type: string
+   cu_portc:
+     default: 501
+     description: |
+       The port number of the CU module for control plane. Only valid if the node function is CU.
+     type: int
+   du_portc:
+     default: 500
+     description: |
+       The control port number of the DU module for control plane. Only valid if the node function is DU.
+     type: int
+   cu_portd:
+     default: 601
+     description: |
+       The port number of the CU module for data plane. Only valid if the node function is CU.
+     type: int
+   du_portd:
+     default: 600 
+     description: |
+       The control port number of the DU module for data plane. Only valid if the node function is DU.
+     type: int
+   ##############
+   fh_transport_mode:
+     default: "udp_if4p5"
+     description: |
+        defines the I/Q sample transport mode between RRU and RCC. Available mode are raw, udp, raw_if4p5, and udp_if4p5.
+     type: string
+   rcc_portc:
+     default: 50000
+     description: |
+       The port number of the RCC module for control plane. Only valid if the node function is RCC.
+     type: int
+   rru_portc:
+     default: 50000
+     description: |
+       The control port number of the RRU module for control plane. Only valid if the node function is RRU.
+     type: int
+   rcc_portd:
+     default: 50001
+     description: |
+       The port number of the RCC module for data plane. Only valid if the node function is RCC.
+     type: int
+   rru_portd:
+     default: 50001 
+     description: |
+       The control port number of the RRU module for data plane. Only valid if the node function is DU.
+     type: int 
+    ##############
    TAC:
      default: 1
      description: |
@@ -102,12 +164,7 @@ options:
      description: |
        Setting the rx antenna gain.
      type: int
-   agent_active:
-     default: "no"
-     description: |
-        activates the eNB agent to interface with the controller.
-     type: string
-   agent_if_name:
+   flexran_if_name:
      default: "eth0"
      description: |
         defines the network interface name to connect to the controller. 
@@ -122,11 +179,6 @@ options:
      description: |
         defines the network interface port to connect to the RRU.
      type: int
-   fh_transport_mode:
-     default: "udp_if4p5"
-     description: |
-        defines the I/Q sample transport mode. Available mode are raw, udp, raw_if4p5, and udp_if4p5.
-     type: string
    rru_tx_shift: 
      default: 4  
      description: |
@@ -142,10 +194,14 @@ options:
      description: |
         defines the tx i/q scheduling advance
      type: int
-   remote_monitoring:
-     default: "no"
+   parallel_config:
+     default: PARALLEL_SINGLE_THREAD
      description: |
-       Enable eNB debugging and monitoring framework for collecting and sending events in real-time to a remote monitoring app. This enable T and VCD tools.
+        defines the level of parallelism. There are three available values; "PARALLEL_SINGLE_THREAD", "PARALLEL_RU_L1_SPLIT", or "PARALLEL_RU_L1_TRX_SPLIT"
      type: string
-
-
+   max_rxgain:
+     default: 120
+     description: |
+        defines the maximum Rx gain
+     type: int
+     

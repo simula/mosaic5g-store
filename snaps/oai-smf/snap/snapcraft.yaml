@@ -1,0 +1,199 @@
+name: oai-smf
+version: '2.0' 
+summary: OpenAirInterface SMF entity
+description: |
+    OAI-SMF is the openairinterface-based SMF entity with the Mosaic5G frontend.
+type: app
+# license: Apache-2.0
+architectures:
+  - amd64
+  - i386
+confinement: devmode
+grade: stable
+base: core18
+
+apps:
+  check:
+    command : test amf
+  info:
+    command: run info
+  oai-smf:
+    command: run smf
+  smfd:
+    command: run smf
+    daemon: simple
+    stop-command: run stop
+    stop-timeout: 1s
+  debug:
+    command: run gdb
+  start-all:
+    command: run start-all
+  stop-all:
+    command: run stop-all
+  restart-all:
+    command: run restart-all
+  status-all:
+    command: run status-all
+  start:
+    command: run start smfd
+  stop:
+    command: run stop smfd
+  restart:
+    command: run restart smfd
+  status:
+    command: run status smfd
+  journal:
+    command: run journal smfd
+  init:
+    command: init smf
+  conf-set:
+    command: conf set-smf
+  conf-get:
+    command: conf echo-smf
+  conf-show:
+    command: conf cat-smf
+  conf-list:
+    command: conf ls-smf
+  api:
+    command: run openapi
+  apid:
+    command: run openapi
+    daemon: simple
+    stop-command: run stop
+    stop-timeout: 1s
+  api-start:
+    command: run start apid
+  api-stop:
+    command: run stop apid
+  api-restart:
+    command: run restart apid
+  api-status:
+    command: run status apid
+  api-journal:
+    command: run journal apid
+  apiman:
+    command: run openapiman
+  apidman:
+    command: run openapiman
+    daemon: simple
+    stop-command: run stop apidman
+    stop-timeout: 1s
+  apiman-start:
+    command: run start apidman
+  apiman-stop:
+    command: run stop apidman
+  apiman-restart:
+    command: run restart apidman
+  apiman-status:
+    command: run status apidman
+  apiman-journal:
+    command: run journal apidman
+    
+hooks:
+  install:
+    plugs: [home, network, desktop]
+  configure:
+    plugs: [home, network, desktop]
+    
+parts:
+  gdb:
+    plugin: nil
+    override-build: |
+      sudo apt install gdb -y
+      mkdir $SNAPCRAFT_PART_INSTALL/share 
+      cp -r /usr/share/gdb $SNAPCRAFT_PART_INSTALL/share
+      cp /usr/bin/gdb* $SNAPCRAFT_PART_INSTALL
+    prime:
+      - gdb*
+      - share/*
+
+  smf:
+    plugin: cmake
+    source: git@gitlab.eurecom.fr:oai/oai-cn5g-smf.git
+    source-branch: develop
+    build-packages: [build-essential, ]
+    stage-packages:
+      - libstdc++6
+      - libsctp1
+      - libasan4
+      - libasn1-8-heimdal
+      - libboost-system1.65.1
+      - libboost-thread1.65.1
+      - libconfig++9v5
+      - libcurl3-gnutls
+      - libdouble-conversion1
+      - libgflags2.2
+      - libgoogle-glog0v5
+      - libgssapi3-heimdal
+      - libhcrypto4-heimdal
+      - libheimbase1-heimdal
+      - libheimntlm0-heimdal
+      - libhx509-5-heimdal
+      - libkrb5-26-heimdal
+      - libldap-2.4-2
+      - libnghttp2-14
+      - libpsl5
+      - libroken18-heimdal
+      - librtmp1
+      - libsasl2-2
+      - libunwind8
+      - libwind0-heimdal
+    override-build: |
+      #export DEBIAN_FRONTEND=interactive
+      cd ../src/build/scripts
+      ./build_smf -I -f 
+      ./build_smf -c -V -b Debug -j
+      mkdir -p $SNAPCRAFT_PART_INSTALL/smf/
+      #cd ../..
+      #cp etc/smf*  $SNAPCRAFT_PART_INSTALL/smf/
+      #cp build/smf/build/*.*  $SNAPCRAFT_PART_INSTALL/smf/
+      cp ../smf/build/smf  $SNAPCRAFT_PART_INSTALL/smf/
+      #cp ../smf/src/build/smf/build/nas/libNAS.so prime/usr/lib/
+      #cp /usr/local/lib/libpistache.so.0 prime/usr/lib/
+      
+     # cp /usr/local/lib/libfd* $SNAPCRAFT_PART_INSTALL/usr/lib
+     # cp /usr/local/lib/liblfds* $SNAPCRAFT_PART_INSTALL/usr/lib
+     # cp -r /usr/local/lib/freeDiameter/  $SNAPCRAFT_PART_INSTALL/usr/lib
+     # cd - 
+    stage:
+      - smf/*
+      - usr/lib/*
+      - lib/*
+    prime:
+      - smf/*
+      - usr/lib/*
+      - lib/*
+
+  frontend:
+    plugin: dump
+    source: frontend
+
+  openapi:
+    plugin: python
+    python-version: python3
+    python-packages:
+      - flask
+      - itsdangerous
+      - Werkzeug==0.16.1
+      - click
+      - jinja2
+      - MarkupSafe
+      - requests
+      - argparse
+      - flask_restplus==0.13.0
+      - aniso8601==8.0.0
+      - pytz==2020.1
+      - jsonschema==3.2.0
+      - attrs==19.3.0
+      - pyrsistent==0.16.0
+      - importlib-metadata==1.7.0
+      - importlib-resources==1.5.0
+      - zipp==3.1.0
+      # - pyrsistent==0.16.0
+      # - cassandra-driver==3.24.0
+    stage:
+      - usr/*
+      - lib/*
+    prime:
+      - usr/*
+      - lib/*

@@ -1,0 +1,250 @@
+name: flexran
+version: '2.4' 
+summary: FlexRAN SD-RAN platfrrom
+description: |
+   FlexRAN is a software-defined radio access network platform on the top of OpenAirInterface, licensed under Apache License V2.0. It is one of the projects of Mosaic5G inititive.
+grade: stable
+type: app
+architectures:
+  - amd64
+  - i386
+confinement: strict
+# license: Apache-2.0
+base: core18
+
+#plugs:
+#  sys-access:
+#    interface: system-files
+#    read:
+#    - /dev/cpu_dma_latency
+
+apps:
+  check:
+    command: test flexran
+    plugs: [network, network-control, log-observe, process-control, cpu-control, network-observe, network-bind]
+  init:
+    command: init
+  info:
+    command: run info
+  flexran:
+    command: run
+    plugs: [network, network-control, log-observe, process-control, cpu-control, network-observe, network-bind]
+  init:
+    command: init
+  sbi-addr:
+    command: conf saddr
+  nbi-addr:
+    command: conf naddr
+  sbi-port:
+    command: conf sbi
+  nbi-port:
+    command: conf nbi
+  addr:
+    command: conf addr
+  ports:
+    command: conf ports
+  conf-set:
+    command: conf set-log
+  conf-get:
+    command: conf echo-log
+  conf-show:
+    command: conf cat-log
+  conf-list:
+    command: conf ls-log  
+  flexrand:
+    command: run flexran
+    daemon: simple
+    stop-command: run stop
+    stop-timeout: 1s
+    plugs: [network, network-control, log-observe, process-control, cpu-control, network-observe, network-bind]
+  start-all:
+    command: run start-all
+  stop-all:
+    command: run stop-all
+  restart-all:
+    command: run restart-all
+  status-all:
+    command: run status-all
+  start:
+    command: run start flexrand
+  stop:
+    command: run stop flexrand
+  restart:
+    command: run restart flexrand
+  status:
+    command: run status flexrand
+  journal:
+    command: run journal flexrand
+    plugs: [log-observe, process-control, system-observe]
+  help:
+    command: run help
+  api:
+    command: run openapi
+    plugs: [network, network-control, network-observe, network-bind]
+  apid:
+    command: run openapi
+    daemon: simple
+    stop-command: run stop apid
+    stop-timeout: 1s
+    plugs: [network, network-control, network-observe, network-bind]
+  api-start:
+    command: run start apid
+  api-stop:
+    command: run stop apid
+  api-restart:
+    command: run restart apid
+  api-status:
+    command: run status apid
+  api-journal:
+    command: run journal apid
+    plugs: [log-observe, process-control, system-observe]
+  apiman:
+    command: run openapiman
+    plugs: [network, network-control, network-observe, network-bind]
+  apidman:
+    command: run openapiman
+    daemon: simple
+    stop-command: run stop apidman
+    stop-timeout: 1s
+    plugs: [network, network-control, network-observe, network-bind]
+  apiman-start:
+    command: run start apidman
+  apiman-stop:
+    command: run stop apidman
+  apiman-restart:
+    command: run restart apidman
+  apiman-status:
+    command: run status apidman
+  apiman-journal:
+    command: run journal apidman
+    plugs: [network-control, network-observe, network-bind]
+#  debug:
+#    command: run gdb
+hooks:
+  install:
+    plugs: [home, network, desktop]
+  configure:
+    plugs: [home, network, desktop]
+
+ 
+parts:
+#  gdb:
+#    plugin: nil
+#    stage-packages:
+#      - libbabeltrace1
+#     - libdw1
+#      - libmpfr6
+#    override-build: |
+#      sudo apt install gdb -y
+#      mkdir $SNAPCRAFT_PART_INSTALL/share 
+#      cp -r /usr/share/gdb $SNAPCRAFT_PART_INSTALL/share
+#      mkdir -p $SNAPCRAFT_PART_INSTALL/bin
+#      cp /usr/bin/gdb* $SNAPCRAFT_PART_INSTALL/bin
+#    prime:
+#      - bin/gdb*
+#      - share/*
+      
+  pistache:
+    plugin: cmake
+    source:  https://github.com/oktal/pistache.git
+    source-commit: 2ef937c434810858e05d446e97acbdd6cc1a5a36
+    override-build: |
+      cd ../src/
+      mkdir -p build
+      cd build
+      cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ..
+      make
+      sudo make install
+      cd -
+      mkdir -p $SNAPCRAFT_PART_INSTALL/lib
+      cp /usr/local/lib/libpistache.a $SNAPCRAFT_PART_INSTALL/lib
+    prime:
+      - lib/libpistache.a
+  protobuf:
+    plugin: make
+    source:  https://github.com/google/protobuf.git
+    source-branch: v3.3.0
+    build-packages: [ autoconf, automake, libtool, curl, g++, unzip, ]
+    override-build: |
+      cd ../src/
+      ./autogen.sh
+      mkdir -p $SNAPCRAFT_PART_INSTALL/lib
+      #./configure --prefix=$SNAPCRAFT_PART_INSTALL/lib
+      ./configure 
+      make
+      sudo make install
+      sudo ldconfig
+      #mkdir -p $SNAPCRAFT_PART_INSTALL/lib
+      cp /usr/local/lib/libproto* $SNAPCRAFT_PART_INSTALL/lib
+      cp /usr/lib/x86_64-linux-gnu/libpsm_infinipath.so.1 $SNAPCRAFT_PART_INSTALL/lib
+      mkdir -p $SNAPCRAFT_PART_INSTALL/bin
+      cp /usr/local/bin/protoc* $SNAPCRAFT_PART_INSTALL/bin
+    stage:
+      - lib/*
+      - bin/*
+    prime:
+      - lib/*
+      - bin/*
+  flexran:
+    after: [ pistache, protobuf]
+    plugin: cmake
+    source: git@gitlab.eurecom.fr:flexran/flexran-rtc.git
+    source-branch: develop
+    build-packages: [build-essential, ]
+    stage-packages:
+      - libboost-all-dev
+      - liblog4cxx-dev
+      - liblog4cxx10v5
+      - libcurl4-openssl-dev
+      - libcurl3-gnutls
+    override-build: |
+      cd ../src/
+      ./build_flexran_rtc.sh 
+      mkdir -p $SNAPCRAFT_PART_INSTALL/bin
+      cp build/rt_controller $SNAPCRAFT_PART_INSTALL/bin/flexran
+      #mv $SNAPCRAFT_PART_INSTALL/bin/rt_controller $SNAPCRAFT_PART_INSTALL/bin/flexran 	
+      mkdir -p $SNAPCRAFT_PART_INSTALL/log_config
+      cp -r log_config/* $SNAPCRAFT_PART_INSTALL/log_config
+    stage:
+      - bin/flexran
+      - usr/lib/*
+      - lib/*
+      - log_config
+    prime:
+      - bin/flexran
+      - usr/lib/*
+      - lib/*
+      - log_config
+
+  frontend:
+    plugin: dump
+    source: frontend
+  openapi:
+    plugin: python
+    python-version: python3
+    python-packages:
+      - flask
+      - itsdangerous
+      - Werkzeug==0.16.1
+      - click
+      - jinja2
+      - MarkupSafe
+      - requests
+      - argparse
+      - flask_restplus==0.13.0
+      - aniso8601==8.0.0
+      - pytz==2020.1
+      - jsonschema==3.2.0
+      - attrs==19.3.0
+      - pyrsistent==0.16.0
+      - importlib-metadata==1.7.0
+      - importlib-resources==1.5.0
+      - zipp==3.1.0
+      # - pyrsistent==0.16.0
+      # - cassandra-driver==3.24.0
+    stage:
+      - usr/*
+      - lib/*
+    prime:
+      - usr/*
+      - lib/*

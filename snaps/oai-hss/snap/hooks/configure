@@ -1,0 +1,56 @@
+#!/bin/sh
+set -e 
+echo "Configure hook "
+
+snapctl stop --disable ${SNAP_NAME}  2>&1  || true
+sleep 1 
+snapctl start --enable ${SNAP_NAME}.apid  2>&1  || true
+
+if [ ! -f  $SNAP_DATA/.init ] ; then
+    touch $SNAP_DATA/.init
+    $SNAP/init
+fi
+
+hss=$(snapctl get conf.hss)
+if [ ! -z "$hss" ] ; then 
+    $SNAP/conf set-hss $hss
+fi
+
+hssfd=$(snapctl get conf.hssfd)
+if [ ! -z "$hssfd" ] ; then 
+    echo "Read-only param!"
+fi
+
+realm=$(snapctl get conf.relam)
+if [ ! -z "$realm" ] ; then 
+    echo "Read-only param!"
+fi
+
+host=$(snapctl get conf.host)
+if [ ! -z "$host" ] ; then
+    echo "Read-only param!"
+fi
+
+cass=$(snapctl get conf.cassandra)
+if [ ! -z "$cassandra" ] ; then
+    echo "Read-only param!"
+fi
+
+apiport=$(snapctl get conf.apiport)
+if [ ! -z "$apiport" ] ; then 
+    snapctl set conf.apiport=$apiport
+fi
+
+mgrport=$(snapctl get conf.mgrport)
+if [ ! -z "$mgrport" ] ; then 
+    snapctl set conf.mgrport=$mgrport
+fi
+apiaddr=$(snapctl get conf.apiaddr)
+if [ ! -z "$apiaddr" ] ; then 
+    snapctl set conf.apiaddr=$apiaddr
+fi
+
+mgraddr=$(snapctl get conf.mgraddr)
+if [ ! -z "$mgraddr" ] ; then 
+    snapctl set conf.mgraddr=$mgraddr
+fi

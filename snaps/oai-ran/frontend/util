@@ -1,0 +1,201 @@
+#! /bin/bash
+################################################################################
+# Licensed to the Mosaic5G under one or more contributor license
+# work for additional information regarding copyright ownership.
+# Apache License, Version 2.0  (the "License");
+# You may obtain a copy of the License at
+#  
+#    	http://www.apache.org/licenses/LICENSE-2.0
+#  
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+# -------------------------------------------------------------------------------
+#   For more information about the Mosaic5G:
+#   	contact@mosaic-5g.io
+#
+#
+################################################################################
+# file util
+# brief util scripts and variables for oai-ran Snap
+# author Navid Nikaein (navid.nikaein@eurecom.fr, navid.nikaein@mosaic-5g.io)
+
+
+. $SNAP/common
+
+# Echo 
+black='[30m'
+red='[31m'
+green='[32m'
+yellow='[33m'
+blue='[1;34m'
+magenta='[35m'
+cyan='[36m'
+white='[37m'
+#reset_color='[00m'
+
+COLORIZE=1
+#black=$(tput setaf 0)
+#red=$(tput setaf 1)
+#green=$(tput setaf 2)
+#yellow=$(tput setaf 3)
+#blue=$(tput setaf 4)
+#magenta=$(tput setaf 5)
+#cyan=$(tput setaf 6)
+#white=$(tput setaf 7)
+#reset_color=$(tput sgr 0)
+
+
+cecho()  {  
+    # Color-echo
+    # arg1 = message
+    # arg2 = color
+    local default_msg="No Message."
+    message=${1:-$default_msg}
+    color=${2:-$green}
+    [ "$COLORIZE" = "1" ] && message="$color$message$reset_color"
+    echo -e "$message"
+    return
+}
+
+echo_error()   { cecho "$*" $red          ;}
+echo_fatal()   { cecho "$*" $red; exit -1 ;}
+echo_warn()    { cecho "$*" $yellow       ;}
+echo_success() { cecho "$*" $green        ;}
+echo_info()    { cecho "$*" $blue         ;}
+
+
+if_sudo(){
+
+    if [ "$(id -u)" -eq 0 ] ; then
+	return 0
+    else
+	echo "Please run as a sudoer!"
+	exit 1
+    fi
+}
+
+set_health(){
+    
+    status=$(snapctl services $SNAP_NAME.enbd)
+    case "$status" in
+	*inactive*)
+	    #echo "Service inactive"
+	    snapctl set-health --code=ready blocked "$SNAP_NAME ready to be run"
+	    ;;
+	*active*)
+	    #echo "Service active"
+	    snapctl set-health okay
+	    ;;
+	*)
+            #echo "Unknown service state"
+	    snapctl set-health --code=error error "Execution failed. Checked the Journal"
+	    ;;
+    esac 
+    
+}
+
+snap_isconnected(){
+
+    echo_warn "Plug $1: snap connect $SNAP_NAME:$1"
+    snapctl is-connected $1
+    echo_success "$1 connected"
+    
+}
+
+detect_uhd_device(){
+    rv=$($SNAP/bin/uhd_usrp_probe > /tmp/uhd_log.txt 2>&1) || true # uhd_find_device
+    if [ -z "$rv" ] ; then
+	DEVICE="B" #"NONE"
+    elif [ -n "$(echo "$rv" | grep -o "B-Series")" ]; then
+	DEVICE="B"
+    elif [ -n "$(echo "$rv" | grep -o "X-Series")" ]; then
+	DEVICE="X"
+    elif [ -n "$(echo "$rv" | grep -o "N-Series")" ]; then
+	DEVICE="N"
+    fi
+    snapctl set conf.usrpdev=$DEVICE
+}
+
+set_enb_vars(){
+
+    case $(snapctl get conf.node) in
+	enb)
+	    CONFIG=$(snapctl get conf.enb)	    
+	    ;;
+	gnb)
+	    CONFIG=$(snapctl get conf.gnb)	    
+	    ;;
+	cudu)
+	    CONFIG=$(snapctl get conf.cudu)	    
+	    ;;
+	enbsim)
+	    CONFIG=$(snapctl get conf.enbsim)	    
+	    ;;
+	*)
+	    
+    esac
+    NODE_NAME=`cat $CONFIG | grep "node_function" | cut -f2 -d= | tr -d '"' | tr -d " " | tr -d ";"` 
+    NODE_FUNC=`cat $ENB_CONFIG | grep "node_function" | cut -f2 -d= | tr -d '"' | tr -d " " | tr -d ";"`
+    NODE_SPLIT=`cat $ENB_CONFIG | grep "tr_s_preference" | cut -f2 -d= | tr -d '"' | tr -d " " | tr -d ";"`
+    
+    ENBUE_IF=`cat $ENB_CONFIG | grep "local_s_if_name" | cut -f2 -d= | tr -d '"' | tr -d " " | tr -d ";"`
+    ENBUE_ADDR=`cat $ENB_CONFIG | grep "local_s_address" | cut -f2 -d= | tr -d '"' | tr -d " " | tr -d ";"`
+    
+}
+
+dump_enb_vars(){
+    
+    echo_info "Node Func:"   $NODE_FUNC
+    echo_info "ENB-UE IF:"   $ENBUE_IF
+    echo_info "ENB-UE IF:"   $ENBUE_IF
+    echo_info "ENB-UE ADDR:" $ENBUE_ADDR
+  
+}
+
+snap_info(){
+    echo_info "Snap Name: $SNAP_NAME"
+    echo_info "Snap Instance Name: $SNAP_INSTANCE_NAME"
+    echo_info "Sanp Version: $SNAP_VERSION"
+    echo_info "Sanp Revision: $SNAP_REVISION"
+    echo_info "Snap Data: $SNAP_DATA"
+    echo_info "Snap Conf: "
+    snapctl get conf
+    echo_info 'Snap Permissions to be granted:
+    	- log-observe
+        - network-control
+        - process-control
+	- raw-usb
+        - netlink-connectors
+        - cpu-control'
+	          
+    echo ""
+    echo_warn "Check current permissions: snap connection $SNAP_NAME"
+}
+
+snap_help(){
+	echo_info "Usage:                    sudo $SNAP_NAME.[x] args"
+	echo "                          App [x] is enb, gnb"
+	echo "Note:                     root priviliage required"
+	echo "Options:"
+	echo "oai-ran.info              get the info for this snap"     
+	echo "oai-ran.check              test snap services" 
+	echo "oai-ran.init              initialize $SNAP_NAME (after the 1st installation)"
+	echo ""
+	echo "oai-ran.[x]               run the App [x] manually"
+	echo "oai-ran.[x]-conf-get      get the current $SNAP_NAME.[X] configuration file"
+	echo "oai-ran.[x]-conf-list     list the $SNAP_NAME.[x] configuration files"
+	echo "oai-ran.[x]-conf-set      set the $SNAP_NAME.[x] configuration file"
+	echo "oai-ran.[x]-conf-show     show the path to the $SNAP_NAME.[x] configuration file"
+	echo "oai-ran.[x]-debug         debug the $SNAP_NAME.[x] with gdb, only valid for enb and cudu"
+	echo "oai-ran.[x]-journal       get the $SNAP_NAME.[x] daemon logs"
+	echo "oai-ran.[x]-restart       restart the $SNAP_NAME.[x] daemon"
+	echo "oai-ran.[x]-start         start the $SNAP_NAME.[x] daemon"
+	echo "oai-ran.[x]-status        status the $SNAP_NAME.[x] daemon"
+	echo "oai-ran.[x]-stop          stop the $SNAP_NAME.[x] daemon"
+	echo ""
+	echo "  help:                   print this help"
+	
+}

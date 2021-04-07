@@ -1,0 +1,191 @@
+#! /bin/bash
+################################################################################
+# Licensed to the Mosaic5G under one or more contributor license
+# work for additional information regarding copyright ownership.
+# Apache License, Version 2.0  (the "License");
+# You may obtain a copy of the License at
+#  
+#    	http://www.apache.org/licenses/LICENSE-2.0
+#  
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+# -------------------------------------------------------------------------------
+#   For more information about the Mosaic5G:
+#   	contact@mosaic-5g.io
+#
+#
+################################################################################
+# file util
+# brief util scripts and variables for oai-mme Snap
+# author Navid Nikaein (navid.nikaein@eurecom.fr, navid.nikaein@mosaic-5g.io)
+
+. $SNAP/common
+
+# Echo 
+black='[30m'
+red='[31m'
+green='[32m'
+yellow='[33m'
+blue='[1;34m'
+magenta='[35m'
+cyan='[36m'
+white='[37m'
+reset_color='[00m'
+COLORIZE=1
+
+cecho()  {  
+    # Color-echo
+    # arg1 = message
+    # arg2 = color
+    local default_msg="No Message."
+    message=${1:-$default_msg}
+    color=${2:-$green}
+    [ "$COLORIZE" = "1" ] && message="$color$message$reset_color"
+    echo -e "$message"
+    return
+}
+
+echo_error()   { cecho "$*" $red          ;}
+echo_fatal()   { cecho "$*" $red; exit -1 ;}
+echo_warn()    { cecho "$*" $yellow       ;}
+echo_success() { cecho "$*" $green        ;}
+echo_info()    { cecho "$*" $blue         ;}
+
+
+if_sudo(){
+
+    if [ "$(id -u)" -eq 0 ] ; then
+	return 0
+    else
+	echo "Please run as a sudoer!"
+	exit 1
+    fi
+}
+
+set_health(){
+    
+    status=$(snapctl services $SNAP_NAME.mmed)
+    case "$status" in
+	*inactive*)
+	    #echo "Service inactive"
+	    snapctl set-health --code=ready blocked "$SNAP_NAME ready to be run"
+	    ;;
+	*active*)
+	    #echo "Service active"
+	    snapctl set-health okay
+	    ;;
+	*)
+            #echo "Unknown service state"
+	    snapctl set-health --code=error error "Execution failed. Checked the Journal"
+	    ;;
+    esac 
+    
+}
+
+snap_isconnected(){
+
+    echo_warn "Plug $1: snap connect $SNAP_NAME:$1"
+    snapctl is-connected $1
+    echo_success "$1 connected"
+    
+}
+
+mme_set_vars(){
+
+    if [ -r $SNAP_DATA/config_mme.sh ]; then
+	. $SNAP_DATA/config_mme.sh
+    fi
+    MME_CONFIG=${MME_CONF_FILE2:-$MME_CONF_FILE}
+
+    MME_FD_CONF=`cat $MME_CONFIG | grep "S6A_CONF" | cut -f2 -d= |  tr -d '"' | tr -d " " | tr -d ";"`
+    MME_FD_CONF_FILE=${MME_FD_CONF:-$MME_FD_CONF_FILE}
+
+    HSS_HOSTNAME=`cat $MME_CONFIG | grep "HSS_HOSTNAME" | cut -f2 -d= | cut -f1 -d# | tr -d '"' | tr -d " " | tr -d ";"`
+    
+    HOSTNAME=`hostname`
+    FQDN=`hostname --fqdn`
+    REALM=`cat $MME_FD_CONF_FILE | grep  "Realm "  | cut -f2 -d'"'`
+
+    MME_IDENTITIY=$HOSTNAME"."$REALM
+
+    HSS_IDENTITIY=$HSS_HOSTNAME"."$REALM
+    
+}
+
+mme_print_vars(){
+
+    echo_info "MME_CONF_FILE:"     $MME_CONFIG
+    echo_info "MME_FD_CONF_FILE: " $MME_FD_CONF_FILE
+    echo_info "MME HOST:"          $HOSTNAME
+    echo_info "HSS HOST:"          $HSS_HOSTNAME
+    echo_info "REALM:"             $REALM
+    echo_info "MME_ID:"            $MME_IDENTITIY
+    echo_info "HSS_ID:"            $HSS_IDENTITIY
+  
+}
+
+mme_cert(){
+    cd /tmp
+    rm -rf ./demoCA
+    mkdir ./demoCA
+    echo 01 > ./demoCA/serial
+    touch ./demoCA/index.txt
+    touch ./demoCA/index.txt.attr
+    
+    fqdn=$(hostname --fqdn)
+    # Create a Root Certification Authority Certificate
+    openssl req  -new -batch -x509 -days 3650 -nodes -newkey rsa:1024 -out mme.cacert.pem -keyout mme.cakey.pem -subj /CN=$fqdn/C=FR/ST=PACA/L=Aix/O=Eurecom/OU=CM
+    # Generate a Private Key
+    openssl genrsa -out mme.key.pem 1024
+    # Generate a CSR (Certificate Signing Request) that will be self-signed
+    openssl req -new -batch -out mme.csr.pem -key mme.key.pem -subj /CN=$fqdn/C=FR/ST=PACA/L=Aix/O=Eurecom/OU=CM
+    #certificate authority
+    openssl ca -cert mme.cacert.pem -keyfile mme.cakey.pem -in mme.csr.pem -out mme.cert.pem -outdir . -batch
+    mkdir -p $CONF_DIR/
+    mv mme.cakey.pem mme.cert.pem mme.cacert.pem mme.key.pem  $CONF_DIR
+    #cd - 
+    
+}
+
+snap_info(){
+    echo_info "Snap Name: $SNAP_NAME"
+    echo_info "Snap Instance Name: $SNAP_INSTANCE_NAME"
+    echo_info "Sanp Version: $SNAP_VERSION"
+    echo_info "Sanp Revision: $SNAP_REVISION"
+    echo_info "Snap Data: $SNAP_DATA"
+    echo_info "Snap Conf : "
+    snapctl get conf
+    echo_warn 'Snap Permissions to be granted:
+    	- log-observe
+        - process-control
+        - network-control'
+	          
+    echo ""
+    echo_warn "Check current permissions: snap connection $SNAP_NAME"
+}
+
+snap_help(){
+
+    echo_info "Usage:   sudo  $SNAP_NAME.[options] args"
+    echo_info "Note:    need root priviliage"
+    echo_info "Options:"
+    echo_info "  start:        start the $SNAP_NAME.mmed daemon"
+    echo_info "  stop:         stop the $SNAP_NAME.mmed daemon"
+    echo_info "  restart:      restart the $SNAP_NAME.mmed daemon"
+    echo_info "  status:       get the $SNAP_NAME.mmed status"
+    echo_info "  journal:      get the $SNAP_NAME.mmed logs"
+    echo_info ""
+    echo_info "  init:         initialize MME"
+    echo_info "  conf-set:     set the MME configuration file"
+    echo_info "  conf-get:     get the current MME configuration file (mme.conf)"
+    echo_info "  conf-show:    show the path to the MME configuration file (mme.conf)"
+    echo_info "  conf-list:    list all the SPGW configuration files (mme.conf, mme_fd)"
+    echo_info "  dump-vars:    dumps MME variables"
+    echo ""
+    echo_info "  help:         print this help"
+    echo_info "  Example:      sudo oai-mme.init; sudo oai-mme;"
+
+}

@@ -1,0 +1,36 @@
+#!/bin/sh
+set -e 
+
+snapctl stop --disable ${SNAP_NAME}  2>&1  || true
+sleep 1 
+snapctl start --enable ${SNAP_NAME}.apid  2>&1  || true
+
+if [ ! -f  $SNAP_DATA/.init ] ; then
+    touch $SNAP_DATA/.init
+    $SNAP/init
+fi
+
+upf=$(snapctl get conf.upf)
+if [ ! -z "$upf" ] ; then 
+    $SNAP/conf set-upf $upf
+fi
+
+apiport=$(snapctl get conf.apiport)
+if [ ! -z "$apiport" ] ; then 
+    snapctl set conf.apiport=$apiport
+fi
+
+mgrport=$(snapctl get conf.mgrport)
+if [ ! -z "$mgrport" ] ; then 
+    snapctl set conf.mgrport=$mgrport
+fi
+
+apiaddr=$(snapctl get conf.apiaddr)
+if [ ! -z "$apiaddr" ] ; then 
+    snapctl set conf.apiaddr=$apiaddr
+fi
+
+mgraddr=$(snapctl get conf.mgraddr)
+if [ ! -z "$mgraddr" ] ; then 
+    snapctl set conf.mgraddr=$mgraddr
+fi

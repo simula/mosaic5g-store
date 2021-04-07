@@ -1,0 +1,48 @@
+#!/bin/sh
+set -e 
+echo "Configure hook "
+
+snapctl stop --disable ${SNAP_NAME}  2>&1  || true
+sleep 1 
+snapctl start --enable ${SNAP_NAME}.apid  2>&1  || true
+
+mme=$(snapctl get conf.mme)
+if [ ! -z "$mme" ] ; then 
+    $SNAP/conf set-mme $mme
+fi
+
+mmefd=$(snapctl get conf.mmefd)
+if [ ! -z "$mmefd" ] ; then 
+    echo "Read-only param!"
+fi
+
+realm=$(snapctl get conf.relam)
+if [ ! -z "$realm" ] ; then 
+    echo "Read-only param!"
+fi
+
+host=$(snapctl get conf.host)
+if [ ! -z "$host" ] ; then
+    echo "Read-only param!"
+fi
+
+apiport=$(snapctl get conf.apiport)
+if [ ! -z "$apiport" ] ; then 
+    snapctl set conf.apiport=$apiport
+fi
+
+mgrport=$(snapctl get conf.mgrport)
+if [ ! -z "$mgrport" ] ; then 
+    snapctl set conf.mgrport=$mgrport
+fi
+
+apiaddr=$(snapctl get conf.apiaddr)
+if [ ! -z "$apiaddr" ] ; then 
+    snapctl set conf.apiaddr=$apiaddr
+fi
+
+mgraddr=$(snapctl get conf.mgraddr)
+if [ ! -z "$mgraddr" ] ; then 
+    snapctl set conf.mgraddr=$mgraddr
+fi
+

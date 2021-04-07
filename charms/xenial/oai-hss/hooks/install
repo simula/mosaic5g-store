@@ -153,10 +153,10 @@ update_hostname(){
 
 configure_hosts(){
   realm=`config-get realm`
-  #define fqdn for MME
+  #define fqdn for HSS
   if [ -z "$(grep -o "`hostname`.$realm" /etc/hosts)" ]; then
      echo 127.0.0.1 localhost > /etc/hosts
-     echo 127.0.0.1 `hostname`.$realm `hostname` mme >> /etc/hosts
+     echo 127.0.0.1 `hostname`.$realm `hostname` hss >> /etc/hosts
   fi
 }
 

@@ -35,7 +35,7 @@
 
 set -eux
 source $CHARM_DIR/utils/common
-set_env_paths
+set_env
 
 juju-log "stopping SPGW service and waiting for a spgw relation to be restablished"
 stop_mme 

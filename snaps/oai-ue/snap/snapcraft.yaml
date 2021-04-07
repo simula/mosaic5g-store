@@ -1,0 +1,264 @@
+name: oai-ue
+version: '2.0' 
+summary: OpenAirInterface UE entity 
+description: |
+    OAI UE is the openairinterface-based UE that allows you to connect to any commercial eNB. 
+type: app
+# license: Apache-2.0
+
+architectures:
+  - amd64
+  - i386
+confinement: strict
+grade: stable
+base: core18
+
+apps:
+  check:
+    command: test ue
+    plugs: [network, network-control, log-observe, process-control, cpu-control, network-observe, network-bind, raw-usb, netlink-connector, hardware-observe]
+  info:
+    command: run info
+  start-all:
+    command: run start-all
+  stop-all:
+    command: run stop-all
+  restart-all:
+    command: run restart-all
+  status-all:
+    command: run status-all
+  oai-ue:
+    command: run ue
+    plugs: [network, network-control, process-control,  cpu-control, network-observe, network-bind, raw-usb, netlink-connector]
+  usim-gen:
+    command: run usim-gen
+  usim-print:
+    command: run usim-print
+  nvram-print:
+    command: run nvram-print
+  init:
+    command: init
+  oip:
+    command: run oip
+  ued:
+    command: run ue 
+    daemon: simple
+    stop-command: run stop
+    stop-timeout: 1s
+    plugs: [network, network-control, process-control,  cpu-control, network-observe, network-bind, raw-usb, netlink-connector]
+  start:
+    command: run start ued
+  stop:
+    command: run stop ued
+  restart:
+    command: run restart ued
+  status:
+    command: run status ued
+  journal:
+    command: run journal ued
+    plugs: [log-observe]
+  help:
+    command: run help
+  #debug:
+  #  command: run gdb
+  conf-set:
+    command: conf set-ue
+  conf-get:
+    command: conf echo-ue
+  conf-show:
+    command: conf cat-ue
+  conf-list:
+    command: conf ls-ue
+  cmd-set:
+    command: conf set-ue-cmd
+  cmd-get:
+    command: conf echo-ue-cmd
+  cmd-show:
+    command: conf cat-ue-cmd
+  cmd-list:
+    command: conf ls-ue-cmd
+  usim-set:
+    command: conf set-usim
+  usim-get:
+    command: conf echo-usim
+  usim-show:
+    command: conf cat-usim
+  usim-list:
+    command: conf ls-usim
+  api:
+    command: run openapi
+    plugs: [network-control, network-observe, network-bind]
+  apid:
+    command: run openapi
+    daemon: simple
+    stop-command: run stop apid
+    stop-timeout: 1s
+    plugs: [network-control, network-observe, network-bind]
+  api-start:
+    command: run start apid
+  api-stop:
+    command: run stop apid
+  api-restart:
+    command: run restart apid
+  api-status:
+    command: run status apid
+  api-journal:
+    command: run journal apid
+    plugs: [log-observe, process-control, system-observe]
+  apiman:
+    command: run openapiman
+    plugs: [home, network, desktop, network-control, network-observe, network-bind]
+  apidman:
+    command: run openapiman
+    daemon: simple
+    stop-command: run stop apidman
+    stop-timeout: 1s
+    plugs: [home, network, desktop, network-control, network-observe, network-bind]
+  apiman-start:
+    command: run start apidman
+  apiman-stop:
+    command: run stop apidman
+  apiman-restart:
+    command: run restart apidman
+  apiman-status:
+    command: run status apidman
+  apiman-journal:
+    command: run journal apidman
+    plugs: [log-observe, process-control, system-observe]
+   
+hooks:
+  install:
+    plugs: [home, network]
+  configure:
+    plugs: [home, network]
+  remove:
+    plugs: [home, network]
+
+parts:
+  #gdb:
+  #  plugin: nil
+  #  override-build: |
+  #    sudo apt install gdb -y
+  #    mkdir $SNAPCRAFT_PART_INSTALL/share 
+  #    cp -r /usr/share/gdb $SNAPCRAFT_PART_INSTALL/share
+  #    cp /usr/bin/gdb* $SNAPCRAFT_PART_INSTALL
+  #  prime:
+  #    - gdb*
+  #    - share/*
+  #    - usr/bin/gdb*
+  tools:
+    plugin: nil
+    #stage-packages:
+    #  - libgcc-5-dev
+    #  - libgcc1
+    #  - libisl-dev
+    #  - make
+    #  - gcc
+    #  - g++
+    #  - build-essential
+    stage-packages:
+      - libboost-program-options1.65.1
+    override-build: |
+      sudo apt install make gcc g++ build-essential net-tools -y
+      mkdir $SNAPCRAFT_PART_INSTALL/tools 
+      cp /usr/bin/make $SNAPCRAFT_PART_INSTALL/tools
+      cp /usr/bin/gcc $SNAPCRAFT_PART_INSTALL/tools
+      cp /usr/bin/g++ $SNAPCRAFT_PART_INSTALL/tools
+      cp /usr/bin/cc $SNAPCRAFT_PART_INSTALL/tools
+      mkdir $SNAPCRAFT_PART_INSTALL/bin 
+      cp /usr/bin/uhd* $SNAPCRAFT_PART_INSTALL/bin
+    prime:
+      - tools/*
+      - lib/*
+      - usr/*
+      - bin/*
+      
+  ue:
+    plugin: cmake
+    source: git@gitlab.eurecom.fr:oai/openairinterface5g.git
+    source-branch: develop
+    build-packages: [build-essential, ]
+    stage-packages:
+      - libatlas3-base
+      - libboost-date-time1.65.1
+      - libboost-filesystem1.65.1
+      - libboost-regex1.65.1
+      - libboost-serialization1.65.1
+      - libboost-system1.65.1
+      - libboost-thread1.65.1
+      - libconfig9
+      - libgfortran4
+      - libicu60
+      - liblapacke
+      - libquadmath0
+      - libsctp1
+      - libuhd3.15.0
+      - libusb-1.0-0
+    override-build: |
+      cd ../src/cmake_targets
+      ./build_oai -I -w USRP --uhd-images-dir ../common/uhd_images
+      ./build_oai --UE -w USRP -c -C 
+      cd ../ 
+      mkdir -p $SNAPCRAFT_PART_INSTALL/ue
+      mkdir -p $SNAPCRAFT_PART_INSTALL/usr/share
+      mkdir -p $SNAPCRAFT_PART_INSTALL/lib
+      cp  targets/bin/* $SNAPCRAFT_PART_INSTALL/ue
+      cp -rp /usr/share/uhd $SNAPCRAFT_PART_INSTALL/usr/share
+      cp -r common/uhd_images $SNAPCRAFT_PART_INSTALL/ 
+      cp targets/PROJECTS/GENERIC-LTE-EPC/CONF/* $SNAPCRAFT_PART_INSTALL/ue
+      cp cmake_targets/snap_environment.sh $SNAPCRAFT_PART_INSTALL/ue
+      cp cmake_targets/ran_build/build/libSIMU.so $SNAPCRAFT_PART_INSTALL/lib
+      cp cmake_targets/ran_build/build/libdfts.so $SNAPCRAFT_PART_INSTALL/lib
+    stage:
+      - ue/*
+      - usr/*
+      - lib/*
+      - uhd_images/*
+    prime:
+      - ue/*
+      - usr/*
+      - lib/*
+      - uhd_images/*
+    organize:
+      ue/liboai_usrpdevif.so.Rel15: usr/lib/liboai_device.so
+      ue/libcoding.so: usr/lib/libcoding.so
+      ue/libparams_libconfig.so: usr/lib/libparams_libconfig.so
+      ue/liboai_eth_transpro.so.Rel15: usr/lib/liboai_transpro.so
+      ue/librfsimulator.so.Rel15: usr/lib/librfsimulator.so.Rel15
+      ue/libtcp_bridge_oai.so.Rel14: usr/lib/libtcp_bridge_oai.so.Rel15
+      ue/lte-uesoftmodem.Rel15: ue/oai-ue
+      #usr/lib/lapack/liblapack.so.3: usr/lib/liblapack.so.3
+  
+  frontend:
+    plugin: dump
+    source: frontend
+
+  openapi:
+    plugin: python
+    python-version: python3
+    python-packages:
+      - flask
+      - itsdangerous
+      - Werkzeug==0.16.1
+      - click
+      - jinja2
+      - MarkupSafe
+      - requests
+      - argparse
+      - flask_restplus==0.13.0
+      - aniso8601==8.0.0
+      - pytz==2020.1
+      - jsonschema==3.2.0
+      - attrs==19.3.0
+      - pyrsistent==0.16.0
+      - importlib-metadata==1.7.0
+      - importlib-resources==1.5.0
+      - zipp==3.1.0
+      # - pyrsistent==0.16.0
+      # - cassandra-driver==3.24.0
+    stage:
+      - usr/*
+      - lib/*
+    prime:
+      - usr/*
+      - lib/*

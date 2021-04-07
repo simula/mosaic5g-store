@@ -1,0 +1,123 @@
+#!/bin/bash
+
+. $SNAP/common
+. $SNAP/util
+
+
+apiport=$(grep -m1 "api_port_default" $SNAP/apivars.py | cut -f3 -d " ")
+mgrport=$(grep -m1 "api_manager_port_default" $SNAP/apivars.py | cut -f3 -d " ")
+apiaddr=$(grep -m1 "api_host_default" $SNAP/apivars.py | cut -f3 -d " " | cut -f3 -d " " | tr -d "'")
+mgraddr=$(grep -m1 "api_manager_host_default" $SNAP/apivars.py | cut -f3 -d " " | cut -f3 -d " " | tr -d "'")
+
+if [ ! -z "$apiport" ] ; then 
+    snapctl set conf.apiport=$apiport
+    echo_info "Default API port :"  $(snapctl get conf.apiport)
+else
+    echo_error "Could not read api_port_default in apivars.py!"
+fi
+
+if [ ! -z "$mgrport" ] ; then 
+    snapctl set conf.mgrport=$mgrport
+    echo_info "Default MGR port :"  $(snapctl get conf.mgrport)
+else
+    echo_error "Could not read  api_manager_port_default in apivars.py!"
+fi
+
+if [ ! -z "$apiaddr" ] ; then 
+    snapctl set conf.apiaddr=$apiaddr
+    echo_info "Default API addr :"  $(snapctl get conf.apiaddr)
+else
+    echo_error "Could not read api_host_default in apivars.py!"
+fi
+
+if [ ! -z "$mgraddr" ] ; then 
+    snapctl set conf.mgraddr=$mgraddr
+    echo_info "Default MGR addr :"  $(snapctl get conf.mgraddr)
+else
+    echo_error "Could not read api_manager_host_default in apivars.py!"
+fi
+
+openapi="http://"$(snapctl get conf.apiaddr)":"$(snapctl get conf.apiport)
+snapctl set conf.openapi=$openapi
+
+
+case "$1" in
+    "upf" )
+	
+	#	if [ ! -f $CONF_DIR/upf.conf ] ; then
+	cp $SNAP/etc/upf.conf $CONF_DIR
+	#	fi
+	
+	snapctl set conf.upf=$CONF_DIR/upf.conf
+	$SNAP/conf set-upf $(snapctl get conf.upf) 
+	echo_info "Default UPF conf:" $SNAP/conf echo-upf 
+
+	$SNAP/conf set-upf $CONF_DIR/upf.conf
+
+	# a copy for the user
+	cp $CONF_DIR/upf.conf $SNAP_USER_DATA
+	echo""
+	echo_success "UPF is initialized"
+	echo_info "Now, configure the upf.conf file (mainly the NETWORK_INTERFACES and P-GW sections)"
+	;;
+    * )
+	echo "Unknown command: $1"
+	;;
+
+esac
+
+get_eth_ip(){
+  echo `ip addr show $1 | grep -o 'inet [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+' | grep -o [0-9].*`
+}
+
+get_eth_ip_net(){
+  echo `ip addr show $1 | grep -o 'inet [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+/[0-9]\+' | grep -o [0-9].*`
+}
+
+get_ifname(){
+    online="no"
+    for interface in $(ls /sys/class/net/ | egrep -v "lo|vir|wl|lxd|veth");
+    do
+	if [[ $(cat /sys/class/net/$interface/carrier) = 1 ]]; then 
+            #ping -q -w 1 -c 1 `ip r | grep default | cut -d ' ' -f 3` > /dev/null && online=1 || online=0
+            online="yes"
+            break 
+	fi
+    done    
+}
+
+spgwu_conf(){
+    get_ifname
+    if [ $online == "no" ] ; then
+	echo "No interface with Internet access found. Run init later."
+	ls /sys/class/net/
+	return 
+    else
+	echo "Setting $interface for SXU and S1U interfaces"
+    fi
+    
+    # prompt has been removed for easier Ctrl+C Ctrl+V
+    sudo ip a del 172.55.55.102 brd + dev $interface label $interface:sxu    # SPGW-U SXab interface
+    sudo ip a del 192.168.248.159 brd + dev $interface label $interface:s1u  # SPGW-U S1U interface
+
+    sudo ip a add 172.55.55.102 brd + dev $interface label $interface:sxu    # SPGW-U SXab interface
+    sudo ip a add 192.168.248.159 brd + dev $interface label $interface:s1u  # SPGW-U S1U interface
+
+    INSTANCE=1
+    PREFIX='/var/snap/oai-spgwu/current/spgwu.conf'
+    
+    declare -A SPGWU_CONF
+    
+    SPGWU_CONF[@INSTANCE@]=$INSTANCE
+    #SPGWU_CONF[@PREFIX@]=$PREFIX
+    SPGWU_CONF[@PID_DIRECTORY@]='/var/run'
+    SPGWU_CONF[@SGW_INTERFACE_NAME_FOR_S1U_S12_S4_UP@]=$interface:s1u
+    SPGWU_CONF[@SGW_INTERFACE_NAME_FOR_SX@]=$interface:sxu
+    SPGWU_CONF[@SGW_INTERFACE_NAME_FOR_SGI@]=$interface
+    
+    for K in "${!SPGWU_CONF[@]}"; do 
+	egrep -lRZ "$K" $PREFIX | xargs -0 -l sed -i -e "s|$K|${SPGWU_CONF[$K]}|g"
+	ret=$?;[[ ret -ne 0 ]] && echo "Tried to replace $K with ${SPGWU_CONF[$K]}"
+    done
+
+}

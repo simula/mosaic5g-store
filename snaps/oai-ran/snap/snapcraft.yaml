@@ -1,0 +1,332 @@
+name: oai-ran
+version: '2.0'
+#title: OpenAirInterface RAN Rel.15
+summary: OpenAirInterface RAN entity with FlexRAN Agent/Runtime
+description: |
+    OAI RAN is an openairinterface-based 4G and 5G BS with different deployment flavors (eNB, gNB, C-RAN, CU,DU, RRU) allowing to connect any commercial UEs with the band of your choice. It is one of the projects of Mosaic5G inititive and includes FlexRAN agent.
+type: app
+# license: Apache-2.0
+architectures:
+  - amd64
+  - i386
+confinement: strict
+grade: stable
+base: core18
+
+apps:
+  check:
+    command: test
+    plugs: [network, network-control, log-observe, process-control, cpu-control, network-observe, network-bind, raw-usb, netlink-connector,hardware-observe]
+  info:
+    command: run info
+  start-all:
+    command: run start-all
+  stop-all:
+    command: run stop-all
+  restart-all:
+    command: run restart-all
+  status-all:
+    command: run status-all
+  enb:
+    command: run enb
+    plugs: [network, network-control, process-control, cpu-control, network-observe, network-bind, raw-usb, netlink-connector,hardware-observe]
+  gnb:
+    command: run gnb
+    plugs: [network, network-control, process-control, cpu-control, network-observe, network-bind, raw-usb,netlink-connector,hardware-observe]
+#  cudu:
+#    command: run cudu
+
+#  rru:
+#    command: run rru  
+  init:
+    command: init
+  enbd:
+    command: run enb
+    daemon: simple
+    stop-command: run stop enbd
+    stop-timeout: 1s
+    plugs: [network, network-control, process-control, cpu-control, network-observe, network-bind, raw-usb, netlink-connector,hardware-observe]
+  gnbd:
+    command: run gnb
+    daemon: simple
+    stop-command: run stop gnbd
+    stop-timeout: 1s
+    plugs: [network, network-control, process-control, cpu-control, network-observe, network-bind, raw-usb, netlink-connector,hardware-observe]
+#  cudud:
+#    command: run cudu
+#    daemon: simple
+#    stop-command: run stop cudud
+#    stop-timeout: 7s
+#  rrud:
+#    command: run rru
+#    daemon: simple
+#    stop-command: run stop rrud
+#    stop-timeout: 7s
+  enb-start:
+    command: run start enbd
+  enb-stop:
+    command: run stop enbd
+  enb-restart:
+    command: run restart enbd 
+  enb-status:
+    command: run status enbd
+  enb-journal:
+    command: run journal enbd
+    plugs: [log-observe, process-control, system-observe]
+  gnb-start:
+    command: run start gnbd
+  gnb-stop:
+    command: run stop gnbd
+  gnb-restart:
+    command: run restart gnbd 
+  gnb-status:
+    command: run status gnbd
+  gnb-journal:
+    command: run journal gnbd
+    plugs: [log-observe, process-control, system-observe]
+ # cudu-start:
+ #   command: run start cudud
+ # cudu-stop:
+ #   command: run stop cudud
+ # cudu-restart:
+ #   command: run restart cudud 
+ # cudu-status:
+ #   command: run status cudud
+ # cudu-journal:
+ #   command: run journal cudud 
+ # rru-start:
+ #   command: run start rrud 
+ # rru-stop:
+ #   command: run stop rrud
+ # rru-restart:
+ #   command: run restart rrud 
+ # rru-status:
+ #   command: run status rrud
+ # rru-journal:
+ #   command: run journal rrud
+  help:
+    command: run help
+#  enb-debug:
+#    command: run gdb-enb
+ # cudu-debug:
+ #   command: run gdb-cudu  
+#  cudu-conf-set:
+#    command: conf set-cudu
+#  cudu-conf-get:
+#    command: conf echo-cudu
+#  cudu-conf-show:
+#    command: conf cat-cudu
+#  cudu-conf-list:
+#    command: conf ls-cudu
+  enb-conf-set:
+    command: conf set-enb
+  enb-conf-get:
+    command: conf echo-enb
+  enb-conf-show:
+    command: conf cat-enb
+  enb-conf-list:
+    command: conf ls-enb
+  gnb-conf-set:
+    command: conf set-gnb
+  gnb-conf-get:
+    command: conf echo-gnb
+  gnb-conf-show:
+    command: conf cat-gnb
+  gnb-conf-list:
+    command: conf ls-gnb
+#  rru-conf-set:
+#    command: conf set-rru
+#  rru-conf-get:
+#    command: conf echo-rru
+#  rru-conf-show:
+#    command: conf cat-rru
+#  rru-conf-list:
+#    command: conf ls-rru
+  api:
+    command: run openapi
+    plugs: [network-control, network-observe, network-bind]
+  apid:
+    command: run openapi
+    daemon: simple
+    stop-command: run stop apid
+    stop-timeout: 1s
+    plugs: [network-control, network-observe, network-bind]
+  api-start:
+    command: run start apid
+  api-stop:
+    command: run stop apid
+  api-restart:
+    command: run restart apid
+  api-status:
+    command: run status apid
+  api-journal:
+    command: run journal apid
+    plugs: [log-observe, process-control, system-observe]
+  apiman:
+    command: run openapiman
+    plugs: [network, network-control, network-observe, network-bind]
+  apidman:
+    command: run openapiman
+    daemon: simple
+    stop-command: run stop apidman
+    stop-timeout: 1s
+    plugs: [network, network-control, network-observe, network-bind]
+  apiman-start:
+    command: run start apidman
+  apiman-stop:
+    command: run stop apidman
+  apiman-restart:
+    command: run restart apidman
+  apiman-status:
+    command: run status apidman
+  apiman-journal:
+    command: run journal apidman
+    plugs: [log-observe, process-control, system-observe]
+hooks:
+  install:
+    plugs: [home, network]
+  configure:
+    plugs: [home, network]
+
+parts:
+  #gdb:
+  #  plugin: nil
+  #  stage-packages:
+  #    - libbabeltrace1
+  #    - libdw1
+  #    - libmpfr6
+  #  override-build: |
+  #    sudo apt install gdb -y
+  #    mkdir $SNAPCRAFT_PART_INSTALL/share 
+  #    cp -r /usr/share/gdb $SNAPCRAFT_PART_INSTALL/share
+  #    cp /usr/bin/gdb* $SNAPCRAFT_PART_INSTALL
+  #  prime:
+  #    - gdb*
+  #    - share/*
+  #    - usr/bin/gdb*
+  uhd:
+    plugin: nil
+    stage-packages:
+      - libboost-program-options1.65.1
+    override-build: |
+      mkdir $SNAPCRAFT_PART_INSTALL/bin 
+      cp /usr/bin/uhd* $SNAPCRAFT_PART_INSTALL/bin
+    prime:
+      - bin
+      - usr
+      
+  ran:
+    plugin: cmake
+    source: https://gitlab.eurecom.fr/oai/openairinterface5g.git
+    #git@gitlab.eurecom.fr:oai/openairinterface5g.git
+    #https://gitlab.eurecom.fr/oai/openairinterface5g.git
+    source-branch: develop
+    build-packages: [build-essential, ]
+    stage-packages:
+      - libatlas3-base
+      - libboost-date-time1.65.1
+      - libboost-filesystem1.65.1
+      - libboost-regex1.65.1
+      - libboost-serialization1.65.1
+      - libboost-system1.65.1
+      - libboost-thread1.65.1
+      - libconfig9
+      - libicu60
+      - libsctp1
+      - libuhd3.15.0
+      - libusb-1.0-0
+      - libprotobuf-c1
+    override-build: |
+      cd ../src/cmake_targets
+      ./build_oai -I -w USRP --uhd-images-dir ../common/uhd_images
+      # first build 4G 
+      ./build_oai --eNB --gNB -w USRP -c -C --build-lib telnetsrv --ninja 
+      cd ../
+      
+      mkdir -p $SNAPCRAFT_PART_INSTALL/enb
+
+      # common parts eNB and gNB
+      mkdir -p $SNAPCRAFT_PART_INSTALL/usr/share
+      cp -rp /usr/share/uhd $SNAPCRAFT_PART_INSTALL/usr/share
+      cp -r common/uhd_images $SNAPCRAFT_PART_INSTALL/ 
+      cp /usr/local/lib/libproto* $SNAPCRAFT_PART_INSTALL/lib
+      #mkdir -p $SNAPCRAFT_PART_INSTALL/bin
+      #cp /usr/local/bin/protoc* $SNAPCRAFT_PART_INSTALL/bin
+
+      # ENB
+      cp targets/PROJECTS/GENERIC-LTE-EPC/CONF/* $SNAPCRAFT_PART_INSTALL/enb
+      cp cmake_targets/snap_environment.sh $SNAPCRAFT_PART_INSTALL/enb
+      cp targets/bin/* $SNAPCRAFT_PART_INSTALL/enb
+      mkdir -p $SNAPCRAFT_PART_INSTALL/lib/enb
+      cp cmake_targets/ran_build/build/*.so $SNAPCRAFT_PART_INSTALL/lib/enb
+      
+      mkdir -p $SNAPCRAFT_PART_INSTALL/gnb
+      
+      #GNB
+      cp targets/PROJECTS/GENERIC-LTE-EPC/CONF/* $SNAPCRAFT_PART_INSTALL/gnb
+      cp cmake_targets/snap_environment.sh $SNAPCRAFT_PART_INSTALL/gnb
+      cp targets/bin/* $SNAPCRAFT_PART_INSTALL/gnb
+      mkdir -p $SNAPCRAFT_PART_INSTALL/lib/gnb
+      cp cmake_targets/ran_build/build/*.so $SNAPCRAFT_PART_INSTALL/lib/gnb
+      
+    stage:
+      - enb/*
+      - gnb/*
+      - usr/*
+      - lib/*
+      #- bin/*
+      - uhd_images/*
+    prime:
+      - enb/*
+      - gnb/*
+      - usr/*
+      - lib/*
+      #- bin/*
+      - uhd_images/*
+    organize:
+      enb/liboai_usrpdevif.so.Rel15: usr/lib/liboai_device.so
+      enb/liboai_eth_transpro.so.Rel15: usr/lib/liboai_transpro.so
+      enb/libcoding.so: usr/lib/libcoding.so
+      enb/libparams_libconfig.so: usr/lib/libparams_libconfig.so
+      enb/librfsimulator.so.Rel15: usr/lib/librfsimulator.so.Rel15
+      enb/libtcp_bridge_oai.so.Rel15: usr/lib/libtcp_bridge_oai.so.Rel15
+      enb/lte-softmodem.Rel15: enb/oai-lte
+      gnb/nr-softmodem.Rel15:  gnb/oai-nr
+
+  frontend:
+    plugin: dump
+    source: frontend
+
+  openapi:
+    plugin: python
+    python-version: python3
+    python-packages:
+      - flask
+      - itsdangerous
+      - Werkzeug==0.16.1
+      - click
+      - jinja2
+      - MarkupSafe
+      - requests
+      - argparse
+      - flask_restplus==0.13.0
+      - aniso8601==8.0.0
+      - pytz==2020.1
+      - jsonschema==3.2.0
+      - attrs==19.3.0
+      - pyrsistent==0.16.0
+      - importlib-metadata==1.7.0
+      - importlib-resources==1.5.0
+      - zipp==3.1.0
+      # - pyrsistent==0.16.0
+      # - cassandra-driver==3.24.0
+    stage:
+      - usr/*
+      - lib/*
+    prime:
+      - usr/*
+      - lib/*
+
+# layout:
+#   /usr/share/parameters:
+#     bind: $SNAP_DATA/usr/share/parameters

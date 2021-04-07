@@ -1,0 +1,10 @@
+#!/bin/bash
+
+. $SNAP/common
+. $SNAP/util
+
+if_sudo
+
+set_enb_vars
+$($SNAP/bin/ip a d $ENBUE_ADDR"/24" dev  $ENBUE_IF) || true
+	

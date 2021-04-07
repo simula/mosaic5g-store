@@ -1,0 +1,71 @@
+#!/bin/sh
+set -e 
+
+snapctl stop --disable ${SNAP_NAME}  2>&1  || true
+sleep 1 
+snapctl start --enable ${SNAP_NAME}.apid  2>&1  || true
+
+if [ ! -f  $SNAP_DATA/.init ] ; then
+    touch $SNAP_DATA/.init
+    $SNAP/init
+fi
+
+node=$(snapctl get conf.node)
+if [ ! -z "$node" ] ; then 
+    snapctl set conf.ran=$node
+fi
+
+enb=$(snapctl get conf.enb)
+if [ ! -z "$enb" ] ; then 
+    $SNAP/conf set-enb $enb
+fi
+
+gnb=$(snapctl get conf.gnb)
+if [ ! -z "$gnb" ] ; then 
+    $SNAP/conf set-gnb $gnb
+fi
+
+enb_cu=$(snapctl get conf.enb-cu)
+if [ ! -z "$enb_cu" ] ; then 
+    snapctl set conf.enb-cu=$enb_cu
+fi
+
+enb_du=$(snapctl get conf.enb-du)
+if [ ! -z "$enb_du" ] ; then 
+    snapctl set conf.enb-du=$enb_du
+fi
+
+enb_bbu=$(snapctl get conf.enb-bbu)
+if [ ! -z "$enb_bbu" ] ; then 
+    $SNAP/conf set-bbu $enb_bbu
+fi
+
+enb_rru=$(snapctl get conf.enb-rru)
+if [ ! -z "$enb_rru" ] ; then 
+    $SNAP/conf set-rru $enb_rru
+fi
+
+usrp=$(snapctl get conf.usrp)
+if [ -z "$usrp" ] ; then
+    snapctl set conf.usrp=$SNAP/uhd_images
+fi
+
+rfnoc=$(snapctl get conf.rfnoc)
+if [ -z "$rfnoc" ] ; then
+    snapctl set conf.rfnoc=$SNAP/usr/share/uhd/rfnoc/blocks
+fi
+
+usrpdev=$(snapctl get conf.usrpdev)
+if [ -z "$usrpdev" ] ; then
+    snapctl set conf.usrpdev=$usrpdev
+fi
+
+apiaddr=$(snapctl get conf.apiaddr)
+if [ ! -z "$apiaddr" ] ; then 
+    snapctl set conf.apiaddr=$apiaddr
+fi
+
+mgraddr=$(snapctl get conf.mgraddr)
+if [ ! -z "$mgraddr" ] ; then 
+    snapctl set conf.mgraddr=$mgraddr
+fi

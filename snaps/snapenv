@@ -1,0 +1,2 @@
+
+export SNAPCRAFT_BUILD_ENVIRONMENT=host

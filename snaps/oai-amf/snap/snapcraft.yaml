@@ -1,0 +1,211 @@
+name: oai-amf
+version: '2.0' 
+summary: OpenAirInterface AMF entity
+description: |
+    OAI-AMF is the openairinterface-based AMF entity with the Mosaic5G frontend.
+type: app
+# license: Apache-2.0
+architectures:
+  - amd64
+  - i386
+confinement: devmode
+grade: stable
+base: core18
+
+apps:
+  check:
+    command : test amf
+  info:
+    command: run info
+  oai-amf:
+    command: run amf
+  amfd:
+    command: run amf
+    daemon: simple
+    stop-command: run stop
+    stop-timeout: 1s
+  debug:
+    command: run gdb
+  start-all:
+    command: run start-all
+  stop-all:
+    command: run stop-all
+  restart-all:
+    command: run restart-all
+  status-all:
+    command: run status-all
+  start:
+    command: run start amfd
+  stop:
+    command: run stop amfd
+  restart:
+    command: run restart amfd
+  status:
+    command: run status amfd
+  journal:
+    command: run journal amfd
+  init:
+    command: init amf
+  conf-set:
+    command: conf set-amf
+  conf-get:
+    command: conf echo-amf
+  conf-show:
+    command: conf cat-amf
+  conf-list:
+    command: conf ls-amf
+  api:
+    command: run openapi
+  apid:
+    command: run openapi
+    daemon: simple
+    stop-command: run stop
+    stop-timeout: 1s
+  api-start:
+    command: run start apid
+  api-stop:
+    command: run stop apid
+  api-restart:
+    command: run restart apid
+  api-status:
+    command: run status apid
+  api-journal:
+    command: run journal apid
+  apiman:
+    command: run openapiman
+  apidman:
+    command: run openapiman
+    daemon: simple
+    stop-command: run stop apidman
+    stop-timeout: 1s
+  apiman-start:
+    command: run start apidman
+  apiman-stop:
+    command: run stop apidman
+  apiman-restart:
+    command: run restart apidman
+  apiman-status:
+    command: run status apidman
+  apiman-journal:
+    command: run journal apidman
+    
+hooks:
+  install:
+    plugs: [home, network, desktop]
+  configure:
+    plugs: [home, network, desktop]
+    
+parts:
+  gdb:
+    plugin: nil
+    override-build: |
+      sudo apt install gdb -y
+      mkdir $SNAPCRAFT_PART_INSTALL/share 
+      cp -r /usr/share/gdb $SNAPCRAFT_PART_INSTALL/share
+      cp /usr/bin/gdb* $SNAPCRAFT_PART_INSTALL
+    prime:
+      - gdb*
+      - share/*
+  #fd:
+  #  plugin: cmake
+  #  source: git@gitlab.eurecom.fr:oai/freediameter.git
+  # source-branch: eurecom-1.2.0
+  # stage-packages:
+  #   - libsctp1
+  # override-build: |
+  #   cd ../src
+  #   mkdir build
+  #   cd build
+  #   cmake -DCMAKE_INSTALL_PREFIX:PATH=$SNAPCRAFT_PART_INSTALL/usr/local ../
+  #   #cmake ../
+  #   make -j`nproc`
+  #   sudo -S -E make install
+  #   #mkdir -p $SNAPCRAFT_PART_INSTALL/usr/local/lib/freeDiameter/
+  #   #sudo cp -r /usr/local/lib/freeDiameter $SNAPCRAFT_PART_INSTALL/usr/local/lib
+  # stage:
+  #   - lib/*
+  #   - usr/local/*
+  # prime:
+  #   - lib/*
+  #   - usr/local/*
+
+  amf:
+    plugin: cmake
+    source: git@gitlab.eurecom.fr:oai/oai-cn5g-amf.git
+    source-branch: develop
+    build-packages: [build-essential, ]
+    stage-packages:
+      - libstdc++6
+      - libsctp1
+      - libasan4
+      - libasn1-8-heimdal
+      - libboost-system1.65.1
+      - libconfig++9v5
+      - libcpprest2.10
+      - libcurl3-gnutls
+      - libgssapi3-heimdal
+      - libhcrypto4-heimdal
+      - libheimbase1-heimdal
+      - libheimntlm0-heimdal
+      - libhx509-5-heimdal
+      - libkrb5-26-heimdal
+      - libldap-2.4-2
+      - libmysqlclient20
+      - libpsl5
+      - libroken18-heimdal
+      - librtmp1
+      - libsasl2-2
+      - libwind0-heimdal
+    override-build: |
+      #export DEBIAN_FRONTEND=interactive
+      cd ../src/build/scripts
+      ./build_amf -I -f 
+      ./build_amf -c -V -b Debug -j 
+      mkdir -p $SNAPCRAFT_PART_INSTALL/amf/
+      #cp etc/amf*  $SNAPCRAFT_PART_INSTALL/amf/
+      #cp ../amf/build/*.*  $SNAPCRAFT_PART_INSTALL/amf/
+      cp ../amf/build/amf  $SNAPCRAFT_PART_INSTALL/amf/
+      cp /usr/local/lib/libfd* $SNAPCRAFT_PART_INSTALL/usr/lib
+      cp /usr/local/lib/liblfds* $SNAPCRAFT_PART_INSTALL/usr/lib
+      cp -r /usr/local/lib/freeDiameter/  $SNAPCRAFT_PART_INSTALL/usr/lib
+    stage:
+      - amf/*
+      - usr/lib/*
+      - lib/*
+    prime:
+      - amf/*
+      - usr/lib/*
+      - lib/*
+
+  frontend:
+    plugin: dump
+    source: frontend
+  openapi:
+    plugin: python
+    python-version: python3
+    python-packages:
+      - flask
+      - itsdangerous
+      - Werkzeug==0.16.1
+      - click
+      - jinja2
+      - MarkupSafe
+      - requests
+      - argparse
+      - flask_restplus==0.13.0
+      - aniso8601==8.0.0
+      - pytz==2020.1
+      - jsonschema==3.2.0
+      - attrs==19.3.0
+      - pyrsistent==0.16.0
+      - importlib-metadata==1.7.0
+      - importlib-resources==1.5.0
+      - zipp==3.1.0
+      # - pyrsistent==0.16.0
+      # - cassandra-driver==3.24.0
+    stage:
+      - usr/*
+      - lib/*
+    prime:
+      - usr/*
+      - lib/*

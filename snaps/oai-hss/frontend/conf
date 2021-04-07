@@ -1,0 +1,89 @@
+#! /bin/bash
+################################################################################
+# Licensed to the Mosaic5G under one or more contributor license
+# work for additional information regarding copyright ownership.
+# Apache License, Version 2.0  (the "License");
+# You may obtain a copy of the License at
+#  
+#    	http://www.apache.org/licenses/LICENSE-2.0
+#  
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+# -------------------------------------------------------------------------------
+#   For more information about the Mosaic5G:
+#   	contact@mosaic-5g.io
+#
+#
+################################################################################
+# file conf
+# brief conf scripts and variables for oai-hss Snap
+# author Navid Nikaein (navid.nikaein@eurecom.fr, navid.nikaein@mosaic-5g.io)
+
+
+. $SNAP/common
+
+case "$1" in
+    "set-hss" )
+	CONFIG_FILE=$2
+	if [  "$CONFIG_FILE" != "${CONFIG_FILE#/}" -a -f "$CONFIG_FILE" ]; then
+	    echo "Setting the default config file to: $CONFIG_FILE"
+	    
+	elif [ -f "$CONF_DIR/$CONFIG_FILE" ]; then
+	    CONFIG_FILE=$CONF_DIR/$CONFIG_FILE
+	    echo "Config file found in the $CONF_DIR!"
+	    echo "Resetting to the default config file: $CONFIG_FILE"
+	    
+	else
+	    echo "[ERR] Config file $CONFIG_FILE not found, please provide an absolute path!"
+	    echo "Resetting to the default config file: $HSS_CONF_FILE"
+	    CONFIG_FILE=$HSS_CONF_FILE
+	fi	
+	snapctl set conf.hss=$CONFIG_FILE
+	echo "HSS_CONF_FILE2=$CONFIG_FILE" > $SNAP_DATA/config_hss.sh
+       	echo "HSS_CONF_FILE2=$CONFIG_FILE" > $SNAP_USER_DATA/config_hss.sh
+	;;
+
+    
+     "ls-hss" )
+	if [ -r $SNAP_DATA/config_hss.sh ]; then
+	    . $SNAP_DATA/config_hss.sh
+	fi
+	
+	# default config file is (unless set in above config)
+	HSS_CONFIG=${HSS_CONF_FILE2:-$HSS_CONF_FILE}
+	ls $(dirname $HSS_CONFIG)/*
+	;;
+
+	"echo-hss" | "cat-hss" )
+	show_file=$2
+
+	if [ -r $SNAP_DATA/config_hss.sh ]; then
+	    . $SNAP_DATA/config_hss.sh
+	fi
+	
+	# default config file is (unless set in above config)
+	HSS_CONFIG=${HSS_CONF_FILE2:-$HSS_CONF_FILE}
+	# # echo (get), cat (show)
+    #     `echo $1 | cut -d"-" -f1` $HSS_CONFIG
+	
+	if [ "$show_file" != "" ]; then
+		absolute_show_file=$SNAP_DATA/$show_file
+		if [ ! -e $absolute_show_file ]; then
+			echo "The file $absolute_show_file does not exist"
+		else
+			`echo $1 | cut -d"-" -f1` $absolute_show_file
+		fi
+	else
+		`echo $1 | cut -d"-" -f1` $HSS_CONFIG
+	fi
+	
+	
+	;;
+      *)
+       echo "unknown command $1"
+       ;;
+esac
+    

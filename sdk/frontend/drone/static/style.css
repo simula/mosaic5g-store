@@ -1,0 +1,334 @@
+body {
+    /* background: rgb(217,241,255); */
+    background: rgb(141,221,255);
+    font: 12px sans-serif;
+}
+.log {
+    white-space: nowrap;
+    box-sizing: border-box;
+    font-family: monospace;
+    line-height: 1.2em;
+    overflow: scroll;
+    /* height: 40em; */
+    width: 100%;
+    padding: 4px;
+    border: 4px inset rgb(141,221,255);
+    background: rgb(217,241,255);
+}
+
+.log p {
+    margin: 0;
+    min-height: 1.2em;
+}
+
+table {
+    /* border-collapse: collapse; */
+    background: rgb(217,241,255);
+    line-height: 1.2em;
+    font-size: 80%;
+}
+td {
+    white-space: nowrap;
+}
+
+.tab.topology {
+    background: transparent;
+    position: relative;
+    padding: 0;
+    border: none;
+}
+
+#topology {
+    position: relative;
+    /* width: 100%; */
+    /* height: 100%; */
+    /* flex-grow: 2; */
+    box-sizing: border-box;
+    /* border: 2px solid rgb(141,221,255); */
+    background: rgb(217,241,255);
+    overflow: hidden;
+    flex: 1 0 auto;
+}
+#parameters {
+    flex: 0 0 auto;
+    border-left: 2px solid transparent;
+    padding-right: 0.5em;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+#methods {
+    position: absolute;
+    background: rgb(217,241,255);
+    left: 0;
+    top: 0;
+    flex: 0 0 auto;
+    margin: 10px;
+    max-width: 50%;
+    max-height: 100%;
+    align-self: flex-start;
+    box-shadow: 2px 2px 2px 2px #888888;
+}
+#methods > .collaps-wrapper {
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+.application {
+    padding-bottom: 3px;
+}
+.application > .name {
+    font-weight: bold;
+    text-align: center;
+}
+.control > .name {
+    margin-right: 0.2em;
+}
+
+.application .control {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: stretch;
+    flex: 0 0 auto;
+}
+.application .command {
+    position: relative;
+    /* box-sizing: border-box; */
+    margin: 2px;
+    border: 3px solid #F2F1F0;
+    border-style: outset;
+    border-radius: 0.4em;
+    padding: 4px;
+    min-height: 20px;
+    flex: 1 0 auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #8d197a;
+    /* background: #ffdd58; */
+}
+.application input {
+    height: 100%;
+}
+.application .button {
+    /* height: 100%; */
+    /* width: 100%; */
+    text-align: center;
+    /* min-height: 40px; */
+    /* line-height: 40px; */
+}
+#methods .application .command::after {
+    display: block;
+    font-size: 200%;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+#methods .application .command.ok {
+    border-style: inset;
+}
+
+#methods .application .command.ok::after {
+    content: '\2714';
+    color: green;
+}
+#methods .application .command.fail::after {
+    content: '\2716';
+    color: red;
+}
+#methods .application .command.ok.notified::after {
+    content: '\2714';
+    color: blue;
+}
+#command_input input {
+    width: 100%;
+    height: 40px;
+}
+
+#error_note {
+    display: none;
+    position: absolute;
+    width: 70%;
+    height: 30%;
+    top: 20%;
+    left: 50%;
+    transform: translate(-50%,-50%);
+    color: red;
+    background-color: white;
+    overflow: hidden;
+}
+#error_note .message {
+    position: absolute;
+    text-align: center;
+    width: 100%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%,-50%);
+}
+#error_note.open {
+    display: block;
+}
+#build_command {
+    display: none;
+}
+#build_command.open {
+    display: block;
+}
+
+#mainMenu {
+    background: #00428f;
+    color: #FFF;
+    font-weight: bold;
+    line-height: 3em;
+    margin-bottom: 0.5em;
+    overflow: hidden;
+}
+#logos {
+    line-height: 1em;
+    height: 3.5em;
+    float: right;
+    margin-left: 2em;
+}
+#logos img {
+    margin-right: 1em;
+    height: 3em;
+    /* vertical-align: middle; */
+    max-height: 80%;
+    max-width: 80%;
+}
+/* Show links within menubar with menubar colors */
+ul.menubar a {
+    /* background: #333333; */
+    color: black;
+    text-decoration: none;
+}
+/* Make menu entries bigger for touch screen */
+ul.menubar .popup-menu > li {
+    line-height: 2em;
+}
+
+ul.tabsbar > li {
+    width: 10em;
+}
+ul.tabsbar > li .control {
+    display: inline-block;
+    position: absolute;
+    font-size: 80%;
+    text-align: right;
+    top: 0.2em;
+    right: 0.2em;
+}
+
+ul.tabsbar > li .bullet {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    margin-right: 0.5em;
+    margin-bottom: -0.2em;
+    border-radius: 50%;
+}
+ul.tabsbar > li.done .bullet {
+    background: rgb(0,0,0);
+}
+ul.tabsbar > li.running .bullet {
+    background: rgb(0,255,0);
+}
+ul.tabsbar > li.starting .bullet {
+    background: rgb(255,255,0);
+}
+ul.tabsbar > li.stopping .bullet {
+    background: rgb(255,255,0);
+}
+ul.tabsbar > li.error .bullet {
+    background: rgb(255,0,0);
+}
+
+span.control button {
+    padding: 0;
+}
+
+ul.tabsbar > li .control .runstop:after {
+    content: "\25B6";
+}
+ul.tabsbar > li.running .control .runstop:after {
+    content: "\25FC";
+}
+ul.tabsbar > li.stopping .control .runstop:after {
+    content: "\25FC";
+}
+
+.error_x {
+    fill: red;
+}
+
+#edit-task tbody input[type=text],#edit-task tbody textarea {
+    width: 100%;
+}
+
+.link line {
+    opacity: 1;
+}
+.link.control line {
+    stroke: #8d197a;
+    stroke-dasharray: 5;
+}
+
+.link.oai line {
+    stroke: #0093b7;
+}
+.link.rtc line {
+    stroke: #5cbf2b;
+}
+
+.link.connection.ghost line {
+    stroke-dasharray: 5;
+}
+
+@keyframes configuring {
+    0% { opacity: 0;}
+    50% { opacity: 1;}
+    100% { opacity: 0;}
+}
+.node circle.config.waiting {
+    visibility: visible;
+    animation-name: configuring;
+    animation-duration: 5s;
+    animation-iteration-count: infinite;
+    fill: #8d197a;
+}
+.node circle.config {
+    visibility: hidden;
+}
+.node text.stats {
+    text-anchor: start;
+}
+.node.ghost {
+    opacity: 0.5;
+}
+
+#parameters:not(.open) {
+    display: none;
+}
+
+th {
+    /* position: relative; */
+}
+
+.linepath {
+    fill: none;
+    stroke-width: 1px;
+}
+
+.tick line,.timechart .domain {
+    /* stroke-dasharray: 2 2; */
+    stroke-width: 0.5px;
+    stroke: #ccc;
+}
+.tick text {
+    font-size: 4px;
+}
+.timechart .linepath {
+    stroke-width: 0.5px;
+}
+.timechart > rect {
+    fill: #fff;
+    opacity: 0.5;
+}

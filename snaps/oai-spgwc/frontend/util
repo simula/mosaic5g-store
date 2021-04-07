@@ -1,0 +1,196 @@
+#! /bin/bash
+################################################################################
+# Licensed to the Mosaic5G under one or more contributor license
+# work for additional information regarding copyright ownership.
+# Apache License, Version 2.0  (the "License");
+# You may obtain a copy of the License at
+#  
+#    	http://www.apache.org/licenses/LICENSE-2.0
+#  
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+# -------------------------------------------------------------------------------
+#   For more information about the Mosaic5G:
+#   	contact@mosaic-5g.io
+#
+#
+################################################################################
+# file util
+# brief util scripts and variables for oai-spgwc Snap
+# author Navid Nikaein (navid.nikaein@eurecom.fr, navid.nikaein@mosaic-5g.io)
+
+. $SNAP/common
+
+# Echo 
+black='[30m'
+red='[31m'
+green='[32m'
+yellow='[33m'
+blue='[1;34m'
+magenta='[35m'
+cyan='[36m'
+white='[37m'
+reset_color='[00m'
+COLORIZE=1
+
+cecho()  {  
+    # Color-echo
+    # arg1 = message
+    # arg2 = color
+    local default_msg="No Message."
+    message=${1:-$default_msg}
+    color=${2:-$green}
+    [ "$COLORIZE" = "1" ] && message="$color$message$reset_color"
+    echo -e "$message"
+    return
+}
+
+echo_error()   { cecho "$*" $red          ;}
+echo_fatal()   { cecho "$*" $red; exit -1 ;}
+echo_warn()    { cecho "$*" $yellow       ;}
+echo_success() { cecho "$*" $green        ;}
+echo_info()    { cecho "$*" $blue         ;}
+
+
+if_sudo(){
+
+    if [ "$(id -u)" -eq 0 ] ; then
+	return 0
+    else
+	echo "Please run as a sudoer!"
+	exit 1
+    fi
+}
+
+snap_isconnected(){
+
+    echo_warn "Plug $1: snap connect $SNAP_NAME:$1"
+    snapctl is-connected $1
+    echo_success "$1 connected"
+    
+}
+
+set_health(){
+    
+    status=$(snapctl services $SNAP_NAME.spgwcd)
+    case "$status" in
+	*inactive*)
+	    #echo "Service inactive"
+	    snapctl set-health --code=ready blocked "$SNAP_NAME ready to be run"
+	    ;;
+	*active*)
+	    #echo "Service active"
+	    snapctl set-health okay
+	    ;;
+	*)
+            #echo "Unknown service state"
+	    snapctl set-health --code=error error "Execution failed. Checked the Journal"
+	    ;;
+    esac 
+    
+}
+
+snap_info(){
+    echo_info "Snap Name: $SNAP_NAME"
+    echo_info "Snap Instance Name: $SNAP_INSTANCE_NAME"
+    echo_info "Sanp Version: $SNAP_VERSION"
+    echo_info "Sanp Revision: $SNAP_REVISION"
+    echo_info "Snap Data: $SNAP_DATA"
+    echo_info "Snap Conf : "
+    snapctl get conf
+    echo_warn 'Snap Permissions to be granted:
+    	- log-observe
+        - process-control'
+    echo ""
+    echo_warn "Check current permissions: snap connection $SNAP_NAME"
+}
+
+snap_help(){
+    echo_info "Usage:   sudo  $SNAP_NAME.[options] args"
+    echo "Note:    need root priviliage"
+    echo "Options:"
+    echo "  start:       start the $SNAP_NAME.spgwcd daemon"
+    echo "  stop:        stop the $SNAP_NAME.spgwcd daemon"
+    echo "  restart:     restart the $SNAP_NAME.spgwd daemon"
+    echo "  status:      get the $SNAP_NAME.spgwcd status"
+    echo "  journal:     get the $SNAP_NAME.spgwcd logs"
+    echo ""
+    echo "  init:       initialize SPGWC"
+    echo "  conf-set:   set the SPGWC configuration file"
+    echo "  conf-get:   get the current SPGWC configuration file (spgwc.conf)"
+    echo "  conf-show:  show the path to the SPGWC configuration file (spgwc.conf)"
+    echo "  conf-list:  list all the SPGWC configuration files (spgwc.conf)"
+    echo ""
+    echo "  help:       print this help"
+    echo "  Example:    sudo oai-spgwc.init; sudo oai-spgwc;"
+    
+}
+
+get_eth_ip(){
+  echo `ip addr show $1 | grep -o 'inet [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+' | grep -o [0-9].*`
+}
+
+get_eth_ip_net(){
+  echo `ip addr show $1 | grep -o 'inet [0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+/[0-9]\+' | grep -o [0-9].*`
+}
+
+get_ifname(){
+    online="no"
+    for interface in $(ls /sys/class/net/ | egrep -v "lo|vir|wl|lxd|veth");
+    do
+	if [[ $(cat /sys/class/net/$interface/carrier) = 1 ]]; then 
+            #ping -q -w 1 -c 1 `ip r | grep default | cut -d ' ' -f 3` > /dev/null && online=1 || online=0
+            online="yes"
+            break 
+	fi
+    done    
+}
+
+dns='8.8.8.8'
+dns_sec='4.4.4.4'
+
+spgwc_conf(){
+    get_ifname
+    if [ $online == "no" ] ; then
+	echo "No interface with Internet access found. Run init later."
+	ls /sys/class/net/
+	return 
+    else
+	echo "Setting $interface for SXU and S1U interfaces"
+    fi
+
+      # prompt has been removed for easier Ctrl+C Ctrl+V
+    sudo ip a del 172.55.55.101 brd + dev $interface label $interface:sxc    # SPGW-C SXab interface
+    sudo ip a del 172.58.58.102 brd + dev $interface label $interface:s5c  # SGW-C S5S8 interface
+    sudo ip a del 172.58.58.10 brd + dev $interface label $interface:p5c    # PGW-C S5S8 interface
+    sudo ip a del 172.16.1.104 brd + dev $interface label $interface:s11  # SGW-C S11 interface
+
+    sudo ip a del 172.55.55.101 brd + dev $interface label $interface:sxc    # SPGW-C SXab interface
+    sudo ip a del 172.58.58.102 brd + dev $interface label $interface:s5c  # SGW-C S5S8 interface
+    sudo ip a del 172.58.58.10 brd + dev $interface label $interface:p5c    # PGW-C S5S8 interface
+    sudo ip a del 172.16.1.104 brd + dev $interface label $interface:s11  # SGW-C S11 interface
+
+    INSTANCE=1
+    PREFIX='/var/snap/oai-spgwu/current/spgwu.conf'
+    
+    declare -A SPGWC_CONF
+
+    SPGWC_CONF[@INSTANCE@]=$INSTANCE
+    SPGWC_CONF[@PREFIX@]=$PREFIX
+    SPGWC_CONF[@PID_DIRECTORY@]='/var/run'
+    SPGWC_CONF[@SGW_INTERFACE_NAME_FOR_S11@]=$interface:s11
+    SPGWC_CONF[@SGW_INTERFACE_NAME_FOR_S5_S8_CP@]=$interface:s5c
+    SPGWC_CONF[@PGW_INTERFACE_NAME_FOR_S5_S8_CP@]=$interface:p5c
+    SPGWC_CONF[@PGW_INTERFACE_NAME_FOR_SX@]=$interface:sxc
+    SPGWC_CONF[@DEFAULT_DNS_IPV4_ADDRESS@]=$dns
+    SPGWC_CONF[@DEFAULT_DNS_SEC_IPV4_ADDRESS@]=$dns_sec
+    
+    for K in "${!SPGWC_CONF[@]}"; do 
+	egrep -lRZ "$K" $PREFIX | xargs -0 -l sed -i -e "s|$K|${SPGWC_CONF[$K]}|g"
+	ret=$?;[[ ret -ne 0 ]] && echo "Tried to replace $K with ${SPGWC_CONF[$K]}"
+    done
+
+}

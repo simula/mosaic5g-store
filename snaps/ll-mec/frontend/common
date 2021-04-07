@@ -1,0 +1,34 @@
+#! /bin/bash
+################################################################################
+# Licensed to the Mosaic5G under one or more contributor license
+# work for additional information regarding copyright ownership.
+# Apache License, Version 2.0  (the "License");
+# You may obtain a copy of the License at
+#  
+#    	http://www.apache.org/licenses/LICENSE-2.0
+#  
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+# -------------------------------------------------------------------------------
+#   For more information about the Mosaic5G:
+#   	contact@mosaic-5g.io
+#
+#
+################################################################################
+# file common
+# brief common scripts and variables for ll-mec Snap
+# author Navid Nikaein (navid.nikaein@eurecom.fr, navid.nikaein@mosaic-5g.io)
+
+
+export DEBIAN_FRONTEND=noninteractive
+set -e
+
+
+CONF_DIR="$SNAP_DATA"
+
+LLMEC_DIR="$SNAP"
+LLMEC_CONF_FILE="$CONF_DIR/llmec_config.json"
+LLMEC_EXEC="$LLMEC_DIR/$SNAP_NAME"

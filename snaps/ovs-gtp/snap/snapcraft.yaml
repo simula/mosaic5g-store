@@ -1,0 +1,83 @@
+name: ovs-gtp
+version: '1.0' 
+summary: OpenVirtual Switch with GTP
+description: |
+   OVS-GTP is the OpenVirtualSwitch.org with GTP support in the kernel space licensed under Apache License V2.0. It is one of the projects of Mosaic5G inititive.
+type: app
+architectures:
+  - amd64
+  - i386
+#icon: meta/gui/icon.png  
+grade: stable
+confinement: devmode
+base: core18
+
+apps:
+  ovs-gtp:
+    command: run
+  init:
+    command: init
+  help:
+    command: run help
+  set-conf:
+    command: conf set
+  get-conf:
+    command: conf echo
+  show-conf:
+    command: conf cat
+  
+parts:
+  gtp:
+    plugin: make
+    source: git@gitlab.eurecom.fr:oai/openair-cn-extras.git
+    #source-branch: develop
+    #build-packages: [build-essential, g++, libevent-dev, libssl-dev]
+    #stage-packages:
+    #  - libssl1.0.0 
+    #  - libevent-2.0-5 
+    build: |
+      cp -r ovs $SNAPCRAFT_PART_INSTALL
+      cp -r ovs /tmp
+      cd linux-4.9.0-gtp-module
+      make
+    install: |
+      cd linux-4.9.0-gtp-module
+      sudo make install 
+      sudo modprobe udp_tunnel
+      sudo modprobe ip6_udp_tunnel
+      sudo modprobe gtp
+  ovs:
+    after: [gtp, ]
+    plugin: make
+    source: https://github.com/openvswitch/ovs.git
+    source-commit: 31b88c97512b5dca9f1f6f73bb33292618eee88a 
+    build: |
+      git am < /tmp/ovs/0001-datapath-GPRS-Tunneling-Protocol-GTP-support.patch
+      git am < /tmp/ovs/0002-userspace-GPRS-Tunneling-Protocol-GTP-support.patch
+      ./boot.sh
+      ./configure --with-linux=/lib/modules/`uname -r`/build --prefix=$SNAPCRAFT_PART_INSTALL/usr/local --exec-prefix=$SNAPCRAFT_PART_INSTALL/usr/local
+      make -j`nproc` 
+    install: |
+      sudo make modules_install  # this overwrites openvswitch.ko, vport.ko, vport-gtp.ko, etc.
+      sudo make install
+      #sudo mkdir -p /usr/local/etc/openvswitch
+      #sudo mkdir -p /usr/local/var/run/openvswitch
+      #sudo ovsdb-tool create /usr/local/etc/openvswitch/conf.db vswitchd/vswitch.ovsschema
+      # copy to local snap lib: openvswitch.ko, vport.ko, vport-gtp.ko, etc.
+      mkdir -p $SNAPCRAFT_PART_INSTALL/lib/modules
+      sudo cp /lib/modules/`uname -r`/extra/* $SNAPCRAFT_PART_INSTALL/lib/modules
+      mkdir -p $SNAPCRAFT_PART_INSTALL/lib/modules/kernel
+      sudo cp /lib/modules/`uname -r`/kernel/lib/libcrc32c.ko $SNAPCRAFT_PART_INSTALL/lib/modules/kernel
+      sudo cp /lib/modules/`uname -r`/kernel/net/ipv4/udp_tunnel.ko  $SNAPCRAFT_PART_INSTALL/lib/modules/kernel
+      sudo cp /lib/modules/`uname -r`/kernel/net/netfilter/nf_conntrack.ko  $SNAPCRAFT_PART_INSTALL/lib/modules/kernel
+      sudo cp /lib/modules/`uname -r`/kernel/net/netfilter/nf_nat.ko  $SNAPCRAFT_PART_INSTALL/lib/modules/kernel
+      sudo cp /lib/modules/`uname -r`/kernel/net/ipv6/netfilter/nf_defrag_ipv6.ko  $SNAPCRAFT_PART_INSTALL/lib/modules/kernel
+       sudo cp /lib/modules/`uname -r`/kernel/net/ipv4/netfilter/nf_nat_ipv4.ko  $SNAPCRAFT_PART_INSTALL/lib/modules/kernel
+        sudo cp /lib/modules/`uname -r`/kernel/net/ipv6/netfilter/nf_nat_ipv6.ko  $SNAPCRAFT_PART_INSTALL/lib/modules/kernel
+    prime:
+      - usr/local/*
+      - usr/lib/*
+      - lib/*
+  frontend:
+    plugin: dump
+    source: frontend

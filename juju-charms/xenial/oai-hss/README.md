@@ -270,16 +270,13 @@ Once HSS is running you can checkout the output of each EPC unit and see whether
 to HSS or not. If it is not, you trigger the restart action.
 
 # Contact Information
+## MOSAIC-5G
+- [MOSIAC-5G website](http://mosaic-5g.io/)
+- [MOSAIC-5G mailing list](contact@mosaic-5g.io)
 
-## Openair4G
+## OpenairInterFace
 
-- [OpenAirInterface website](https://twiki.eurecom.fr/twiki/bin/view/OpenAirInterface/WebHome)
+- [OpenAirInterface website](http://www.openairinterface.org/)
 - [Source code](https://gitlab.eurecom.fr/oai/openair-cn/)
-- [Mailing List](openair4g-devel@lists.eurecom.fr)
+- [Mailing List](openaircn-devel@lists.eurecom.fr)
 - [More info](contact@openairinterface.org)
-
-# TODOs
- * Check the option values in the config-changed hook.
- * Add scale-out support
- * Double-check what exactly needs permissions. At the moment all runs under root.
-

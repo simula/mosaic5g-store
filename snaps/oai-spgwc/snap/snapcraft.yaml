@@ -1,0 +1,217 @@
+name: oai-spgwc
+version: '2.0' 
+summary: OpenAirInterface spgwc entity with LL-MEC Agent
+description: |
+    OAI-SPGWC is the openairinterface-based SPGWC with LL-MEC agent allowing to connect a 4G-comptaible BS and UEs to the core network. It is one of the projects of Mosaic5G inititive.
+
+type: app
+license: Apache-2.0
+architectures:
+  - amd64
+  - i386
+confinement: strict
+grade: stable
+base: core18
+
+apps:
+  check:
+    command : test spgwc
+    plugs: [log-observe, process-control, network-control, network-observe, network-bind]
+  info:
+    command: run info
+  oai-spgwc:
+    command: run spgwc
+    plugs: [log-observe, process-control, network-control, network-observe, network-bind]
+  spgwcd:
+    command: run spgwc
+    daemon: simple
+    stop-command: run stop
+    stop-timeout: 1s
+    plugs: [log-observe, process-control, network-control, network-observe, network-bind]
+  start-all:
+    command: run start-all
+  stop-all:
+    command: run stop-all
+  restart-all:
+    command: run restart-all
+  status-all:
+    command: run status-all
+  start:
+    command: run start spgwcd
+  stop:
+    command: run stop spgwcd
+  restart:
+    command: run restart spgwcd
+  status:
+    command: run status spgwcd
+  journal:
+    command: run journal spgwcd
+    plugs: [log-observe]
+  init:
+    command: init spgwc
+    plugs: [network-control, process-control]
+  help:
+    command: run help
+  #debug:
+  #  command: run gdb
+  conf-set:
+    command: conf set-spgwc
+  conf-get:
+    command: conf echo-spgwc
+  conf-show:
+    command: conf cat-spgwc
+  conf-list:
+    command: conf ls-spgwc
+  api:
+    command: run openapi
+    plugs: [network, network-control, network-observe, network-bind]
+  apid:
+    command: run openapi
+    daemon: simple
+    stop-command: run stop
+    stop-timeout: 1s
+    plugs: [network, network-control, network-observe, network-bind]
+  api-start:
+    command: run start apid
+  api-stop:
+    command: run stop apid
+  api-restart:
+    command: run restart apid
+  api-status:
+    command: run status apid
+  api-journal:
+    command: run journal apid
+    plugs: [log-observe, process-control, system-observe]
+  apiman:
+    command: run openapiman
+    plugs: [network, network-control, network-observe, network-bind]
+  apidman:
+    command: run openapiman
+    daemon: simple
+    stop-command: run stop apidman
+    stop-timeout: 1s
+    plugs: [network, network-control, network-observe, network-bind]
+  apiman-start:
+    command: run start apidman
+  apiman-stop:
+    command: run stop apidman
+  apiman-restart:
+    command: run restart apidman
+  apiman-status:
+    command: run status apidman
+  apiman-journal:
+    command: run journal apidman
+    plugs: [log-observe, process-control, system-observe]
+ 
+hooks:
+  install:
+    plugs: [home, network]
+  configure:
+    plugs: [home, network]
+    
+parts:
+  #gdb:
+  #  plugin: nil
+  #  override-build: |
+  #    sudo apt install gdb -y
+  #    mkdir $SNAPCRAFT_PART_INSTALL/share 
+  #    cp -r /usr/share/gdb $SNAPCRAFT_PART_INSTALL/share
+  #    cp /usr/bin/gdb* $SNAPCRAFT_PART_INSTALL
+  #  prime:
+  #    - gdb*
+  #    - share/*
+  tools:
+    plugin: nil
+    stage-packages:
+      - libasn1-8-heimdal
+      - libcurl4
+      - libgssapi3-heimdal
+      - libhcrypto4-heimdal
+      - libheimbase1-heimdal
+      - libheimntlm0-heimdal
+      - libhx509-5-heimdal
+      - libkrb5-26-heimdal
+      - libldap-2.4-2
+      - libpsl5
+      - libroken18-heimdal
+      - librtmp1
+      - libsasl2-2
+      - libwind0-heimdal
+
+    override-build: |
+      mkdir -p $SNAPCRAFT_PART_INSTALL/bin 
+      cp -r /usr/bin/curl $SNAPCRAFT_PART_INSTALL/bin
+      sudo apt install curl -y
+    prime:
+      - bin
+      - usr
+      - lib
+  spgwc:
+    plugin: cmake
+    source: https://github.com/OPENAIRINTERFACE/openair-spgwc.git
+    source-branch: ll-mec-v1
+    build-packages: [build-essential, ]
+    stage-packages:
+      - libstdc++6
+      - libconfig++9v5
+      - libdouble-conversion1
+      - libgflags2.2
+      - libgoogle-glog0v5
+      - libunwind8
+    override-build: |
+      cd ../src/build/scripts
+      ./build_spgwc -I -f
+      ./build_spgwc -c -b Debug
+      cd ../..
+      mkdir -p $SNAPCRAFT_PART_INSTALL/spgwc
+      cp etc/spgw*  $SNAPCRAFT_PART_INSTALL/spgwc/
+      cp build/spgw_c/build/*.*  $SNAPCRAFT_PART_INSTALL/spgwc
+      cp build/spgw_c/build/spgwc  $SNAPCRAFT_PART_INSTALL/spgwc/
+      cp /usr/lib/x86_64-linux-gnu/libasan.so.4 $SNAPCRAFT_PART_INSTALL/usr/lib
+    stage:
+      - spgwc/*
+      - usr/*
+      - lib/*
+    prime:
+      - spgwc/*
+      - usr/*
+      - lib/*
+      
+  frontend:
+    plugin: dump
+    source: frontend
+    
+  openapi:
+    plugin: python
+    python-version: python3
+    python-packages:
+      - flask
+      - itsdangerous
+      - Werkzeug==0.16.1
+      - click
+      - jinja2
+      - MarkupSafe
+      - requests
+      - argparse
+      - flask_restplus==0.13.0
+      - aniso8601==8.0.0
+      - pytz==2020.1
+      - jsonschema==3.2.0
+      - attrs==19.3.0
+      - pyrsistent==0.16.0
+      - importlib-metadata==1.7.0
+      - importlib-resources==1.5.0
+      - zipp==3.1.0
+      # - pyrsistent==0.16.0
+      # - cassandra-driver==3.24.0
+    stage:
+      - usr/*
+      - lib/*
+    prime:
+      - usr/*
+      - lib/*
+
+layout:
+  /usr/share/parameters:
+    bind: $SNAP_DATA/usr/share/parameters
+

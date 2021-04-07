@@ -1,32 +1,23 @@
 #!/bin/bash
-################################################################################
+# Copyright 2016-2018 Eurecom and Mosaic5G Platforms Authors
+# Licensed to the Mosaic5G under one or more contributor license
+# agreements. See the NOTICE file distributed with this
+# work for additional information regarding copyright ownership.
+# The Mosaic5G licenses this file to You under the
+# Apache License, Version 2.0  (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# Copyright (c) 2016, EURECOM (www.eurecom.fr)
-# All rights reserved.
+#      http://www.apache.org/licenses/LICENSE-2.0
 #
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are met:
-#
-# 1. Redistributions of source code must retain the above copyright notice, this
-#    list of conditions and the following disclaimer.
-# 2. Redistributions in binary form must reproduce the above copyright notice,
-#    this list of conditions and the following disclaimer in the documentation
-#    and/or other materials provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and documentation are those
-# of the authors and should not be interpreted as representing official policies,
-# either expressed or implied, of the FreeBSD Project.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#-------------------------------------------------------------------------------
+# For more information about the Mosaic5G:
+#      contact@mosaic5g.io
 #
 ################################################################################
 # file config-change
@@ -34,65 +25,64 @@
 # author navid.nikaein@eurecom.fr 
 
 set -eux
-
 source $CHARM_DIR/utils/common
-set_env_paths
+set_env
+status-set maintenance "Config-changed hook"
 
-status-set maintenance "Configuring $oaieNB_exec_name"
+if [ ! -f $conf_file ] ; then
+    juju-log "OAI-RAN config file does not exist $conf_file"
+fi
 
-node_func=`config-get node_function`
-file_config=`cat $CHARM_DIR/.config_file`
-
-if [ "$(config-get branch)" != "$(cat $CHARM_DIR/.branch)" ]; then
-    juju-log "branch name changed"
+if [ "$(config-get snap)" != "$(cat $CHARM_DIR/.snap)" ]; then
+    juju-log "snap channel changed"
     $CHARM_DIR/hooks/upgrade-charm
 fi
 
-if [ "$(config-get revision)" != "$(cat $CHARM_DIR/.revision)" ]; then
-    $CHARM_DIR/hooks/upgrade-charm
-    juju-log "revision changed"
+mme_ip=`config-get mme_ip_addr`
+if [ "$mme_ip" != "$(cat $CHARM_DIR/.mme_ip)" ]; then
+   
+    validate_ip $mme_ip
+    if [ $stat -eq 0 ] ; then
+        juju-log "MME IP address is set to $mme_ip, do not wait for mme-relation"
+        echo "remote"  > $CHARM_DIR/.mme_running
+        echo "$mme_ip" >  $CHARM_DIR/.mme_ip
+        add_mme_ip $mme_ip
+    else
+        echo "no"  > $CHARM_DIR/.mme_running
+        echo "" >  $CHARM_DIR/.mme_ip
+    fi
+    juju-log "MME IP addr  changed to $(cat $CHARM_DIR/.mme_ip)"
 fi
 
-if [ "$(config-get kernel)" != "$(cat $CHARM_DIR/.kernel)" ]; then
-    $CHARM_DIR/hooks/upgrade-charm
-    juju-log "kernel changed"
-fi
-
-if [ "$node_func" != "$(cat $CHARM_DIR/.node_func)" ]; then
-    $CHARM_DIR/hooks/upgrade-charm
-    juju-log "node function changed"
-fi
-
-if [ "$(config-get agent_active)" != "$(cat $CHARM_DIR/.agent_active)" ]; then
-    $CHARM_DIR/hooks/upgrade-charm
-    juju-log "agent active changes"
-fi
+#if [ "$(config-get flexran_active)" != "$(cat $CHARM_DIR/.flexran_active)" ]; then
+#    echo "$(config-get flexran_active)" >  $CHARM_DIR/.flexran_active
+#    juju-log "Flexran active state changed to $(cat $CHARM_DIR/.flexran_active)"
+    #$CHARM_DIR/hooks/upgrade-charm
+#fi
 
 
 if [ "$(config-get target_hardware)" != "$(cat $CHARM_DIR/.hw)" ]; then
-    juju-log "hw name changed"
-    $CHARM_DIR/hooks/upgrade-charm
-fi
-
-if [ "$(config-get remote_monitoring)" != "$(cat $CHARM_DIR/.rtmon)" ]; then
-    $CHARM_DIR/hooks/upgrade-charm
-    juju-log "rtmon changed"
+    juju-log "HW target changed to $(config-get target_hardware)"
+    echo "$(config-get target_hardware)" > $CHARM_DIR/.hw
+    #$CHARM_DIR/hooks/upgrade-charm
 fi
 
 
-
-# The installation runs unnecessarily multiple times for default config file
-if [ "$(config-get config_file)" != "default" ] ; then
-  if [ "$file_config" != "$(config-get config_file)" ]; then 
-    # we don't know what is changed 
-      $CHARM_DIR/hooks/upgrade-charm
-      juju-log "config_file changed"
-  fi  
+node_func=`config-get node_function`
+if [ "$node_func" != "$(cat $CHARM_DIR/.node_func)" ]; then
+    juju-log "node function changed to $node_func"
+    echo "$node_func" > $CHARM_DIR/.node_func
+    #$CHARM_DIR/hooks/upgrade-charm
 fi
 
 if [ "$node_func" == "eNodeB_3GPP_BBU" ] || [ "$node_func" == "NGFI_RCC_IF4p5" ] ; then
 
-    echo "yes" > $CHARM_DIR/.rru_active
+    echo "no" > $CHARM_DIR/.rru_active
+    status-set blocked "Node function $node_fun is not yet supported in the charm"
+    juju-log  "Node function $node_fun is not yet supported in the charm"
+    break 
+
+
 
     fh_tr_mode=`config-get fh_transport_mode`
     if [ "$fh_tr_mode" != "$(cat $CHARM_DIR/.fh_tr_mode)" ]; then 
@@ -102,14 +92,14 @@ if [ "$node_func" == "eNodeB_3GPP_BBU" ] || [ "$node_func" == "NGFI_RCC_IF4p5" ]
 
     fh_if_name=`config-get fh_if_name`
     if [ "$fh_if_name" != "$(cat $CHARM_DIR/.fh_if_name)" ]; then
-	sed -r -i "/local_if_name/ s/\".+\"/\"$fh_if_name\"/" $conf_path/$file_config
+	sed -r -i "/local_if_name/ s/\".+\"/\"$fh_if_name\"/" $conf_file 
 	if [ "$fh_tr_mode" == "raw" ] || [ "$fh_tr_mode" == "raw_if4p5" ]; then 
 	     check_ifup $fh_if_name
              status=$?
              if [ "$status" == "0" ] ; then
 	        read mac_addr </sys/class/net/$fh_if_name/address
                 echo "$mac_addr"  > $CHARM_DIR/.fh_address
-	        sed -r -i "/local_address/ s/\".+\"/\"$mac_addr\"/" $conf_path/$config_file
+	        sed -r -i "/local_address/ s/\".+\"/\"$mac_addr\"/" $conf_file 
 	    else
 		 juju-log -l WARNING "fh_if_name interface $fh_if_name does not exist"
                  status-set blocked "fh_if_name interface $fh_if_name does not exist"
@@ -125,7 +115,7 @@ if [ "$node_func" == "eNodeB_3GPP_BBU" ] || [ "$node_func" == "NGFI_RCC_IF4p5" ]
                    fh_ipv4=`ifconfig $fh_if_name | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
                    if  [ -n "$fh_ipv4" ]; then
                       echo "$fh_ipv4"  > $CHARM_DIR/.fh_address
-                      sed -r -i "/local_address/ s/\".+\"/\"$fh_ipv4\"/" $conf_path/$config_file_name
+                      sed -r -i "/local_address/ s/\".+\"/\"$fh_ipv4\"/" $conf_file 
 
                    else
                      juju-log -l WARNING "The fh_if_name $fh_if_name has to be specified before the relation with MME can be added"
@@ -165,15 +155,122 @@ if [ "$node_func" == "eNodeB_3GPP_BBU" ] || [ "$node_func" == "NGFI_RCC_IF4p5" ]
 	sed -r -i  "s/(tx_scheduling_advance[ ]*=[ ]*)[0-9]+/\1$rru_tx_schedadvance/" $conf_path/$file_config
     fi
 
+elif [ "$node_func" == "cu" ] || [ "$node_func" == "CU" ] ; then
+    cu_ip_addr=`unit-get public-address`
+    #cu_iface_name=`config-get cu_if_name`
+    cu_iface_name="none"
+    if [ "$cu_iface_name" == "none" ] ; then
+        for interface in $(ls /sys/class/net); do
+            if [ `ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"` != "" ]; then
+                ip_addr=`ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
+                if [ "$ip_addr" == $cu_ip_addr ] ; then
+                    cu_iface_name=$interface
+                    break
+                fi
+            fi
+        done
+    fi
+    #cu_ip_addr=`ifconfig $(config-get cu_if_name) | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
+    #enable_cu_f1  `config-get cu_if_name` `config-get cu_ip_addr`
+    enable_cu_f1  $cu_iface_name $cu_ip_addr
+    #enable_cu_f1  `config-get cu_if_name` $cu_ip_addr
+    echo "yes"  > $CHARM_DIR/.cu_active
+
+    echo "no"  > $CHARM_DIR/.du_active
+    #echo "no"  > $CHARM_DIR/.cu_active
+    echo "no"  > $CHARM_DIR/.rru_active
+    echo "no"  > $CHARM_DIR/.rcc_active
+    echo "no"  > $CHARM_DIR/.enb_active
+
+    
+
+elif [ "$node_func" == "du" ] || [ "$node_func" == "DU" ] ; then
+
+    du_ip_addr=`unit-get public-address`
+    #du_iface_name=`config-get du_if_name`
+    du_iface_name="none"
+    if [ "$du_iface_name" == "none" ] ; then
+        for interface in $(ls /sys/class/net); do
+            if [ `ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"` != "" ]; then
+                ip_addr=`ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
+                if [ "$ip_addr" == $du_ip_addr ] ; then
+                    du_iface_name=$interface
+                    break
+                fi
+            fi
+        done
+    fi
+    #du_ip_addr=`ifconfig $(config-get du_if_name) | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
+    enable_du_f1  $du_iface_name $du_ip_addr
+    #enable_du_f1  `config-get du_if_name` $du_ip_addr
+    #enable_du_f1  `config-get du_if_name` `config-get du_ip_addr`
+    echo "yes"  > $CHARM_DIR/.du_active
+
+    #echo "no"  > $CHARM_DIR/.du_active
+    echo "no"  > $CHARM_DIR/.cu_active
+    echo "no"  > $CHARM_DIR/.rru_active
+    echo "no"  > $CHARM_DIR/.rcc_active
+    echo "no"  > $CHARM_DIR/.enb_activ
+elif [ "$node_func" == "rcc" ] || [ "$node_func" == "RCC" ] ; then
+    rcc_ip_addr=`unit-get public-address`
+    rcc_iface_name="none"
+    if [ "$rcc_iface_name" == "none" ] ; then
+        for interface in $(ls /sys/class/net); do
+            if [ `ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"` != "" ]; then
+                ip_addr=`ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
+                if [ "$ip_addr" == $rcc_ip_addr ] ; then
+                    rcc_iface_name=$interface
+                    break
+                fi
+            fi
+        done
+    fi
+    enable_rcc_ecpri  $rcc_iface_name $rcc_ip_addr
+    echo "yes"  > $CHARM_DIR/.rcc_active
+
+    echo "no"  > $CHARM_DIR/.du_active
+    echo "no"  > $CHARM_DIR/.cu_active
+    echo "no"  > $CHARM_DIR/.rru_active
+    #echo "no"  > $CHARM_DIR/.rcc_active
+    echo "no"  > $CHARM_DIR/.enb_activ
+elif [ "$node_func" == "rru" ] || [ "$node_func" == "RRU" ] ; then
+
+    rru_ip_addr=`unit-get public-address`
+    rru_iface_name="none"
+    if [ "$rru_iface_name" == "none" ] ; then
+        for interface in $(ls /sys/class/net); do
+            if [ `ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"` != "" ]; then
+                ip_addr=`ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
+                if [ "$ip_addr" == $rru_ip_addr ] ; then
+                    rru_iface_name=$interface
+                    break
+                fi
+            fi
+        done
+    fi
+    juju-log "rru_iface_name=$rru_iface_name"
+    echo "rru_iface_name=$rru_iface_name"
+    juju-log "rru_ip_addr=$rru_ip_addr"
+    echo "rru_ip_addr=$rru_ip_addr"
+    
+    enable_rru_ecpri  $rru_iface_name $rru_ip_addr
+    echo "yes"  > $CHARM_DIR/.rru_active
+
+    echo "no"  > $CHARM_DIR/.du_active
+    echo "no"  > $CHARM_DIR/.cu_active
+    #echo "no"  > $CHARM_DIR/.rru_active
+    echo "no"  > $CHARM_DIR/.rcc_active
+    echo "no"  > $CHARM_DIR/.enb_activ
 else
-    echo "no" > $CHARM_DIR/.rru_active
+    disable_f1
+    #echo "no" > $CHARM_DIR/.rru_active  
     
 fi 
 
 
 ###############################################################################
 ###############################################################################
-juju-log "Setting up configuration in the "$file_config" file"
+juju-log "Setting up configuration in the "$conf_file" file"
 ###############################################################################
 ###############################################################################
 
@@ -183,13 +280,13 @@ enb_name=`config-get enb_name`
 enb_id=`config-get enb_id`
 if [ -n "$enb_name" ] && [ -n "$enb_id" ]; then
    #ENB NAME
-   sed -r -i  "s/(Active_eNBs[ ]*=[^\"]*)\".*\"/\1\"$enb_name\"/" $conf_path/$file_config
-   sed -r -i  "s/(eNB_name[ ]*=[ ]*)\".*\"/\1\"$enb_name\"/" $conf_path/$file_config
+   sed -r -i  "s/(Active_eNBs[ ]*=[^\"]*)\".*\"/\1\"$enb_name\"/" $conf_file
+   sed -r -i  "s/(eNB_name[ ]*=[ ]*)\".*\"/\1\"$enb_name\"/" $conf_file
    #go in a file and see whether inside the network there is already this name
    #if not, you can change and we need to run again to establish the s1 link
 
    #ENB ID
-   sed -r -i  "s/(eNB_ID[ ]*=[ ]*)[^ ;]*/\1$enb_id/" $conf_path/$file_config
+   sed -r -i  "s/(eNB_ID[ ]*=[ ]*)[^ ;]*/\1$enb_id/" $conf_file
    #go in a file and see whether inside the network there is already this name
 else
    juju-log -l WARNING "The ENB identifiers have to be specified because maybe the default ones inside the conf file have already been assigned to another ENB. So specify it before proceeding"
@@ -208,20 +305,34 @@ nb_antennas_tx=`config-get nb_antennas_tx`
 nb_antennas_rx=`config-get nb_antennas_rx`
 tx_gain=`config-get tx_gain`
 rx_gain=`config-get rx_gain`
+parallel_config=`config-get parallel_config`
+max_rxgain=`config-get max_rxgain`
+[ -z "$frame_type" ] || (sed -r -i  "s/(frame_type[ \t]*=[ \t]*)\"[a-zA-Z]+\"/\1\"$frame_type\"/" $conf_file)
 
-[ -z "$frame_type" ] || (sed -r -i  "s/(frame_type[ \t]*=[ \t]*)\"[a-zA-Z]+\"/\1\"$frame_type\"/" $conf_path/$file_config)
-[ -z "$tdd_config" ] || (sed -r -i  "s/(tdd_config[ \t]*=[ \t]*)[0-9]+/\1$tdd_config/" $conf_path/$file_config)
-[ -z "$tdd_config_s" ] || (sed -r -i  "s/(tdd_config_s[ \t]*=[ \t]*)[0-9]+/\1$tdd_config_s/" $conf_path/$file_config)
-[ -z "$eutra_band" ] || (sed -r -i  "s/(eutra_band[ \t]*=[ \t]*)[0-9]+/\1$eutra_band/" $conf_path/$file_config)
-[ -z "$downlink_frequency" ] || (sed -r -i  "s/(downlink_frequency[ \t]*=[ \t]*)[0-9a-zA-Z]+/\1$downlink_frequency/" $conf_path/$file_config)
+[ -z "$tdd_config" ] || (sed -r -i  "s/(tdd_config[ \t]*=[ \t]*)[0-9]+/\1$tdd_config/" $conf_file)
 
-[ -z "$uplink_frequency_offset" ] || (sed -r -i  "s/(uplink_frequency_offset[ \t]*=[ \t]*)[-0-9]+/\1$uplink_frequency_offset/" $conf_path/$file_config)
-[ -z "$N_RB_DL" ] || (sed -r -i  "s/(N_RB_DL[ \t]*=[ \t]*)[0-9]+/\1$N_RB_DL/" $conf_path/$file_config)
-[ -z "$nb_antennas_tx" ] || (sed -r -i  "s/(nb_antennas_tx[ ]*=[ ]*)[0-9]+/\1$nb_antennas_tx/" $conf_path/$file_config)
-[ -z "$nb_antennas_rx" ] || (sed -r -i  "s/(nb_antennas_rx[ ]*=[ ]*)[0-9]+/\1$nb_antennas_rx/" $conf_path/$file_config)
-[ -z "$tx_gain" ] || (sed -r -i  "s/(tx_gain[ ]*=[ ]*)[0-9]+/\1$tx_gain/" $conf_path/$file_config)
-[ -z "$rx_gain" ] || (sed -r -i  "s/(rx_gain[ ]*=[ ]*)[0-9]+/\1$rx_gain/" $conf_path/$file_config)
+[ -z "$tdd_config_s" ] || (sed -r -i  "s/(tdd_config_s[ \t]*=[ \t]*)[0-9]+/\1$tdd_config_s/" $conf_file)
 
+[ -z "$eutra_band" ] || (sed -r -i  "s/(eutra_band[ \t]*=[ \t]*)[0-9]+/\1$eutra_band/" $conf_file)
+
+[ -z "$downlink_frequency" ] || (sed -r -i  "s/(downlink_frequency[ \t]*=[ \t]*)[0-9a-zA-Z]+/\1$downlink_frequency/" $conf_file)
+
+[ -z "$uplink_frequency_offset" ] || (sed -r -i  "s/(uplink_frequency_offset[ \t]*=[ \t]*)[-0-9]+/\1$uplink_frequency_offset/" $conf_file)
+
+[ -z "$N_RB_DL" ] || (sed -r -i  "s/(N_RB_DL[ \t]*=[ \t]*)[0-9]+/\1$N_RB_DL/" $conf_file)
+
+[ -z "$nb_antennas_tx" ] || (sed -r -i  "s/(nb_antennas_tx[ ]*=[ ]*)[0-9]+/\1$nb_antennas_tx/" $conf_file)
+
+[ -z "$nb_antennas_rx" ] || (sed -r -i  "s/(nb_antennas_rx[ ]*=[ ]*)[0-9]+/\1$nb_antennas_rx/" $conf_file)
+
+[ -z "$tx_gain" ] || (sed -r -i  "s/(tx_gain[ ]*=[ ]*)[0-9]+/\1$tx_gain/" $conf_file)
+
+[ -z "$rx_gain" ] || (sed -r -i  "s/(rx_gain[ ]*=[ ]*)[0-9]+/\1$rx_gain/" $conf_file)
+
+[ -z "$parallel_config" ] || (sed -r -i  "s/(parallel_config[ ]*=[ ]*)\"[^ ]+\"/\1\"$parallel_config\"/" $conf_file)
+#[ -z "$parallel_config" ] || (sed -r -i  "s/(parallel_config[ \t]*=[ \t]*)\"[^ ]+\"/\1\"$parallel_config\"/" $conf_file)
+
+[ -z "$max_rxgain" ] || (sed -r -i  "s/(max_rxgain[ \t]*=[ \t]*)[0-9]+/\1$max_rxgain/" $conf_file)
 
 pdsch_referenceSignalPower_b13=-27
 pusch_p0_Nominal_b13=-96
@@ -229,11 +340,11 @@ pucch_p0_Nominal_b13=-100
 rach_preambleInitialReceivedTargetPower_b13=-104
 
 case $eutra_band in
-    13)
-	sed -r -i  "s/(pdsch_referenceSignalPower[ \t]*=[ \t]*)[0-9]+/\1$pdsch_referenceSignalPower_b13/" $conf_path/$file_config	
-	sed -r -i  "s/(pusch_p0_Nominal[ \t]*=[ \t]*)[0-9]+/\1$pusch_p0_Nominal_b13/" $conf_path/$file_config	
-	sed -r -i  "s/(pucch_p0_Nominal[ \t]*=[ \t]*)[0-9]+/\1$pucch_p0_Nominal_b13/" $conf_path/$file_config	
-	sed -r -i  "s/(rach_preambleInitialReceivedTargetPower[ \t]*=[ \t]*)[0-9]+/\1$rach_preambleInitialReceivedTargetPower_b13/" $conf_path/$file_config	
+    12 | 13 | 14 | 17 | 5 )
+	sed -r -i  "s/(pdsch_referenceSignalPower[ \t]*=[ \t]*)[0-9]+/\1$pdsch_referenceSignalPower_b13/" $conf_file	
+	sed -r -i  "s/(pusch_p0_Nominal[ \t]*=[ \t]*)[0-9]+/\1$pusch_p0_Nominal_b13/" $conf_file	
+	sed -r -i  "s/(pucch_p0_Nominal[ \t]*=[ \t]*)[0-9]+/\1$pucch_p0_Nominal_b13/" $conf_file	
+	sed -r -i  "s/(rach_preambleInitialReceivedTargetPower[ \t]*=[ \t]*)[0-9]+/\1$rach_preambleInitialReceivedTargetPower_b13/" $conf_file	
 	;;
     *)
 	juju-log "Calibration parameters might not be optimal for band $$eutra_band"
@@ -246,21 +357,34 @@ esac
 #############################################################################
 
 ##I should change the s1-u and s1-mme
-iface=`config-get eth`
+ipv4=`unit-get public-address`
+#iface=`config-get eth`
+iface="none"
+if [ "$iface" == "none" ] ; then
+    for interface in $(ls /sys/class/net); do
+        if [ `ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"` != "" ]; then
+            ip_addr=`ifconfig $interface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
+            if [ "$ip_addr" == $ipv4 ] ; then
+                iface=$interface
+                break
+            fi
+        fi
+    done
+fi
 
 if [ -n "$iface" ]; then
    check_ifup $iface
    status=$?
    if [ "$status" == "0" ] ; then 
 	
-   	ipv4=`ifconfig $iface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
-  	if  [ -n "$ipv4" ]; then
-   #INTERFACES
-       	   sed -r -i "/ENB_INTERFACE_NAME_FOR_S1_MME/ s/\".+\"/\"$iface\"/" $conf_path/$file_config
-       	   sed -r -i "/ENB_INTERFACE_NAME_FOR_S1U/ s/\".+\"/\"$iface\"/" $conf_path/$file_config
-       #ADDRESSES
-           sed -r -i "/ENB_IPV4_ADDRESS_FOR_S1_MME/ s-\".+\"-\"$ipv4/24\"-" $conf_path/$file_config
-           sed -r -i "/ENB_IPV4_ADDRESS_FOR_S1U/ s-\".+\"-\"$ipv4/24\"-" $conf_path/$file_config
+       ipv4=`ifconfig $iface | egrep -o "inet addr:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | egrep -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"`
+       if  [ -n "$ipv4" ]; then
+	   #INTERFACES
+       	   sed -r -i "/ENB_INTERFACE_NAME_FOR_S1_MME/ s/\".+\"/\"$iface\"/" $conf_file
+       	   sed -r -i "/ENB_INTERFACE_NAME_FOR_S1U/ s/\".+\"/\"$iface\"/" $conf_file
+	   #ADDRESSES
+           sed -r -i "/ENB_IPV4_ADDRESS_FOR_S1_MME/ s-\".+\"-\"$ipv4/24\"-" $conf_file
+           sed -r -i "/ENB_IPV4_ADDRESS_FOR_S1U/ s-\".+\"-\"$ipv4/24\"-" $conf_file
         else 
            juju-log -l WARNING "The S1 ethernet interface has to be specified before the relation with MME can be added"
         fi
@@ -276,10 +400,9 @@ fi
 ############################################################################
 TAC=`config-get TAC`
 #TAC in config file
-[ -z "$TAC" ] || (sed -r -i  "s/(tracking_area_code[ ]*=[ ]*)\"[0-9]+\"/\1\"$TAC\"/" $conf_path/$file_config)
+[ -z "$TAC" ] || (sed -r -i  "s/(tracking_area_code[ ]*=[ ]*)\"[0-9]+\"/\1\"$TAC\"/" $conf_file)
 #if it empty we keep the default already present in the conf file set by the OAI developers
 
 ############################################################################
 
-
-$CHARM_DIR/hooks/start
+#$CHARM_DIR/hooks/start || true 

@@ -1,0 +1,351 @@
+#! /bin/bash
+################################################################################
+# Licensed to the Mosaic5G under one or more contributor license
+# work for additional information regarding copyright ownership.
+# Apache License, Version 2.0  (the "License");
+# You may obtain a copy of the License at
+#  
+#    	http://www.apache.org/licenses/LICENSE-2.0
+#  
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+# -------------------------------------------------------------------------------
+#   For more information about the Mosaic5G:
+#   	contact@mosaic-5g.io
+#
+#
+################################################################################
+# file run
+# brief run scripts and variables for oai-hss Snap
+# author Navid Nikaein (navid.nikaein@eurecom.fr, navid.nikaein@mosaic-5g.io)
+
+
+. $SNAP/common
+. $SNAP/util
+
+hss_set_vars
+
+export LD_LIBRARY_PATH="$SNAP/usr/lib/freeDiameter:$SNAP/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"
+
+if [ -r $SNAP_DATA/config_hss.sh ]; then
+    . $SNAP_DATA/config_hss.sh
+fi
+HSS_CONFIG=${HSS_CONF_FILE2:-$HSS_CONF_FILE}
+HSS_EXEC_ARGS=" -j $HSS_CONFIG "
+
+
+HSS_FD_CONF_FILE2=$(dirname $HSS_CONFIG)/hss_rel14_fd.conf
+HSS_FD_CONFIG=${HSS_FD_CONF_FILE2:-$HSS_FD_CONF_FILE}
+
+	
+if [ ! -e $HSS_EXEC ]; then
+    echo_error "Cannot find $HSS_EXEC executable"
+    exit -1 
+fi		   	   
+
+	 
+case "$1" in
+    "openapi" )
+	shift
+	python3 $SNAP/api.py "$@"
+	
+	;;
+    "openapiman" )
+	shift
+	python3 $SNAP/api-manager.py "$@"
+	
+	;;
+    "gdb" )
+	echo "Running $2 with the gdb"
+	touch      $SNAP_DATA/.gdb_$2
+	chmod 777  $SNAP_DATA/.gdb_$2
+	echo "file ${2^^}_EXEC"        > $SNAP_DATA/.gdb_$2
+	echo "set args ${2^^}_EXEC_ARGS" >> $SNAP_DATA/.gdb_$2
+	echo "run"                     >> $SNAP_DATA/.gdb_$2
+	cat $SNAP_DATA/.gdb_$2
+	exec $SNAP/gdb --data-directory=$SNAP_DATA  -n -x $SNAP_DATA/.gdb_$2
+	;;
+
+    
+     "info" )
+	#snap info $SNAP_NAME
+	 shift 
+	 snap_info
+	 
+	 ;; 
+     
+     "start-all"  )
+	 shift
+	 if_sudo
+	 snapctl start --enable $SNAP_NAME "$@"
+	 snapctl services $SNAP_NAME "$@"
+	 ;;
+     
+     "start"  )
+	 #snap start $SNAP_NAME
+	 daemon=$2
+	 shift 2 
+	 if_sudo
+	 snapctl start --enable $SNAP_NAME.$daemon "$@"
+	 snapctl services $SNAP_NAME.$daemon "$@"
+	 ;;
+     
+     "stop-all" )
+	 #snap stop $SNAP_NAME
+	 shift
+	 if_sudo
+	 snapctl stop --disable $SNAP_NAME "$@"
+	 snapctl services $SNAP_NAME "$@"
+	 ;;
+     
+     "stop" )
+	 #snap stop $SNAP_NAME
+	 daemon=$2
+	 shift 2
+	 if_sudo
+	 snapctl stop --disable $SNAP_NAME.$daemon "$@"
+	 snapctl services $SNAP_NAME.$daemon "$@"
+	 ;;
+     
+     "restart-all" )
+	 shift
+	 if_sudo
+	 snapctl stop --disable $SNAP_NAME "$@"
+	 snapctl start --enable $SNAP_NAME "$@"
+	 snapctl services $SNAP_NAME "$@"
+	 ;;
+     
+     "restart" )
+	 #snap restart $SNAP_NAME
+	 daemon=$2
+	 shift 2
+	 if_sudo
+	 snapctl stop --disable $SNAP_NAME.$daemon "$@"
+	 snapctl start --enable $SNAP_NAME.$daemon "$@"
+	 snapctl services $SNAP_NAME.$daemon "$@"
+	 ;;
+     
+     "status-all" )
+	 #snap services $SNAP_NAME
+	 shift
+	 snapctl services $SNAP_NAME "$@"
+	 ;;
+     
+     "status" )
+	 #snap services $SNAP_NAME
+	 daemon=$2
+	 shift 2
+	 snapctl services $SNAP_NAME.$daemon "$@"
+	 ;;
+     
+     "journal" )
+	 daemon=$2
+	 shift 2
+	 snap_isconnected log-observe
+	 journalctl -u snap.$SNAP_NAME.$daemon.service "$@"
+
+	 ;;
+    
+    "help" )
+	snap_help
+	;;
+
+    "provision-user-cassandra" | "reset-users" )
+	check_cassandra_service
+	
+	# provisin 208930000000001
+	#echo "$SNAP/data_provisioning_users --apn $HSS_APN_OAI --apn2 $HSS_APN_DEFAULT --key $OPC --imsi-first $IMSI_FIRST3 --msisdn-first $MSISDN_FIRST --mme-identity $MME_IDENTITIY --no-of-users $HSS_NUM_USER --realm $REALM --sqn $SQN --truncate True  --cassandra-cluster $Cassandra_Server_IP"
+
+	#python3 $SNAP/data_provisioning_users --apn $HSS_APN_OAI --apn2 $HSS_APN_DEFAULT --key $OPC --imsi-first $IMSI_FIRST3 --msisdn-first $MSISDN_FIRST --mme-identity $MME_IDENTITIY --no-of-users $HSS_NUM_USER --realm $REALM --sqn $SQN --truncate True --cassandra-cluster $Cassandra_Server_IP
+
+	#echo ""
+	#provisin 208940000000001
+	#python3 $SNAP/data_provisioning_users --apn $HSS_APN_OAI --apn2 $HSS_APN_DEFAULT --key $OPC --imsi-first $IMSI_FIRST4 --msisdn-first $MSISDN_FIRST --mme-identity $MME_IDENTITIY --no-of-users $HSS_NUM_USER --realm $REALM  --sqn $SQN --truncate False --cassandra-cluster $Cassandra_Server_IP
+
+	echo ""
+	#provisin 208950000000001
+	#echo "$SNAP/data_provisioning_users --apn $HSS_APN_OAI --apn2 $HSS_APN_DEFAULT --key $OPC --imsi-first $IMSI_FIRST5 --msisdn-first $MSISDN_FIRST --mme-identity $MME_IDENTITIY --no-of-users $HSS_NUM_USER --realm $REALM  --sqn $SQN --truncate True --cassandra-cluster $Cassandra_Server_IP"
+	
+	#python3 $SNAP/data_provisioning_users --apn $HSS_APN_OAI --apn2 $HSS_APN_DEFAULT --key $OPC --imsi-first $IMSI_FIRST5 --msisdn-first $MSISDN_FIRST --mme-identity $MME_IDENTITIY --no-of-users $HSS_NUM_USER --realm $REALM  --sqn $SQN --truncate True --cassandra-cluster $Cassandra_Server_IP
+
+	#cassandra_is_empty=$(python3 $SNAP/dump-users --cassandra-cluster $Cassandra_Server_IP  | wc -l) || true 
+	
+	echo "prov-users -I208950000000001-208950000000010  --mme-identity $MME_IDENTITIY --cassandra-cluster $Cassandra_Server_IP" 
+	echo ""
+	python3 $SNAP/prov-users -I208950000000001-208950000000010  --mme-identity $MME_IDENTITIY --cassandra-cluster $Cassandra_Server_IP 
+
+	;;
+
+    "clean-users" )
+	shift 
+	python3 $SNAP/prov-users -t -C  $Cassandra_Server_IP
+	;;
+
+    "probe-db" )
+		shift 
+		python3 $SNAP/probe-db.py -C  $Cassandra_Server_IP
+	;;
+
+    "add-users" )
+	check_cassandra_service
+	shift 
+	python3 $SNAP/prov-users -C  $Cassandra_Server_IP "$@"
+
+	;;
+    
+    "add-users-old" )
+	check_cassandra_service
+	
+	if [ $# -lt 1 ] ; then
+	    #python3 $SNAP/data_provisioning_users --cassandra-cluster $Cassandra_Server_IP -h
+	    echo "[ERR] Arguments are missing, please Check out oai-hss.add-user --help"
+	    echo ""
+	    echo "Example:"
+	    echo "$ oai-hss.add-user --apn $HSS_APN_OAI --apn2 $HSS_APN_DEFAULT --key $OPC --imsi-first $IMSI_FIRST3 --msisdn-first $MSISDN_FIRST --mme-identity $MME_IDENTITIY --no-of-users $HSS_NUM_USER --realm $REALM --cassandra-cluster $Cassandra_Server_IP"
+	    echo "Note: if truncate is true, then the previous user base will be overwritten"
+	    return 1
+	fi
+	shift
+	imsi=$(echo $@ | grep -oP '\--imsi-first \K\w+') || true
+	imsi_digits=$(echo $imsi | grep -P -o '\d' | wc -l) || true 
+	imsi_i=$(echo $@ | grep -oP '\-I \K\w+') || true
+	imsi_i_digits=$(echo $imsi_i | grep -P -o '\d' | wc -l) || true 
+			
+	if [ "$imsi" = "" ] && [ "$imsi_i" = "" ] ; then
+	    echo "[ERR] Please provide a valid IMSI with 15 digits!"
+	    return
+	elif [ "$imsi" = "" ] ; then
+	    imsi=$imsi_i
+	    imsi_digits=$imsi_i_digits
+	fi
+
+	if [ $imsi_digits -eq 15 ] ; then
+	    echo "[INFO] Please enter a valid IMSI  with 15 digits ($imsi, $imsi_digits/15)"
+	    return
+	fi
+	
+	echo "[INFO] Writing (adding/updating) IMSI $imsi into the DB"
+	echo ""
+	python3 $SNAP/data_provisioning_users "$@" $*
+	echo ""
+	echo "[INFO] Reading the DB entry for IMSI $imsi"
+	python3 $SNAP/dump_users --imsi-first $imsi --cassandra-cluster $Cassandra_Server_IP
+	
+	;;
+	     
+    "dump-users" )
+	shift 
+	python3 $SNAP/dump-users --cassandra-cluster $Cassandra_Server_IP "$@" 
+	;;
+     
+    "provision-mme-cassandra" |  "reset-mmes" )
+	shift
+	check_cassandra_service
+	echo ""
+	echo "$SNAP/prov-mme  --id $MME_ID --mme-isdn $MME_ISDN --mme-identity $MME_IDENTITIY --realm $REALM --ue-reachability 1 --truncate  --cassandra-cluster $Cassandra_Server_IP"
+	python3 $SNAP/prov-mme --id $MME_ID --mme-isdn $MME_ISDN --mme-identity $MME_IDENTITIY --realm $REALM --ue-reachability 1 --truncate --cassandra-cluster $Cassandra_Server_IP
+
+	;;
+    
+    "add-mme-old" )
+       
+	check_cassandra_service 
+	if [ $# -lt 2 ] ; then
+	    echo "Argument: MME_FQDN_IDENTITIY"
+	    return 1
+	fi
+	rand=$(od -A n -t d -N 2 /dev/urandom |tr -d ' ')
+	mid=$((rand % 100))
+	misdn=$((rand % 1000))
+	
+	#mid= $MME_ID + $num
+	#misdn=$MME_ISDN + $num 
+	
+	
+	if [ $# -ge 2 ] ; then 
+	    mfqdn=$2
+	else
+	    mfqdn=`hostname --fqdn`.$REALM 
+	fi
+	
+	
+	echo ""
+	#echo "$SNAP/data_provisioning_mme  --id $mid --mme-isdn $misdn --mme-identity $mfqdn --realm $REALM --ue-reachability 1 --truncate True  --verbose True --truncate False --cassandra-cluster $Cassandra_Server_IP"
+	
+	python3 $SNAP/data_provisioning_mme --id $mid --mme-isdn $misdn --mme-identity $mfqdn --realm $REALM --ue-reachability 1 --truncate True  --verbose True --truncate False --cassandra-cluster $Cassandra_Server_IP
+
+	;;
+    
+    "add-mme" )
+	shift
+	check_cassandra_service
+	python3 $SNAP/prov-mme --cassandra-cluster $Cassandra_Server_IP "$@"
+	;;
+
+    "dump-mmes" )
+	shift
+	python3 $SNAP/dump-mme --cassandra-cluster $Cassandra_Server_IP "$@"
+
+	;;
+
+    "clean-mmes" )
+	 python3 $SNAP/prov-mme -t --cassandra-cluster $Cassandra_Server_IP
+	 ;;
+        
+    "dump-vars")
+	shift
+	hss_print_vars
+	;;
+
+    "db-ip")
+	#get_cassandra_ip
+	echo "$Cassandra_Server_IP"
+	;;
+
+    "hss-certificate" )
+
+	#pushd .
+	cd /tmp
+	rm -rf ./demoCA
+	mkdir ./demoCA
+	echo 01 > ./demoCA/serial
+	touch ./demoCA/index.txt
+	touch ./demoCA/index.txt.attr
+	fqdn=`hostname --fqdn`
+	#RANDFILE=/tmp/.rnd
+	#export "$RANDFILE"
+	
+	echo "Creating HSS certificate for user: $CONF_DIR $fqdn"
+	# Create a Root Certification Authority Certificate
+	openssl req  -new -batch -x509 -days 3650 -nodes -newkey rsa:1024 -out hss.cacert.pem -keyout hss.cakey.pem -subj /CN=$fqdn/C=FR/ST=PACA/L=Aix/O=Eurecom/OU=CM
+	# Generate a Private Key
+	openssl genrsa -out hss.key.pem 1024 
+	# Generate a CSR (Certificate Signing Request) that will be self-signed
+	openssl req -new -batch -out hss.csr.pem -key hss.key.pem -subj /CN=$fqdn/C=FR/ST=PACA/L=Aix/O=Eurecom/OU=CM
+	#certificate authority 
+	openssl ca -cert hss.cacert.pem -keyfile hss.cakey.pem -in hss.csr.pem -out hss.cert.pem -outdir . -batch
+	mkdir -p $CONF_DIR/
+	mv hss.cakey.pem hss.cert.pem hss.cacert.pem hss.key.pem $CONF_DIR
+	#popd
+	#cd -
+	
+#	echo "Done creating HSS certificate for user: $CONF_DIR $fqdn"
+	
+	;;
+     
+     "hss" | * )
+	 
+	 shift
+	 snap_isconnected network-control #sys-access
+         echo_info "$HSS_EXEC  $HSS_EXEC_ARGS"
+	 $HSS_EXEC  `echo $HSS_EXEC_ARGS`  "$@" $*
+	 
+	 ;;
+     
+esac
+
+
+set_health

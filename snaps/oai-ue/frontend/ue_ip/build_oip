@@ -1,0 +1,25 @@
+#!/bin/bash
+set -e 
+
+
+declare -a headers=( "4.9.0-040900" "4.10.0-42" "4.11.0-14"  "4.13.0-45"  "4.15.0-38")
+
+rm -f *.ko
+for k in "${headers[@]}"
+do
+  
+  echo "getting linux-headers-$k-generic"
+  sudo apt install linux-headers-$k-generic -y  
+  make all -f Makefile.build k=$k-generic
+  echo "cp ue_ip.ko ue_ip_$k.ko"
+  cp ue_ip.ko ue_ip_$k.ko
+  rm -f *.o ue_ip.ko modules.order Module.symvers
+  #sudo apt remove linux-headers-$k-generic -y  
+  
+done 
+
+#export PATH=$PATH:$SNAP/tools
+#cd $SNAP_DATA/ue_ip
+#$SNAP/tools/make -f $SNAP_DATA/ue_ip/Makefile
+#> make.log  2>&1
+#cd -

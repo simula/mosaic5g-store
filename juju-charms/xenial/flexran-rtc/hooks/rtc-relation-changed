@@ -1,32 +1,23 @@
 #!/bin/bash
-################################################################################
+# Copyright 2016-2018 Eurecom and Mosaic5G Platforms Authors
+# Licensed to the Mosaic5G under one or more contributor license
+# agreements. See the NOTICE file distributed with this
+# work for additional information regarding copyright ownership.
+# The Mosaic5G licenses this file to You under the
+# Apache License, Version 2.0  (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# Copyright (c) 2016, EURECOM (www.eurecom.fr)
-# All rights reserved.
+#      http://www.apache.org/licenses/LICENSE-2.0
 #
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are met:
-#
-# 1. Redistributions of source code must retain the above copyright notice, this
-#    list of conditions and the following disclaimer.
-# 2. Redistributions in binary form must reproduce the above copyright notice,
-#    this list of conditions and the following disclaimer in the documentation
-#    and/or other materials provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and documentation are those
-# of the authors and should not be interpreted as representing official policies,
-# either expressed or implied, of the FreeBSD Project.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#-------------------------------------------------------------------------------
+# For more information about the Mosaic5G:
+#      contact@mosaic5g.io
 #
 ################################################################################
 # file rtc-relation-changed
@@ -35,42 +26,43 @@
 
 set -ex
 source $CHARM_DIR/utils/common
-set_env_paths
+set_env
+status-set maintenance "RTC-relation-changed hook"
 
-rel_ids=`relation-ids rtc`
+#rel_ids=`relation-ids rtc`
 
-if [ -z "$rel_ids" ];then
-   juju-log "Data not available yet, exit silently"
-   exit 0
-fi
+#if [ -z "$rel_ids" ];then
+#   juju-log "Data not available yet, exit silently"
+#   exit 0
+#fi
 
-agent_active=`relation-get -r $rel_ids AGENT_ACTIVE`
+#agent_active=`relation-get -r $rel_ids AGENT_ACTIVE`
 
-if [ -z "$agent_active" ]; then
-   juju-log "Agent is not active yet, exit silently"
-   exit 0
-fi
+#if [ -z "$agent_active" ]; then
+#   juju-log "Agent is not active yet, exit silently"
+#   exit 0
+#fi
 
 
-if [ "$agent_active" == "yes" ]; then  
+#if [ "$agent_active" == "yes" ]; then  
 
-    echo "$agent_active" >  $CHARM_DIR/.agent_active
-    relation-set RTC_PORT=`config-get bind_port`
+ #   echo "$agent_active" >  $CHARM_DIR/.agent_active
+    relation-set RTC_PORT=`config-get bind_sbi_port`
     
     rtc_public_ip=`unit-get public-address`
     get_ip_address $rtc_public_ip
     status=$?
 	  
     if [ "$status" == "1" ] ; then
-	status-set error "nslookup failed for the rru host name ($rtc_public_ip)"
+	juju-log "nslookup failed for the flexran host name ($rtc_public_ip)"
 	relation-set RTC_PUBLIC_IP=$rtc_public_ip
     else
 	relation-set RTC_PUBLIC_IP=$validated_public_ip
-	status-set maintenance "Joined the RTC relation"
+	juju-log  "Joined the RTC relation"
     fi 
     
-    $CHARM_DIR/hooks/start
+    #$CHARM_DIR/hooks/start
 
-else 
-    status-set blocked "RAN/eNB Agent is not yet active"
-fi
+#else 
+#    status-set blocked "RAN/eNB Agent is not yet active"
+#fi

@@ -1,0 +1,147 @@
+#! /bin/bash
+################################################################################
+# Licensed to the Mosaic5G under one or more contributor license
+# work for additional information regarding copyright ownership.
+# Apache License, Version 2.0  (the "License");
+# You may obtain a copy of the License at
+#  
+#    	http://www.apache.org/licenses/LICENSE-2.0
+#  
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+# -------------------------------------------------------------------------------
+#   For more information about the Mosaic5G:
+#   	contact@mosaic-5g.io
+#
+#
+################################################################################
+# file init
+# brief init scripts and variables for oai-cn Snap
+# author Navid Nikaein (navid.nikaein@eurecom.fr, navid.nikaein@mosaic-5g.io)
+
+
+. $SNAP/common
+
+echo "Init $1"
+
+HOSTNAME=`hostname` # `cat /etc/hostname` #`hostname`
+SANP_PREV_RV=$SNAP_REVISION-1
+
+case "$1" in
+    "hss" )
+	#MYSQL_PW=`cat $CONF_DIR/hss.conf | grep  MYSQL_pass  | cut -f2 -d'"'`
+	#MYSQL_USER=`cat $CONF_DIR/hss.conf | grep  MYSQL_user  | cut -f2 -d'"'`
+
+	if [ ! -f $CONF_DIR/hss.conf ] ; then
+	    cp $SNAP/etc/hss.conf $CONF_DIR
+	    cp $SNAP/etc/hss_fd.conf $CONF_DIR
+	    cp $SNAP/etc/acl.conf $CONF_DIR
+	fi
+		
+	# set the hss.conf
+	echo "set-hss $CONF_DIR/hss.conf"
+	$SNAP/conf set-hss $CONF_DIR/hss.conf
+
+	if [ ! -z "$MYSQL_PW" ] ; then
+	    sed -i -e "s/linux/$MYSQL_PW/g" $CONF_DIR/hss.conf
+	fi
+	sed -i -e "s/ubuntu/$HOSTNAME/g" $HSS_FD_CONF_FILE
+	
+	$SNAP/run hss-certificate
+	
+	# a copy for the user: with sudo, the user is root
+	echo "copying the config file to $SNAP_USER_DATA"
+	cp $CONF_DIR/hss.conf $SNAP_USER_DATA
+	cp $CONF_DIR/hss_fd.conf $SNAP_USER_DATA
+	cp $CONF_DIR/acl.conf $SNAP_USER_DATA
+
+	# this part needs sudo privilage 
+  	#service mysql restart || true 
+	REALM=`cat $HSS_FD_CONF_FILE | grep  "Realm "  | cut -f2 -d'"'`
+	
+	if [ -z "$(grep -o "`hostname`.$REALM" /etc/hosts)" ]; then
+	    cp /etc/hosts /etc/hosts.$REALM.bkup
+	    #echo 127.0.0.1 localhost > /etc/hosts
+	    #echo 127.0.0.1 `hostname`.$REALM `hostname` hss >> /etc/hosts
+	    #echo 127.0.0.1 `hostname`.$REALM `hostname` mme >> /etc/hosts
+	    echo "Adding 127.0.0.1" `hostname`.$REALM `hostname` "hss to /etc/hosts"
+	    sed -i '/hss/d' /etc/hosts
+	    sed -i "1i127.0.0.1 `hostname`.$REALM `hostname` hss" /etc/hosts
+	    
+	    echo "Adding 127.0.0.1" `hostname`.$REALM `hostname` "mme to /etc/hosts"
+	    sed -i '/mme/d' /etc/hosts
+	    sed -i "1i127.0.0.1 `hostname`.$REALM `hostname` mme" /etc/hosts
+	fi
+
+	$SNAP/run import-db || true 
+	$SNAP/run hss-add-mme || true 
+	echo ""
+	echo "HSS is initialized"
+	echo "Now, it is the time to configure the hss_fd.conf"
+	;;
+    
+    "mme" )
+
+	if [ ! -f $CONF_DIR/mme.conf ] ; then
+	    cp $SNAP/etc/mme.conf $CONF_DIR
+	    cp $SNAP/etc/mme_fd.conf $CONF_DIR
+	fi
+	# set the mme.conf
+	$SNAP/conf set-mme $CONF_DIR/mme.conf
+
+	sed -i -e "s/ubuntu/$HOSTNAME/g" $MME_CONF_FILE
+	sed -i -e "s/ubuntu/$HOSTNAME/g" $MME_FD_CONF_FILE 
+
+	$SNAP/run mme-certificate
+	
+	# a copy for the user
+	cp $CONF_DIR/mme.conf $SNAP_USER_DATA
+	cp $CONF_DIR/mme_fd.conf $SNAP_USER_DATA
+
+	REALM=`cat $HSS_FD_CONF_FILE | grep  "Realm "  | cut -f2 -d'"'`
+	
+	if [ -z "$(grep -o "`hostname`.$REALM" /etc/hosts)" ]; then
+	   cp /etc/hosts /etc/hosts.$REALM.bkup
+	    #echo 127.0.0.1 localhost > /etc/hosts
+	    #echo 127.0.0.1 `hostname`.$REALM `hostname` hss >> /etc/hosts
+	    #echo 127.0.0.1 `hostname`.$REALM `hostname` mme >> /etc/hosts
+	    echo "Adding 127.0.0.1" `hostname`.$REALM `hostname` "hss to /etc/hosts"
+	    sed -i '/hss/d' /etc/hosts
+	    sed -i "1i127.0.0.1 `hostname`.$REALM `hostname` hss" /etc/hosts
+	    
+	    echo "Adding 127.0.0.1" `hostname`.$REALM `hostname` "mme to /etc/hosts"
+	    sed -i '/mme/d' /etc/hosts
+	    sed -i "1i127.0.0.1 `hostname`.$REALM `hostname` mme" /etc/hosts
+	    
+	fi
+	echo ""
+	echo "MME is initialized"
+	echo "Now, it is the time to configure the mme.conf and mme_fd.conf"
+	
+	
+	;;
+    "spgw" )
+
+	if [ ! -f $CONF_DIR/spgw.conf ] ; then
+	    cp $SNAP/etc/spgw.conf $CONF_DIR
+	fi
+	
+	# set the hss.conf
+	$SNAP/conf set-spgw $CONF_DIR/spgw.conf
+
+	# a copy for the user
+	cp $CONF_DIR/spgw.conf $SNAP_USER_DATA
+	echo""
+	echo "SPGW is initialized"
+	echo "Now, configure the spgw.conf file (mainly the NETWORK_INTERFACES and P-GW sections)"
+	;;
+    * )
+	echo "Unknown command: $1"
+	;;
+
+esac
+
+	

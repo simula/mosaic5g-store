@@ -1,0 +1,219 @@
+name: oai-mme
+version: '2.0' 
+summary: OpenAirInterface MME entity with LL-MEC Agent
+description: |
+    OAI-MME is the openairinterface-based MME entity with the LL-MEC agent allowing to connect a 4G-comptaible BS and UEs to the core network and monitor and control the UP with LL-MEC controller. It is one of the projects of Mosaic5G inititive.
+type: app
+# license: Apache-2.0
+architectures:
+  - amd64
+  - i386
+confinement: strict
+grade: stable
+base: core18
+
+apps:
+  check:
+    command : test mme
+    plugs: [log-observe, system-backup, process-control, network-control, network-observe, network-bind]
+  info:
+    command: run info
+  oai-mme:
+    command: run mme
+    plugs: [mount-observe, system-backup, process-control, network-control, network-observe, network-bind, network]
+  mmed:
+    command: run mme
+    daemon: simple
+    stop-command: run stop
+    stop-timeout: 1s
+    plugs: [mount-observe, system-backup, process-control, network-control, network-observe, network-bind, network]
+#  debug:
+#    command: run gdb
+  start-all:
+    command: run start-all
+  stop-all:
+    command: run stop-all
+  restart-all:
+    command: run restart-all
+  status-all:
+    command: run status-all
+  start:
+    command: run start mmed
+  stop:
+    command: run stop mmed
+  restart:
+    command: run restart mmed
+  status:
+    command: run status mmed
+  journal:
+    command: run journal mmed
+    plugs: [log-observe, process-control, system-observe]
+  init:
+    command: init mme
+    plugs: [network-control, hostname-control, network-bind]
+  conf-set:
+    command: conf set-mme
+  conf-get:
+    command: conf echo-mme
+  conf-show:
+    command: conf cat-mme
+  conf-list:
+    command: conf ls-mme
+  dump-vars:
+    command: run dump-vars
+  api:
+    command: run openapi
+    plugs: [network, network-control, network-observe, network-bind]
+  apid:
+    command: run openapi
+    daemon: simple
+    stop-command: run stop
+    stop-timeout: 1s
+    plugs: [network, network-control, network-observe, network-bind]
+  api-start:
+    command: run start apid
+  api-stop:
+    command: run stop apid
+  api-restart:
+    command: run restart apid
+  api-status:
+    command: run status apid
+  api-journal:
+    command: run journal apid
+    plugs: [log-observe, process-control, system-observe]
+  apiman:
+    command: run openapiman
+    plugs: [network-control, network-observe, network-bind]
+  apidman:
+    command: run openapiman
+    daemon: simple
+    stop-command: run stop apidman
+    stop-timeout: 1s
+    plugs: [network-control, network-observe, network-bind]
+  apiman-start:
+    command: run start apidman
+  apiman-stop:
+    command: run stop apidman
+  apiman-restart:
+    command: run restart apidman
+  apiman-status:
+    command: run status apidman
+  apiman-journal:
+    command: run journal apidman
+    plugs: [log-observe, process-control, system-observe]
+
+hooks:
+  install:
+    plugs: [home, network, desktop]
+  configure:
+    plugs: [home, network, desktop]
+  connect-plug-network-control:
+    plugs: [network-control]   
+
+parts:
+  #gdb:
+  #  plugin: nil
+  #  override-build: |
+  #    sudo apt install gdb -y
+  #    mkdir $SNAPCRAFT_PART_INSTALL/share 
+  #    cp -r /usr/share/gdb $SNAPCRAFT_PART_INSTALL/share
+  #    cp /usr/bin/gdb* $SNAPCRAFT_PART_INSTALL
+  #  prime:
+  #    - gdb*
+  #    - share/*
+  #fd:
+  #  plugin: cmake
+  #  source: git@gitlab.eurecom.fr:oai/freediameter.git
+  # source-branch: eurecom-1.2.0
+  # stage-packages:
+  #   - libsctp1
+  # override-build: |
+  #   cd ../src
+  #   mkdir build
+  #   cd build
+  #   cmake -DCMAKE_INSTALL_PREFIX:PATH=$SNAPCRAFT_PART_INSTALL/usr/local ../
+  #   #cmake ../
+  #   make -j`nproc`
+  #   sudo -S -E make install
+  #   #mkdir -p $SNAPCRAFT_PART_INSTALL/usr/local/lib/freeDiameter/
+  #   #sudo cp -r /usr/local/lib/freeDiameter $SNAPCRAFT_PART_INSTALL/usr/local/lib
+  # stage:
+  #   - lib/*
+  #   - usr/local/*
+  # prime:
+  #   - lib/*
+  #   - usr/local/*
+
+  mme:
+    plugin: cmake
+    source: https://github.com/OPENAIRINTERFACE/openair-mme.git
+    source-branch: develop
+    build-packages: [build-essential, ]
+    stage-packages:
+      - libstdc++6
+      - libsctp1
+      - libconfig9
+      #- libssl1.0
+    override-build: |
+      #export DEBIAN_FRONTEND=interactive
+      cd ../src/scripts
+      ./build_mme -i -f 
+      ./build_mme
+      cd ..
+      mkdir -p $SNAPCRAFT_PART_INSTALL/mme/
+      cp etc/mme*  $SNAPCRAFT_PART_INSTALL/mme/
+      cp build/mme/build/*.*  $SNAPCRAFT_PART_INSTALL/mme/
+      cp build/mme/build/mme  $SNAPCRAFT_PART_INSTALL/mme/
+      cp /usr/local/lib/libfd* $SNAPCRAFT_PART_INSTALL/usr/lib
+      cp /usr/local/lib/liblfds* $SNAPCRAFT_PART_INSTALL/usr/lib
+      cp -r /usr/local/lib/freeDiameter/  $SNAPCRAFT_PART_INSTALL/usr/lib
+    stage:
+      - mme/*
+      - usr/lib/*
+      - lib/*
+    prime:
+      - mme/*
+      - usr/lib/*
+      - lib/*
+
+  frontend:
+    plugin: dump
+    source: frontend
+
+  openapi:
+    plugin: python
+    python-version: python3
+    python-packages:
+      - flask
+      - itsdangerous
+      - Werkzeug==0.16.1
+      - click
+      - jinja2
+      - MarkupSafe
+      - requests
+      - argparse
+      - flask_restplus==0.13.0
+      - aniso8601==8.0.0
+      - pytz==2020.1
+      - jsonschema==3.2.0
+      - attrs==19.3.0
+      - pyrsistent==0.16.0
+      - importlib-metadata==1.7.0
+      - importlib-resources==1.5.0
+      - zipp==3.1.0
+      # - pyrsistent==0.16.0
+      # - cassandra-driver==3.24.0
+    stage:
+      - usr/*
+      - lib/*
+    prime:
+      - usr/*
+      - lib/*
+
+#layout:
+#  /run/shm:
+#    bind: $SNAP_COMMON/run/shm
+  # /bin:
+  #   symlink: $SNAP_DATA/current/usr/bin
+  #/etc/host.conf:
+  #  bind-file:  $SNAP_DATA/etc

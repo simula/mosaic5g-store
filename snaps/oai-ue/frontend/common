@@ -1,0 +1,52 @@
+#! /bin/bash
+################################################################################
+# Licensed to the Mosaic5G under one or more contributor license
+# work for additional information regarding copyright ownership.
+# Apache License, Version 2.0  (the "License");
+# You may obtain a copy of the License at
+#  
+#    	http://www.apache.org/licenses/LICENSE-2.0
+#  
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+# -------------------------------------------------------------------------------
+#   For more information about the Mosaic5G:
+#   	contact@mosaic-5g.io
+#
+#
+################################################################################
+# file common
+# brief common scripts and variables for oai-ue Snap
+# author Navid Nikaein (navid.nikaein@eurecom.fr, navid.nikaein@mosaic-5g.io)
+
+set -e
+
+CONF_DIR="$SNAP_DATA"
+
+UE_DIR="$SNAP/ue"
+UE_EXEC="$UE_DIR/oai-ue"
+USIM_EXEC="$UE_DIR/usim"
+USIM_MULTI_EXEC="$UE_DIR/conf2uedata"
+NVRAM_EXEC="$UE_DIR/nvram"
+
+UE_CONF_FILE="$CONF_DIR/ue.band7.50PRB.usrp210.cmd"
+UE_CMD_FILE="$CONF_DIR/ue.band7.25PRB.usrp210.cmd"
+UESIM_CONF_FILE="$CONF_DIR/uesim.conf"
+UESIM_CMD_FILE="$CONF_DIR/uesim.25PRB.cmd"
+UESIM_L2SIM_CONF_FILE="$CONF_DIR/uesim.nfapi.conf"
+UESIM_L2SIM_CMD_FILE="$CONF_DIR/uesim.50PRB.nfapi.cmd"
+
+UE_USIM_CONF_FILE="$CONF_DIR/usim_default.conf"
+
+UESIM_DIR="$SNAP/ue"
+UESIM_CONF_FILE="$CONF_DIR/uesim.conf"
+UESIM_EXEC="$UE_DIR/oai-ue"
+
+
+UE_IP_DIR="$CONF_DIR/ue_ip"
+
+MAKE_DIR="$SNAP"
+MAKE_EXEC="$MAKE_DIR/make"

@@ -1,28 +1,25 @@
-'''
-   The MIT License (MIT)
+"""
+   Licensed to the Mosaic5G under one or more contributor license
+   agreements. See the NOTICE file distributed with this
+   work for additional information regarding copyright ownership.
+   The Mosaic5G licenses this file to You under the
+   Apache License, Version 2.0  (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+  
+    	http://www.apache.org/licenses/LICENSE-2.0
+  
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+ -------------------------------------------------------------------------------
+   For more information about the Mosaic5G:
+   	contact@mosaic-5g.io
+"""
 
-   Copyright (c) 2017
-
-   Permission is hereby granted, free of charge, to any person obtaining a copy
-   of this software and associated documentation files (the "Software"), to deal
-   in the Software without restriction, including without limitation the rights
-   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-   copies of the Software, and to permit persons to whom the Software is
-   furnished to do so, subject to the following conditions:
-   
-   The above copyright notice and this permission notice shall be included in all
-   copies or substantial portions of the Software.
-   
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-   SOFTWARE.
-'''
-
-'''
+"""
     File name: rrm_app_vars.py
     Author: navid nikaein
     Description: variables used for rrm_app
@@ -30,7 +27,7 @@
     Date created: 7 July 2017
     Date last modified: 7 July 2017 
     Python Version: 2.7
-'''
+"""
 
 import os
 
@@ -50,6 +47,10 @@ cqi_to_mcs_high_rate= [2, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 28
 mcs_to_itbs= [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 10, 11, 12, 13, 14, 15, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24 , 25, 26]
 
 bsr_table  = [0,10,12,14,17,19,22,26,31,36,42,49,57,67,78,91,105,125,146,171,200,234,274,321,376,440,515,603,706,826,967,1132,1326,1552,1817,2127,2490,2915,3413,3995,4677,5467,6411,7505,8787,10287,12043,14099,16507,19325,22624,26487,31009,36304,42502,49759,58255,68201,79846,93479,109439, 128125,150000, 300000]
+
+#SISO for first transmission attempt
+snrdb_to_cqi = [0, 1.95, 4.00, 6.00, 8.00, 10.00,
+11.95, 14.05, 16.00, 17.90, 19.90, 21.50, 23.45, 25.00, 27.30, 29.00]
 
 # [27][110]
 tbs_table = [[16,32,56,88,120,152,176,208,224,256,288,328,344,376,392,424,456,488,504,536,568,600,616,648,680,712,744,776,776,808,840,872,904,936,968,1000,1032,1032,1064,1096,1128,1160,1192,1224,1256,1256,1288,1320,1352,1384,1416,1416,1480,1480,1544,1544,1608,1608,1608,1672,1672,1736,1736,1800,1800,1800,1864,1864,1928,1928,1992,1992,2024,2088,2088,2088,2152,2152,2216,2216,2280,2280,2280,2344,2344,2408,2408,2472,2472,2536,2536,2536,2600,2600,2664,2664,2728,2728,2728,2792,2792,2856,2856,2856,2984,2984,2984,2984,2984,3112],

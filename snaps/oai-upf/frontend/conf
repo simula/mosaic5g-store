@@ -1,0 +1,69 @@
+#!/bin/sh
+
+. $SNAP/common
+
+case "$1" in
+
+    "set-upf" )
+	CONFIG_FILE=$2
+	if [ "$CONFIG_FILE" != "${CONFIG_FILE#/}" -a -f "$CONFIG_FILE" ]; then
+	    echo "Setting the default config file to: $CONFIG_FILE"
+	    
+	elif [ -f "$CONF_DIR/$CONFIG_FILE" ]; then
+	    CONFIG_FILE=$CONF_DIR/$CONFIG_FILE
+	    echo "Config file found in the $CONF_DIR!"
+	    echo "Resetting to the default config file: $CONFIG_FILE"
+	    
+	else
+	    echo "[ERR] Config file $CONFIG_FILE not found, please provide an absolute path!"
+	    echo "Reset to default config file: $UPF_CONF_FILE"
+	    CONFIG_FILE=$UPF_CONF_FILE
+	fi
+	snapctl set conf.upf=$CONFIG_FILE
+	echo "UPF_CONF_FILE2=$CONFIG_FILE" > $SNAP_DATA/config_upf.sh
+	echo "UPF_CONF_FILE2=$CONFIG_FILE" > $SNAP_USER_DATA/config_upf.sh
+	;;
+    
+     "ls-upf" )
+        if [ -r $SNAP_DATA/config_upf.sh ]; then
+	    . $SNAP_DATA/config_upf.sh
+	fi
+	
+	# default config file is (unless set in above config)
+	UPF_CONFIG=${UPF_CONF_FILE2:-$UPF_CONF_FILE}
+	ls $(dirname $UPF_CONFIG)/*.conf
+	;;
+     
+     "echo-upf" | "cat-upf" )
+	show_file=$2
+
+	if [ -r $SNAP_DATA/config_upf.sh ]; then
+	    . $SNAP_DATA/config_upf.sh
+	fi
+	
+	# default config file is (unless set in above config)
+	UPF_CONFIG=${UPF_CONF_FILE2:-$UPF_CONF_FILE}
+	# echo (get), cat (show)
+	# `echo $1 | cut -d"-" -f1` $UPF_CONFIG
+
+	if [ "$show_file" != "" ]; then
+		# echo "File to show $SNAP_DATA/$show_file"
+		absolute_show_file=$SNAP_DATA/$show_file
+		if [ ! -e $absolute_show_file ]; then
+			echo "The file $absolute_show_file does not exist"
+		else
+			`echo $1 | cut -d"-" -f1` $absolute_show_file
+		fi
+	else
+		# echo "File to show $UPF_CONFIG"
+		`echo $1 | cut -d"-" -f1` $UPF_CONFIG
+	fi
+	
+	;;
+      
+      *)
+       echo "unknown command $1"
+       ;;
+esac
+    
+

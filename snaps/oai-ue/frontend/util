@@ -1,0 +1,164 @@
+#! /bin/bash
+################################################################################
+# Licensed to the Mosaic5G under one or more contributor license
+# work for additional information regarding copyright ownership.
+# Apache License, Version 2.0  (the "License");
+# You may obtain a copy of the License at
+#  
+#    	http://www.apache.org/licenses/LICENSE-2.0
+#  
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+# -------------------------------------------------------------------------------
+#   For more information about the Mosaic5G:
+#   	contact@mosaic-5g.io
+#
+#
+################################################################################
+# file util
+# brief util scripts and variables for oai-ue Snap
+# author Navid Nikaein (navid.nikaein@eurecom.fr, navid.nikaein@mosaic-5g.io)
+
+. $SNAP/common
+
+# Echo 
+black='[30m'
+red='[31m'
+green='[32m'
+yellow='[33m'
+blue='[1;34m'
+magenta='[35m'
+cyan='[36m'
+white='[37m'
+reset_color='[00m'
+COLORIZE=1
+
+cecho()  {  
+    # Color-echo
+    # arg1 = message
+    # arg2 = color
+    local default_msg="No Message."
+    message=${1:-$default_msg}
+    color=${2:-$green}
+    [ "$COLORIZE" = "1" ] && message="$color$message$reset_color"
+    echo -e "$message"
+    return
+}
+
+echo_error()   { cecho "$*" $red          ;}
+echo_fatal()   { cecho "$*" $red; exit -1 ;}
+echo_warn()    { cecho "$*" $yellow       ;}
+echo_success() { cecho "$*" $green        ;}
+echo_info()    { cecho "$*" $blue         ;}
+
+
+if_sudo(){
+
+    if [ "$(id -u)" -eq 0 ] ; then
+	return 0
+    else
+	echo "Please run as a sudoer!"
+	exit 1
+    fi
+}
+
+snap_isconnected(){
+
+    echo_warn "Plug $1: snap connect $SNAP_NAME:$1"
+    snapctl is-connected $1
+    echo_success "$1 connected"
+    
+}
+
+
+detect_uhd_device(){
+    rv=$($SNAP/bin/uhd_usrp_probe > /dev/null 2>&1) || true # uhd_find_device
+    if [ -z "$rv" ] ; then
+	DEVICE="NONE"
+    elif [ -n "$(echo "$rv" | grep -o "B-Series")" ]; then
+	DEVICE="B"
+    elif [ -n "$(echo "$rv" | grep -o "X-Series")" ]; then
+	DEVICE="X"
+    elif [ -n "$(echo "$rv" | grep -o "N-Series")" ]; then
+	DEVICE="N"
+    fi
+}
+
+set_health(){
+    
+    status=$(snapctl services $SNAP_NAME.ued)
+    case "$status" in
+	*inactive*)
+	    #echo "Service inactive"
+	    snapctl set-health --code=ready blocked "$SNAP_NAME ready to be run"
+	    ;;
+	*active*)
+	    #echo "Service active"
+	    snapctl set-health okay
+	    ;;
+	*)
+            #echo "Unknown service state"
+	    snapctl set-health --code=error error "Execution failed. Checked the Journal"
+	    ;;
+    esac 
+    
+}
+
+snap_info(){
+    echo_info "Snap Name: $SNAP_NAME"
+    echo_info "Snap Instance Name: $SNAP_INSTANCE_NAME"
+    echo_info "Sanp Version: $SNAP_VERSION"
+    echo_info "Sanp Revision: $SNAP_REVISION"
+    echo_info "Snap Data: $SNAP_DATA"
+    echo_info "Snap Conf: "
+    snapctl get conf
+    echo_warn 'Snap Permissions to be granted:
+    	- log-observe
+        - process-control
+        - sys-access
+        - raw-usb
+        - netlink-connector'
+	          
+    echo ""
+    echo_warn "Check current permissions' status: snap connection $SNAP_NAME"
+    
+}
+
+snap_help(){
+	echo "Usage:                sudo  $SNAP_NAME args"
+	echo ""                     
+	echo "Note:                 root priviliage required"
+	echo "Options:"
+	echo "oai-ue                run oai-ue manually as a process. Run with option -h for available execution options."
+	echo "oai-ue.init:          initialize $SNAP_NAME (after the 1st installation)"
+	echo "oai-ue.conf-get       get the current $SNAP_NAME configuration file"
+	echo "oai-ue.conf-list      list the $SNAP_NAME configuration files"
+	echo "oai-ue.conf-set       set the $SNAP_NAME configuration file"
+	echo "oai-ue.conf-show      show the path to the $SNAP_NAME.[x] configuration file"
+	echo "oai-ue.cmd-set:       set the $SNAP_NAME configuration file"
+	echo "oai-ue.cmd-get:       get the current $SNAP_NAME configuration file"
+	echo "oai-ue.cmd-show:      show the path to the current $SNAP_NAME configuration file"
+	echo "oai-ue.cmd-list:      list the $SNAP_NAME configuration files"
+	echo "oai-ue.oip:           bring up the $SNAP_NAME UE IP address"
+	echo ""
+	echo "oai-ue.journal        get the $SNAP_NAME daemon logs"
+	echo "oai-ue.restart        restart the $SNAP_NAME daemon"
+	echo "oai-ue.start          start the $SNAP_NAME daemon"
+	echo "oai-ue.status         status the $SNAP_NAME daemon"
+	echo "oai-ue.-stop          stop the $SNAP_NAME daemon"
+	echo ""
+	echo "oai-ue.usim-gen:      generate usim data file for single or multi UEs"
+	echo "oai-ue.usim-print:    print the usim configure data file"
+	echo "oai-ue.nvram-print:   print the nvram data file"
+	echo "oai-ue.debug:         debug the $SNAP_NAME UE with gdb"
+	echo "oai-ue.usim-set:      set the USIM configuration file"
+	echo "oai-ue.usim-get:      get the current USIM  configuration file"
+	echo "oai-ue.usim-show:     show the current USIM configuration file"
+	echo "oai-ue.usim-list:     list the USIM configuration files"
+	echo ""
+	echo "oai-ue.help:          print this help"
+	
+}

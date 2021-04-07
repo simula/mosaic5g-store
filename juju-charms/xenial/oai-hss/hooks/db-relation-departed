@@ -1,10 +1,9 @@
 #!/bin/bash
 set -eux
 source $CHARM_DIR/utils/common
-set_env_paths
+set_env
 
-status-set blocked "running db-relation-departed"
-
+status-set blocked "db-relation-departed"
 juju-log "Stopping HSS, database is departing and maybe doesn't exist anymore"
 stop_hss
 

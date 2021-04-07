@@ -1,0 +1,105 @@
+#!/bin/bash
+
+. $SNAP/common
+
+os_ok=0
+case "$os_dist" in
+    "ubuntu18.04") os_ok=1 ;;
+    "ubuntu17.10") os_ok=1 ;;
+    "ubuntu17.04") os_ok=1 ;;
+    "ubuntu16.04") os_ok=1 ;;
+    "ubuntu-core16") os_ok=1 ;;
+    #"ubuntu14.04") os_ok=1 ;;
+    *)
+	echo "[Warn] OS distribution $os_dist may not supported"
+	#exit -1
+	;;
+esac 
+
+
+kern_ok=0
+kern=`uname -r`
+kern_version=`echo $kern | cut -d '.' -f1`
+kern_major_revision=`echo $kern | cut -d '.' -f2`
+if [ $kern_version -lt 4 ] && [ $kern_major_revision -le 8 ] && [ $kern_major_revision -ge 11 ]; then
+    echo "[Warn] Kernel $kern does not support GTP"
+    read -p "Do you want to install the kernel version 4.9.x ? <y/N> " prompt
+    #if [ $prompt =~ [yY](es)* ] ; then
+    if [ $prompt =~ [yY] ] ; then
+	echo "installing the kernel 4.9.x"
+
+	wget http://kernel.ubuntu.com/~kernel-ppa/mainline/v4.9/linux-headers-4.9.0-040900_4.9.0-040900.201612111631_all.deb
+	
+	wget http://kernel.ubuntu.com/~kernel-ppa/mainline/v4.9/linux-headers-4.9.0-040900-generic_4.9.0-040900.201612111631_amd64.deb
+	
+	wget http://kernel.ubuntu.com/~kernel-ppa/mainline/v4.9/linux-image-4.9.0-040900-generic_4.9.0-040900.201612111631_amd64.deb
+	
+	sudo dpkg -i *.deb
+	read -p "Do you want to restart  ? <y/N> " prompt
+	echo "Ensure that you boot on kernel version 4.9.x"
+	if [ $prompt =~ [yY] ]]; then
+	    sudo reboot
+	fi
+	
+    else
+	echo "Please install the required kernel 4.9.x to proceed"
+	exit 0 
+    fi
+       
+else
+    #echo "[INFO] the required kernel dependency is met"
+    kern_ok=1
+fi
+
+declare -a basemodules=( "udp_tunnel" "ip6_udp_tunnel" "gtp" "libcrc32c" "nf_conntrack" "nf_nat" "nf_defrag_ipv6" "nf_nat_ipv4" "nf_nat_ipv6" "ip_tunnel" "gre" "vxlan" "geneve" "ip_gre" )
+declare -a ovsmodules=( "openvswitch.ko" "vport-gtp.ko" "vport-gre.ko" "vport-lisp.ko" "vport-vxlan.ko" "vport-geneve.ko" "vport-stt.ko" )
+
+
+if [ $kern_ok -ge 1 ];  then 
+
+    for m in "${basemodules[@]}"
+    do
+	echo "modprobe module $m"
+	modprobe $m
+    done
+    
+    cd $SNAP/lib/modules/
+    for m in "${ovsmodules[@]}"
+    do
+	#mod_exist=`lsmod | grep "$m"`
+	#echo "mod exist: " $mod_exist
+	#exit 0 
+	#if [ -z "$mod_exist" -a  -f "$m" ] ; then 	
+	if [  -f "$m" ] ; then 	
+	    #echo "insert module $m"
+	    rmmod  "$m" || true
+	    insmod "$m"  || true 
+	else
+	    echo "module $m does not exist"
+	fi
+	#lsmod | grep "$m" &> /dev/null
+	#if [ $? -eq 0 ] ; then
+	#    echo "module $m inserted"
+	#fi
+    done
+    cd -
+    #make modules_install  # this overwrites openvswitch.ko, vport.ko, vport-gtp.ko, etc.
+    mkdir -p $OVS_ETC
+    mkdir -p $OVS_RUN
+    ovsdb-tool create $OVS_ETC/conf.db vswitchd/vswitch.ovsschema
+    # start the OVS server 
+    ovsdb-server --remote=punix:$OVS_RUN/db.sock \
+		 --remote=db:Open_vSwitch,Open_vSwitch,manager_options \
+		 --private-key=db:Open_vSwitch,SSL,private_key \
+		 --certificate=db:Open_vSwitch,SSL,certificate \
+		 --bootstrap-ca-cert=db:Open_vSwitch,SSL,ca_cert \
+		 --pidfile --detach
+    ovs-vsctl --no-wait init
+    ovs-vswitchd --pidfile --detach --log-file=$SNAP_USER_DATA/log
+    echo "[INFO] OVS log file: $SNAP_USER_DATA/log "
+
+else
+    exit 127
+fi
+
+echo "OVS init: done "

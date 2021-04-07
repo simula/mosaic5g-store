@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Drone Application</title>
+    <link rel="stylesheet" href="d3ui.css" type="text/css">
+    <link rel="stylesheet" href="graph.css" type="text/css">
+    <link rel="stylesheet" href="style.css" type="text/css">
+    <script src="d3/d3.js"></script>
+    <script src="drone.js"></script>
+  </head>
+  <body>
+    <div id="holding">
+      <ul class="popup-menu shared" id="source_types">
+	<li data-value="RPC">RPC
+	  <div class="tooltip">
+	    COHERENT Application Protocol based on JSON-RPC 2.0
+	  </div>
+	</li>
+	<li data-value="APP">APP
+	  <div class="tooltip">
+	    Generic application. Either REST or WebSocket API
+	    depending on the <b>url</b>. The GET result or last
+	    received message is attached to the node. If the message
+	    has "app" and "msg" members, and "app" value defines a
+	    known application type, then the msg content is handled as
+	    a message of indicated application type. Otherwise, the
+	    message just attached to the source node without
+	    interpretations.
+	  </div>
+	</li>
+	<li data-value="RTC">RTC
+	  <div class="tooltip">
+	    REST API using the GET to the specified <b>url</b>. The
+	    JSON reply must be compatible with "../stats/manager/json/all"
+	    request for flexran-rtc.
+	  </div>
+	</li>
+	<li data-value="SMA">SMA
+	  <div class="tooltip">
+	    WebSocket API. The received JSON message is assumed to be
+	    an array of configurations for eNB's.
+	  </div>
+	</li>
+      </ul>
+    </div>
+    <div id="mainWindow">
+      <div id="logos">
+        <a href="http://mosaic5g.io/"><img src="images/m5g-logo.png"></a>
+        <a href="https://www.5g-victori-project.eu/"><img src="images/5g-victori-logo2.png"></a>
+        <a href="https://www.vttresearch.com/"><img src="images/VTT.svg"></a>
+        <a href="https://www.eurecom.fr/"><img src="images/eurecom.svg"></a>
+      </div>
+      <div id="mainMenu">
+	<ul class="menubar">
+	  <li>
+	    File
+	    <ul class="popup-menu">
+	      <li data-action="saveTasks">
+		Save
+		<div class="tooltip">
+		  Save configuration to server host using the current
+		  name.
+		</div>
+	      </li>
+	      <li data-popup="saveAs">
+		Save as or delete...
+		<div class="tooltip">
+		  Save configuration to server host using a different
+		  name, or delete existing configuration.
+		</div>
+	      </li>
+	      <!-- <li> -->
+	      <!-- 	<a id="exportData" href="#">Export Data</a> -->
+	      <!-- 	<span class="tooltip"> -->
+	      <!-- 	  Save current application to a local file (as JSON) -->
+	      <!-- 	</span> -->
+	      <!-- </li> -->
+	      <!-- <li data-action="loadLocalFile"> -->
+	      <!-- 	<label>Import data -->
+	      <!-- 	  <input type="file" style="display: none;" class="change-action"> -->
+	      <!-- 	</label> -->
+	      <!-- 	<span class="tooltip"> -->
+	      <!-- 	  Load previously saved (exported) local file -->
+	      <!-- 	</span> -->
+	      <!-- </li> -->
+	    </ul>
+	  </li>
+	  <li>
+	    Tasks
+	    <ul class="popup-menu" id="tasks" data-action="loadTasks">
+	      <!-- filled by conherent.js -->
+	    </ul>
+	  </li>
+        </ul>
+      </div>
+      <div id="drones" data-popup="edit-task" data-resize="resizeMain" style="clear: both;">
+	<div class="tab topology horizontal" data-label="Topology" data-popup="edit-sources" data-open="resizeGraph">
+	  <div id="topology" data-resize="resizeGraph">
+	  </div>
+	  <div id="parameters">
+	    <table>
+	      <thead>
+	  	<tr>
+	  	  <th colspan="2" style="position:relative;"></th>
+	  	</tr>
+	      </thead>
+	      <tbody>
+	      </tbody>
+	    </table>
+	  </div>
+	  <div id="methods" class="collaps open left" data-action="sendCommand">
+	    <div id="methods-content">
+	      <!-- Filled by topology.js -->
+	    </div>
+	  </div>
+	  <div id="error_note" class="click-action" data-action="closeError">
+	    <span class="message"></span>
+	  </div>
+	  <form class="popup" id="build_command" title="Build Command" data-prepare="prepareCommand" data-submit="submitCommand">
+	    <div class="application">
+	    </div>
+	  </form>
+	</div>
+      </div>
+      <form class="popup" id="edit-sources" title="Sources" data-prepare="prepareSources" data-submit="modifySources">
+	<table>
+	  <thead>
+	    <tr>
+	      <th>Type
+		  <span class="tooltip">
+		    Application type defines the message format
+		    used by the application at the end of the url.
+		  </span>
+	      </th>
+	      <th><div>
+		  Name
+		  <span class="tooltip">
+		    Name of the application. This must be unique among the sources
+		  </span>
+		</div>
+	      </th>
+	      <th>
+		Url
+		<div class="tooltip">
+		  The url pointing to the application, either HTTP
+		  REST (http:) or Web socket API (ws:). If host name
+		  is written as '*', then it will be replaced by the
+		  hostname from current web location.
+		</div>
+	      </th>
+	      <th><span>
+		  Refresh Interval [s]
+		  <div class="tooltip left">
+		    <p>
+		      For REST API this specifies the interval of
+		      issed GET requests, for WebSocket API this is
+		      the interval of retrying the web socket
+		      connection, if it is closed.
+		    </p>
+		    <p>
+		      If value is zero or negative, GET requests are
+		      not issued and web socket reopening is not
+		      attempted, if it is closed.
+		      </p>
+		  </div>
+		</span>
+	      </th>
+	    </tr>
+	  </thead>
+	  <tbody>
+	    <!-- filled by conherent.js -->
+	  </tbody>
+	</table>
+	<input type="button" value="Add row" class="click-action" data-action="addSources">
+      </form>
+      <form class="popup" id="edit-task" title="Task Editor" data-prepare="prepareTask" data-submit="modifyTask">
+	<table>
+	  <thead>
+	    <tr>
+	      <th>Parameter</th>
+	      <th>Value</th>
+	    </tr>
+	  </thead>
+	  <tbody>
+	    <tr>
+	      <td>id</td>
+	      <td><input type="text" name="_id"></td>
+	    </tr>
+	    <tr>
+	      <td>command</td>
+	      <td><textarea rows="8" columns="30" name="command"></textarea></td>
+	    </tr>
+	    <tr>
+	      <td>cwd</td>
+	      <td><input type="text" name="cwd"></td>
+	    </tr>
+	    <tr>
+	      <td>user</td>
+	      <td><input type="text" name="user"></td>
+	    </tr>
+	    <tr>
+	      <td>autostart</td>
+	      <td>
+		<input type="checkbox" name="autostart">
+	      </td>
+	    </tr>
+	    <tr>
+	      <td>drone</td>
+	      <td><input type="text" name="drone"></td>
+	  </tbody>
+	</table>
+      </form>
+      <form class="popup" id="saveAs" title="Save or delete" data-submit="saveTasks">
+	<span>
+	  <input name="fileName" type="text" id="configName">
+	  <span class="tooltip">
+	    Type the name of configuration to save the current state. Commit by ENTER, or OK
+	  </span>
+	</span>
+	<span>
+	  <input type="button" class="submit-action" value="Delete" data-submit="deleteTasks">
+	  <span class="tooltip">
+	    Delete a configuration with the given name.
+	  </span>
+	</span>
+      </form>
+    </div>
+    <script src="uitools.js"></script>
+    <script src="graph.js"></script>
+    <script src="timechart.js"></script>
+    <script src="topology.js"></script>
+    <script src="coherent.js"></script>
+  </body>
+</html>

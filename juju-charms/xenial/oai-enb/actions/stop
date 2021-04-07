@@ -1,5 +1,6 @@
 #!/bin/bash
 
 source $CHARM_DIR/utils/common
-stop_enb
-status-set maintenance "OAI eNB is  not running"
+node_func=`cat $CHARM_DIR/.node_func`
+stop_enb $node_func
+status-set maintenance "OAI $node_func is stopped"
